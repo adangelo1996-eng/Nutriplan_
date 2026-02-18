@@ -15,6 +15,9 @@
 </head>
 <body>
 
+<!-- autocomplete ingredienti -->
+<datalist id="ingredientiSuggeriti"></datalist>
+
 <!-- BANNER ANDROID -->
 <div class="install-banner" id="installBanner">
     <div class="install-content">
@@ -37,7 +40,6 @@
         </div>
         <button class="ios-banner-close" onclick="closeIosBanner()">✕</button>
     </div>
-    <div class="ios-banner-arrow"></div>
 </div>
 
 <div class="offline-indicator" id="offlineIndicator">📡 Modalità offline</div>
@@ -70,6 +72,7 @@
             <button class="nav-tab" onclick="showPage('frigo',this)">❄️ Frigo</button>
             <button class="nav-tab" onclick="showPage('dispensa',this)">🏡 Dispensa</button>
             <button class="nav-tab" onclick="showPage('spesa',this)">🛒 Spesa</button>
+            <button class="nav-tab" onclick="showPage('ricette',this)">🍳 Ricette</button>
             <button class="nav-tab" onclick="showPage('limiti',this)">📊 Limiti</button>
             <button class="nav-tab" onclick="showPage('statistiche',this)">📈 Stats</button>
             <button class="nav-tab" onclick="showPage('storico',this)">📖 Storico</button>
@@ -169,6 +172,13 @@
         <div class="page" id="dispensaPage">
             <div class="card">
                 <div class="card-header"><span class="card-icon">🏡</span><h2>Dispensa</h2></div>
+                <div class="dispensa-search-wrap">
+                    <input type="text" id="dispensaSearch" class="dispensa-search-input"
+                        placeholder="🔍 Cerca ingrediente..."
+                        oninput="filterDispensa(this.value)">
+                    <button class="dispensa-clear-btn" id="dispensaClearBtn"
+                        onclick="clearDispensaSearch()" style="display:none;">✕</button>
+                </div>
                 <div id="pantryContent"></div>
             </div>
         </div>
@@ -194,6 +204,48 @@
                     </div>
                 </div>
                 <div id="spesaContent"></div>
+            </div>
+        </div>
+
+        <!-- RICETTE -->
+        <div class="page" id="ricettePage">
+            <div class="card">
+                <div class="card-header"><span class="card-icon">🍳</span><h2>Ricette</h2></div>
+                <div class="page-tabs">
+                    <button class="page-tab active" onclick="showRicetteTab('catalogo',this)">📚 Catalogo</button>
+                    <button class="page-tab" onclick="showRicetteTab('custom',this)">⭐ Le mie ricette</button>
+                </div>
+
+                <!-- CATALOGO -->
+                <div class="page-tab-content active" id="ricetteTabCatalogo">
+                    <div class="ricette-filter-bar">
+                        <div class="dispensa-search-wrap">
+                            <input type="text" id="ricetteSearch" class="dispensa-search-input"
+                                placeholder="🔍 Cerca ricetta..."
+                                oninput="filterRicette(this.value)">
+                            <button class="dispensa-clear-btn" id="ricetteClearBtn"
+                                onclick="clearRicetteSearch()" style="display:none;">✕</button>
+                        </div>
+                        <div class="ricette-meal-btns">
+                            <button class="ricette-filter-btn active" onclick="setRicetteMealFilter('tutti',this)" title="Tutti">Tutti</button>
+                            <button class="ricette-filter-btn" onclick="setRicetteMealFilter('colazione',this)" title="Colazione">☕</button>
+                            <button class="ricette-filter-btn" onclick="setRicetteMealFilter('spuntino',this)" title="Spuntino">🍎</button>
+                            <button class="ricette-filter-btn" onclick="setRicetteMealFilter('pranzo',this)" title="Pranzo">🍽️</button>
+                            <button class="ricette-filter-btn" onclick="setRicetteMealFilter('merenda',this)" title="Merenda">🥪</button>
+                            <button class="ricette-filter-btn" onclick="setRicetteMealFilter('cena',this)" title="Cena">🌙</button>
+                        </div>
+                    </div>
+                    <div id="ricetteCatalogoContent"></div>
+                </div>
+
+                <!-- LE MIE RICETTE -->
+                <div class="page-tab-content" id="ricetteTabCustom">
+                    <div style="margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="openRicettaForm()">➕ Nuova Ricetta</button>
+                        <span style="font-size:.82em;color:var(--text-light);">Le tue ricette vengono aggiunte al catalogo e al suggeritore frigo.</span>
+                    </div>
+                    <div id="ricetteCustomContent"></div>
+                </div>
             </div>
         </div>
 
@@ -225,7 +277,7 @@
     </div>
 </div>
 
-<!-- PRINT AREA (invisibile, per PDF) -->
+<!-- PRINT AREA -->
 <div id="printArea" class="print-only"></div>
 
 <!-- MODAL SALVA FRIGO -->
@@ -240,7 +292,7 @@
     </div>
 </div>
 
-<!-- MODAL RICETTA -->
+<!-- MODAL RICETTA (visualizzazione) -->
 <div class="modal" id="recipeModal">
     <div class="modal-content wide">
         <h3 id="recipeModalTitle">🥗 Ricetta</h3>
@@ -265,6 +317,69 @@
     </div>
 </div>
 
+<!-- MODAL FORM NUOVA/MODIFICA RICETTA -->
+<div class="modal" id="ricettaFormModal">
+    <div class="modal-content ricetta-modal">
+        <div class="ricetta-modal-header">
+            <h3 id="ricettaFormTitle">🍳 Nuova Ricetta</h3>
+            <button class="ricetta-modal-close" onclick="closeRicettaForm()">✕</button>
+        </div>
+        <div class="ricetta-modal-body">
+
+            <!-- Info base -->
+            <div class="rf-section">
+                <div class="rf-section-title">📝 Informazioni base</div>
+                <div class="rf-row">
+                    <div class="select-group" style="flex:2;">
+                        <label>Nome ricetta *</label>
+                        <input type="text" id="rfNome" class="rf-input"
+                            placeholder="Es: Pasta al pesto con merluzzo">
+                    </div>
+                    <div class="select-group">
+                        <label>Tipo pasto *</label>
+                        <select id="rfPasto" class="rf-input">
+                            <option value="colazione">☕ Colazione</option>
+                            <option value="spuntino">🍎 Spuntino</option>
+                            <option value="pranzo" selected>🍽️ Pranzo</option>
+                            <option value="merenda">🥪 Merenda</option>
+                            <option value="cena">🌙 Cena</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ingredienti -->
+            <div class="rf-section">
+                <div class="rf-section-title">🥦 Ingredienti</div>
+                <div id="rfIngList"></div>
+                <button class="btn btn-secondary btn-small" onclick="addRfIng()"
+                    style="margin-top:10px;">➕ Aggiungi ingrediente</button>
+            </div>
+
+            <!-- Preparazione -->
+            <div class="rf-section">
+                <div class="rf-section-title">👨‍🍳 Preparazione *</div>
+                <textarea id="rfIstruzioni" class="rf-textarea"
+                    placeholder="Descrivi la preparazione passo passo...&#10;Es: Cuoci la pasta al dente. Rosola il pollo con olio e spezie..."></textarea>
+            </div>
+
+            <!-- Limiti -->
+            <div class="rf-section">
+                <div class="rf-section-title">⚠️ Conta per i limiti settimanali</div>
+                <p style="font-size:.8em;color:var(--text-light);margin-bottom:10px;">
+                    Seleziona i limiti che questa ricetta incrementa quando viene usata.
+                </p>
+                <div class="rf-limits-grid" id="rfLimitsGrid"></div>
+            </div>
+
+        </div>
+        <div class="ricetta-modal-footer">
+            <button class="btn btn-secondary" onclick="closeRicettaForm()">Annulla</button>
+            <button class="btn btn-primary" onclick="saveRicettaForm()">💾 Salva Ricetta</button>
+        </div>
+    </div>
+</div>
+
 <script src="data.js"></script>
 <script src="storage.js"></script>
 <script src="app.js"></script>
@@ -275,5 +390,6 @@
 <script src="spesa.js"></script>
 <script src="statistiche.js"></script>
 <script src="pdf.js"></script>
+<script src="ricette_custom.js"></script>
 </body>
 </html>
