@@ -235,6 +235,7 @@ function showPage(name,btn){
     if(name==='dispensa') renderPantry();
     if(name==='storico') renderStorico();
     if(name==='statistiche') renderStatistiche();
+    if(name==='ricette') renderRicettePage();
     if(name==='spesa'){
         document.getElementById('spesaTurnoSelect').value=
             appHistory[selectedDateKey]?.turno||'mattina';
