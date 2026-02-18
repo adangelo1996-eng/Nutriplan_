@@ -1,3 +1,11 @@
+function refreshAllViews(){
+    renderFridge();
+    renderMealPlan();
+    updateFridgeSuggestions();
+    initDayIngGrid();
+    buildCalendarBar();
+}
+
 function renderPantry(){
     const container=document.getElementById('pantryContent');
     if(!container) return;
@@ -45,9 +53,7 @@ function togglePantryItem(name){
     }
     saveData();
     renderPantry();
-    renderFridge();
-    updateFridgeSuggestions();
-    initDayIngGrid();
+    refreshAllViews();
 }
 
 function adjustQty(name,delta){
@@ -55,8 +61,7 @@ function adjustQty(name,delta){
     pantryItems[name].quantity=Math.max(0,parseFloat(((pantryItems[name].quantity||0)+delta).toFixed(3)));
     saveData();
     renderPantry();
-    renderFridge();
-    updateFridgeSuggestions();
+    refreshAllViews();
 }
 
 function updatePantryQuantity(name,quantity,unit){
@@ -64,8 +69,8 @@ function updatePantryQuantity(name,quantity,unit){
     if(quantity!==null) pantryItems[name].quantity=Math.max(0,parseFloat(quantity)||0);
     if(unit!==null) pantryItems[name].unit=unit;
     saveData();
-    renderFridge();
-    updateFridgeSuggestions();
+    renderPantry();
+    refreshAllViews();
 }
 
 function renderFridge(){
@@ -155,9 +160,7 @@ function loadFridge(id){
     pantryItems=JSON.parse(JSON.stringify(savedFridges[id].items));
     saveData();
     renderPantry();
-    renderFridge();
-    updateFridgeSuggestions();
-    initDayIngGrid();
+    refreshAllViews();
     alert(`✅ Frigorifero "${savedFridges[id].name}" caricato!`);
 }
 
@@ -172,8 +175,7 @@ function clearFridge(){
     if(!confirm('Svuotare completamente il frigorifero?')) return;
     Object.keys(pantryItems).forEach(k=>pantryItems[k].quantity=0);
     saveData();
-    renderFridge();
     renderPantry();
-    updateFridgeSuggestions();
+    refreshAllViews();
     alert('✅ Frigorifero svuotato!');
 }
