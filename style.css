@@ -470,3 +470,91 @@ header{background:var(--header-bg);padding:12px 16px 0;box-shadow:0 2px 15px var
     .cal-day{min-width:50px;padding:6px 7px}
     .stat-bar-label{min-width:90px}
 }
+/* ═══════════════════════════════════
+   DISPENSA — BARRA DI RICERCA
+═══════════════════════════════════ */
+.dispensa-search-wrap{position:relative;display:flex;align-items:center;margin-bottom:18px;}
+.dispensa-search-input{width:100%;padding:11px 42px 11px 14px;border:2px solid var(--border);border-radius:12px;font-size:.95em;font-family:'Poppins',sans-serif;background:var(--input-bg);color:var(--text-dark);transition:all .3s;}
+.dispensa-search-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(74,155,127,.12);}
+.dispensa-clear-btn{position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:1em;color:var(--text-light);padding:4px;transition:color .2s;}
+.dispensa-clear-btn:hover{color:var(--red);}
+.dispensa-no-results{text-align:center;padding:28px 16px;color:var(--text-light);font-size:.9em;}
+
+/* ═══════════════════════════════════
+   RICETTE — FILTRI CATALOGO
+═══════════════════════════════════ */
+.ricette-filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.ricette-filter-bar .dispensa-search-wrap{flex:1;min-width:200px;margin-bottom:0;}
+.ricette-meal-btns{display:flex;gap:5px;flex-shrink:0;}
+.ricette-filter-btn{padding:8px 13px;background:var(--bg-light);border:2px solid var(--border);border-radius:10px;cursor:pointer;font-size:.88em;font-weight:600;color:var(--text-dark);transition:all .3s;font-family:'Poppins',sans-serif;}
+.ricette-filter-btn.active{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border-color:var(--primary);}
+.ricette-filter-btn:active{transform:scale(.93);}
+
+/* RICETTE — CARD CATALOGO */
+.ricette-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:13px;margin-bottom:10px;}
+.ricetta-card{background:var(--bg-light);border:2px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .3s;}
+.ricetta-card:hover{border-color:var(--primary);transform:translateY(-2px);box-shadow:0 6px 20px var(--shadow);}
+.ricetta-card:active{transform:scale(.98);}
+.ricetta-card.custom-card{border-color:var(--accent);}
+.ricetta-card-head{padding:14px 16px 10px;display:flex;align-items:flex-start;gap:10px;}
+.ricetta-card-icon{font-size:2em;flex-shrink:0;}
+.ricetta-card-info{flex:1;min-width:0;}
+.ricetta-card-name{font-weight:700;color:var(--text-dark);font-size:.93em;margin-bottom:5px;line-height:1.3;}
+.ricetta-card-badges{display:flex;gap:5px;flex-wrap:wrap;}
+.rcb{font-size:.7em;padding:3px 8px;border-radius:8px;font-weight:600;}
+.rcb-pasto{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;}
+.rcb-custom{background:linear-gradient(135deg,var(--accent),#f4c261);color:#fff;}
+.rcb-avail{background:var(--green-bg);color:var(--green);}
+.rcb-partial{background:var(--orange-bg);color:var(--orange);}
+.rcb-missing{background:var(--red-bg);color:var(--red);}
+.ricetta-card-ings{padding:0 16px 14px;font-size:.8em;color:var(--text-light);line-height:1.5;}
+.ricetta-card-footer{padding:10px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.ricetta-card-footer-actions{display:flex;gap:5px;}
+.ricette-empty{text-align:center;padding:32px 18px;color:var(--text-light);}
+
+/* RICETTE — MODAL FORM */
+.ricetta-modal{max-width:660px;max-height:92vh;display:flex;flex-direction:column;padding:0;}
+.ricetta-modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:2px solid var(--border);}
+.ricetta-modal-header h3{color:var(--primary);font-size:1.25em;margin:0;}
+.ricetta-modal-close{background:var(--bg-light);border:2px solid var(--border);border-radius:8px;cursor:pointer;font-size:.9em;padding:6px 10px;color:var(--text-dark);transition:all .2s;font-family:'Poppins',sans-serif;}
+.ricetta-modal-close:hover{background:var(--red);color:#fff;border-color:var(--red);}
+.ricetta-modal-body{flex:1;overflow-y:auto;padding:18px 22px;}
+.ricetta-modal-footer{padding:14px 22px;border-top:2px solid var(--border);display:flex;gap:9px;justify-content:flex-end;}
+
+/* RICETTA FORM — SECTIONS */
+.rf-section{margin-bottom:20px;padding:15px;background:var(--bg-light);border-radius:12px;border:2px solid var(--border);}
+.rf-section-title{font-weight:700;color:var(--primary);font-size:.9em;margin-bottom:12px;}
+.rf-row{display:flex;gap:11px;flex-wrap:wrap;}
+.rf-row .select-group{flex:1;min-width:140px;}
+.rf-input{width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:9px;font-size:.9em;font-family:'Poppins',sans-serif;background:var(--bg-white);color:var(--text-dark);transition:border-color .2s;}
+.rf-input:focus{outline:none;border-color:var(--primary);}
+.rf-textarea{width:100%;min-height:120px;padding:11px 13px;border:2px solid var(--border);border-radius:9px;font-size:.88em;font-family:'Poppins',sans-serif;background:var(--bg-white);color:var(--text-dark);resize:vertical;line-height:1.6;transition:border-color .2s;}
+.rf-textarea:focus{outline:none;border-color:var(--primary);}
+
+/* RICETTA FORM — INGREDIENTI */
+.rf-ing-row{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap;}
+.rf-ing-name{flex:2;min-width:120px;}
+.rf-ing-qty{width:70px;flex-shrink:0;}
+.rf-ing-unit{width:70px;flex-shrink:0;}
+.rf-ing-del{background:none;border:none;cursor:pointer;font-size:1.1em;color:var(--red);padding:4px;transition:transform .2s;flex-shrink:0;}
+.rf-ing-del:hover{transform:scale(1.2);}
+
+/* RICETTA FORM — LIMITI */
+.rf-limits-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;}
+.rf-limit-check{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg-white);border:2px solid var(--border);border-radius:9px;cursor:pointer;transition:all .2s;}
+.rf-limit-check:hover{border-color:var(--primary);}
+.rf-limit-check input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);cursor:pointer;flex-shrink:0;}
+.rf-limit-check label{font-size:.82em;font-weight:500;color:var(--text-dark);cursor:pointer;}
+.rf-limit-check.checked{border-color:var(--primary);background:var(--green-bg);}
+
+/* RICETTE CUSTOM — LISTA */
+.custom-ricetta-item{background:var(--bg-light);border:2px solid var(--accent);border-radius:14px;padding:15px;margin-bottom:11px;transition:all .3s;}
+.custom-ricetta-item:hover{box-shadow:0 4px 15px var(--shadow);}
+.custom-ricetta-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:9px;}
+.custom-ricetta-name{font-weight:700;color:var(--text-dark);font-size:1em;}
+.custom-ricetta-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;}
+.custom-ricetta-actions{display:flex;gap:6px;flex-shrink:0;}
+.custom-ricetta-ings{font-size:.82em;color:var(--text-light);margin-bottom:8px;line-height:1.6;}
+.custom-ricetta-prep{font-size:.82em;color:var(--text-dark);background:var(--bg-white);border-radius:8px;padding:9px 11px;line-height:1.6;white-space:pre-wrap;}
+.custom-ricette-empty{text-align:center;padding:34px 18px;color:var(--text-light);}
+.custom-ricette-empty h3{margin-bottom:7px;font-size:1em;}
