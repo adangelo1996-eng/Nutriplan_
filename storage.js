@@ -28,7 +28,7 @@ function loadData(){
     savedFridges=data.savedFridges||{};
     appHistory=data.history||{};
     const cutoff=new Date();
-    cutoff.setDate(cutoff.getDate()-30);
+    cutoff.setFullYear(cutoff.getFullYear()-1);
     Object.keys(appHistory).forEach(dk=>{
         if(new Date(dk)<cutoff) delete appHistory[dk];
     });
