@@ -1,0 +1,272 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+:root{
+    --primary:#4a9b7f;
+    --secondary:#7fc29b;
+    --accent:#f4a261;
+    --bg-light:#f8fdf9;
+    --bg-white:#fff;
+    --text-dark:#2d4a3e;
+    --text-light:#6b8778;
+    --shadow:rgba(74,155,127,.12);
+    --border:#d4e9de;
+}
+
+body{
+    font-family:'Poppins',sans-serif;
+    background:linear-gradient(135deg,#e8f5ed,#d4e9de);
+    color:var(--text-dark);
+    min-height:100vh;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+}
+
+/* INSTALL BANNER */
+.install-banner{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;padding:14px 18px;display:none;align-items:center;justify-content:space-between;z-index:1001;box-shadow:0 -4px 15px rgba(0,0,0,.15)}
+.install-banner.show{display:flex}
+.install-content h4{font-size:.95em;margin-bottom:3px}
+.install-content p{font-size:.8em;opacity:.9}
+.install-actions{display:flex;gap:8px}
+.btn-install{background:#fff;color:var(--primary);border:none;padding:9px 18px;border-radius:8px;font-weight:600;cursor:pointer;font-size:.85em}
+.btn-dismiss{background:transparent;color:#fff;border:2px solid #fff;padding:9px 18px;border-radius:8px;font-weight:600;cursor:pointer;font-size:.85em}
+
+/* OFFLINE */
+.offline-indicator{position:fixed;top:65px;left:50%;transform:translateX(-50%);background:#f44336;color:#fff;padding:8px 18px;border-radius:20px;font-size:.85em;font-weight:600;display:none;z-index:1002}
+.offline-indicator.show{display:block}
+
+/* LANDING */
+.landing{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;position:relative;overflow:hidden}
+.landing::before{content:'';position:absolute;top:-50%;right:-20%;width:600px;height:600px;background:radial-gradient(circle,rgba(127,194,155,.2),transparent 70%);border-radius:50%;animation:floatA 20s ease-in-out infinite}
+.landing::after{content:'';position:absolute;bottom:-30%;left:-10%;width:500px;height:500px;background:radial-gradient(circle,rgba(74,155,127,.15),transparent 70%);border-radius:50%;animation:floatA 15s ease-in-out infinite reverse}
+@keyframes floatA{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-20px) rotate(5deg)}}
+.landing-content{text-align:center;z-index:10;max-width:600px}
+.landing-icon{font-size:80px;margin-bottom:20px;animation:bounce 2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.landing h1{font-size:3.5em;font-weight:700;color:var(--primary);margin-bottom:15px;letter-spacing:-1px}
+.landing p{font-size:1.2em;color:var(--text-light);margin-bottom:40px;font-weight:300}
+.btn-enter{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border:none;padding:18px 50px;font-size:1.1em;font-weight:600;border-radius:50px;cursor:pointer;box-shadow:0 10px 30px var(--shadow);transition:all .3s;font-family:'Poppins',sans-serif}
+.btn-enter:hover{transform:translateY(-3px);box-shadow:0 15px 40px var(--shadow)}
+.btn-enter:active{transform:scale(.95)}
+
+/* APP */
+.app{display:none;min-height:100vh;padding-bottom:90px}
+.app.active{display:block}
+
+/* HEADER */
+header{background:var(--bg-white);padding:14px 18px;box-shadow:0 2px 15px var(--shadow);position:sticky;top:0;z-index:100}
+.header-content{max-width:1400px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+.logo{display:flex;align-items:center;gap:10px;font-size:1.3em;font-weight:700;color:var(--primary)}
+.logo-icon{font-size:1.4em}
+.nav-tabs{display:flex;gap:6px;overflow-x:auto}
+.nav-tabs::-webkit-scrollbar{display:none}
+.nav-tab{padding:8px 14px;background:transparent;border:2px solid transparent;border-radius:20px;cursor:pointer;font-size:.82em;font-weight:500;color:var(--text-light);transition:all .3s;white-space:nowrap;font-family:'Poppins',sans-serif}
+.nav-tab:active{transform:scale(.95)}
+.nav-tab.active{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border-color:var(--primary)}
+
+/* PAGES */
+.pages{max-width:1400px;margin:0 auto;padding:18px 14px}
+.page{display:none}
+.page.active{display:block;animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* CARD */
+.card{background:var(--bg-white);border-radius:18px;padding:22px;box-shadow:0 4px 20px var(--shadow);margin-bottom:18px}
+.card-header{display:flex;align-items:center;gap:10px;margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid var(--border)}
+.card-header h2{font-size:1.4em;font-weight:600;color:var(--primary)}
+.card-icon{font-size:1.7em}
+
+/* BUTTONS */
+.btn{padding:11px 20px;border:none;border-radius:12px;cursor:pointer;font-weight:600;font-size:.9em;transition:all .3s;font-family:'Poppins',sans-serif}
+.btn:active{transform:scale(.95)}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 18px var(--shadow)}
+.btn-primary:disabled{background:#ccc;cursor:not-allowed;transform:none}
+.btn-secondary{background:var(--bg-light);color:var(--primary);border:2px solid var(--border)}
+.btn-secondary:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn-warning{background:linear-gradient(135deg,#f44336,#e57373);color:#fff}
+.btn-warning:hover{transform:translateY(-2px)}
+.btn-success{background:linear-gradient(135deg,#4caf50,#66bb6a);color:#fff}
+.btn-success:hover{transform:translateY(-2px)}
+.btn-small{padding:7px 13px;font-size:.78em}
+.btn-reset{background:linear-gradient(135deg,#f44336,#e57373);color:#fff;padding:11px 22px;border:none;border-radius:11px;font-weight:600;cursor:pointer;font-size:.9em;margin-top:14px;transition:all .3s;font-family:'Poppins',sans-serif}
+.btn-reset:hover{transform:translateY(-2px)}
+.btn-reset:active{transform:scale(.95)}
+
+/* PAGE TABS */
+.page-tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.page-tab{padding:9px 16px;background:var(--bg-light);border:2px solid var(--border);border-radius:12px;cursor:pointer;font-size:.84em;font-weight:600;color:var(--text-dark);transition:all .3s;font-family:'Poppins',sans-serif}
+.page-tab.active{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border-color:var(--primary)}
+.page-tab:active{transform:scale(.95)}
+.page-tab-content{display:none}
+.page-tab-content.active{display:block;animation:fadeIn .3s ease}
+
+/* SELECTORS */
+.meal-selector-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+.select-group{display:flex;flex-direction:column;gap:7px}
+.select-group label{font-weight:600;color:var(--text-dark);font-size:.88em}
+.select-group select{padding:11px 14px;border:2px solid var(--border);border-radius:11px;font-size:.95em;color:var(--text-dark);background:var(--bg-light);cursor:pointer;transition:all .3s;font-family:'Poppins',sans-serif}
+.select-group select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(74,155,127,.1)}
+
+/* MEAL PLAN */
+.meal-section{margin-bottom:20px}
+.meal-section-title{font-size:.95em;font-weight:700;color:var(--primary);margin-bottom:10px;padding:8px 12px;background:linear-gradient(135deg,var(--bg-light),#e8f5ed);border-radius:10px;border-left:3px solid var(--primary)}
+.meal-items-grid{display:flex;flex-direction:column;gap:6px}
+
+/* MEAL ITEM BUTTON */
+.meal-item-btn{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-light);border:2px solid var(--border);border-radius:11px;cursor:pointer;transition:all .3s;text-align:left;font-family:'Poppins',sans-serif;width:100%}
+.meal-item-btn:hover{border-color:var(--primary);background:#fff;transform:translateX(3px)}
+.meal-item-btn:active{transform:scale(.97)}
+.meal-item-btn.has-alt{border-color:var(--secondary)}
+.meal-item-btn.substituted{border-color:var(--accent);background:linear-gradient(135deg,#fff8f0,#fff3e6)}
+.meal-item-btn.used{border-color:#4caf50;background:linear-gradient(135deg,#f1f8f4,#e8f5e9);opacity:.75}
+.meal-item-name{font-weight:500;color:var(--text-dark);font-size:.88em;flex:1}
+.meal-item-name.substituted-name{text-decoration:line-through;color:var(--text-light)}
+.meal-item-name.used-name{text-decoration:line-through;color:#4caf50}
+
+/* BADGES */
+.meal-item-badge{font-size:.72em;padding:3px 9px;border-radius:10px;font-weight:600;white-space:nowrap;flex-shrink:0;margin-left:8px}
+.badge-alt{background:linear-gradient(135deg,var(--secondary),var(--primary));color:#fff}
+.badge-fixed{background:var(--bg-light);color:var(--text-light);border:1px solid var(--border)}
+.badge-sub{background:linear-gradient(135deg,#ff9800,#ffb74d);color:#fff}
+.badge-used{background:linear-gradient(135deg,#4caf50,#66bb6a);color:#fff}
+
+/* SUB DRAWER */
+.sub-drawer{display:none;margin-top:4px;margin-bottom:4px;background:#fff;border:2px solid var(--secondary);border-radius:12px;padding:12px;animation:fadeIn .2s ease}
+.sub-drawer.open{display:block}
+.sub-drawer-title{font-size:.82em;font-weight:700;color:var(--primary);margin-bottom:10px}
+.sub-options{display:flex;flex-direction:column;gap:5px}
+.sub-option-btn{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg-light);border:2px solid var(--border);border-radius:9px;cursor:pointer;transition:all .3s;text-align:left;font-family:'Poppins',sans-serif;width:100%}
+.sub-option-btn:hover{border-color:var(--primary);background:#fff}
+.sub-option-btn:active{transform:scale(.97)}
+.sub-option-btn.active-sub{border-color:var(--accent);background:linear-gradient(135deg,#fff8f0,#fff3e6)}
+.sub-option-name{font-size:.85em;font-weight:500;color:var(--text-dark)}
+.sub-option-qty{font-size:.78em;color:var(--text-light)}
+.sub-option-avail{font-size:.72em;padding:2px 7px;border-radius:8px;font-weight:600}
+.sub-avail-ok{background:#e8f5e9;color:#4caf50}
+.sub-avail-warn{background:#fff8e1;color:#ff9800}
+.sub-avail-ko{background:#ffebee;color:#f44336}
+.sub-drawer-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.sub-restore-btn{font-size:.75em;color:var(--text-light);background:none;border:none;cursor:pointer;padding:3px 6px;font-family:'Poppins',sans-serif;text-decoration:underline}
+
+/* USED TOGGLE */
+.used-toggle-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;border:none;border-radius:9px;cursor:pointer;font-size:.8em;font-weight:600;font-family:'Poppins',sans-serif;transition:all .3s}
+.used-toggle-btn.mark{background:linear-gradient(135deg,#4caf50,#66bb6a);color:#fff}
+.used-toggle-btn.unmark{background:linear-gradient(135deg,#f44336,#e57373);color:#fff}
+.used-toggle-btn:active{transform:scale(.95)}
+
+/* STEP INDICATOR */
+.step-indicator{display:flex;align-items:center;gap:10px;margin-bottom:18px;padding:14px 18px;background:linear-gradient(135deg,var(--bg-light),#e8f5ed);border-radius:14px;border:2px solid var(--border)}
+.step-badge{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;font-weight:700;font-size:.85em;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-text{font-size:.88em;color:var(--text-dark)}
+
+/* PIANO SUMMARY */
+.piano-summary{margin-top:18px;padding:16px;background:linear-gradient(135deg,#f8fdf9,#e8f5ed);border-radius:12px;border:2px solid var(--border)}
+.piano-summary h4{font-size:.95em;color:var(--primary);margin-bottom:12px;font-weight:700}
+.summary-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:.86em;color:var(--text-dark);border-bottom:1px solid var(--border)}
+.summary-item:last-child{border-bottom:none}
+.summary-orig{text-decoration:line-through;color:var(--text-light);margin-right:4px}
+.summary-subs{color:var(--accent);font-weight:600}
+.summary-used{color:#4caf50;font-weight:600}
+
+/* FRIDGE SUGGESTIONS */
+.fridge-suggestion-card{background:linear-gradient(135deg,var(--bg-light),#e8f5ed);border:2px solid var(--border);border-radius:14px;padding:16px;margin-bottom:11px;cursor:pointer;transition:all .3s}
+.fridge-suggestion-card:hover{border-color:var(--primary);box-shadow:0 4px 15px var(--shadow);transform:translateY(-2px)}
+.fridge-suggestion-card:active{transform:scale(.98)}
+.fridge-suggestion-title{font-weight:700;color:var(--primary);font-size:1em;margin-bottom:6px}
+.fridge-suggestion-meta{font-size:.8em;color:var(--text-light)}
+.fridge-suggestion-score{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.75em;font-weight:600;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;margin-left:8px}
+
+/* DAY INGREDIENTS */
+.day-ingredients-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:9px;margin-bottom:14px}
+.day-ing-btn{padding:9px 11px;background:var(--bg-light);border:2px solid var(--border);border-radius:11px;cursor:pointer;font-size:.82em;font-weight:500;color:var(--text-dark);transition:all .3s;text-align:center;font-family:'Poppins',sans-serif}
+.day-ing-btn.selected{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border-color:var(--primary)}
+.day-ing-btn:active{transform:scale(.95)}
+
+/* DISPENSA */
+.category-section{margin-bottom:24px}
+.category-title{font-size:1.05em;font-weight:700;color:var(--primary);margin-bottom:12px;padding:10px 14px;background:linear-gradient(135deg,var(--bg-light),#e8f5ed);border-radius:11px;border-left:4px solid var(--primary);display:flex;align-items:center;gap:8px}
+.pantry-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.pantry-item{background:var(--bg-light);border:2px solid var(--border);border-radius:11px;padding:11px 13px;display:flex;align-items:center;gap:9px;transition:all .3s}
+.pantry-item:hover{border-color:var(--primary);background:#fff}
+.pantry-item.checked{border-color:var(--primary);background:#f0f9f4}
+.pantry-checkbox{width:19px;height:19px;accent-color:var(--primary);cursor:pointer;flex-shrink:0}
+.pantry-details{flex:1;display:flex;flex-direction:column;gap:7px;min-width:0}
+.pantry-name{font-weight:600;color:var(--text-dark);font-size:.88em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pantry-quantity-row{display:flex;gap:5px;align-items:center}
+.qty-btn{width:28px;height:28px;border:none;border-radius:7px;font-size:1.1em;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.qty-btn.plus{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff}
+.qty-btn.minus{background:linear-gradient(135deg,#f44336,#e57373);color:#fff}
+.qty-btn:active{transform:scale(.88)}
+.quantity-input{width:58px;padding:5px 7px;border:1px solid var(--border);border-radius:7px;font-size:.84em;text-align:center;font-family:'Poppins',sans-serif}
+.unit-select{padding:5px 7px;border:1px solid var(--border);border-radius:7px;font-size:.78em;background:#fff;cursor:pointer;font-family:'Poppins',sans-serif}
+
+/* FRIGO */
+.fridge-controls{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.fridge-section{margin-bottom:24px}
+.fridge-section h3{color:var(--primary);font-size:1.1em;margin-bottom:12px;font-weight:600}
+.fridge-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:11px}
+.fridge-item{background:#fff;border:2px solid var(--border);border-radius:11px;padding:12px;text-align:center;transition:all .3s}
+.fridge-item:hover{transform:translateY(-2px);box-shadow:0 5px 15px var(--shadow);border-color:var(--primary)}
+.fridge-item-icon{font-size:2em;margin-bottom:7px}
+.fridge-item-name{font-weight:600;color:var(--text-dark);margin-bottom:6px;font-size:.82em}
+.fridge-item-quantity-row{display:flex;align-items:center;justify-content:center;gap:5px}
+.fridge-qty-val{font-size:1em;color:var(--primary);font-weight:700}
+.fridge-qty-unit{font-size:.78em;color:var(--text-light)}
+.fridge-qty-btns{display:flex;gap:3px;margin-top:6px;justify-content:center}
+.fridge-empty{text-align:center;padding:35px 18px;color:var(--text-light)}
+
+/* SAVED FRIDGES */
+.saved-fridge-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:11px}
+.saved-fridge-item{background:var(--bg-light);border:2px solid var(--border);border-radius:11px;padding:14px;display:flex;flex-direction:column;gap:9px;transition:all .3s}
+.saved-fridge-item:hover{border-color:var(--primary);box-shadow:0 4px 14px var(--shadow)}
+.saved-fridge-name{font-weight:600;color:var(--text-dark);font-size:.95em}
+.saved-fridge-date{font-size:.78em;color:var(--text-light)}
+.saved-fridge-actions{display:flex;gap:6px;margin-top:5px}
+
+/* MODAL */
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px}
+.modal.active{display:flex}
+.modal-content{background:#fff;padding:24px;border-radius:18px;max-width:440px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.modal-content.wide{max-width:600px;max-height:88vh;overflow-y:auto}
+.modal-content h3{color:var(--primary);margin-bottom:14px;font-size:1.3em}
+.modal-input{width:100%;padding:11px;border:2px solid var(--border);border-radius:9px;font-size:.95em;font-family:'Poppins',sans-serif;margin-bottom:14px}
+.modal-input:focus{outline:none;border-color:var(--primary)}
+.modal-actions{display:flex;gap:9px}
+
+/* LIMITI */
+.limits-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:14px}
+.limit-card{background:#fff;border:2px solid var(--border);border-radius:15px;padding:17px;text-align:center}
+.limit-card-icon{font-size:2em;margin-bottom:7px}
+.limit-card-name{font-weight:600;color:var(--text-dark);margin-bottom:11px;text-transform:capitalize;font-size:.88em}
+.limit-progress-bar{width:100%;height:7px;background:var(--bg-light);border-radius:10px;overflow:hidden;margin-bottom:7px}
+.limit-progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:10px;transition:width .3s}
+.limit-progress-fill.warning{background:linear-gradient(90deg,#ff9800,#ffb74d)}
+.limit-progress-fill.exceeded{background:linear-gradient(90deg,#f44336,#e57373)}
+.limit-text{font-size:1.15em;font-weight:700;color:var(--primary)}
+.limit-text.warning{color:#ff9800}
+.limit-text.exceeded{color:#f44336}
+
+/* RECIPE MODAL */
+.ingredient-item{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;margin-bottom:7px;background:var(--bg-light);border-radius:9px;border:2px solid transparent;transition:all .3s}
+.ingredient-item.ing-available{border-color:#4caf50;background:#f1f8f4}
+.ingredient-item.ing-partial{border-color:#ff9800;background:#fff8f0}
+.ingredient-item.ing-missing{border-color:#f44336;background:#fff5f5}
+.ingredient-left{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
+.ingredient-checkbox{width:18px;height:18px;accent-color:var(--primary);flex-shrink:0}
+.ingredient-name{font-weight:500;color:var(--text-dark);font-size:.88em;overflow:hidden;text-overflow:ellipsis}
+.ingredient-qty-label{font-size:.78em;color:var(--text-light);font-weight:500;white-space:nowrap;flex-shrink:0;margin-left:7px}
+.ingredient-qty-label.ok{color:#4caf50}
+.ingredient-qty-label.warn{color:#ff9800}
+.ingredient-qty-label.ko{color:#f44336}
+
+/* RESPONSIVE */
+@media(max-width:640px){
+    .landing h1{font-size:2.2em}
+    .landing-icon{font-size:60px}
+    .pantry-grid,.fridge-items,.limits-grid,.saved-fridge-list,.day-ingredients-grid{grid-template-columns:1fr}
+    .fridge-controls,.modal-actions{flex-direction:column}
+    .header-content{flex-direction:column;gap:10px}
+    .meal-item-badge{display:none}
+}
