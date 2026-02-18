@@ -1,18 +1,21 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#4a9b7f">
+<meta name="theme-color" content="#4a9b7f" id="metaThemeColor">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="NutriPlan">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" id="appleTouchIcon" href="">
 <link rel="manifest" href="#" id="manifest-placeholder">
 <link rel="stylesheet" href="style.css">
 <title>NutriPlan</title>
 </head>
 <body>
 
+<!-- BANNER ANDROID -->
 <div class="install-banner" id="installBanner">
     <div class="install-content">
         <h4>📱 Installa NutriPlan</h4>
@@ -24,32 +27,55 @@
     </div>
 </div>
 
+<!-- BANNER IOS -->
+<div class="ios-banner" id="iosBanner">
+    <div class="ios-banner-inner">
+        <div class="ios-banner-icon">🌿</div>
+        <div class="ios-banner-text">
+            <strong>Installa NutriPlan</strong>
+            <span>Tocca <b>⎙ Condividi</b> → <b>"Aggiungi a Home"</b></span>
+        </div>
+        <button class="ios-banner-close" onclick="closeIosBanner()">✕</button>
+    </div>
+    <div class="ios-banner-arrow"></div>
+</div>
+
 <div class="offline-indicator" id="offlineIndicator">📡 Modalità offline</div>
 
+<!-- LANDING -->
 <div class="landing" id="landingPage">
     <div class="landing-content">
-        <div class="landing-icon">🌿</div>
+        <div class="landing-logo" id="landingLogo"></div>
         <h1>NutriPlan</h1>
         <p>Il tuo piano alimentare naturale personalizzato.<br>Ricette, dispensa, frigo e limiti settimanali.</p>
         <button class="btn-enter" onclick="enterApp()">Entra nell'App ✨</button>
     </div>
 </div>
 
+<!-- APP -->
 <div class="app" id="mainApp">
     <header>
-        <div class="header-content">
-            <div class="logo"><span class="logo-icon">🌿</span><span>NutriPlan</span></div>
-            <nav class="nav-tabs">
-                <button class="nav-tab active" onclick="showPage('piano',this)">📅 Piano</button>
-                <button class="nav-tab" onclick="showPage('frigo',this)">❄️ Frigo</button>
-                <button class="nav-tab" onclick="showPage('dispensa',this)">🏡 Dispensa</button>
-                <button class="nav-tab" onclick="showPage('limiti',this)">📊 Limiti</button>
-                <button class="nav-tab" onclick="showPage('storico',this)">📖 Storico</button>
-            </nav>
+        <div class="header-top">
+            <div class="logo">
+                <canvas id="headerIcon" width="32" height="32" style="border-radius:8px;"></canvas>
+                <span>NutriPlan</span>
+            </div>
+            <div class="header-actions">
+                <button class="header-btn" id="darkToggle" onclick="toggleDarkMode()" title="Modalità scura">🌙</button>
+                <button class="header-btn" onclick="generatePDF()" title="Esporta PDF">📄</button>
+            </div>
         </div>
+        <nav class="nav-tabs">
+            <button class="nav-tab active" onclick="showPage('piano',this)">📅 Piano</button>
+            <button class="nav-tab" onclick="showPage('frigo',this)">❄️ Frigo</button>
+            <button class="nav-tab" onclick="showPage('dispensa',this)">🏡 Dispensa</button>
+            <button class="nav-tab" onclick="showPage('spesa',this)">🛒 Spesa</button>
+            <button class="nav-tab" onclick="showPage('limiti',this)">📊 Limiti</button>
+            <button class="nav-tab" onclick="showPage('statistiche',this)">📈 Stats</button>
+            <button class="nav-tab" onclick="showPage('storico',this)">📖 Storico</button>
+        </nav>
     </header>
 
-    <!-- BARRA CALENDARIO -->
     <div class="calendar-bar-wrapper">
         <div class="calendar-bar" id="calendarBar"></div>
     </div>
@@ -60,7 +86,6 @@
         <div class="page active" id="pianoPage">
             <div class="card">
                 <div class="card-header"><span class="card-icon">📅</span><h2>Piano Alimentare</h2></div>
-
                 <div class="date-turno-row">
                     <div class="current-date-label" id="currentDateLabel"></div>
                     <div class="select-group">
@@ -83,17 +108,14 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="page-tabs">
                     <button class="page-tab active" onclick="showPianoTab('turno',this)">🗓️ Per Turno</button>
                     <button class="page-tab" onclick="showPianoTab('frigo',this)">❄️ Dal Frigo</button>
                     <button class="page-tab" onclick="showPianoTab('ingredienti',this)">🥦 Per Ingredienti</button>
                 </div>
-
                 <div class="page-tab-content active" id="pianoTabTurno">
                     <div id="mealPlanContainer"></div>
                 </div>
-
                 <div class="page-tab-content" id="pianoTabFrigo">
                     <div class="step-indicator">
                         <div class="step-badge">💡</div>
@@ -112,11 +134,10 @@
                     </div>
                     <div id="fridgeSuggestionsList"></div>
                 </div>
-
                 <div class="page-tab-content" id="pianoTabIngredienti">
                     <div class="step-indicator">
                         <div class="step-badge">1</div>
-                        <div class="step-text">Seleziona uno o più ingredienti che vuoi usare oggi, poi clicca "Cerca Ricette".</div>
+                        <div class="step-text">Seleziona ingredienti da usare oggi, poi clicca "Cerca Ricette".</div>
                     </div>
                     <div class="day-ingredients-grid" id="dayIngGrid"></div>
                     <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
@@ -125,11 +146,6 @@
                     </div>
                     <div id="ingredientSuggestionsList"></div>
                 </div>
-            </div>
-
-            <div class="card" id="recipeCard" style="display:none;">
-                <div class="card-header"><span class="card-icon">🥗</span><h2>Ricetta</h2></div>
-                <div id="recipeContainer"></div>
             </div>
         </div>
 
@@ -157,12 +173,44 @@
             </div>
         </div>
 
+        <!-- SPESA -->
+        <div class="page" id="spesaPage">
+            <div class="card">
+                <div class="card-header"><span class="card-icon">🛒</span><h2>Lista della Spesa</h2></div>
+                <div class="spesa-controls">
+                    <div class="select-group" style="max-width:220px;">
+                        <label>Turno da pianificare</label>
+                        <select id="spesaTurnoSelect" onchange="renderSpesa()">
+                            <option value="mattina">Mattina</option>
+                            <option value="pomeriggio">Pomeriggio</option>
+                            <option value="notte1">Notte (Prima)</option>
+                            <option value="notte2">Notte (Seconda)</option>
+                        </select>
+                    </div>
+                    <div class="spesa-btn-row">
+                        <button class="btn btn-primary" onclick="renderSpesa()">🔄 Aggiorna</button>
+                        <button class="btn btn-secondary" onclick="clearSpesaChecked()">✕ Deseleziona</button>
+                        <button class="btn btn-success" onclick="openSpesaItemModal()">➕ Aggiungi</button>
+                    </div>
+                </div>
+                <div id="spesaContent"></div>
+            </div>
+        </div>
+
         <!-- LIMITI -->
         <div class="page" id="limitiPage">
             <div class="card">
                 <div class="card-header"><span class="card-icon">📊</span><h2>Limiti Settimanali</h2></div>
                 <div class="limits-grid" id="limitsGrid"></div>
                 <center><button class="btn-reset" onclick="resetWeek()">🔄 Reset Settimana</button></center>
+            </div>
+        </div>
+
+        <!-- STATISTICHE -->
+        <div class="page" id="statistichePage">
+            <div class="card">
+                <div class="card-header"><span class="card-icon">📈</span><h2>Statistiche</h2></div>
+                <div id="statisticheContent"></div>
             </div>
         </div>
 
@@ -176,6 +224,9 @@
 
     </div>
 </div>
+
+<!-- PRINT AREA (invisibile, per PDF) -->
+<div id="printArea" class="print-only"></div>
 
 <!-- MODAL SALVA FRIGO -->
 <div class="modal" id="saveFridgeModal">
@@ -201,6 +252,19 @@
     </div>
 </div>
 
+<!-- MODAL AGGIUNGI SPESA -->
+<div class="modal" id="spesaItemModal">
+    <div class="modal-content">
+        <h3>➕ Aggiungi alla Spesa</h3>
+        <input type="text" class="modal-input" id="spesaItemName" placeholder="Ingrediente (es: Spinaci)">
+        <input type="text" class="modal-input" id="spesaItemQty" placeholder="Quantità (es: 300g)">
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeSpesaItemModal()">Annulla</button>
+            <button class="btn btn-primary" onclick="confirmAddSpesaItem()">Aggiungi</button>
+        </div>
+    </div>
+</div>
+
 <script src="data.js"></script>
 <script src="storage.js"></script>
 <script src="app.js"></script>
@@ -208,5 +272,8 @@
 <script src="dispensa.js"></script>
 <script src="ricette.js"></script>
 <script src="storico.js"></script>
+<script src="spesa.js"></script>
+<script src="statistiche.js"></script>
+<script src="pdf.js"></script>
 </body>
 </html>
