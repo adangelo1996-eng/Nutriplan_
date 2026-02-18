@@ -15,10 +15,9 @@
 </head>
 <body>
 
-<!-- autocomplete ingredienti -->
 <datalist id="ingredientiSuggeriti"></datalist>
 
-<!-- BANNER ANDROID -->
+<!-- ═══════════ BANNER ANDROID ═══════════ -->
 <div class="install-banner" id="installBanner">
     <div class="install-content">
         <h4>📱 Installa NutriPlan</h4>
@@ -30,7 +29,7 @@
     </div>
 </div>
 
-<!-- BANNER IOS -->
+<!-- ═══════════ BANNER IOS ═══════════ -->
 <div class="ios-banner" id="iosBanner">
     <div class="ios-banner-inner">
         <div class="ios-banner-icon">🌿</div>
@@ -44,7 +43,7 @@
 
 <div class="offline-indicator" id="offlineIndicator">📡 Modalità offline</div>
 
-<!-- LANDING -->
+<!-- ═══════════ LANDING ═══════════ -->
 <div class="landing" id="landingPage">
     <div class="landing-content">
         <div class="landing-logo" id="landingLogo"></div>
@@ -54,8 +53,9 @@
     </div>
 </div>
 
-<!-- APP -->
+<!-- ═══════════ APP ═══════════ -->
 <div class="app" id="mainApp">
+
     <header>
         <div class="header-top">
             <div class="logo">
@@ -85,10 +85,13 @@
 
     <div class="pages">
 
-        <!-- PIANO -->
+        <!-- ═══════════ PIANO ═══════════ -->
         <div class="page active" id="pianoPage">
             <div class="card">
-                <div class="card-header"><span class="card-icon">📅</span><h2>Piano Alimentare</h2></div>
+                <div class="card-header">
+                    <span class="card-icon">📅</span>
+                    <h2>Piano Alimentare</h2>
+                </div>
                 <div class="date-turno-row">
                     <div class="current-date-label" id="currentDateLabel"></div>
                     <div class="select-group">
@@ -111,14 +114,17 @@
                         </select>
                     </div>
                 </div>
+
                 <div class="page-tabs">
                     <button class="page-tab active" onclick="showPianoTab('turno',this)">🗓️ Per Turno</button>
                     <button class="page-tab" onclick="showPianoTab('frigo',this)">❄️ Dal Frigo</button>
                     <button class="page-tab" onclick="showPianoTab('ingredienti',this)">🥦 Per Ingredienti</button>
                 </div>
+
                 <div class="page-tab-content active" id="pianoTabTurno">
                     <div id="mealPlanContainer"></div>
                 </div>
+
                 <div class="page-tab-content" id="pianoTabFrigo">
                     <div class="step-indicator">
                         <div class="step-badge">💡</div>
@@ -137,6 +143,7 @@
                     </div>
                     <div id="fridgeSuggestionsList"></div>
                 </div>
+
                 <div class="page-tab-content" id="pianoTabIngredienti">
                     <div class="step-indicator">
                         <div class="step-badge">1</div>
@@ -152,10 +159,13 @@
             </div>
         </div>
 
-        <!-- FRIGO -->
+        <!-- ═══════════ FRIGO ═══════════ -->
         <div class="page" id="frigoPage">
             <div class="card">
-                <div class="card-header"><span class="card-icon">❄️</span><h2>Frigorifero</h2></div>
+                <div class="card-header">
+                    <span class="card-icon">❄️</span>
+                    <h2>Frigorifero</h2>
+                </div>
                 <div class="fridge-controls">
                     <button class="btn btn-success" onclick="openSaveFridgeModal()">💾 Salva</button>
                     <button class="btn btn-warning" onclick="clearFridge()">🗑️ Svuota</button>
@@ -163,15 +173,24 @@
                 <div id="fridgeContent"></div>
             </div>
             <div class="card" id="savedFridgesCard" style="display:none;">
-                <div class="card-header"><span class="card-icon">📚</span><h2>Frigoriferi Salvati</h2></div>
+                <div class="card-header">
+                    <span class="card-icon">📚</span>
+                    <h2>Frigoriferi Salvati</h2>
+                </div>
                 <div class="saved-fridge-list" id="savedFridgeList"></div>
             </div>
         </div>
 
-        <!-- DISPENSA -->
+        <!-- ═══════════ DISPENSA ═══════════ -->
         <div class="page" id="dispensaPage">
             <div class="card">
-                <div class="card-header"><span class="card-icon">🏡</span><h2>Dispensa</h2></div>
+                <div class="card-header">
+                    <span class="card-icon">🏡</span>
+                    <h2>Dispensa</h2>
+                    <button class="btn btn-primary btn-small"
+                        onclick="openCustomIngModal()"
+                        style="margin-left:auto;">➕ Ingrediente</button>
+                </div>
                 <div class="dispensa-search-wrap">
                     <input type="text" id="dispensaSearch" class="dispensa-search-input"
                         placeholder="🔍 Cerca ingrediente..."
@@ -183,20 +202,14 @@
             </div>
         </div>
 
-        <!-- SPESA -->
+        <!-- ═══════════ SPESA ═══════════ -->
         <div class="page" id="spesaPage">
             <div class="card">
-                <div class="card-header"><span class="card-icon">🛒</span><h2>Lista della Spesa</h2></div>
+                <div class="card-header">
+                    <span class="card-icon">🛒</span>
+                    <h2>Lista della Spesa</h2>
+                </div>
                 <div class="spesa-controls">
-                    <div class="select-group" style="max-width:220px;">
-                        <label>Turno da pianificare</label>
-                        <select id="spesaTurnoSelect" onchange="renderSpesa()">
-                            <option value="mattina">Mattina</option>
-                            <option value="pomeriggio">Pomeriggio</option>
-                            <option value="notte1">Notte (Prima)</option>
-                            <option value="notte2">Notte (Seconda)</option>
-                        </select>
-                    </div>
                     <div class="spesa-btn-row">
                         <button class="btn btn-primary" onclick="renderSpesa()">🔄 Aggiorna</button>
                         <button class="btn btn-secondary" onclick="clearSpesaChecked()">✕ Deseleziona</button>
@@ -207,10 +220,13 @@
             </div>
         </div>
 
-        <!-- RICETTE -->
+        <!-- ═══════════ RICETTE ═══════════ -->
         <div class="page" id="ricettePage">
             <div class="card">
-                <div class="card-header"><span class="card-icon">🍳</span><h2>Ricette</h2></div>
+                <div class="card-header">
+                    <span class="card-icon">🍳</span>
+                    <h2>Ricette</h2>
+                </div>
                 <div class="page-tabs">
                     <button class="page-tab active" onclick="showRicetteTab('catalogo',this)">📚 Catalogo</button>
                     <button class="page-tab" onclick="showRicetteTab('custom',this)">⭐ Le mie ricette</button>
@@ -219,15 +235,15 @@
                 <!-- CATALOGO -->
                 <div class="page-tab-content active" id="ricetteTabCatalogo">
                     <div class="ricette-filter-bar">
-                        <div class="dispensa-search-wrap">
+                        <div class="dispensa-search-wrap" style="margin-bottom:0;">
                             <input type="text" id="ricetteSearch" class="dispensa-search-input"
-                                placeholder="🔍 Cerca ricetta..."
+                                placeholder="🔍 Cerca ricetta o ingrediente..."
                                 oninput="filterRicette(this.value)">
                             <button class="dispensa-clear-btn" id="ricetteClearBtn"
                                 onclick="clearRicetteSearch()" style="display:none;">✕</button>
                         </div>
                         <div class="ricette-meal-btns">
-                            <button class="ricette-filter-btn active" onclick="setRicetteMealFilter('tutti',this)" title="Tutti">Tutti</button>
+                            <button class="ricette-filter-btn active" onclick="setRicetteMealFilter('tutti',this)">Tutti</button>
                             <button class="ricette-filter-btn" onclick="setRicetteMealFilter('colazione',this)" title="Colazione">☕</button>
                             <button class="ricette-filter-btn" onclick="setRicetteMealFilter('spuntino',this)" title="Spuntino">🍎</button>
                             <button class="ricette-filter-btn" onclick="setRicetteMealFilter('pranzo',this)" title="Pranzo">🍽️</button>
@@ -242,34 +258,47 @@
                 <div class="page-tab-content" id="ricetteTabCustom">
                     <div style="margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                         <button class="btn btn-primary" onclick="openRicettaForm()">➕ Nuova Ricetta</button>
-                        <span style="font-size:.82em;color:var(--text-light);">Le tue ricette vengono aggiunte al catalogo e al suggeritore frigo.</span>
+                        <span style="font-size:.82em;color:var(--text-light);">
+                            Le tue ricette vengono aggiunte al catalogo e al suggeritore frigo.
+                        </span>
                     </div>
                     <div id="ricetteCustomContent"></div>
                 </div>
             </div>
         </div>
 
-        <!-- LIMITI -->
+        <!-- ═══════════ LIMITI ═══════════ -->
         <div class="page" id="limitiPage">
             <div class="card">
-                <div class="card-header"><span class="card-icon">📊</span><h2>Limiti Settimanali</h2></div>
+                <div class="card-header">
+                    <span class="card-icon">📊</span>
+                    <h2>Limiti Settimanali</h2>
+                </div>
                 <div class="limits-grid" id="limitsGrid"></div>
-                <center><button class="btn-reset" onclick="resetWeek()">🔄 Reset Settimana</button></center>
+                <center>
+                    <button class="btn-reset" onclick="resetWeek()">🔄 Reset Settimana</button>
+                </center>
             </div>
         </div>
 
-        <!-- STATISTICHE -->
+        <!-- ═══════════ STATISTICHE ═══════════ -->
         <div class="page" id="statistichePage">
             <div class="card">
-                <div class="card-header"><span class="card-icon">📈</span><h2>Statistiche</h2></div>
+                <div class="card-header">
+                    <span class="card-icon">📈</span>
+                    <h2>Statistiche</h2>
+                </div>
                 <div id="statisticheContent"></div>
             </div>
         </div>
 
-        <!-- STORICO -->
+        <!-- ═══════════ STORICO ═══════════ -->
         <div class="page" id="storicoPage">
             <div class="card">
-                <div class="card-header"><span class="card-icon">📖</span><h2>Storico Giornaliero</h2></div>
+                <div class="card-header">
+                    <span class="card-icon">📖</span>
+                    <h2>Storico Giornaliero</h2>
+                </div>
                 <div id="storicoContent"></div>
             </div>
         </div>
@@ -280,11 +309,12 @@
 <!-- PRINT AREA -->
 <div id="printArea" class="print-only"></div>
 
-<!-- MODAL SALVA FRIGO -->
+<!-- ═══════════ MODAL: SALVA FRIGO ═══════════ -->
 <div class="modal" id="saveFridgeModal">
     <div class="modal-content">
         <h3>💾 Salva Frigorifero</h3>
-        <input type="text" class="modal-input" id="fridgeName" placeholder="Nome (es: Spesa 18 feb)">
+        <input type="text" class="modal-input" id="fridgeName"
+            placeholder="Nome (es: Spesa 18 feb)">
         <div class="modal-actions">
             <button class="btn btn-secondary" onclick="closeSaveFridgeModal()">Annulla</button>
             <button class="btn btn-primary" onclick="saveFridge()">Salva</button>
@@ -292,24 +322,27 @@
     </div>
 </div>
 
-<!-- MODAL RICETTA (visualizzazione) -->
+<!-- ═══════════ MODAL: VISUALIZZA RICETTA ═══════════ -->
 <div class="modal" id="recipeModal">
     <div class="modal-content wide">
         <h3 id="recipeModalTitle">🥗 Ricetta</h3>
         <div id="recipeModalBody"></div>
         <div class="modal-actions" style="margin-top:14px;">
             <button class="btn btn-secondary btn-small" onclick="closeRecipeModal()">Chiudi</button>
-            <button class="btn btn-primary btn-small" id="recipeModalSelectBtn" onclick="selectRecipeFromModal()">✅ Usa questa ricetta</button>
+            <button class="btn btn-primary btn-small" id="recipeModalSelectBtn"
+                onclick="selectRecipeFromModal()">✅ Usa questa ricetta</button>
         </div>
     </div>
 </div>
 
-<!-- MODAL AGGIUNGI SPESA -->
+<!-- ═══════════ MODAL: AGGIUNGI SPESA ═══════════ -->
 <div class="modal" id="spesaItemModal">
     <div class="modal-content">
         <h3>➕ Aggiungi alla Spesa</h3>
-        <input type="text" class="modal-input" id="spesaItemName" placeholder="Ingrediente (es: Spinaci)">
-        <input type="text" class="modal-input" id="spesaItemQty" placeholder="Quantità (es: 300g)">
+        <input type="text" class="modal-input" id="spesaItemName"
+            placeholder="Ingrediente (es: Spinaci)">
+        <input type="text" class="modal-input" id="spesaItemQty"
+            placeholder="Quantità (es: 300g)">
         <div class="modal-actions">
             <button class="btn btn-secondary" onclick="closeSpesaItemModal()">Annulla</button>
             <button class="btn btn-primary" onclick="confirmAddSpesaItem()">Aggiungi</button>
@@ -317,7 +350,48 @@
     </div>
 </div>
 
-<!-- MODAL FORM NUOVA/MODIFICA RICETTA -->
+<!-- ═══════════ MODAL: INGREDIENTE CUSTOM ═══════════ -->
+<div class="modal" id="customIngModal">
+    <div class="modal-content custom-ing-modal">
+        <h3>📦 Nuovo Ingrediente Personalizzato</h3>
+        <div class="select-group">
+            <label>Nome *</label>
+            <input type="text" id="ciName" class="modal-input"
+                placeholder="Es: Tempeh, Kefir, Tofu affumicato...">
+        </div>
+        <div class="select-group">
+            <label>Emoji / Icona</label>
+            <input type="text" id="ciIcon" class="modal-input"
+                placeholder="Es: 🌱" maxlength="4">
+        </div>
+        <div class="select-group">
+            <label>Unità di misura predefinita</label>
+            <select id="ciUnit" class="modal-input">
+                <option value="g">g — grammi</option>
+                <option value="kg">kg — chilogrammi</option>
+                <option value="ml">ml — millilitri</option>
+                <option value="l">l — litri</option>
+                <option value="pz">pz — pezzi</option>
+                <option value="fette">fette</option>
+                <option value="cucchiaio">cucchiaio</option>
+                <option value="cucchiaino">cucchiaino</option>
+                <option value="foglie">foglie</option>
+                <option value="qb">qb — quanto basta</option>
+            </select>
+        </div>
+        <div class="select-group">
+            <label>Step incremento (es: 10 = +10g per click)</label>
+            <input type="number" id="ciStep" class="modal-input"
+                value="10" min="1" max="1000">
+        </div>
+        <div class="modal-actions" style="margin-top:4px;">
+            <button class="btn btn-secondary" onclick="closeCustomIngModal()">Annulla</button>
+            <button class="btn btn-primary" onclick="saveCustomIngredient()">✅ Aggiungi</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════ MODAL: FORM NUOVA/MODIFICA RICETTA ═══════════ -->
 <div class="modal" id="ricettaFormModal">
     <div class="modal-content ricetta-modal">
         <div class="ricetta-modal-header">
@@ -352,22 +426,24 @@
             <div class="rf-section">
                 <div class="rf-section-title">🥦 Ingredienti</div>
                 <div id="rfIngList"></div>
-                <button class="btn btn-secondary btn-small" onclick="addRfIng()"
-                    style="margin-top:10px;">➕ Aggiungi ingrediente</button>
+                <button class="btn btn-secondary btn-small"
+                    onclick="addRfIng()" style="margin-top:10px;">
+                    ➕ Aggiungi ingrediente
+                </button>
             </div>
 
             <!-- Preparazione -->
             <div class="rf-section">
                 <div class="rf-section-title">👨‍🍳 Preparazione *</div>
                 <textarea id="rfIstruzioni" class="rf-textarea"
-                    placeholder="Descrivi la preparazione passo passo...&#10;Es: Cuoci la pasta al dente. Rosola il pollo con olio e spezie..."></textarea>
+                    placeholder="Descrivi la preparazione passo passo...&#10;Es: Cuoci la pasta al dente. Frulla il pesto con basilico e olio..."></textarea>
             </div>
 
             <!-- Limiti -->
             <div class="rf-section">
                 <div class="rf-section-title">⚠️ Conta per i limiti settimanali</div>
                 <p style="font-size:.8em;color:var(--text-light);margin-bottom:10px;">
-                    Seleziona i limiti che questa ricetta incrementa quando viene usata.
+                    Seleziona le categorie che questa ricetta incrementa quando viene usata.
                 </p>
                 <div class="rf-limits-grid" id="rfLimitsGrid"></div>
             </div>
@@ -380,6 +456,7 @@
     </div>
 </div>
 
+<!-- ═══════════ SCRIPTS ═══════════ -->
 <script src="data.js"></script>
 <script src="storage.js"></script>
 <script src="app.js"></script>
