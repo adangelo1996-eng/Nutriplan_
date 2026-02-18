@@ -44,15 +44,46 @@
                 <button class="nav-tab" onclick="showPage('frigo',this)">❄️ Frigo</button>
                 <button class="nav-tab" onclick="showPage('dispensa',this)">🏡 Dispensa</button>
                 <button class="nav-tab" onclick="showPage('limiti',this)">📊 Limiti</button>
+                <button class="nav-tab" onclick="showPage('storico',this)">📖 Storico</button>
             </nav>
         </div>
     </header>
 
+    <!-- BARRA CALENDARIO -->
+    <div class="calendar-bar-wrapper">
+        <div class="calendar-bar" id="calendarBar"></div>
+    </div>
+
     <div class="pages">
 
+        <!-- PIANO -->
         <div class="page active" id="pianoPage">
             <div class="card">
                 <div class="card-header"><span class="card-icon">📅</span><h2>Piano Alimentare</h2></div>
+
+                <div class="date-turno-row">
+                    <div class="current-date-label" id="currentDateLabel"></div>
+                    <div class="select-group">
+                        <label>Turno di Lavoro</label>
+                        <select id="daySelect" onchange="onTurnoChange()">
+                            <option value="mattina">Mattina</option>
+                            <option value="pomeriggio">Pomeriggio</option>
+                            <option value="notte1">Notte (Prima)</option>
+                            <option value="notte2">Notte (Seconda)</option>
+                        </select>
+                    </div>
+                    <div class="select-group">
+                        <label>Pasto</label>
+                        <select id="mealSelect" onchange="renderMealPlan()">
+                            <option value="colazione">Colazione</option>
+                            <option value="spuntino">Spuntino</option>
+                            <option value="pranzo">Pranzo</option>
+                            <option value="merenda">Merenda</option>
+                            <option value="cena">Cena</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="page-tabs">
                     <button class="page-tab active" onclick="showPianoTab('turno',this)">🗓️ Per Turno</button>
                     <button class="page-tab" onclick="showPianoTab('frigo',this)">❄️ Dal Frigo</button>
@@ -60,27 +91,6 @@
                 </div>
 
                 <div class="page-tab-content active" id="pianoTabTurno">
-                    <div class="meal-selector-grid">
-                        <div class="select-group">
-                            <label>Turno di Lavoro</label>
-                            <select id="daySelect" onchange="renderMealPlan()">
-                                <option value="mattina">Mattina</option>
-                                <option value="pomeriggio">Pomeriggio</option>
-                                <option value="notte1">Notte (Prima)</option>
-                                <option value="notte2">Notte (Seconda)</option>
-                            </select>
-                        </div>
-                        <div class="select-group">
-                            <label>Pasto</label>
-                            <select id="mealSelect" onchange="renderMealPlan()">
-                                <option value="colazione">Colazione</option>
-                                <option value="spuntino">Spuntino</option>
-                                <option value="pranzo">Pranzo</option>
-                                <option value="merenda">Merenda</option>
-                                <option value="cena">Cena</option>
-                            </select>
-                        </div>
-                    </div>
                     <div id="mealPlanContainer"></div>
                 </div>
 
@@ -123,6 +133,7 @@
             </div>
         </div>
 
+        <!-- FRIGO -->
         <div class="page" id="frigoPage">
             <div class="card">
                 <div class="card-header"><span class="card-icon">❄️</span><h2>Frigorifero</h2></div>
@@ -138,6 +149,7 @@
             </div>
         </div>
 
+        <!-- DISPENSA -->
         <div class="page" id="dispensaPage">
             <div class="card">
                 <div class="card-header"><span class="card-icon">🏡</span><h2>Dispensa</h2></div>
@@ -145,6 +157,7 @@
             </div>
         </div>
 
+        <!-- LIMITI -->
         <div class="page" id="limitiPage">
             <div class="card">
                 <div class="card-header"><span class="card-icon">📊</span><h2>Limiti Settimanali</h2></div>
@@ -153,9 +166,18 @@
             </div>
         </div>
 
+        <!-- STORICO -->
+        <div class="page" id="storicoPage">
+            <div class="card">
+                <div class="card-header"><span class="card-icon">📖</span><h2>Storico Giornaliero</h2></div>
+                <div id="storicoContent"></div>
+            </div>
+        </div>
+
     </div>
 </div>
 
+<!-- MODAL SALVA FRIGO -->
 <div class="modal" id="saveFridgeModal">
     <div class="modal-content">
         <h3>💾 Salva Frigorifero</h3>
@@ -167,6 +189,7 @@
     </div>
 </div>
 
+<!-- MODAL RICETTA -->
 <div class="modal" id="recipeModal">
     <div class="modal-content wide">
         <h3 id="recipeModalTitle">🥗 Ricetta</h3>
@@ -184,5 +207,6 @@
 <script src="piano.js"></script>
 <script src="dispensa.js"></script>
 <script src="ricette.js"></script>
+<script src="storico.js"></script>
 </body>
 </html>
