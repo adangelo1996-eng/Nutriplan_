@@ -2,11 +2,23 @@ let pantryItems={};
 let savedFridges={};
 let selectedDayIngredients=[];
 let currentModalRecipe=null;
-let substitutions={};
-let usedItems={};
+let appHistory={};
+let selectedDateKey='';
+
+function getCurrentDateKey(){
+    const d=new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getDayData(dateKey){
+    if(!appHistory[dateKey]){
+        appHistory[dateKey]={turno:'mattina',usedItems:{},substitutions:{}};
+    }
+    return appHistory[dateKey];
+}
 
 function loadData(){
-    const saved=localStorage.getItem('nutriplanDataV4');
+    const saved=localStorage.getItem('nutriplanDataV5');
     if(!saved) return;
     const data=JSON.parse(saved);
     if(data.limits) Object.keys(data.limits).forEach(k=>{
@@ -14,17 +26,20 @@ function loadData(){
     });
     pantryItems=data.pantry||{};
     savedFridges=data.savedFridges||{};
-    substitutions=data.substitutions||{};
-    usedItems=data.usedItems||{};
+    appHistory=data.history||{};
+    const cutoff=new Date();
+    cutoff.setDate(cutoff.getDate()-30);
+    Object.keys(appHistory).forEach(dk=>{
+        if(new Date(dk)<cutoff) delete appHistory[dk];
+    });
 }
 
 function saveData(){
-    localStorage.setItem('nutriplanDataV4',JSON.stringify({
+    localStorage.setItem('nutriplanDataV5',JSON.stringify({
         limits:weeklyLimits,
         pantry:pantryItems,
         savedFridges,
-        substitutions,
-        usedItems
+        history:appHistory
     }));
 }
 
@@ -50,12 +65,8 @@ function checkIngredientAvailability(ing){
         const available=converted!==null?converted:pQty;
         const sameFamily=converted!==null||pUnit===rUnit;
         return{
-            matched:true,
-            pantryName:pName,
-            available,
-            availableUnit:rUnit,
-            required:rQty,
-            requiredUnit:rUnit,
+            matched:true,pantryName:pName,available,
+            availableUnit:rUnit,required:rQty,requiredUnit:rUnit,
             sufficient:sameFamily&&available>=rQty,
             incompatibleUnits:!sameFamily
         };
