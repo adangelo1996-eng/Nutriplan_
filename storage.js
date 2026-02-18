@@ -4,6 +4,7 @@ let selectedDayIngredients=[];
 let currentModalRecipe=null;
 let appHistory={};
 let selectedDateKey='';
+let customRecipes=[];
 
 function getCurrentDateKey(){
     const d=new Date();
@@ -18,7 +19,7 @@ function getDayData(dateKey){
 }
 
 function loadData(){
-    const saved=localStorage.getItem('nutriplanDataV5');
+    const saved=localStorage.getItem('nutriplanDataV6');
     if(!saved) return;
     const data=JSON.parse(saved);
     if(data.limits) Object.keys(data.limits).forEach(k=>{
@@ -27,6 +28,7 @@ function loadData(){
     pantryItems=data.pantry||{};
     savedFridges=data.savedFridges||{};
     appHistory=data.history||{};
+    customRecipes=data.customRecipes||[];
     const cutoff=new Date();
     cutoff.setFullYear(cutoff.getFullYear()-1);
     Object.keys(appHistory).forEach(dk=>{
@@ -35,11 +37,12 @@ function loadData(){
 }
 
 function saveData(){
-    localStorage.setItem('nutriplanDataV5',JSON.stringify({
+    localStorage.setItem('nutriplanDataV6',JSON.stringify({
         limits:weeklyLimits,
         pantry:pantryItems,
         savedFridges,
-        history:appHistory
+        history:appHistory,
+        customRecipes
     }));
 }
 
