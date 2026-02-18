@@ -236,11 +236,9 @@ function showPage(name,btn){
     if(name==='storico') renderStorico();
     if(name==='statistiche') renderStatistiche();
     if(name==='ricette') renderRicettePage();
-    if(name==='spesa'){
-        document.getElementById('spesaTurnoSelect').value=
-            appHistory[selectedDateKey]?.turno||'mattina';
-        renderSpesa();
-    }
+    if(name==='spesa') renderSpesa();
+}
+
 }
 
 function showPianoTab(tab,btn){
