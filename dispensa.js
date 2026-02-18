@@ -155,12 +155,13 @@ function updatePantryQuantity(name,quantity,unit){
 ══════════════════════════════════ */
 function openCustomIngModal(){
     document.getElementById('ciName').value='';
-    document.getElementById('ciIcon').value='');
+    document.getElementById('ciIcon').value='';
     document.getElementById('ciUnit').value='g';
     document.getElementById('ciStep').value='10';
     document.getElementById('customIngModal').classList.add('active');
     setTimeout(()=>document.getElementById('ciName').focus(),100);
 }
+
 function closeCustomIngModal(){
     document.getElementById('customIngModal').classList.remove('active');
 }
