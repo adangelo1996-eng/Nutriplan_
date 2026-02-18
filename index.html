@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#4a9b7f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NutriPlan">
+<link rel="manifest" href="#" id="manifest-placeholder">
+<link rel="stylesheet" href="style.css">
+<title>NutriPlan</title>
+</head>
+<body>
+
+<div class="install-banner" id="installBanner">
+    <div class="install-content">
+        <h4>📱 Installa NutriPlan</h4>
+        <p>Aggiungila alla home screen!</p>
+    </div>
+    <div class="install-actions">
+        <button class="btn-install" id="installBtn">Installa</button>
+        <button class="btn-dismiss" id="dismissBtn">✕</button>
+    </div>
+</div>
+
+<div class="offline-indicator" id="offlineIndicator">📡 Modalità offline</div>
+
+<div class="landing" id="landingPage">
+    <div class="landing-content">
+        <div class="landing-icon">🌿</div>
+        <h1>NutriPlan</h1>
+        <p>Il tuo piano alimentare naturale personalizzato.<br>Ricette, dispensa, frigo e limiti settimanali.</p>
+        <button class="btn-enter" onclick="enterApp()">Entra nell'App ✨</button>
+    </div>
+</div>
+
+<div class="app" id="mainApp">
+    <header>
+        <div class="header-content">
+            <div class="logo"><span class="logo-icon">🌿</span><span>NutriPlan</span></div>
+            <nav class="nav-tabs">
+                <button class="nav-tab active" onclick="showPage('piano',this)">📅 Piano</button>
+                <button class="nav-tab" onclick="showPage('frigo',this)">❄️ Frigo</button>
+                <button class="nav-tab" onclick="showPage('dispensa',this)">🏡 Dispensa</button>
+                <button class="nav-tab" onclick="showPage('limiti',this)">📊 Limiti</button>
+            </nav>
+        </div>
+    </header>
+
+    <div class="pages">
+
+        <div class="page active" id="pianoPage">
+            <div class="card">
+                <div class="card-header"><span class="card-icon">📅</span><h2>Piano Alimentare</h2></div>
+                <div class="page-tabs">
+                    <button class="page-tab active" onclick="showPianoTab('turno',this)">🗓️ Per Turno</button>
+                    <button class="page-tab" onclick="showPianoTab('frigo',this)">❄️ Dal Frigo</button>
+                    <button class="page-tab" onclick="showPianoTab('ingredienti',this)">🥦 Per Ingredienti</button>
+                </div>
+
+                <div class="page-tab-content active" id="pianoTabTurno">
+                    <div class="meal-selector-grid">
+                        <div class="select-group">
+                            <label>Turno di Lavoro</label>
+                            <select id="daySelect" onchange="renderMealPlan()">
+                                <option value="mattina">Mattina</option>
+                                <option value="pomeriggio">Pomeriggio</option>
+                                <option value="notte1">Notte (Prima)</option>
+                                <option value="notte2">Notte (Seconda)</option>
+                            </select>
+                        </div>
+                        <div class="select-group">
+                            <label>Pasto</label>
+                            <select id="mealSelect" onchange="renderMealPlan()">
+                                <option value="colazione">Colazione</option>
+                                <option value="spuntino">Spuntino</option>
+                                <option value="pranzo">Pranzo</option>
+                                <option value="merenda">Merenda</option>
+                                <option value="cena">Cena</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="mealPlanContainer"></div>
+                </div>
+
+                <div class="page-tab-content" id="pianoTabFrigo">
+                    <div class="step-indicator">
+                        <div class="step-badge">💡</div>
+                        <div class="step-text">Ricette suggerite in base a ciò che hai nel frigo.</div>
+                    </div>
+                    <div class="select-group" style="margin-bottom:16px;max-width:260px;">
+                        <label>Filtra per pasto</label>
+                        <select id="fridgeMealFilter" onchange="updateFridgeSuggestions()">
+                            <option value="tutti">Tutti i pasti</option>
+                            <option value="colazione">Colazione</option>
+                            <option value="spuntino">Spuntino</option>
+                            <option value="pranzo">Pranzo</option>
+                            <option value="merenda">Merenda</option>
+                            <option value="cena">Cena</option>
+                        </select>
+                    </div>
+                    <div id="fridgeSuggestionsList"></div>
+                </div>
+
+                <div class="page-tab-content" id="pianoTabIngredienti">
+                    <div class="step-indicator">
+                        <div class="step-badge">1</div>
+                        <div class="step-text">Seleziona uno o più ingredienti che vuoi usare oggi, poi clicca "Cerca Ricette".</div>
+                    </div>
+                    <div class="day-ingredients-grid" id="dayIngGrid"></div>
+                    <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="searchByIngredients()">🔍 Cerca Ricette</button>
+                        <button class="btn btn-secondary" onclick="clearDayIngredients()">✕ Deseleziona</button>
+                    </div>
+                    <div id="ingredientSuggestionsList"></div>
+                </div>
+            </div>
+
+            <div class="card" id="recipeCard" style="display:none;">
+                <div class="card-header"><span class="card-icon">🥗</span><h2>Ricetta</h2></div>
+                <div id="recipeContainer"></div>
+            </div>
+        </div>
+
+        <div class="page" id="frigoPage">
+            <div class="card">
+                <div class="card-header"><span class="card-icon">❄️</span><h2>Frigorifero</h2></div>
+                <div class="fridge-controls">
+                    <button class="btn btn-success" onclick="openSaveFridgeModal()">💾 Salva</button>
+                    <button class="btn btn-warning" onclick="clearFridge()">🗑️ Svuota</button>
+                </div>
+                <div id="fridgeContent"></div>
+            </div>
+            <div class="card" id="savedFridgesCard" style="display:none;">
+                <div class="card-header"><span class="card-icon">📚</span><h2>Frigoriferi Salvati</h2></div>
+                <div class="saved-fridge-list" id="savedFridgeList"></div>
+            </div>
+        </div>
+
+        <div class="page" id="dispensaPage">
+            <div class="card">
+                <div class="card-header"><span class="card-icon">🏡</span><h2>Dispensa</h2></div>
+                <div id="pantryContent"></div>
+            </div>
+        </div>
+
+        <div class="page" id="limitiPage">
+            <div class="card">
+                <div class="card-header"><span class="card-icon">📊</span><h2>Limiti Settimanali</h2></div>
+                <div class="limits-grid" id="limitsGrid"></div>
+                <center><button class="btn-reset" onclick="resetWeek()">🔄 Reset Settimana</button></center>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal" id="saveFridgeModal">
+    <div class="modal-content">
+        <h3>💾 Salva Frigorifero</h3>
+        <input type="text" class="modal-input" id="fridgeName" placeholder="Nome (es: Spesa 18 feb)">
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeSaveFridgeModal()">Annulla</button>
+            <button class="btn btn-primary" onclick="saveFridge()">Salva</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="recipeModal">
+    <div class="modal-content wide">
+        <h3 id="recipeModalTitle">🥗 Ricetta</h3>
+        <div id="recipeModalBody"></div>
+        <div class="modal-actions" style="margin-top:14px;">
+            <button class="btn btn-secondary btn-small" onclick="closeRecipeModal()">Chiudi</button>
+            <button class="btn btn-primary btn-small" id="recipeModalSelectBtn" onclick="selectRecipeFromModal()">✅ Usa questa ricetta</button>
+        </div>
+    </div>
+</div>
+
+<script src="data.js"></script>
+<script src="storage.js"></script>
+<script src="app.js"></script>
+<script src="piano.js"></script>
+<script src="dispensa.js"></script>
+<script src="ricette.js"></script>
+</body>
+</html>
