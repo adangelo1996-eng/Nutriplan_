@@ -1,30 +1,30 @@
+function _vAlt(qty){
+    return [
+        {label:'Carote',qty,unit:'g'},
+        {label:'Broccoli',qty,unit:'g'},
+        {label:'Peperoni',qty,unit:'g'},
+        {label:'Fagiolini',qty,unit:'g'},
+        {label:'Insalata',qty:Math.round(qty*.75),unit:'g'},
+        {label:'Rucola',qty:Math.round(qty*.5),unit:'g'},
+        {label:'Pomodorini',qty,unit:'g'},
+        {label:'Zucchine',qty,unit:'g'}
+    ];
+}
+
 const unitConversions={
-    'g':{'g':1,'kg':.001},
-    'kg':{'g':1000,'kg':1},
-    'ml':{'ml':1,'l':.001},
-    'l':{'ml':1000,'l':1},
-    'pezzi':{'pezzi':1},
-    'pezzo':{'pezzo':1},
-    'spicchi':{'spicchi':1},
-    'fette':{'fette':1},
-    'teste':{'teste':1},
-    'mazzetti':{'mazzetti':1},
-    'rametti':{'rametti':1},
-    'confezioni':{'confezioni':1},
-    'pacchi':{'pacchi':1},
-    'scatole':{'scatole':1},
-    'lattine':{'lattine':1},
-    'vasetti':{'vasetti':1},
-    'brick':{'brick':1},
-    'bottiglie':{'bottiglie':1},
-    'vaschette':{'vaschette':1},
-    'buste':{'buste':1},
-    'cespi':{'cespi':1},
-    'filetti':{'filetti':1},
-    'tranci':{'tranci':1},
-    'forme':{'forme':1},
-    'tavolette':{'tavolette':1},
-    'petti':{'petti':1}
+    'g':{'g':1,'kg':.001},'kg':{'g':1000,'kg':1},
+    'ml':{'ml':1,'l':.001},'l':{'ml':1000,'l':1},
+    'pezzi':{'pezzi':1},'pezzo':{'pezzo':1},
+    'spicchi':{'spicchi':1},'fette':{'fette':1},
+    'teste':{'teste':1},'mazzetti':{'mazzetti':1},
+    'rametti':{'rametti':1},'confezioni':{'confezioni':1},
+    'pacchi':{'pacchi':1},'scatole':{'scatole':1},
+    'lattine':{'lattine':1},'vasetti':{'vasetti':1},
+    'brick':{'brick':1},'bottiglie':{'bottiglie':1},
+    'vaschette':{'vaschette':1},'buste':{'buste':1},
+    'cespi':{'cespi':1},'filetti':{'filetti':1},
+    'tranci':{'tranci':1},'forme':{'forme':1},
+    'tavolette':{'tavolette':1},'petti':{'petti':1}
 };
 
 const pantryCategories=[
@@ -64,7 +64,6 @@ const pantryCategories=[
         {name:'Kefir',icon:'🥛',units:['ml','l','bottiglie'],step:100}
     ]},
     {id:'verdure',label:'🥦 Verdure',items:[
-        {name:'Verdure miste',icon:'🥬',units:['g','kg','buste'],step:100},
         {name:'Zucchine',icon:'🥒',units:['g','kg','pezzi'],step:100},
         {name:'Carote',icon:'🥕',units:['g','kg','pezzi'],step:100},
         {name:'Broccoli',icon:'🥦',units:['g','kg','pezzi'],step:100},
@@ -144,7 +143,7 @@ const mealPlan={
         pranzo:{principale:[
             {label:'Cereali integrali',qty:70,unit:'g',note:'Pasta/Riso',alternatives:[{label:'Patate',qty:300,unit:'g',limit:'patate'},{label:'Pane integrale',qty:80,unit:'g'},{label:'Gnocchi',qty:180,unit:'g',limit:'patate'}]},
             {label:'Pollo',qty:130,unit:'g',alternatives:[{label:'Tacchino',qty:130,unit:'g'},{label:'Carne rossa',qty:100,unit:'g',limit:'carne_rossa'},{label:'Merluzzo',qty:150,unit:'g',limit:'pesce'},{label:'Salmone',qty:120,unit:'g',limit:'pesce'},{label:'Tonno vetro',qty:100,unit:'g',limit:'pesce'},{label:'Legumi scatola',qty:150,unit:'g'},{label:'Formaggio light',qty:100,unit:'g',limit:'formaggi'},{label:'Uova',qty:2,unit:'pezzi',limit:'uova'},{label:'Tofu',qty:100,unit:'g'},{label:'Polpo',qty:200,unit:'g',limit:'molluschi'},{label:'Calamari',qty:200,unit:'g',limit:'molluschi'},{label:'Parmigiano',qty:30,unit:'g',limit:'formaggi'},{label:'Ricotta',qty:100,unit:'g'},{label:'Salmone affumicato',qty:100,unit:'g',limit:'pesce'}]},
-            {label:'Verdure miste',qty:200,unit:'g',note:'Metà piatto'},
+            {label:'Zucchine',qty:200,unit:'g',note:'Metà piatto',alternatives:_vAlt(200).filter(v=>v.label!=='Zucchine')},
             {label:'Olio EVO',qty:10,unit:'g',alternatives:[{label:'Pesto',qty:20,unit:'g'},{label:'Avocado',qty:50,unit:'g'}]}
         ]},
         merenda:{principale:[
@@ -154,7 +153,7 @@ const mealPlan={
         cena:{principale:[
             {label:'Pane integrale',qty:60,unit:'g',alternatives:[{label:'Patate',qty:220,unit:'g',limit:'patate'},{label:'Purè fiocchi',qty:35,unit:'g',limit:'patate'},{label:'Gallette',qty:30,unit:'g'},{label:'Wasa',qty:25,unit:'g'}]},
             {label:'Merluzzo',qty:150,unit:'g',alternatives:[{label:'Salmone',qty:120,unit:'g',limit:'pesce'},{label:'Orata',qty:100,unit:'g',limit:'pesce'},{label:'Pollo',qty:130,unit:'g',limit:'carne_bianca'},{label:'Tacchino',qty:130,unit:'g',limit:'carne_bianca'},{label:'Carne rossa',qty:100,unit:'g',limit:'carne_rossa'},{label:'Tonno vetro',qty:100,unit:'g',limit:'pesce'},{label:'Legumi scatola',qty:150,unit:'g'},{label:'Formaggio light',qty:100,unit:'g',limit:'formaggi'},{label:'Uova',qty:2,unit:'pezzi',limit:'uova'},{label:'Tofu',qty:100,unit:'g'},{label:'Polpo',qty:200,unit:'g',limit:'molluschi'},{label:'Ricotta',qty:100,unit:'g'},{label:'Salmone affumicato',qty:100,unit:'g',limit:'pesce'}]},
-            {label:'Verdure miste',qty:200,unit:'g',note:'Metà piatto'},
+            {label:'Broccoli',qty:200,unit:'g',note:'Metà piatto',alternatives:_vAlt(200).filter(v=>v.label!=='Broccoli')},
             {label:'Olio EVO',qty:10,unit:'ml',alternatives:[{label:'Avocado',qty:50,unit:'g'},{label:'Olive',qty:20,unit:'g'}]}
         ]}
     },
@@ -171,13 +170,13 @@ const mealPlan={
         pranzo:{principale:[
             {label:'Cereali integrali',qty:70,unit:'g',alternatives:[{label:'Patate',qty:300,unit:'g',limit:'patate'},{label:'Pane integrale',qty:80,unit:'g'},{label:'Gnocchi',qty:180,unit:'g',limit:'patate'}]},
             {label:'Pollo',qty:130,unit:'g',alternatives:[{label:'Tacchino',qty:130,unit:'g'},{label:'Carne rossa',qty:100,unit:'g',limit:'carne_rossa'},{label:'Merluzzo',qty:150,unit:'g',limit:'pesce'},{label:'Salmone',qty:120,unit:'g',limit:'pesce'},{label:'Tonno vetro',qty:100,unit:'g',limit:'pesce'},{label:'Legumi scatola',qty:150,unit:'g'},{label:'Formaggio light',qty:100,unit:'g',limit:'formaggi'},{label:'Uova',qty:2,unit:'pezzi',limit:'uova'},{label:'Tofu',qty:100,unit:'g'},{label:'Polpo',qty:200,unit:'g',limit:'molluschi'},{label:'Parmigiano',qty:30,unit:'g',limit:'formaggi'},{label:'Ricotta',qty:100,unit:'g'}]},
-            {label:'Verdure miste',qty:200,unit:'g',note:'Metà piatto'},
+            {label:'Peperoni',qty:200,unit:'g',note:'Metà piatto',alternatives:_vAlt(200).filter(v=>v.label!=='Peperoni')},
             {label:'Olio EVO',qty:10,unit:'ml',alternatives:[{label:'Pesto',qty:20,unit:'g'},{label:'Avocado',qty:50,unit:'g'}]}
         ]},
         merenda:{principale:[
             {label:'Pane integrale',qty:60,unit:'g',alternatives:[{label:'Patate',qty:220,unit:'g',limit:'patate'},{label:'Purè fiocchi',qty:35,unit:'g',limit:'patate'},{label:'Gallette',qty:30,unit:'g'},{label:'Wasa',qty:25,unit:'g'}]},
             {label:'Merluzzo',qty:150,unit:'g',alternatives:[{label:'Salmone',qty:120,unit:'g',limit:'pesce'},{label:'Pollo',qty:130,unit:'g',limit:'carne_bianca'},{label:'Uova',qty:2,unit:'pezzi',limit:'uova'},{label:'Legumi scatola',qty:150,unit:'g'},{label:'Formaggio light',qty:100,unit:'g',limit:'formaggi'},{label:'Ricotta',qty:100,unit:'g'},{label:'Tonno vetro',qty:100,unit:'g',limit:'pesce'},{label:'Tofu',qty:100,unit:'g'}]},
-            {label:'Verdure miste',qty:200,unit:'g',note:'Metà piatto'},
+            {label:'Carote',qty:200,unit:'g',note:'Metà piatto',alternatives:_vAlt(200).filter(v=>v.label!=='Carote')},
             {label:'Olio EVO',qty:10,unit:'ml',alternatives:[{label:'Avocado',qty:50,unit:'g'},{label:'Olive',qty:20,unit:'g'}]}
         ]},
         cena:{principale:[
@@ -196,7 +195,7 @@ const mealPlan={
         pranzo:{principale:[
             {label:'Cereali integrali',qty:70,unit:'g',alternatives:[{label:'Patate',qty:300,unit:'g',limit:'patate'},{label:'Pane integrale',qty:80,unit:'g'},{label:'Gnocchi',qty:180,unit:'g',limit:'patate'}]},
             {label:'Pollo',qty:130,unit:'g',alternatives:[{label:'Tacchino',qty:130,unit:'g'},{label:'Carne rossa',qty:100,unit:'g',limit:'carne_rossa'},{label:'Merluzzo',qty:150,unit:'g',limit:'pesce'},{label:'Salmone',qty:120,unit:'g',limit:'pesce'},{label:'Tonno vetro',qty:100,unit:'g',limit:'pesce'},{label:'Legumi scatola',qty:150,unit:'g'},{label:'Formaggio light',qty:100,unit:'g',limit:'formaggi'},{label:'Uova',qty:2,unit:'pezzi',limit:'uova'},{label:'Tofu',qty:100,unit:'g'},{label:'Polpo',qty:200,unit:'g',limit:'molluschi'},{label:'Parmigiano',qty:30,unit:'g',limit:'formaggi'},{label:'Ricotta',qty:100,unit:'g'}]},
-            {label:'Verdure miste',qty:200,unit:'g',note:'Metà piatto'},
+            {label:'Fagiolini',qty:200,unit:'g',note:'Metà piatto',alternatives:_vAlt(200).filter(v=>v.label!=='Fagiolini')},
             {label:'Olio EVO',qty:10,unit:'ml',alternatives:[{label:'Pesto',qty:20,unit:'g'},{label:'Avocado',qty:50,unit:'g'}]}
         ]},
         merenda:{principale:[
@@ -206,7 +205,7 @@ const mealPlan={
         cena:{principale:[
             {label:'Pane integrale',qty:60,unit:'g',alternatives:[{label:'Patate',qty:220,unit:'g',limit:'patate'},{label:'Purè fiocchi',qty:35,unit:'g',limit:'patate'},{label:'Gallette',qty:30,unit:'g'},{label:'Wasa',qty:25,unit:'g'}]},
             {label:'Merluzzo',qty:150,unit:'g',alternatives:[{label:'Salmone',qty:120,unit:'g',limit:'pesce'},{label:'Orata',qty:100,unit:'g',limit:'pesce'},{label:'Pollo',qty:130,unit:'g',limit:'carne_bianca'},{label:'Tacchino',qty:130,unit:'g',limit:'carne_bianca'},{label:'Carne rossa',qty:100,unit:'g',limit:'carne_rossa'},{label:'Tonno vetro',qty:100,unit:'g',limit:'pesce'},{label:'Legumi scatola',qty:150,unit:'g'},{label:'Uova',qty:2,unit:'pezzi',limit:'uova'},{label:'Formaggio light',qty:100,unit:'g',limit:'formaggi'},{label:'Ricotta',qty:100,unit:'g'},{label:'Tofu',qty:100,unit:'g'},{label:'Polpo',qty:200,unit:'g',limit:'molluschi'},{label:'Salmone affumicato',qty:100,unit:'g',limit:'pesce'}]},
-            {label:'Verdure miste',qty:200,unit:'g',note:'Metà piatto'},
+            {label:'Insalata',qty:200,unit:'g',note:'Metà piatto',alternatives:_vAlt(200).filter(v=>v.label!=='Insalata')},
             {label:'Olio EVO',qty:10,unit:'ml',alternatives:[{label:'Avocado',qty:50,unit:'g'},{label:'Olive',qty:20,unit:'g'}]}
         ]}
     },
@@ -221,14 +220,14 @@ const mealPlan={
         pranzo:{principale:[
             {label:'Cereali integrali',qty:70,unit:'g',alternatives:[{label:'Patate',qty:300,unit:'g',limit:'patate'},{label:'Pane integrale',qty:80,unit:'g'},{label:'Gnocchi',qty:180,unit:'g',limit:'patate'}]},
             {label:'Pollo',qty:130,unit:'g',alternatives:[{label:'Tacchino',qty:130,unit:'g'},{label:'Carne rossa',qty:100,unit:'g',limit:'carne_rossa'},{label:'Merluzzo',qty:150,unit:'g',limit:'pesce'},{label:'Salmone',qty:120,unit:'g',limit:'pesce'},{label:'Tonno vetro',qty:100,unit:'g',limit:'pesce'},{label:'Legumi scatola',qty:150,unit:'g'},{label:'Formaggio light',qty:100,unit:'g',limit:'formaggi'},{label:'Uova',qty:2,unit:'pezzi',limit:'uova'},{label:'Tofu',qty:100,unit:'g'},{label:'Polpo',qty:200,unit:'g',limit:'molluschi'},{label:'Parmigiano',qty:30,unit:'g',limit:'formaggi'},{label:'Avocado',qty:60,unit:'g'},{label:'Ricotta',qty:100,unit:'g'}]},
-            {label:'Verdure miste',qty:200,unit:'g',note:'Metà piatto'},
+            {label:'Zucchine',qty:200,unit:'g',note:'Metà piatto',alternatives:_vAlt(200).filter(v=>v.label!=='Zucchine')},
             {label:'Olio EVO',qty:10,unit:'ml',alternatives:[{label:'Pesto',qty:20,unit:'g'},{label:'Avocado',qty:60,unit:'g'}]}
         ]},
         merenda:{principale:[]},
         cena:{principale:[
             {label:'Pane integrale',qty:60,unit:'g',alternatives:[{label:'Patate',qty:220,unit:'g',limit:'patate'},{label:'Purè fiocchi',qty:35,unit:'g',limit:'patate'},{label:'Gallette',qty:30,unit:'g'},{label:'Wasa',qty:25,unit:'g'}]},
             {label:'Merluzzo',qty:150,unit:'g',alternatives:[{label:'Salmone',qty:120,unit:'g',limit:'pesce'},{label:'Orata',qty:100,unit:'g',limit:'pesce'},{label:'Pollo',qty:130,unit:'g',limit:'carne_bianca'},{label:'Tacchino',qty:130,unit:'g',limit:'carne_bianca'},{label:'Carne rossa',qty:100,unit:'g',limit:'carne_rossa'},{label:'Tonno vetro',qty:100,unit:'g',limit:'pesce'},{label:'Legumi scatola',qty:150,unit:'g'},{label:'Uova',qty:2,unit:'pezzi',limit:'uova'},{label:'Formaggio light',qty:100,unit:'g',limit:'formaggi'},{label:'Ricotta',qty:100,unit:'g'},{label:'Tofu',qty:100,unit:'g'},{label:'Polpo',qty:200,unit:'g',limit:'molluschi'},{label:'Calamari',qty:250,unit:'g',limit:'molluschi'},{label:'Salmone affumicato',qty:100,unit:'g',limit:'pesce'}]},
-            {label:'Verdure miste',qty:200,unit:'g',note:'Metà piatto'},
+            {label:'Broccoli',qty:200,unit:'g',note:'Metà piatto',alternatives:_vAlt(200).filter(v=>v.label!=='Broccoli')},
             {label:'Olio EVO',qty:10,unit:'ml',alternatives:[{label:'Avocado',qty:50,unit:'g'},{label:'Olive',qty:20,unit:'g'}]}
         ]}
     }
@@ -249,12 +248,12 @@ const allRecipes={
         {name:'Barretta Cereali',ingredients:[{name:'Barretta cereali',quantity:1,unit:'pezzi'}],instructions:'Consuma una barretta ai cereali. Massimo 2 volte a settimana.',limits:['barrette']}
     ],
     pranzo:[
-        {name:'Pasta al Pomodoro con Pollo',ingredients:[{name:'Pasta integrale',quantity:70,unit:'g'},{name:'Pollo',quantity:130,unit:'g'},{name:'Pomodori pelati',quantity:200,unit:'g'},{name:'Basilico',quantity:5,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Verdure miste',quantity:200,unit:'g'}],instructions:'Cuoci la pasta. Rosola il pollo a straccetti, aggiungi pomodori e basilico. Manteca con la pasta.',limits:['carne_bianca']},
+        {name:'Pasta al Pomodoro con Pollo',ingredients:[{name:'Pasta integrale',quantity:70,unit:'g'},{name:'Pollo',quantity:130,unit:'g'},{name:'Pomodori pelati',quantity:200,unit:'g'},{name:'Basilico',quantity:5,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Zucchine',quantity:150,unit:'g'}],instructions:'Cuoci la pasta. Rosola il pollo a straccetti, aggiungi pomodori e basilico. Manteca con la pasta. Servi con zucchine grigliate.',limits:['carne_bianca']},
         {name:'Riso Integrale con Salmone',ingredients:[{name:'Riso integrale',quantity:70,unit:'g'},{name:'Salmone',quantity:120,unit:'g'},{name:'Zucchine',quantity:100,unit:'g'},{name:'Carote',quantity:100,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Limone',quantity:1,unit:'pezzi'}],instructions:'Cuoci il riso. Cuoci il salmone al forno con limone 15 min. Salta le verdure.',limits:['pesce']},
         {name:'Gnocchi al Pesto',ingredients:[{name:'Gnocchi',quantity:180,unit:'g'},{name:'Pesto',quantity:20,unit:'g'},{name:'Fagiolini',quantity:200,unit:'g'},{name:'Parmigiano',quantity:10,unit:'g'}],instructions:'Cuoci gli gnocchi. Lessa i fagiolini al vapore. Condisci con pesto e parmigiano.',limits:['patate']},
-        {name:'Pasta con Tonno',ingredients:[{name:'Pasta integrale',quantity:70,unit:'g'},{name:'Tonno vetro',quantity:100,unit:'g'},{name:'Pomodorini',quantity:150,unit:'g'},{name:'Olive',quantity:30,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Verdure miste',quantity:150,unit:'g'}],instructions:'Cuoci la pasta. Unisci tonno, pomodorini, olive. Manteca e servi con verdure.',limits:['pesce']},
-        {name:'Pasta Cacio e Pepe',ingredients:[{name:'Pasta integrale',quantity:70,unit:'g'},{name:'Parmigiano',quantity:30,unit:'g'},{name:'Pepe nero',quantity:2,unit:'g'},{name:'Verdure miste',quantity:200,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'}],instructions:'Cuoci la pasta. Manteca con parmigiano, pepe e acqua di cottura. Servi con verdure grigliate.',limits:['formaggi']},
-        {name:'Pasta e Legumi',ingredients:[{name:'Pasta integrale',quantity:70,unit:'g'},{name:'Legumi scatola',quantity:150,unit:'g'},{name:'Pomodori pelati',quantity:100,unit:'g'},{name:'Rosmarino',quantity:2,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Verdure miste',quantity:150,unit:'g'}],instructions:'Cuoci la pasta. Prepara un soffritto con legumi, pomodoro e rosmarino. Manteca.',limits:[]},
+        {name:'Pasta con Tonno',ingredients:[{name:'Pasta integrale',quantity:70,unit:'g'},{name:'Tonno vetro',quantity:100,unit:'g'},{name:'Pomodorini',quantity:150,unit:'g'},{name:'Olive',quantity:30,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Insalata',quantity:100,unit:'g'}],instructions:'Cuoci la pasta. Unisci tonno, pomodorini, olive. Manteca e servi con insalata.',limits:['pesce']},
+        {name:'Pasta Cacio e Pepe',ingredients:[{name:'Pasta integrale',quantity:70,unit:'g'},{name:'Parmigiano',quantity:30,unit:'g'},{name:'Pepe nero',quantity:2,unit:'g'},{name:'Broccoli',quantity:200,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'}],instructions:'Cuoci la pasta. Manteca con parmigiano, pepe e acqua di cottura. Servi con broccoli al vapore.',limits:['formaggi']},
+        {name:'Pasta e Legumi',ingredients:[{name:'Pasta integrale',quantity:70,unit:'g'},{name:'Legumi scatola',quantity:150,unit:'g'},{name:'Pomodori pelati',quantity:100,unit:'g'},{name:'Rosmarino',quantity:2,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Carote',quantity:100,unit:'g'}],instructions:'Cuoci la pasta. Prepara un soffritto con legumi, pomodoro e rosmarino. Manteca. Servi con carote.',limits:[]},
         {name:'Frittata di Pasta',ingredients:[{name:'Pasta integrale',quantity:70,unit:'g'},{name:'Uova',quantity:2,unit:'pezzi'},{name:'Zucchine',quantity:100,unit:'g'},{name:'Peperoni',quantity:100,unit:'g'},{name:'Parmigiano',quantity:20,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'}],instructions:'Cuoci la pasta. Sbatti uova con parmigiano. Salta le verdure. Cuoci la frittata.',limits:['uova']},
         {name:'Riso con Pollo e Verdure',ingredients:[{name:'Riso integrale',quantity:70,unit:'g'},{name:'Pollo',quantity:130,unit:'g'},{name:'Peperoni',quantity:100,unit:'g'},{name:'Zucchine',quantity:100,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Spezie varie',quantity:3,unit:'g'}],instructions:'Cuoci il riso. Rosola il pollo con spezie. Salta le verdure. Componi il piatto.',limits:['carne_bianca']}
     ],
@@ -267,10 +266,10 @@ const allRecipes={
     cena:[
         {name:'Merluzzo al Forno con Patate',ingredients:[{name:'Merluzzo',quantity:150,unit:'g'},{name:'Patate',quantity:220,unit:'g'},{name:'Rosmarino',quantity:3,unit:'g'},{name:'Aglio',quantity:1,unit:'spicchi'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Insalata',quantity:100,unit:'g'}],instructions:'Patate a spicchi con rosmarino a 200°C per 20 min, aggiungi merluzzo con olio e aglio per altri 15 min.',limits:['pesce','patate']},
         {name:'Frittata con Verdure',ingredients:[{name:'Uova',quantity:2,unit:'pezzi'},{name:'Zucchine',quantity:150,unit:'g'},{name:'Peperoni',quantity:100,unit:'g'},{name:'Pane integrale',quantity:60,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Insalata',quantity:100,unit:'g'}],instructions:'Sbatti le uova. Salta le verdure a dadini. Cuoci la frittata coperta. Servi con pane e insalata.',limits:['uova']},
-        {name:'Pollo alla Piastra con Purè',ingredients:[{name:'Pollo',quantity:130,unit:'g'},{name:'Purè fiocchi',quantity:35,unit:'g'},{name:'Latte ps',quantity:120,unit:'ml'},{name:'Verdure miste',quantity:200,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'}],instructions:'Cuoci il petto di pollo alla piastra. Prepara il purè con latte. Griglia le verdure.',limits:['carne_bianca','patate']},
+        {name:'Pollo alla Piastra con Purè',ingredients:[{name:'Pollo',quantity:130,unit:'g'},{name:'Purè fiocchi',quantity:35,unit:'g'},{name:'Latte ps',quantity:120,unit:'ml'},{name:'Broccoli',quantity:150,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'}],instructions:'Cuoci il petto di pollo alla piastra. Prepara il purè con latte. Cuoci i broccoli al vapore.',limits:['carne_bianca','patate']},
         {name:'Salmone con Verdure al Vapore',ingredients:[{name:'Salmone',quantity:120,unit:'g'},{name:'Broccoli',quantity:150,unit:'g'},{name:'Carote',quantity:100,unit:'g'},{name:'Pane integrale',quantity:60,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Limone',quantity:1,unit:'pezzi'}],instructions:'Cuoci il salmone al forno con limone a 180°C per 15 min. Cuoci le verdure al vapore.',limits:['pesce']},
         {name:'Polpette di Legumi',ingredients:[{name:'Legumi scatola',quantity:150,unit:'g'},{name:'Pangrattato',quantity:20,unit:'g'},{name:'Spezie varie',quantity:3,unit:'g'},{name:'Pane integrale',quantity:60,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Insalata',quantity:150,unit:'g'}],instructions:'Frulla legumi con spezie e pangrattato. Forma polpette e cuoci in forno a 180°C per 20 min.',limits:[]},
-        {name:'Tacchino con Patate al Forno',ingredients:[{name:'Tacchino',quantity:130,unit:'g'},{name:'Patate',quantity:220,unit:'g'},{name:'Rosmarino',quantity:3,unit:'g'},{name:'Verdure miste',quantity:150,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'}],instructions:'Cuoci patate e tacchino al forno con rosmarino a 200°C per 30 min.',limits:['carne_bianca','patate']},
+        {name:'Tacchino con Patate al Forno',ingredients:[{name:'Tacchino',quantity:130,unit:'g'},{name:'Patate',quantity:220,unit:'g'},{name:'Rosmarino',quantity:3,unit:'g'},{name:'Fagiolini',quantity:150,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'}],instructions:'Cuoci patate e tacchino al forno con rosmarino a 200°C per 30 min. Lessa i fagiolini.',limits:['carne_bianca','patate']},
         {name:'Orata al Cartoccio',ingredients:[{name:'Orata',quantity:100,unit:'g'},{name:'Pomodorini',quantity:100,unit:'g'},{name:'Olive',quantity:20,unit:'g'},{name:'Capperi',quantity:10,unit:'g'},{name:'Pane integrale',quantity:60,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Insalata',quantity:100,unit:'g'}],instructions:'Prepara un cartoccio con orata, pomodorini, olive e capperi. Cuoci a 180°C per 20 min.',limits:['pesce']},
         {name:'Tofu Saltato con Verdure',ingredients:[{name:'Tofu',quantity:100,unit:'g'},{name:'Peperoni',quantity:100,unit:'g'},{name:'Zucchine',quantity:100,unit:'g'},{name:'Carote',quantity:80,unit:'g'},{name:'Olio EVO',quantity:10,unit:'ml'},{name:'Spezie varie',quantity:3,unit:'g'},{name:'Pane integrale',quantity:60,unit:'g'}],instructions:'Rosola il tofu a cubetti con spezie. Salta le verdure a julienne. Servi con pane integrale.',limits:[]}
     ]
