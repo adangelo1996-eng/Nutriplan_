@@ -26,8 +26,8 @@ function renderMealPlan(){
         const dot=available?'🟢':'⚪';
 
         let btnClass='meal-item-btn';
-        if(isUsed) btnClass+=' used';
-        else if(sub) btnClass+=' substituted';
+        if(isUsed)       btnClass+=' used';
+        else if(sub)     btnClass+=' substituted';
         else if(hasSubs) btnClass+=' has-alt';
 
         let nameHtml='';
@@ -56,7 +56,7 @@ function renderMealPlan(){
                 <div class="sub-drawer-actions">
                     ${isUsed
                         ?`<button class="used-toggle-btn unmark" onclick="toggleUsed('${dk}','${mealKey}',${idx})">↩ Segna come non usato</button>`
-                        :`<button class="used-toggle-btn mark" onclick="toggleUsed('${dk}','${mealKey}',${idx})">✅ Segna come usato</button>`
+                        :`<button class="used-toggle-btn mark"   onclick="toggleUsed('${dk}','${mealKey}',${idx})">✅ Segna come usato</button>`
                     }
                     ${sub?`<button class="sub-restore-btn" onclick="restoreOriginal('${dk}','${mealKey}',${idx})">↩ Ripristina originale</button>`:''}
                 </div>
@@ -102,12 +102,15 @@ function buildSubOptionBtn(alt,dk,mealKey,idx,currentSub){
     const isActive=currentSub&&currentSub.label===alt.label;
     const available=checkAvailByName(alt.label);
     const limitOk=!alt.limit||(weeklyLimits[alt.limit]&&weeklyLimits[alt.limit].current<weeklyLimits[alt.limit].max);
+
     let availHtml='';
     if(available&&limitOk)       availHtml=`<span class="sub-option-avail sub-avail-ok">✓ disponibile</span>`;
     else if(available&&!limitOk) availHtml=`<span class="sub-option-avail sub-avail-warn">⚠ limite</span>`;
     else                         availHtml=`<span class="sub-option-avail sub-avail-ko">✗ mancante</span>`;
+
     const altJson=JSON.stringify(alt).replace(/'/g,'&apos;').replace(/"/g,'&quot;');
-    return `<button class="sub-option-btn ${isActive?'active-sub':''}" onclick="selectSubstitution('${dk}','${mealKey}',${idx},${altJson})">
+    return `
+    <button class="sub-option-btn ${isActive?'active-sub':''}" onclick="selectSubstitution('${dk}','${mealKey}',${idx},${altJson})">
         <span class="sub-option-name">🔄 ${alt.label} ${alt.qty}${alt.unit}${alt.note?` <em style="color:var(--text-light);font-size:.85em">(${alt.note})</em>`:''}</span>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
             ${alt.limit?`<span class="sub-option-qty">⚠️ ${alt.limit.replace('_',' ')}</span>`:''}
@@ -117,7 +120,9 @@ function buildSubOptionBtn(alt,dk,mealKey,idx,currentSub){
 }
 
 function toggleDrawer(id){
-    document.querySelectorAll('.sub-drawer.open').forEach(d=>{if(d.id!==id) d.classList.remove('open');});
+    document.querySelectorAll('.sub-drawer.open').forEach(d=>{
+        if(d.id!==id) d.classList.remove('open');
+    });
     const el=document.getElementById(id);
     if(el) el.classList.toggle('open');
 }
@@ -148,15 +153,43 @@ function toggleUsed(dk,mealKey,idx){
     const dayData=getDayData(dk);
     if(!dayData.usedItems[mealKey]) dayData.usedItems[mealKey]={};
 
+    const day=mealKey.split('__')[0];
+    const meal=mealKey.split('__')[1];
+    const item=mealPlan[day]?.[meal]?.principale?.[idx];
+    const sub=dayData.substitutions[mealKey]?.[idx];
+    const effectiveItem=sub||item;
+
     if(dayData.usedItems[mealKey][idx]){
+        // ── DESELEZIONA: ripristina frigo e decrementa limite ──
         delete dayData.usedItems[mealKey][idx];
+
+        if(effectiveItem?.limit&&weeklyLimits[effectiveItem.limit]){
+            weeklyLimits[effectiveItem.limit].current=
+                Math.max(0,weeklyLimits[effectiveItem.limit].current-1);
+        }
+
+        const ingName=effectiveItem?.label||'';
+        for(const [pName,pData] of Object.entries(pantryItems)){
+            const pnl=pName.toLowerCase();
+            const nl=ingName.toLowerCase();
+            const match=pnl===nl||pnl.includes(nl)||nl.includes(pnl)||
+                pnl.split(' ').some(w=>w.length>2&&nl.includes(w))||
+                nl.split(' ').some(w=>w.length>2&&pnl.includes(w));
+            if(match){
+                const pItem=allPantryItems.find(i=>i.name===pName);
+                const qty=effectiveItem?.qty||pItem?.step||10;
+                const unit=effectiveItem?.unit||pData.unit;
+                const pUnit=pData.unit;
+                let toAdd=qty;
+                if(pUnit!==unit){const c=convertUnit(qty,unit,pUnit);if(c!==null) toAdd=c;}
+                pantryItems[pName].quantity=parseFloat(((pData.quantity||0)+toAdd).toFixed(3));
+                break;
+            }
+        }
+
     } else {
+        // ── SELEZIONA: scarica frigo e incrementa limite ──
         dayData.usedItems[mealKey][idx]=true;
-        const day=mealKey.split('__')[0];
-        const meal=mealKey.split('__')[1];
-        const item=mealPlan[day]?.[meal]?.principale?.[idx];
-        const sub=dayData.substitutions[mealKey]?.[idx];
-        const effectiveItem=sub||item;
 
         if(effectiveItem?.limit&&weeklyLimits[effectiveItem.limit]){
             weeklyLimits[effectiveItem.limit].current++;
