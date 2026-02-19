@@ -1,353 +1,263 @@
-var ricettaEditId = null;
-var ricettaMealFilter = 'tutti';
-var ricetteSearchQuery = '';
-var rfIngCount = 0;
+/* ============================================================
+   RICETTE_CUSTOM.JS — gestione ricette personalizzate
+   ============================================================ */
 
-function initIngredientiDatalist() {
-    var dl = document.getElementById('ingredientiSuggeriti');
-    if (!dl) return;
-    var allIngs = typeof getAllIngredients === 'function' ? getAllIngredients() : (allPantryItems || []);
-    dl.innerHTML = allIngs.map(function (i) {
-        return '<option value="' + i.name + '">';
-    }).join('');
-}
+var editingRecipeIdx = null;
 
-/* ---- FONTE UNICA DI TUTTE LE RICETTE ---- */
-function getAllRecipesFlat() {
-    var all = [];
-    if (typeof ricette !== 'undefined') {
-        Object.keys(ricette).forEach(function (key) {
-            var r = ricette[key];
-            all.push({
-                _id: key, _source: 'builtin',
-                nome: r.nome || r.name || key,
-                pasto: r.pasto || r.meal || '',
-                ingredienti: normalizeIngredients(r.ingredienti || r.ingredients || []),
-                istruzioni: r.istruzioni || r.instructions || r.preparazione || '',
-                limiti: r.limiti || []
-            });
-        });
-    }
-    customRecipes.forEach(function (r) {
-        all.push({
-            _id: r.id, _source: 'custom',
-            nome: r.nome || '',
-            pasto: r.pasto || '',
-            ingredienti: normalizeIngredients(r.ingredienti || []),
-            istruzioni: r.istruzioni || '',
-            limiti: r.limiti || []
-        });
-    });
-    return all;
-}
-
-function normalizeIngredients(ings) {
-    return ings.map(function (i) {
-        return {
-            nome: i.nome || i.name || i.label || '',
-            quantita: i.quantita || i.quantity || i.qty || 0,
-            unita: i.unita || i.unit || 'g'
-        };
-    });
-}
-
-/* ---- RENDER PAGINA ---- */
-function renderRicettePage() {
-    renderCatalogoRicette();
-    renderCustomRicette();
-    initIngredientiDatalist();
-}
-
-function showRicetteTab(tab, btn) {
-    document.querySelectorAll('#ricettePage .page-tab-content').forEach(function (c) {
-        c.classList.remove('active');
-    });
-    document.querySelectorAll('#ricettePage .page-tab').forEach(function (t) {
-        t.classList.remove('active');
-    });
-    document.getElementById('ricetteTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
-    if (btn) btn.classList.add('active');
-    if (tab === 'catalogo') renderCatalogoRicette();
-    if (tab === 'custom') renderCustomRicette();
-}
-
-/* ---- CATALOGO ---- */
-function filterRicette(val) {
-    ricetteSearchQuery = val;
-    var clearBtn = document.getElementById('ricetteClearBtn');
-    if (clearBtn) clearBtn.style.display = val ? 'block' : 'none';
-    renderCatalogoRicette();
-}
-function clearRicetteSearch() {
-    var input = document.getElementById('ricetteSearch');
-    if (input) input.value = '';
-    ricetteSearchQuery = '';
-    var clearBtn = document.getElementById('ricetteClearBtn');
-    if (clearBtn) clearBtn.style.display = 'none';
-    renderCatalogoRicette();
-    if (input) input.focus();
-}
-function setRicetteMealFilter(val, btn) {
-    ricettaMealFilter = val;
-    document.querySelectorAll('.ricette-filter-btn').forEach(function (b) { b.classList.remove('active'); });
-    if (btn) btn.classList.add('active');
-    renderCatalogoRicette();
-}
-
-function renderCatalogoRicette() {
-    var container = document.getElementById('ricetteCatalogoContent');
-    if (!container) return;
-    var all = getAllRecipesFlat();
-    if (ricettaMealFilter !== 'tutti') {
-        all = all.filter(function (r) { return r.pasto === ricettaMealFilter; });
-    }
-    if (ricetteSearchQuery) {
-        var q = ricetteSearchQuery.toLowerCase();
-        all = all.filter(function (r) {
-            var name = (r.nome || '').toLowerCase();
-            var ings = r.ingredienti.map(function (i) { return i.nome.toLowerCase(); }).join(' ');
-            return name.includes(q) || ings.includes(q);
-        });
-    }
-    if (!all.length) {
-        container.innerHTML = '<div class="ricette-empty"><div style="font-size:2.5em;">🔍</div><p>Nessuna ricetta trovata.</p></div>';
-        return;
-    }
-    container.innerHTML = '<div class="ricette-grid">' + all.map(buildRicettaCard).join('') + '</div>';
-}
-
-function buildRicettaCard(r) {
-    var name = r.nome || 'Ricetta';
-    var pasto = r.pasto || '';
-    var ings = r.ingredienti || [];
-    var isCustom = r._source === 'custom';
-    var pastoLabels = {
-        colazione: '☕ Colazione', spuntino: '🍎 Spuntino',
-        pranzo: '🍽️ Pranzo', merenda: '🥪 Merenda', cena: '🌙 Cena'
-    };
-    var pastoLabel = pastoLabels[pasto] || pasto;
-    var availCount = 0;
-    ings.forEach(function (ing) { if (checkAvailByName(ing.nome)) availCount++; });
-    var total = ings.length || 1;
-    var pct = Math.round((availCount / total) * 100);
-    var availBadge = pct === 100
-        ? '<span class="rcb rcb-avail">✓ disponibile</span>'
-        : pct >= 50
-        ? '<span class="rcb rcb-partial">⚠ ' + pct + '% disponibile</span>'
-        : '<span class="rcb rcb-missing">✗ mancanti</span>';
-    var ingPreview = ings.slice(0, 4).map(function (i) { return i.nome; }).filter(Boolean).join(', ');
-    if (ings.length > 4) ingPreview += ' +' + (ings.length - 4);
-    var idEsc = (r._id || '').replace(/'/g, "\\'");
-
-    return '<div class="ricetta-card ' + (isCustom ? 'custom-card' : '') + '" '
-        + 'onclick="openRicettaDetail(\'' + idEsc + '\',\'' + r._source + '\')">'
-        + '<div class="ricetta-card-head">'
-        + '<div class="ricetta-card-icon">' + (isCustom ? '⭐' : '🍽️') + '</div>'
-        + '<div class="ricetta-card-info">'
-        + '<div class="ricetta-card-name">' + name + '</div>'
-        + '<div class="ricetta-card-badges">'
-        + '<span class="rcb rcb-pasto">' + pastoLabel + '</span>'
-        + (isCustom ? '<span class="rcb rcb-custom">Mia ricetta</span>' : '')
-        + availBadge
-        + '</div></div></div>'
-        + '<div class="ricetta-card-ings">🥦 ' + (ingPreview || 'Nessun ingrediente') + '</div>'
-        + '<div class="ricetta-card-footer">'
-        + '<span style="font-size:.75em;color:var(--text-light);">'
-        + ings.length + ' ingredient' + (ings.length === 1 ? 'e' : 'i') + '</span>'
-        + '<div class="ricetta-card-footer-actions">'
-        + (isCustom
-            ? '<button class="btn btn-secondary btn-small" onclick="event.stopPropagation();editRicettaCustom(\'' + idEsc + '\')">✏️</button>'
-            + '<button class="btn btn-warning btn-small" onclick="event.stopPropagation();deleteRicettaCustom(\'' + idEsc + '\')">🗑️</button>'
-            : '')
-        + '</div></div></div>';
-}
-
-function openRicettaDetail(id, source) {
-    var r = null;
-    if (source === 'custom') {
-        r = customRecipes.find(function (x) { return x.id === id; });
-    } else if (typeof ricette !== 'undefined') {
-        r = ricette[id];
-    }
-    if (!r) return;
-    var norm = {
-        nome: r.nome || r.name || 'Ricetta',
-        pasto: r.pasto || r.meal || '',
-        ingredienti: normalizeIngredients(r.ingredienti || r.ingredients || []),
-        istruzioni: r.istruzioni || r.instructions || r.preparazione || ''
-    };
-    var pastoLabels = {
-        colazione: '☕ Colazione', spuntino: '🍎 Spuntino',
-        pranzo: '🍽️ Pranzo', merenda: '🥪 Merenda', cena: '🌙 Cena'
-    };
-    var ingHtml = norm.ingredienti.map(function (ing) {
-        var avail = checkAvailByName(ing.nome);
-        return '<div class="ingredient-item ' + (avail ? 'ing-available' : 'ing-missing') + '">'
-            + '<span class="ingredient-name">' + ing.nome + '</span>'
-            + '<span class="ingredient-qty-label ' + (avail ? 'ok' : 'ko') + '">'
-            + ing.quantita + ' ' + ing.unita + '</span>'
-            + '</div>';
-    }).join('');
-    document.getElementById('recipeModalTitle').textContent =
-        (source === 'custom' ? '⭐' : '🍽️') + ' ' + norm.nome +
-        ' — ' + (pastoLabels[norm.pasto] || norm.pasto);
-    document.getElementById('recipeModalBody').innerHTML = ingHtml
-        + (norm.istruzioni
-            ? '<div style="margin-top:14px;padding:12px;background:var(--bg-light);border-radius:10px;'
-            + 'font-size:.87em;line-height:1.7;white-space:pre-wrap;">' + norm.istruzioni + '</div>'
-            : '');
-    document.getElementById('recipeModalSelectBtn').style.display = 'none';
-    document.getElementById('recipeModal').classList.add('active');
-}
-
-function closeRecipeModal() {
-    document.getElementById('recipeModal').classList.remove('active');
-}
-function selectRecipeFromModal() {}
-
-/* ---- LE MIE RICETTE ---- */
+/* ---- RENDER LISTA ---- */
 function renderCustomRicette() {
-    var container = document.getElementById('ricetteCustomContent');
-    if (!container) return;
-    if (!customRecipes.length) {
-        container.innerHTML = '<div class="custom-ricette-empty">'
-            + '<div style="font-size:3em;">📖</div>'
-            + '<h3>Nessuna ricetta personalizzata</h3>'
-            + '<p>Clicca "➕ Nuova Ricetta" per aggiungerne una.</p></div>';
+    var el = document.getElementById('customRicetteList');
+    if (!el) return;
+
+    if (!customRecipes || !customRecipes.length) {
+        el.innerHTML = '<div class="empty-state">'
+            + '<div class="empty-state-icon">⭐</div>'
+            + '<h3>Nessuna ricetta personale</h3>'
+            + '<p>Crea la tua prima ricetta con il tasto <b>＋ Nuova</b>.</p>'
+            + '</div>';
         return;
     }
-    var pastoLabels = {
-        colazione: '☕ Colazione', spuntino: '🍎 Spuntino',
-        pranzo: '🍽️ Pranzo', merenda: '🥪 Merenda', cena: '🌙 Cena'
-    };
-    container.innerHTML = customRecipes.map(function (r) {
-        var ings = r.ingredienti || [];
-        var idEsc = r.id.replace(/'/g, "\\'");
-        return '<div class="custom-ricetta-item">'
-            + '<div class="custom-ricetta-header">'
-            + '<div>'
-            + '<div class="custom-ricetta-name">⭐ ' + r.nome + '</div>'
-            + '<div class="custom-ricetta-meta">'
-            + '<span class="rcb rcb-pasto">' + (pastoLabels[r.pasto] || r.pasto) + '</span>'
-            + '</div></div>'
-            + '<div class="custom-ricetta-actions">'
-            + '<button class="btn btn-secondary btn-small" onclick="editRicettaCustom(\'' + idEsc + '\')">✏️</button>'
-            + '<button class="btn btn-warning btn-small" onclick="deleteRicettaCustom(\'' + idEsc + '\')">🗑️</button>'
-            + '</div></div>'
-            + '<div class="custom-ricetta-ings">🥦 '
-            + ings.map(function (i) { return i.nome + ' ' + i.quantita + i.unita; }).join(' · ')
-            + '</div>'
-            + (r.istruzioni
-                ? '<div class="custom-ricetta-prep">' + r.istruzioni + '</div>'
-                : '')
-            + '</div>';
+
+    el.innerHTML = customRecipes.map(function (r, idx) {
+        return buildCustomRicettaItem(r, idx);
     }).join('');
 }
 
-/* ---- FORM RICETTA ---- */
-function openRicettaForm(id) {
-    id = id || null;
-    ricettaEditId = id;
-    rfIngCount = 0;
-    document.getElementById('ricettaFormTitle').textContent = id ? '✏️ Modifica Ricetta' : '🍳 Nuova Ricetta';
-    document.getElementById('rfNome').value = '';
-    document.getElementById('rfPasto').value = 'pranzo';
-    document.getElementById('rfIstruzioni').value = '';
-    document.getElementById('rfIngList').innerHTML = '';
+/* ---- BUILD ITEM ---- */
+function buildCustomRicettaItem(r, idx) {
+    var name  = r.nome || r.name || 'Ricetta';
+    var icon  = r.icon || r.icona || '⭐';
+    var pasto = r.pasto || '';
+    var ings  = r.ingredienti || [];
+    var prep  = r.preparazione || '';
 
-    if (id) {
-        var r = customRecipes.find(function (x) { return x.id === id; });
-        if (r) {
-            document.getElementById('rfNome').value = r.nome || '';
-            document.getElementById('rfPasto').value = r.pasto || 'pranzo';
-            document.getElementById('rfIstruzioni').value = r.istruzioni || '';
-            (r.ingredienti || []).forEach(function (ing) {
-                addRfIng(ing.nome, ing.quantita, ing.unita);
-            });
-        }
-    } else {
-        addRfIng();
-    }
+    var ingList = ings.map(function (i) {
+        var qty = i.quantity ? i.quantity + ' ' + (i.unit || '') : '';
+        return (i.name || '') + (qty ? ' (' + qty + ')' : '');
+    }).join(', ');
 
-    document.getElementById('ricettaFormModal').classList.add('active');
-    setTimeout(function () { document.getElementById('rfNome').focus(); }, 100);
+    return '<div class="custom-ricetta-item">'
+        + '<div class="custom-ricetta-header">'
+        + '<div>'
+        + '<div class="custom-ricetta-name">' + icon + ' ' + name + '</div>'
+        + '<div class="custom-ricetta-meta" style="margin-top:3px;">'
+        + (pasto ? '<span class="rcb rcb-pasto" style="font-size:.7em;">' + capFirst(pasto) + '</span>' : '')
+        + '<span class="rcb rcb-custom" style="font-size:.7em;margin-left:4px;">'
+        + ings.length + ' ingredienti</span>'
+        + '</div>'
+        + '</div>'
+        + '<div class="custom-ricetta-actions">'
+        + '<button class="btn btn-small btn-secondary"'
+        + ' onclick="openRecipeModal(\'' + escRQ2(name) + '\')">👁 Vedi</button>'
+        + '<button class="btn btn-small btn-secondary"'
+        + ' onclick="editRicettaCustom(' + idx + ')">✏️</button>'
+        + '<button class="btn btn-small btn-warning"'
+        + ' onclick="deleteRicettaCustom(' + idx + ')">🗑</button>'
+        + '</div></div>'
+        + (ingList
+            ? '<div class="custom-ricetta-ings">🥗 ' + ingList + '</div>'
+            : '')
+        + (prep
+            ? '<div class="custom-ricetta-prep">'
+            + truncate(prep, 120) + '</div>'
+            : '')
+        + '</div>';
 }
 
-function addRfIng(nome, quantita, unita) {
-    var idx = rfIngCount++;
-    var units = ['g', 'ml', 'pz', 'cucchiai', 'cucchiaini', 'tazze', 'fette'];
+/* ---- FORM NUOVA / MODIFICA ---- */
+function openRicettaForm(idx) {
+    editingRecipeIdx = (idx !== undefined && idx !== null) ? idx : null;
+    var modal  = document.getElementById('ricettaFormModal');
+    var title  = document.getElementById('ricettaFormTitle');
+    var nome   = document.getElementById('rfNome');
+    var pasto  = document.getElementById('rfPasto');
+    var prep   = document.getElementById('rfPreparazione');
+    var ingList = document.getElementById('rfIngredientiList');
+    if (!modal) return;
+
+    /* Reset */
+    if (nome)    nome.value  = '';
+    if (pasto)   pasto.value = 'pranzo';
+    if (prep)    prep.value  = '';
+    if (ingList) ingList.innerHTML = '';
+
+    if (editingRecipeIdx !== null && customRecipes[editingRecipeIdx]) {
+        var r = customRecipes[editingRecipeIdx];
+        if (title)  title.textContent  = '✏️ Modifica ricetta';
+        if (nome)   nome.value  = r.nome  || r.name  || '';
+        if (pasto)  pasto.value = r.pasto || 'pranzo';
+        if (prep)   prep.value  = r.preparazione || '';
+        /* Carica ingredienti */
+        (r.ingredienti || []).forEach(function (ing) {
+            appendRfIngRow(ing.name || '', ing.quantity || '', ing.unit || 'g');
+        });
+    } else {
+        if (title) title.textContent = '⭐ Nuova ricetta';
+        appendRfIngRow('', '', 'g');
+    }
+
+    modal.classList.add('active');
+}
+
+function closeRicettaForm() {
+    var m = document.getElementById('ricettaFormModal');
+    if (m) m.classList.remove('active');
+    editingRecipeIdx = null;
+}
+
+/* ---- RIGA INGREDIENTE NEL FORM ---- */
+function addRfIngrediente() {
+    appendRfIngRow('', '', 'g');
+}
+
+function appendRfIngRow(name, qty, unit) {
+    var list = document.getElementById('rfIngredientiList');
+    if (!list) return;
+
+    var units = ['g','ml','pz','fette','cucchiai','cucchiaini','porzione','kg','l'];
+    var unitOpts = units.map(function (u) {
+        return '<option value="' + u + '"' + (unit === u ? ' selected' : '') + '>' + u + '</option>';
+    }).join('');
+
+    var idx = list.children.length;
     var div = document.createElement('div');
     div.className = 'rf-ing-row';
-    div.id = 'rfIng_' + idx;
-    div.innerHTML = '<input type="text" class="form-input rf-ing-name" placeholder="Ingrediente" '
-        + 'value="' + (nome || '') + '" list="ingredientiSuggeriti">'
-        + '<input type="number" class="form-input rf-ing-qty" placeholder="Qtà" '
-        + 'value="' + (quantita || '') + '" min="0" step="any" style="width:80px;">'
-        + '<select class="form-input rf-ing-unit">'
-        + units.map(function (u) {
-            return '<option value="' + u + '"' + (u === (unita || 'g') ? ' selected' : '') + '>' + u + '</option>';
-        }).join('')
-        + '</select>'
-        + '<button class="btn btn-warning btn-small" onclick="removeRfIng(' + idx + ')">✕</button>';
-    document.getElementById('rfIngList').appendChild(div);
+    div.id = 'rfrow_' + idx;
+    div.innerHTML =
+        '<input type="text" class="form-input rf-ing-name" placeholder="Ingrediente"'
+        + ' value="' + escHTML(name) + '" id="rfname_' + idx + '">'
+        + '<input type="number" class="form-input rf-ing-qty" placeholder="Qtà" min="0" step="any"'
+        + ' value="' + (qty || '') + '" id="rfqty_' + idx + '">'
+        + '<select class="form-input rf-ing-unit" id="rfunit_' + idx + '">'
+        + unitOpts + '</select>'
+        + '<button class="btn btn-warning btn-small" style="flex:none;padding:6px 9px;"'
+        + ' onclick="removeRfRow(' + idx + ')">🗑</button>';
+    list.appendChild(div);
+
+    /* Focus sul nuovo campo nome */
+    setTimeout(function () {
+        var inp = document.getElementById('rfname_' + idx);
+        if (inp) inp.focus();
+    }, 40);
 }
 
-function removeRfIng(idx) {
-    var el = document.getElementById('rfIng_' + idx);
-    if (el) el.remove();
+function removeRfRow(idx) {
+    var row = document.getElementById('rfrow_' + idx);
+    if (row) row.remove();
 }
 
+/* ---- SALVA RICETTA CUSTOM ---- */
 function saveRicettaCustom() {
-    var nome = document.getElementById('rfNome').value.trim();
-    var pasto = document.getElementById('rfPasto').value;
-    var istruzioni = document.getElementById('rfIstruzioni').value.trim();
-    if (!nome) { alert('Inserisci il nome della ricetta.'); return; }
+    var nome  = (document.getElementById('rfNome')  || {}).value || '';
+    var pasto = (document.getElementById('rfPasto') || {}).value || 'pranzo';
+    var prep  = (document.getElementById('rfPreparazione') || {}).value || '';
+    nome = nome.trim();
 
-    var ingredienti = [];
-    document.querySelectorAll('#rfIngList .rf-ing-row').forEach(function (row) {
-        var n = row.querySelector('.rf-ing-name').value.trim();
-        var q = parseFloat(row.querySelector('.rf-ing-qty').value) || 0;
-        var u = row.querySelector('.rf-ing-unit').value;
-        if (n) ingredienti.push({ nome: n, quantita: q, unita: u });
-    });
+    if (!nome) {
+        alert('Inserisci il nome della ricetta.');
+        document.getElementById('rfNome').focus();
+        return;
+    }
 
-    if (ricettaEditId) {
-        var idx = customRecipes.findIndex(function (r) { return r.id === ricettaEditId; });
-        if (idx >= 0) {
-            customRecipes[idx] = {
-                id: ricettaEditId, nome: nome, pasto: pasto,
-                ingredienti: ingredienti, istruzioni: istruzioni
-            };
-        }
-    } else {
-        customRecipes.push({
-            id: 'cr_' + Date.now(), nome: nome, pasto: pasto,
-            ingredienti: ingredienti, istruzioni: istruzioni
+    /* Raccogli ingredienti */
+    var ingList = document.getElementById('rfIngredientiList');
+    var ings    = [];
+    if (ingList) {
+        var rows = ingList.querySelectorAll('.rf-ing-row');
+        rows.forEach(function (row) {
+            var idParts = row.id.split('_');
+            var idx     = idParts[idParts.length - 1];
+            var nameEl  = document.getElementById('rfname_' + idx);
+            var qtyEl   = document.getElementById('rfqty_'  + idx);
+            var unitEl  = document.getElementById('rfunit_' + idx);
+            if (!nameEl) return;
+            var n = (nameEl.value || '').trim();
+            if (!n) return;
+            ings.push({
+                name:     n,
+                quantity: qtyEl  ? (parseFloat(qtyEl.value) || null) : null,
+                unit:     unitEl ? unitEl.value : 'g'
+            });
         });
+    }
+
+    /* Genera icona automatica dal pasto */
+    var iconMap = {
+        colazione: '☕', spuntino: '🍎',
+        pranzo: '🍽', merenda: '🥪', cena: '🌙'
+    };
+    var icon = iconMap[pasto] || '⭐';
+
+    var ricetta = {
+        nome:          nome,
+        name:          nome,
+        icon:          icon,
+        pasto:         pasto,
+        ingredienti:   ings,
+        preparazione:  prep.trim(),
+        isCustom:      true
+    };
+
+    if (!customRecipes) customRecipes = [];
+
+    if (editingRecipeIdx !== null && editingRecipeIdx >= 0) {
+        customRecipes[editingRecipeIdx] = ricetta;
+    } else {
+        /* Controlla duplicato */
+        var dup = customRecipes.findIndex(function (r) {
+            return (r.nome || r.name || '').toLowerCase() === nome.toLowerCase();
+        });
+        if (dup !== -1) {
+            if (!confirm('Esiste già una ricetta con questo nome. Sovrascrivere?')) return;
+            customRecipes[dup] = ricetta;
+        } else {
+            customRecipes.push(ricetta);
+        }
     }
 
     saveData();
     closeRicettaForm();
     renderCustomRicette();
-    renderCatalogoRicette(); // FIX: la ricetta appare subito anche nel catalogo
-    alert('Ricetta "' + nome + '" salvata! ✅');
+    /* Aggiorna anche il catalogo se visibile */
+    renderRicetteGrid();
+    alert('✅ Ricetta "' + nome + '" salvata!');
 }
 
-function editRicettaCustom(id) {
-    openRicettaForm(id);
+/* ---- EDIT / DELETE ---- */
+function editRicettaCustom(idx) {
+    openRicettaForm(idx);
 }
 
-function deleteRicettaCustom(id) {
-    var r = customRecipes.find(function (x) { return x.id === id; });
-    if (!r) return;
-    if (!confirm('Eliminare "' + r.nome + '"?')) return;
-    customRecipes = customRecipes.filter(function (x) { return x.id !== id; });
+function deleteRicettaCustom(idx) {
+    var name = customRecipes[idx]
+        ? (customRecipes[idx].nome || customRecipes[idx].name || 'questa ricetta')
+        : 'questa ricetta';
+    if (!confirm('Eliminare la ricetta "' + name + '"?')) return;
+    customRecipes.splice(idx, 1);
     saveData();
     renderCustomRicette();
-    renderCatalogoRicette();
+    renderRicetteGrid();
 }
 
-function closeRicettaForm() {
-    document.getElementById('ricettaFormModal').classList.remove('active');
-    ricettaEditId = null;
+/* ---- UTILITY ---- */
+function truncate(str, max) {
+    if (!str) return '';
+    return str.length <= max ? str : str.slice(0, max) + '…';
+}
+
+function capFirst(str) {
+    return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+}
+
+function escRQ2(str) {
+    return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function escHTML(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 }
