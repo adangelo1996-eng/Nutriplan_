@@ -128,32 +128,41 @@ function generateSpesa() {
     var newItems = [];
     var mealKeys = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
 
-    mealKeys.forEach(function (mk) {
-        var mp = mealPlan[mk] || {};
-        ['principale', 'contorno', 'frutta', 'extra'].forEach(function (cat) {
-            (mp[cat] || []).forEach(function (item) {
-                var avail = checkIngredientAvailability(item);
-                if (!avail.sufficient) {
-                    /* Già in lista? */
-                    var exists = spesaItems.some(function (s) {
-                        return s.name.toLowerCase() === item.name.toLowerCase() && s.isAuto;
-                    });
-                    if (!exists) {
-                        var pd  = pantryItems[item.name] || {};
-                        var cat2 = pd.category || guessCatFromName(item.name);
-                        newItems.push({
-                            name:     item.name,
-                            quantity: item.quantity || null,
-                            unit:     item.unit     || null,
-                            category: cat2,
-                            isAuto:   true,
-                            done:     false
-                        });
-                    }
-                }
-            });
+mealKeys.forEach(function (mk) {
+  var mp = mealPlan[mk] || {};
+  ['principale', 'contorno', 'frutta', 'extra'].forEach(function (cat) {
+    (mp[cat] || []).forEach(function (item) {
+
+      /* GUARD: salta item non validi */
+      if (!item || typeof item !== 'object' ||
+          !item.name || typeof item.name !== 'string' ||
+          !item.name.trim()) return;
+
+      var avail = checkIngredientAvailability(item);
+      if (!avail.sufficient) {
+        var name = item.name.trim();
+        var exists = (spesaItems || []).some(function (s) {
+          return s.name &&
+                 s.name.toLowerCase() === name.toLowerCase() &&
+                 s.isAuto;
         });
+        if (!exists) {
+          var pd   = pantryItems[name] || {};
+          var cat2 = pd.category || guessCatFromName(name);
+          newItems.push({
+            name:     name,
+            quantity: item.quantity || null,
+            unit:     item.unit     || null,
+            category: cat2,
+            isAuto:   true,
+            done:     false
+          });
+        }
+      }
     });
+  });
+});
+
 
     if (!newItems.length) {
         alert('✅ Tutti gli ingredienti del piano sono già disponibili in dispensa!');
