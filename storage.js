@@ -54,23 +54,57 @@ function loadData() {
 }
 
 function applyLoadedData(data) {
-    if (!data) return;
-    if (data.mealPlan)          mealPlan          = data.mealPlan;
-    if (data.pantryItems)       pantryItems       = data.pantryItems;
-    if (data.savedFridges)      savedFridges      = data.savedFridges;
-    if (data.appHistory)        appHistory        = data.appHistory;
-    if (data.customRecipes)     customRecipes     = data.customRecipes;
-    if (data.customIngredients) customIngredients = data.customIngredients;
-    if (data.spesaItems)        spesaItems        = data.spesaItems;
-    if (data.spesaLastGenerated) spesaLastGenerated = data.spesaLastGenerated;
-    if (data.weeklyLimits) {
-        Object.keys(data.weeklyLimits).forEach(function (k) {
-            if (weeklyLimits[k]) {
-                weeklyLimits[k].current = data.weeklyLimits[k].current || 0;
-            }
-        });
-    }
+  if (!data) return;
+
+  if (data.mealPlan) {
+    mealPlan = data.mealPlan;
+    /* Sanitizza ogni array del piano: rimuovi null e item senza name */
+    ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk) {
+      if (!mealPlan[mk] || typeof mealPlan[mk] !== 'object') {
+        mealPlan[mk] = {};
+        return;
+      }
+      ['principale','contorno','frutta','extra'].forEach(function(cat) {
+        if (!Array.isArray(mealPlan[mk][cat])) {
+          mealPlan[mk][cat] = [];
+        } else {
+          mealPlan[mk][cat] = mealPlan[mk][cat].filter(function(item) {
+            return item &&
+                   typeof item === 'object' &&
+                   item.name &&
+                   typeof item.name === 'string' &&
+                   item.name.trim() !== '';
+          });
+        }
+      });
+    });
+  }
+
+  if (data.pantryItems) {
+    pantryItems = data.pantryItems;
+    /* Rimuovi chiavi non valide: "undefined", "null", stringhe vuote */
+    Object.keys(pantryItems).forEach(function(k) {
+      if (!k || k === 'undefined' || k === 'null' || k.trim() === '') {
+        delete pantryItems[k];
+      }
+    });
+  }
+
+  if (data.savedFridges)       savedFridges = data.savedFridges;
+  if (data.appHistory)         appHistory = data.appHistory;
+  if (data.customRecipes)      customRecipes = data.customRecipes;
+  if (data.customIngredients)  customIngredients = data.customIngredients;
+  if (data.spesaItems)         spesaItems = data.spesaItems;
+  if (data.spesaLastGenerated) spesaLastGenerated = data.spesaLastGenerated;
+  if (data.weeklyLimits) {
+    Object.keys(data.weeklyLimits).forEach(function(k) {
+      if (weeklyLimits[k]) {
+        weeklyLimits[k].current = data.weeklyLimits[k].current || 0;
+      }
+    });
+  }
 }
+
 
 function buildSaveObject() {
     var limitsToSave = {};
