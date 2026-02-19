@@ -1,113 +1,164 @@
-var pantryItems = {};
-var savedFridges = {};
-var selectedDayIngredients = [];
-var currentModalRecipe = null;
-var appHistory = {};
-var selectedDateKey = '';
-var customRecipes = [];
+/* ============================================================
+   STORAGE.JS — salvataggio, caricamento, disponibilità
+   ============================================================ */
+
+var STORAGE_KEY = 'nutriplan_v2';
+
+/* Variabili globali app */
+var mealPlan          = {};
+var pantryItems       = {};
+var savedFridges      = {};
+var appHistory        = {};
+var customRecipes     = [];
 var customIngredients = [];
-var mealPlan = {};
-var currentUser = null;
-var firebaseReady = false;
-var spesaItems = [];
+var spesaItems        = [];
 var spesaLastGenerated = null;
+var selectedDateKey   = getCurrentDateKey();
 
-var STORAGE_KEY = 'nutriplanDataV8';
+/* ============================================================
+   INIT
+   ============================================================ */
+function initStorage() {
+    loadData();
 
-/* ---- FIREBASE ---- */
-function initFirebase() {
+    /* Se mealPlan è vuoto applica il default */
+    if (!mealPlan || !Object.keys(mealPlan).length) {
+        mealPlan = JSON.parse(JSON.stringify(defaultMealPlan));
+    }
+    /* Assicura che tutte le chiavi del piano esistano */
+    ['colazione','spuntino','pranzo','merenda','cena'].forEach(function (mk) {
+        if (!mealPlan[mk]) mealPlan[mk] = {};
+        ['principale','contorno','frutta','extra'].forEach(function (cat) {
+            if (!Array.isArray(mealPlan[mk][cat])) mealPlan[mk][cat] = [];
+        });
+    });
+
+    /* Assicura limiti settimanali */
+    Object.keys(weeklyLimits).forEach(function (k) {
+        if (weeklyLimits[k].current === undefined) weeklyLimits[k].current = 0;
+    });
+}
+
+/* ============================================================
+   LOAD / SAVE
+   ============================================================ */
+function loadData() {
     try {
-        if (typeof firebase === 'undefined') return;
-        if (typeof firebaseConfig === 'undefined' || !firebaseConfig.apiKey) return;
-        firebase.initializeApp(firebaseConfig);
-        firebaseReady = true;
-        firebase.auth().onAuthStateChanged(function (user) {
-            currentUser = user;
-            if (user) {
-                loadFromCloud(function () { refreshAllAppViews(); });
-                updateAuthUI(true, user.displayName, user.photoURL);
-            } else {
-                updateAuthUI(false, null, null);
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        applyLoadedData(data);
+    } catch (e) {
+        console.warn('Errore caricamento dati:', e);
+    }
+}
+
+function applyLoadedData(data) {
+    if (!data) return;
+    if (data.mealPlan)          mealPlan          = data.mealPlan;
+    if (data.pantryItems)       pantryItems       = data.pantryItems;
+    if (data.savedFridges)      savedFridges      = data.savedFridges;
+    if (data.appHistory)        appHistory        = data.appHistory;
+    if (data.customRecipes)     customRecipes     = data.customRecipes;
+    if (data.customIngredients) customIngredients = data.customIngredients;
+    if (data.spesaItems)        spesaItems        = data.spesaItems;
+    if (data.spesaLastGenerated) spesaLastGenerated = data.spesaLastGenerated;
+    if (data.weeklyLimits) {
+        Object.keys(data.weeklyLimits).forEach(function (k) {
+            if (weeklyLimits[k]) {
+                weeklyLimits[k].current = data.weeklyLimits[k].current || 0;
             }
         });
-    } catch (e) {
-        console.warn('Firebase init failed:', e);
     }
 }
 
-function signInWithGoogle() {
-    if (!firebaseReady) {
-        alert('Firebase non configurato. Vedi firebase-config.js');
+function buildSaveObject() {
+    var limitsToSave = {};
+    Object.keys(weeklyLimits).forEach(function (k) {
+        limitsToSave[k] = { current: weeklyLimits[k].current };
+    });
+    return {
+        mealPlan:          mealPlan,
+        pantryItems:       pantryItems,
+        savedFridges:      savedFridges,
+        appHistory:        appHistory,
+        customRecipes:     customRecipes,
+        customIngredients: customIngredients,
+        spesaItems:        spesaItems,
+        spesaLastGenerated: spesaLastGenerated,
+        weeklyLimits:      limitsToSave
+    };
+}
+
+function saveData() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(buildSaveObject()));
+        syncToCloud();
+    } catch (e) {
+        console.warn('Errore salvataggio:', e);
+    }
+}
+
+/* ============================================================
+   SYNC FIREBASE
+   ============================================================ */
+var syncTimeout = null;
+function syncToCloud() {
+    if (!firebaseReady || !currentUser) {
+        showCloudStatus('local');
         return;
     }
-    var provider = new firebase.auth.GoogleAuthProvider();
-    firebase.auth().signInWithPopup(provider).catch(function (err) {
-        alert('Errore login: ' + err.message);
-    });
+    showCloudStatus('saving');
+    clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(function () {
+        firebase.database()
+            .ref('users/' + currentUser.uid + '/nutriplan')
+            .set(buildSaveObject())
+            .then(function () { showCloudStatus('synced'); })
+            .catch(function ()  { showCloudStatus('local');  });
+    }, 1500);
 }
 
-function signOutUser() {
-    if (!firebaseReady) return;
-    firebase.auth().signOut();
+function loadFromCloud(uid) {
+    firebase.database()
+        .ref('users/' + uid + '/nutriplan')
+        .once('value')
+        .then(function (snap) {
+            var data = snap.val();
+            if (data) {
+                applyLoadedData(data);
+                /* Assicura struttura piano */
+                ['colazione','spuntino','pranzo','merenda','cena'].forEach(function (mk) {
+                    if (!mealPlan[mk]) mealPlan[mk] = {};
+                    ['principale','contorno','frutta','extra'].forEach(function (cat) {
+                        if (!Array.isArray(mealPlan[mk][cat])) mealPlan[mk][cat] = [];
+                    });
+                });
+                saveData();
+                refreshAllAppViews();
+            }
+            showCloudStatus('synced');
+        })
+        .catch(function (e) {
+            console.warn('Errore caricamento cloud:', e);
+            showCloudStatus('local');
+        });
 }
 
-function loadFromCloud(cb) {
-    if (!firebaseReady || !currentUser) { if (cb) cb(); return; }
-    var ref = firebase.database().ref('users/' + currentUser.uid + '/nutriplan');
-    ref.once('value').then(function (snap) {
-        var data = snap.val();
-        if (data) applyLoadedData(data);
-        if (cb) cb();
-    }).catch(function (e) {
-        console.warn('Cloud load error:', e);
-        if (cb) cb();
-    });
-}
-
-function updateAuthUI(loggedIn, name, photo) {
-    var btn    = document.getElementById('authBtn');
-    var info   = document.getElementById('authInfo');
-    var avatar = document.getElementById('authAvatar');
-    if (!btn) return;
-    if (loggedIn) {
-        btn.textContent = 'Disconnetti';
-        btn.onclick = signOutUser;
-        if (info) info.textContent = name || 'Utente';
-        if (avatar && photo) { avatar.src = photo; avatar.style.display = 'block'; }
-        showCloudStatus('synced');
-    } else {
-        btn.textContent = 'Accedi con Google';
-        btn.onclick = signInWithGoogle;
-        if (info) info.textContent = '';
-        if (avatar) avatar.style.display = 'none';
-        showCloudStatus('local');
+/* ============================================================
+   STORICO GIORNALIERO
+   ============================================================ */
+function getDayData(dateKey) {
+    if (!dateKey) dateKey = getCurrentDateKey();
+    if (!appHistory[dateKey]) {
+        appHistory[dateKey] = {
+            usedItems:     {},
+            substitutions: {}
+        };
     }
+    return appHistory[dateKey];
 }
 
-function showCloudStatus(status) {
-    var el = document.getElementById('cloudStatus');
-    if (!el) return;
-    if (status === 'synced') {
-        el.textContent = '☁️ Sincronizzato';
-        el.className = 'cloud-status synced';
-    } else if (status === 'saving') {
-        el.textContent = '⏳ Salvataggio...';
-        el.className = 'cloud-status saving';
-    } else {
-        el.textContent = '💾 Locale';
-        el.className = 'cloud-status local';
-    }
-}
-
-function refreshAllAppViews() {
-    if (typeof renderMealPlan       === 'function') renderMealPlan();
-    if (typeof renderPantry         === 'function') renderPantry();
-    if (typeof renderFridge         === 'function') renderFridge();
-    if (typeof updateLimits         === 'function') updateLimits();
-    if (typeof buildCalendarBar     === 'function') buildCalendarBar();
-}
-
-/* ---- LOCALE ---- */
 function getCurrentDateKey() {
     var d = new Date();
     return d.getFullYear() + '-'
@@ -115,145 +166,160 @@ function getCurrentDateKey() {
         + String(d.getDate()).padStart(2, '0');
 }
 
-function getDayData(dateKey) {
-    if (!appHistory[dateKey]) {
-        appHistory[dateKey] = { usedItems: {}, substitutions: {} };
-    }
-    return appHistory[dateKey];
+function resetWeek() {
+    if (!confirm('Resettare tutti i limiti settimanali?')) return;
+    Object.keys(weeklyLimits).forEach(function (k) {
+        weeklyLimits[k].current = 0;
+    });
+    saveData();
+    renderLimitsGrid();
+    alert('✅ Limiti settimanali resettati!');
 }
 
-/* ---- BUILD / APPLY ---- */
-function buildSaveObject() {
+function renderLimitsGrid() {
+    var el = document.getElementById('limitsGrid');
+    if (!el) return;
+
+    if (!weeklyLimits || !Object.keys(weeklyLimits).length) {
+        el.innerHTML = '<p style="color:var(--text-light);font-size:.85em;">Nessun limite configurato.</p>';
+        return;
+    }
+
+    var html = '';
+    Object.keys(weeklyLimits).forEach(function (key) {
+        var data = weeklyLimits[key];
+        var pct  = Math.min(Math.round(((data.current || 0) / data.max) * 100), 100);
+        var cls  = pct >= 100 ? 'exceeded' : pct >= 70 ? 'warning' : '';
+        html += '<div class="limit-card">'
+            + '<div class="limit-card-icon">'  + (data.icon || '') + '</div>'
+            + '<div class="limit-card-name">'  + key + '</div>'
+            + '<div class="limit-progress-bar">'
+            + '<div class="limit-progress-fill ' + cls + '" style="width:' + pct + '%"></div>'
+            + '</div>'
+            + '<div class="limit-text ' + cls + '">'
+            + (data.current || 0) + '/' + data.max + ' ' + (data.unit || '') + '</div>'
+            + '</div>';
+    });
+    el.innerHTML = html;
+}
+
+/* ============================================================
+   CHECK DISPONIBILITÀ INGREDIENTE
+   ============================================================ */
+function checkIngredientAvailability(item) {
+    var NONE = {
+        matched:          false,
+        sufficient:       false,
+        available:        0,
+        availableUnit:    '',
+        pantryName:       '',
+        incompatibleUnits: false
+    };
+
+    /* Guard: item o name mancante */
+    if (!item || !item.name || typeof item.name !== 'string') return NONE;
+
+    var nl = item.name.toLowerCase().trim();
+    if (!nl) return NONE;
+
+    /* Cerca in pantryItems */
+    var matchedKey = null;
+    var keys = Object.keys(pantryItems);
+    for (var i = 0; i < keys.length; i++) {
+        var k  = keys[i];
+        var kl = (k || '').toLowerCase().trim();
+        if (!kl) continue;
+        if (kl === nl || kl.includes(nl) || nl.includes(kl)) {
+            matchedKey = k;
+            break;
+        }
+    }
+
+    if (!matchedKey) return NONE;
+
+    var pd  = pantryItems[matchedKey] || {};
+    var qty = pd.quantity || 0;
+    var pu  = (pd.unit || 'g').trim();
+
+    /* Nessuna quantità richiesta: basta che esista */
+    if (!item.quantity || !item.unit) {
+        return {
+            matched:          true,
+            sufficient:       qty > 0,
+            available:        qty,
+            availableUnit:    pu,
+            pantryName:       matchedKey,
+            incompatibleUnits: false
+        };
+    }
+
+    var reqQty  = parseFloat(item.quantity) || 0;
+    var reqUnit = (item.unit || 'g').trim();
+
+    /* Unità identiche */
+    if (pu.toLowerCase() === reqUnit.toLowerCase()) {
+        return {
+            matched:          true,
+            sufficient:       qty >= reqQty,
+            available:        qty,
+            availableUnit:    pu,
+            pantryName:       matchedKey,
+            incompatibleUnits: false
+        };
+    }
+
+    /* Prova conversione */
+    var converted = convertUnit(reqQty, reqUnit, pu);
+    if (converted !== null) {
+        return {
+            matched:          true,
+            sufficient:       qty >= converted,
+            available:        qty,
+            availableUnit:    pu,
+            pantryName:       matchedKey,
+            incompatibleUnits: false
+        };
+    }
+
+    /* Unità incompatibili: considera disponibile se qty > 0 */
     return {
-        limits:             weeklyLimits,
-        pantry:             pantryItems,
-        savedFridges:       savedFridges,
-        history:            appHistory,
-        customRecipes:      customRecipes,
-        customIngredients:  customIngredients,
-        mealPlan:           mealPlan,
-        spesaItems:         spesaItems,
-        spesaLastGenerated: spesaLastGenerated
+        matched:          true,
+        sufficient:       qty > 0,
+        available:        qty,
+        availableUnit:    pu,
+        pantryName:       matchedKey,
+        incompatibleUnits: true
     };
 }
 
-function applyLoadedData(data) {
-    if (data.limits) {
-        Object.keys(data.limits).forEach(function (k) {
-            if (weeklyLimits[k]) Object.assign(weeklyLimits[k], data.limits[k]);
-        });
+/* ============================================================
+   CONVERSIONI UNITÀ
+   ============================================================ */
+function convertUnit(value, fromUnit, toUnit) {
+    if (!fromUnit || !toUnit) return null;
+    var f = (fromUnit || '').toLowerCase().trim();
+    var t = (toUnit   || '').toLowerCase().trim();
+    if (f === t) return value;
+
+    var conversions = unitConversions || {};
+    if (conversions[f] && conversions[f][t] !== undefined) {
+        return value * conversions[f][t];
     }
-    pantryItems        = data.pantry            || {};
-    savedFridges       = data.savedFridges      || {};
-    appHistory         = data.history           || {};
-    customRecipes      = data.customRecipes     || [];
-    customIngredients  = data.customIngredients || [];
-    spesaItems         = data.spesaItems        || [];
-    spesaLastGenerated = data.spesaLastGenerated || null;
-
-    /* ---- VALIDAZIONE mealPlan ---- */
-    var validMeals = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
-    if (data.mealPlan) {
-        var isValid = validMeals.some(function (m) {
-            return data.mealPlan[m]
-                && data.mealPlan[m].principale
-                && Array.isArray(data.mealPlan[m].principale)
-                && data.mealPlan[m].principale.length > 0;
-        });
-        mealPlan = isValid
-            ? data.mealPlan
-            : JSON.parse(JSON.stringify(defaultMealPlan));
-    } else {
-        mealPlan = JSON.parse(JSON.stringify(defaultMealPlan));
-    }
-
-    /* ---- Pulisci storico > 1 anno ---- */
-    var cutoff = new Date();
-    cutoff.setFullYear(cutoff.getFullYear() - 1);
-    Object.keys(appHistory).forEach(function (dk) {
-        if (new Date(dk) < cutoff) delete appHistory[dk];
-    });
-}
-
-function loadData() {
-    var raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-        try {
-            applyLoadedData(JSON.parse(raw));
-        } catch (e) {
-            console.warn('loadData error:', e);
-            mealPlan = JSON.parse(JSON.stringify(defaultMealPlan));
-        }
-    } else {
-        mealPlan = JSON.parse(JSON.stringify(defaultMealPlan));
-    }
-}
-
-function saveData() {
-    var obj = buildSaveObject();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
-    localStorage.setItem('nutriplanLastMod', new Date().toLocaleString('it-IT'));
-    if (firebaseReady && currentUser) {
-        showCloudStatus('saving');
-        var ref = firebase.database().ref('users/' + currentUser.uid + '/nutriplan');
-        ref.set(obj).then(function () {
-            showCloudStatus('synced');
-        }).catch(function () {
-            showCloudStatus('local');
-        });
-    }
-}
-
-function saveMealPlan() { saveData(); }
-
-function resetMealPlanToDefault() {
-    mealPlan = JSON.parse(JSON.stringify(defaultMealPlan));
-    saveData();
-}
-
-/* ---- UTILITY ---- */
-function convertUnit(v, from, to) {
-    if (from === to) return v;
-    if (unitConversions[from] && unitConversions[from][to])
-        return v * unitConversions[from][to];
     return null;
 }
 
-function checkIngredientAvailability(ing) {
-    var nl = ing.name.toLowerCase();
-    var result = { matched: false, sufficient: false };
-    Object.keys(pantryItems).forEach(function (pName) {
-        var pData = pantryItems[pName];
-        var pnl   = pName.toLowerCase();
-        var match = pnl === nl || pnl.includes(nl) || nl.includes(pnl) ||
-            pnl.split(' ').some(function (w) { return w.length > 2 && nl.includes(w); }) ||
-            nl.split(' ').some(function (w) { return w.length > 2 && pnl.includes(w); });
-        if (!match) return;
-        var pQty       = pData.quantity || 0;
-        var converted  = convertUnit(pQty, pData.unit, ing.unit);
-        var available  = converted !== null ? converted : pQty;
-        var sameFamily = converted !== null || pData.unit === ing.unit;
-        result = {
-            matched: true, pantryName: pName,
-            available: available, availableUnit: ing.unit,
-            required: ing.quantity, requiredUnit: ing.unit,
-            sufficient: sameFamily && available >= ing.quantity,
-            incompatibleUnits: !sameFamily
-        };
-    });
-    return result;
-}
-
-function checkAvailByName(name) {
-    var nl    = name.toLowerCase();
-    var found = false;
-    Object.keys(pantryItems).forEach(function (pName) {
-        var pData = pantryItems[pName];
-        var pnl   = pName.toLowerCase();
-        var match = pnl === nl || pnl.includes(nl) || nl.includes(pnl) ||
-            pnl.split(' ').some(function (w) { return w.length > 2 && nl.includes(w); }) ||
-            nl.split(' ').some(function (w) { return w.length > 2 && pnl.includes(w); });
-        if (match && (pData.quantity || 0) > 0) found = true;
-    });
-    return found;
+/* ============================================================
+   REFRESH VISTE
+   ============================================================ */
+function refreshAllAppViews() {
+    try { renderMealPlan();      } catch(e) { console.warn('renderMealPlan:', e); }
+    try { renderPantry();        } catch(e) { console.warn('renderPantry:', e); }
+    try { renderFridge();        } catch(e) { console.warn('renderFridge:', e); }
+    try { renderRicettePage();   } catch(e) { console.warn('renderRicettePage:', e); }
+    try { renderStorico();       } catch(e) { console.warn('renderStorico:', e); }
+    try { renderSpesa();         } catch(e) { console.warn('renderSpesa:', e); }
+    try { renderStatistiche();   } catch(e) { console.warn('renderStatistiche:', e); }
+    try { renderProfilo();       } catch(e) { console.warn('renderProfilo:', e); }
+    try { updateSavedFridges();  } catch(e) { console.warn('updateSavedFridges:', e); }
+    try { renderLimitsGrid();    } catch(e) { console.warn('renderLimitsGrid:', e); }
 }
