@@ -1,3 +1,10 @@
+/* ---- CLEANUP SERVICE WORKER VECCHIO ---- */
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        registrations.forEach(function (reg) { reg.unregister(); });
+    });
+}
+
 /* ---- ICONA ---- */
 function drawAppIcon(canvas, size) {
     size = size || 512;
@@ -112,11 +119,13 @@ document.getElementById('dismissBtn').addEventListener('click', function () {
 function checkOnlineStatus() {
     var el = document.getElementById('offlineIndicator');
     if (!el) return;
-    if (!navigator.onLine) {
-        el.classList.add('show');
-    } else {
+    fetch('https://www.gstatic.com/generate_204', {
+        method: 'HEAD', mode: 'no-cors', cache: 'no-store'
+    }).then(function () {
         el.classList.remove('show');
-    }
+    }).catch(function () {
+        el.classList.add('show');
+    });
 }
 window.addEventListener('online',  checkOnlineStatus);
 window.addEventListener('offline', checkOnlineStatus);
@@ -227,7 +236,7 @@ function showPianoTab(tab, btn) {
     var id = 'pianoTab' + tab.charAt(0).toUpperCase() + tab.slice(1);
     document.getElementById(id).classList.add('active');
     if (btn) btn.classList.add('active');
-    if (tab === 'frigo') updateFridgeSuggestions();
+    if (tab === 'frigo')  updateFridgeSuggestions();
     if (tab === 'limiti') updateLimits();
 }
 
@@ -280,11 +289,11 @@ function resetWeek() {
         if (!el) return;
         el.addEventListener('click', function (e) {
             if (e.target.id !== id) return;
-            if (id === 'saveFridgeModal')  closeSaveFridgeModal();
-            else if (id === 'recipeModal')      closeRecipeModal();
-            else if (id === 'spesaItemModal')   closeSpesaItemModal();
-            else if (id === 'customIngModal')   closeCustomIngModal();
-            else if (id === 'ricettaFormModal') closeRicettaForm();
+            if      (id === 'saveFridgeModal')  closeSaveFridgeModal();
+            else if (id === 'recipeModal')       closeRecipeModal();
+            else if (id === 'spesaItemModal')    closeSpesaItemModal();
+            else if (id === 'customIngModal')    closeCustomIngModal();
+            else if (id === 'ricettaFormModal')  closeRicettaForm();
         });
     });
 
