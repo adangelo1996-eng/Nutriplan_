@@ -72,18 +72,23 @@ function renderMealProgress() {
 
 /* ---- GET ITEMS DEL PASTO ---- */
 function getMealItems(mealKey) {
-    if (!mealPlan || !mealPlan[mealKey]) return [];
-    var m = mealPlan[mealKey];
-    var items = [];
-    ['principale', 'contorno', 'frutta', 'extra'].forEach(function (cat) {
-        if (Array.isArray(m[cat])) {
-            m[cat].forEach(function (item) {
-                items.push(Object.assign({}, item, { _cat: cat }));
-            });
-        }
-    });
-    return items;
+  if (!mealPlan || !mealPlan[mealKey]) return [];
+  var m = mealPlan[mealKey];
+  var items = [];
+  ['principale', 'contorno', 'frutta', 'extra'].forEach(function (cat) {
+    if (Array.isArray(m[cat])) {
+      m[cat].forEach(function (item) {
+        /* Salta item null, non-oggetto o senza name stringa */
+        if (!item || typeof item !== 'object' ||
+            !item.name || typeof item.name !== 'string' ||
+            !item.name.trim()) return;
+        items.push(Object.assign({}, item, { _cat: cat }));
+      });
+    }
+  });
+  return items;
 }
+
 
 /* ---- RENDER ITEMS ---- */
 function renderMealItems() {
