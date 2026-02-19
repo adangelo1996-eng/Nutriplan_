@@ -226,18 +226,17 @@ function buildSubOptions(itemName, mealKey, currentSub) {
     return html;
 }
 
-/* ---- SOSTITUTI ---- */
-function getSubstitutes(itemName, mealKey) {
-    var nl    = itemName.toLowerCase();
-    var items = getMealItems(mealKey);
-    var result = [];
+/* ---- SOSTITUTI: blocco pantryItems (sostituisce il vecchio) ---- */
+Object.keys(pantryItems).forEach(function (pName) {
+  /* GUARD: salta chiavi non valide */
+  if (!pName || pName === 'undefined' || pName === 'null' || !pName.trim()) return;
+  if (pName.toLowerCase() === nl) return;
+  if (result.some(function (r) { return r.name.toLowerCase() === pName.toLowerCase(); })) return;
+  var pd = pantryItems[pName];
+  if (!pd || typeof pd !== 'object') return;
+  result.push({ name: pName, quantity: pd.quantity, unit: pd.unit });
+});
 
-    /* Prima: altri elementi dello stesso pasto */
-    items.forEach(function (it) {
-        if (it.name.toLowerCase() !== nl) {
-            result.push(it);
-        }
-    });
 
     /* Poi: elementi da altri pasti */
     ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'].forEach(function (mk) {
