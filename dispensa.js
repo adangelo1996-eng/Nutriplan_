@@ -1,325 +1,412 @@
-var dispensaFilterText = '';
+/* ============================================================
+   DISPENSA.JS — gestione dispensa e frigo
+   ============================================================ */
 
-function getAllIngredients() {
-    var base = allPantryItems ? allPantryItems.slice() : [];
-    customIngredients.forEach(function (ci) {
-        base.push({
-            name: ci.name, icon: ci.icon || '📦',
-            units: [ci.unit || 'g'], step: ci.step || 10,
-            _custom: true, _id: ci.id, _categoria: ci.categoria || ''
-        });
-    });
-    return base;
-}
+var pantrySearchQuery = '';
 
-function refreshAllViews() {
-    renderFridge();
-    if (typeof renderMealPlan === 'function') renderMealPlan();
-    if (typeof updateFridgeSuggestions === 'function') updateFridgeSuggestions();
-    if (typeof initDayIngGrid === 'function') initDayIngGrid();
-    if (typeof buildCalendarBar === 'function') buildCalendarBar();
-}
+/* ============================================================
+   DISPENSA
+   ============================================================ */
 
 function renderPantry() {
-    dispensaFilterText = document.getElementById('dispensaSearch')
-        ? document.getElementById('dispensaSearch').value : '';
-    renderPantryFiltered(dispensaFilterText);
-}
+    var el = document.getElementById('pantryContent');
+    if (!el) return;
 
-function renderPantryFiltered(query) {
-    var container = document.getElementById('pantryContent');
-    if (!container) return;
-    var q = query.toLowerCase().trim();
-    var totalVisible = 0;
+    var allItems = getAllPantryItems();
+    var filtered = filterItems(allItems, pantrySearchQuery);
+
+    if (!filtered.length) {
+        el.innerHTML = pantrySearchQuery
+            ? '<div class="dispensa-no-results">🔍 Nessun risultato per "<b>' + pantrySearchQuery + '</b>"</div>'
+            : '<div class="empty-state">'
+                + '<div class="empty-state-icon">🧺</div>'
+                + '<h3>Dispensa vuota</h3>'
+                + '<p>Aggiungi ingredienti con il tasto ＋ oppure selezionali dalle categorie del piano.</p>'
+                + '</div>';
+        return;
+    }
+
+    /* Raggruppa per categoria */
+    var byCategory = {};
+    filtered.forEach(function (item) {
+        var cat = item.category || '🧂 Altro';
+        if (!byCategory[cat]) byCategory[cat] = [];
+        byCategory[cat].push(item);
+    });
+
+    /* Ordine categorie */
+    var catOrder = [
+        '🥩 Carne e Pesce', '🥛 Latticini e Uova', '🌾 Cereali e Legumi',
+        '🥦 Verdure', '🍎 Frutta', '🥑 Grassi e Condimenti',
+        '🍫 Dolci e Snack', '🧂 Cucina', '🧂 Altro'
+    ];
+    var sortedCats = Object.keys(byCategory).sort(function (a, b) {
+        var ia = catOrder.indexOf(a);
+        var ib = catOrder.indexOf(b);
+        if (ia === -1) ia = 999;
+        if (ib === -1) ib = 999;
+        return ia - ib;
+    });
+
     var html = '';
-
-    pantryCategories.forEach(function (cat) {
-        var builtIn = cat.items.filter(function (item) {
-            return !q || item.name.toLowerCase().includes(q);
-        });
-        var customInCat = customIngredients.filter(function (ci) {
-            return ci.categoria === cat.label && (!q || ci.name.toLowerCase().includes(q));
-        });
-        if (!builtIn.length && !customInCat.length) return;
-        totalVisible += builtIn.length + customInCat.length;
+    sortedCats.forEach(function (cat) {
         html += '<div class="category-section">';
-        html += '<div class="category-title">' + cat.label + '</div>';
+        html += '<div class="category-title">' + cat + '</div>';
         html += '<div class="pantry-grid">';
-        builtIn.forEach(function (item) { html += buildPantryItemHTML(item, false); });
-        customInCat.forEach(function (item) { html += buildPantryItemHTML(item, true); });
+        byCategory[cat].forEach(function (item) {
+            html += buildPantryItemCard(item);
+        });
         html += '</div></div>';
     });
 
-    var uncategorized = customIngredients.filter(function (ci) {
-        var knownCat = pantryCategories.some(function (c) { return c.label === ci.categoria; });
-        return !knownCat && (!q || ci.name.toLowerCase().includes(q));
-    });
-    if (uncategorized.length) {
-        totalVisible += uncategorized.length;
-        html += '<div class="category-section">';
-        html += '<div class="category-title">⭐ Personalizzati</div>';
-        html += '<div class="pantry-grid">';
-        uncategorized.forEach(function (item) { html += buildPantryItemHTML(item, true); });
-        html += '</div></div>';
-    }
-
-    if (!totalVisible) {
-        html = '<div class="dispensa-no-results"><div style="font-size:2.5em;margin-bottom:10px;">🔍</div>';
-        html += '<p>Nessun ingrediente trovato per <strong>' + query + '</strong>.</p></div>';
-    }
-    container.innerHTML = html;
+    el.innerHTML = html;
 }
 
-function buildPantryItemHTML(item, isCustom) {
-    var name = item.name;
-    var inPantry = pantryItems[name] !== undefined;
-    var qty = inPantry ? pantryItems[name].quantity : 0;
-    var units = item.units || [item.unit || 'g'];
-    var unit = inPantry ? pantryItems[name].unit : units[0];
-    var step = item.step || 10;
-    var esc = name.replace(/'/g, "\\'");
+/* ---- CARD SINGOLO INGREDIENTE ---- */
+function buildPantryItemCard(item) {
+    var name    = item.name;
+    var qty     = item.quantity || 0;
+    var unit    = item.unit     || 'g';
+    var icon    = item.icon     || getCategoryIcon(item.category);
+    var isActive = qty > 0;
+    var isCustom = item.isCustom || false;
 
-    var html = '<div class="pantry-item ' + (inPantry ? 'active' : 'inactive') + '">';
-    html += '<div class="pantry-item-row">';
-    html += '<div class="pantry-name">' + (item.icon || '📦') + ' ' + name + '</div>';
-    html += '<div class="pantry-item-actions">';
-    if (!inPantry) {
-        html += '<button class="pantry-add-btn" onclick="addToPantry(\'' + esc + '\')">+ Aggiungi</button>';
-    }
-    if (isCustom) {
-        html += '<button class="pantry-delete-btn" onclick="deleteCustomIngredient(\'' + esc + '\')" title="Elimina">🗑</button>';
-    }
-    html += '</div></div>';
+    var units = ['g', 'ml', 'pz', 'fette', 'cucchiai', 'cucchiaini', 'porzione', 'kg', 'l'];
+    var unitOpts = units.map(function (u) {
+        return '<option value="' + u + '"' + (unit === u ? ' selected' : '') + '>' + u + '</option>';
+    }).join('');
 
-    if (inPantry) {
-        html += '<div class="pantry-quantity-row">';
-        html += '<button class="qty-btn minus" onclick="adjustQty(\'' + esc + '\',-' + step + ')">−</button>';
-        html += '<input type="number" class="quantity-input" value="' + qty + '" min="0" onchange="updatePantryQuantity(\'' + esc + '\',this.value,null)">';
-        html += '<select class="unit-select" onchange="updatePantryQuantity(\'' + esc + '\',null,this.value)">';
-        units.forEach(function (u) {
-            html += '<option value="' + u + '"' + (u === unit ? ' selected' : '') + '>' + u + '</option>';
-        });
-        html += '</select>';
-        html += '<button class="pantry-remove-btn" onclick="removeFromPantry(\'' + esc + '\')">✕</button>';
-        html += '</div>';
-    }
-    html += '</div>';
-    return html;
+    return '<div class="pantry-item' + (isActive ? ' active' : '') + '" id="pi_' + safeid(name) + '">'
+        + '<div class="pantry-item-top">'
+        + '<div class="pantry-item-name-row">'
+        + '<span class="pantry-icon">' + icon + '</span>'
+        + '<span class="pantry-name" title="' + name + '">' + name + '</span>'
+        + '</div>'
+        + '<div class="pantry-item-actions">'
+        + (isCustom
+            ? '<button class="pantry-delete-btn" title="Elimina" onclick="deleteCustomIng(\'' + escQ(name) + '\')">🗑</button>'
+            : '')
+        + '</div>'
+        + '</div>'
+        + '<div class="pantry-quantity-row">'
+        + '<button class="qty-btn" onclick="adjustQty(\'' + escQ(name) + '\',-1)">−</button>'
+        + '<input type="number" class="quantity-input" min="0" step="any"'
+        + ' value="' + qty + '"'
+        + ' id="qty_' + safeid(name) + '"'
+        + ' onchange="setQty(\'' + escQ(name) + '\', this.value)">'
+        + '<select class="unit-select" id="unit_' + safeid(name) + '"'
+        + ' onchange="setUnit(\'' + escQ(name) + '\', this.value)">'
+        + unitOpts
+        + '</select>'
+        + '<button class="qty-btn" onclick="adjustQty(\'' + escQ(name) + '\',1)">＋</button>'
+        + '</div>'
+        + (isActive
+            ? '<span class="pantry-avail-badge">✔ ' + qty + ' ' + unit + ' disponibili</span>'
+            : '')
+        + '</div>';
 }
 
-function filterDispensa(val) {
-    dispensaFilterText = val;
-    var clearBtn = document.getElementById('dispensaClearBtn');
-    if (clearBtn) clearBtn.style.display = val ? 'block' : 'none';
-    renderPantryFiltered(val);
-}
-
-function clearDispensaSearch() {
-    var input = document.getElementById('dispensaSearch');
-    if (input) input.value = '';
-    var clearBtn = document.getElementById('dispensaClearBtn');
-    if (clearBtn) clearBtn.style.display = 'none';
-    dispensaFilterText = '';
-    renderPantryFiltered('');
-    if (input) input.focus();
-}
-
-function addToPantry(name) {
-    var item = getAllIngredients().find(function (i) { return i.name === name; });
-    pantryItems[name] = {
-        quantity: 0,
-        unit: (item && item.units ? item.units[0] : null) || (item && item.unit) || 'g'
-    };
-    saveData(); renderPantryFiltered(dispensaFilterText); refreshAllViews();
-}
-
-function removeFromPantry(name) {
-    delete pantryItems[name];
-    saveData(); renderPantryFiltered(dispensaFilterText); refreshAllViews();
-}
-
+/* ---- AZIONI QUANTITÀ ---- */
 function adjustQty(name, delta) {
-    if (!pantryItems[name]) return;
-    pantryItems[name].quantity = Math.max(0, parseFloat(
-        ((pantryItems[name].quantity || 0) + delta).toFixed(3)
-    ));
-    saveData(); renderPantryFiltered(dispensaFilterText); refreshAllViews();
+    initPantryItem(name);
+    var step = getStep(pantryItems[name].unit);
+    pantryItems[name].quantity = Math.max(0, Math.round(((pantryItems[name].quantity || 0) + delta * step) * 100) / 100);
+    saveData();
+    updatePantryCardInPlace(name);
 }
 
-function updatePantryQuantity(name, quantity, unit) {
-    if (!pantryItems[name]) return;
-    if (quantity !== null) pantryItems[name].quantity = Math.max(0, parseFloat(quantity) || 0);
-    if (unit !== null) pantryItems[name].unit = unit;
-    saveData(); renderPantryFiltered(dispensaFilterText); refreshAllViews();
+function setQty(name, val) {
+    initPantryItem(name);
+    pantryItems[name].quantity = Math.max(0, parseFloat(val) || 0);
+    saveData();
+    updatePantryCardInPlace(name);
 }
 
-/* ---- INGREDIENTI CUSTOM ---- */
-function openCustomIngModal() {
-    document.getElementById('ciName').value = '';
-    document.getElementById('ciIcon').value = '';
-    document.getElementById('ciUnit').value = 'g';
-    document.getElementById('ciStep').value = '10';
+function setUnit(name, unit) {
+    initPantryItem(name);
+    pantryItems[name].unit = unit;
+    saveData();
+}
 
-    // Popola select categorie dinamicamente da pantryCategories
-    var sel = document.getElementById('ciCategoria');
-    sel.innerHTML = '<option value="">⭐ Personalizzati (nessuna categoria)</option>';
-    if (typeof pantryCategories !== 'undefined') {
-        pantryCategories.forEach(function (cat) {
-            var opt = document.createElement('option');
-            opt.value = cat.label;
-            opt.textContent = cat.label;
-            sel.appendChild(opt);
-        });
+function getStep(unit) {
+    if (['kg', 'l'].indexOf(unit) !== -1) return 0.1;
+    if (['cucchiai', 'cucchiaini', 'fette', 'pz', 'porzione'].indexOf(unit) !== -1) return 1;
+    return 10;
+}
+
+function initPantryItem(name) {
+    if (!pantryItems[name]) {
+        var allItems = getAllPantryItems();
+        var found = allItems.find(function (i) { return i.name === name; });
+        pantryItems[name] = {
+            quantity: 0,
+            unit:     found ? found.unit : 'g',
+            category: found ? found.category : '🧂 Altro',
+            icon:     found ? found.icon     : '🧂',
+            isCustom: false
+        };
     }
+}
 
-    document.getElementById('customIngModal').classList.add('active');
-    setTimeout(function () { document.getElementById('ciName').focus(); }, 100);
+function updatePantryCardInPlace(name) {
+    var card = document.getElementById('pi_' + safeid(name));
+    if (!card) return;
+    var item  = Object.assign({ name: name }, pantryItems[name] || {});
+    var allItems = getAllPantryItems();
+    var base = allItems.find(function (i) { return i.name === name; });
+    if (base) Object.assign(item, { icon: base.icon, category: base.category });
+    card.outerHTML = buildPantryItemCard(item);
+}
+
+/* ---- FILTRO RICERCA ---- */
+function filterPantry(query) {
+    pantrySearchQuery = (query || '').trim().toLowerCase();
+    renderPantry();
+}
+
+function clearPantrySearch() {
+    var inp = document.getElementById('pantrySearch');
+    if (inp) inp.value = '';
+    filterPantry('');
+}
+
+function filterItems(items, query) {
+    if (!query) return items;
+    return items.filter(function (item) {
+        return item.name.toLowerCase().includes(query) ||
+               (item.category || '').toLowerCase().includes(query);
+    });
+}
+
+/* ---- INGREDIENTE CUSTOM ---- */
+function openCustomIngModal() {
+    var m = document.getElementById('customIngModal');
+    if (m) {
+        m.classList.add('active');
+        var inp = document.getElementById('customIngName');
+        if (inp) { inp.value = ''; inp.focus(); }
+    }
 }
 
 function closeCustomIngModal() {
-    document.getElementById('customIngModal').classList.remove('active');
+    var m = document.getElementById('customIngModal');
+    if (m) m.classList.remove('active');
 }
 
-function saveCustomIngredient() {
-    var name = document.getElementById('ciName').value.trim();
-    var icon = document.getElementById('ciIcon').value.trim() || '📦';
-    var unit = document.getElementById('ciUnit').value || 'g';
-    var step = parseFloat(document.getElementById('ciStep').value) || 10;
-    var categoria = document.getElementById('ciCategoria').value || '';
-    if (!name) { alert('Inserisci il nome.'); return; }
-    if (getAllIngredients().some(function (i) {
+function addCustomIngredient() {
+    var nameEl = document.getElementById('customIngName');
+    var catEl  = document.getElementById('customIngCategory');
+    var unitEl = document.getElementById('customIngUnit');
+
+    var name = (nameEl ? nameEl.value : '').trim();
+    if (!name) { alert('Inserisci il nome dell\'ingrediente.'); return; }
+
+    var cat  = catEl  ? catEl.value  : '🧂 Cucina';
+    var unit = unitEl ? unitEl.value : 'g';
+    var icon = getCategoryIcon(cat);
+
+    /* Verifica duplicati */
+    var allItems = getAllPantryItems();
+    var exists = allItems.some(function (i) {
         return i.name.toLowerCase() === name.toLowerCase();
-    })) {
-        alert('Ingrediente già esistente.'); return;
-    }
-    customIngredients.push({
-        id: 'ci_' + Date.now(),
-        name: name, icon: icon, unit: unit, step: step, categoria: categoria
     });
-    saveData();
-    closeCustomIngModal();
-    renderPantryFiltered(dispensaFilterText);
-    if (typeof initIngredientiDatalist === 'function') initIngredientiDatalist();
-    alert('Ingrediente "' + name + '" aggiunto!');
-}
-
-function deleteCustomIngredient(name) {
-    if (!confirm('Eliminare "' + name + '"?')) return;
-    customIngredients = customIngredients.filter(function (ci) { return ci.name !== name; });
-    delete pantryItems[name];
-    saveData(); renderPantryFiltered(dispensaFilterText); refreshAllViews();
-}
-
-/* ---- FRIGO ---- */
-function renderFridge() {
-    var container = document.getElementById('fridgeContent');
-    if (!container) return;
-    var available = Object.entries(pantryItems).filter(function (e) {
-        return (e[1].quantity || 0) > 0;
-    });
-    if (!available.length) {
-        container.innerHTML = '<div class="fridge-empty"><h3>🍃 Frigorifero vuoto</h3><p>Aggiungi e quantifica dalla Dispensa.</p></div>';
+    if (exists) {
+        alert('L\'ingrediente "' + name + '" esiste già nella dispensa.');
         return;
     }
-    var allIngs = getAllIngredients();
-    var html = '';
-    pantryCategories.forEach(function (cat) {
-        var catItems = available.filter(function (e) {
-            return cat.items.some(function (i) { return i.name === e[0]; }) ||
-                customIngredients.some(function (ci) {
-                    return ci.name === e[0] && ci.categoria === cat.label;
-                });
-        });
-        if (!catItems.length) return;
-        html += '<div class="fridge-section"><h3>' + cat.label + '</h3><div class="fridge-items">';
-        catItems.forEach(function (e) { html += buildFridgeItemHTML(e[0], e[1], allIngs); });
-        html += '</div></div>';
+
+    /* Aggiungi a custom */
+    if (!customIngredients) customIngredients = [];
+    customIngredients.push({ name: name, category: cat, unit: unit, icon: icon });
+
+    /* Inizializza in pantryItems */
+    pantryItems[name] = { quantity: 0, unit: unit, category: cat, icon: icon, isCustom: true };
+
+    saveData();
+    closeCustomIngModal();
+    renderPantry();
+    if (typeof initIngredientiDatalist === 'function') initIngredientiDatalist();
+}
+
+function deleteCustomIng(name) {
+    if (!confirm('Eliminare "' + name + '" dalla dispensa?')) return;
+    delete pantryItems[name];
+    customIngredients = (customIngredients || []).filter(function (i) {
+        return i.name !== name;
     });
-    var others = available.filter(function (e) {
-        return !pantryCategories.some(function (cat) {
-            return cat.items.some(function (i) { return i.name === e[0]; }) ||
-                customIngredients.some(function (ci) {
-                    return ci.name === e[0] && ci.categoria === cat.label;
-                });
+    saveData();
+    renderPantry();
+}
+
+/* ---- GET TUTTI GLI ITEM (default + custom) ---- */
+function getAllPantryItems() {
+    var result = [];
+    var seen   = {};
+
+    /* 1. Ingredienti dal piano alimentare */
+    var mealKeys = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
+    mealKeys.forEach(function (mk) {
+        var mp = mealPlan[mk] || {};
+        ['principale', 'contorno', 'frutta', 'extra'].forEach(function (cat) {
+            (mp[cat] || []).forEach(function (item) {
+                if (!seen[item.name]) {
+                    seen[item.name] = true;
+                    var pd = pantryItems[item.name] || {};
+                    result.push({
+                        name:     item.name,
+                        quantity: pd.quantity || 0,
+                        unit:     pd.unit || item.unit || 'g',
+                        category: pd.category || guessCategoryFromMeal(mk),
+                        icon:     pd.icon || getCategoryIcon(pd.category || guessCategoryFromMeal(mk)),
+                        isCustom: false
+                    });
+                }
+            });
         });
     });
-    if (others.length) {
-        html += '<div class="fridge-section"><h3>⭐ Personalizzati</h3><div class="fridge-items">';
-        others.forEach(function (e) { html += buildFridgeItemHTML(e[0], e[1], allIngs); });
-        html += '</div></div>';
+
+    /* 2. Ingredienti default (data.js) */
+    if (typeof defaultIngredients !== 'undefined') {
+        defaultIngredients.forEach(function (item) {
+            if (!seen[item.name]) {
+                seen[item.name] = true;
+                var pd = pantryItems[item.name] || {};
+                result.push({
+                    name:     item.name,
+                    quantity: pd.quantity !== undefined ? pd.quantity : 0,
+                    unit:     pd.unit || item.unit || 'g',
+                    category: item.category || '🧂 Altro',
+                    icon:     item.icon || getCategoryIcon(item.category),
+                    isCustom: false
+                });
+            }
+        });
     }
-    container.innerHTML = html;
+
+    /* 3. Ingredienti custom */
+    (customIngredients || []).forEach(function (item) {
+        if (!seen[item.name]) {
+            seen[item.name] = true;
+            var pd = pantryItems[item.name] || {};
+            result.push({
+                name:     item.name,
+                quantity: pd.quantity || 0,
+                unit:     pd.unit || item.unit || 'g',
+                category: item.category || '🧂 Altro',
+                icon:     item.icon || getCategoryIcon(item.category),
+                isCustom: true
+            });
+        }
+    });
+
+    /* 4. Qualsiasi altro item in pantryItems non ancora visto */
+    Object.keys(pantryItems).forEach(function (name) {
+        if (!seen[name]) {
+            seen[name] = true;
+            var pd = pantryItems[name];
+            result.push({
+                name:     name,
+                quantity: pd.quantity || 0,
+                unit:     pd.unit     || 'g',
+                category: pd.category || '🧂 Altro',
+                icon:     pd.icon     || '🧂',
+                isCustom: pd.isCustom || false
+            });
+        }
+    });
+
+    /* Ordina: prima quelli con quantità > 0 */
+    result.sort(function (a, b) {
+        if (b.quantity !== a.quantity) return b.quantity - a.quantity;
+        return a.name.localeCompare(b.name, 'it');
+    });
+
+    return result;
 }
 
-function buildFridgeItemHTML(name, data, allIngs) {
-    var item = allIngs.find(function (i) { return i.name === name; });
-    var step = item ? (item.step || 10) : 10;
-    var esc = name.replace(/'/g, "\\'");
-    return '<div class="fridge-item">'
-        + '<div class="fridge-item-icon">' + (item ? item.icon : '📦') + '</div>'
-        + '<div class="fridge-item-name">' + name + '</div>'
-        + '<div class="fridge-item-quantity-row">'
-        + '<span class="fridge-qty-val">' + data.quantity + '</span>'
-        + '<span class="fridge-qty-unit"> ' + data.unit + '</span>'
-        + '</div>'
-        + '<div class="fridge-qty-btns">'
-        + '<button class="qty-btn minus btn-small" onclick="adjustQty(\'' + esc + '\',-' + step + ')">−</button>'
-        + '<button class="qty-btn plus btn-small" onclick="adjustQty(\'' + esc + '\',' + step + ')">+</button>'
-        + '</div></div>';
-}
-
-function openSaveFridgeModal() {
-    document.getElementById('fridgeName').value = '';
-    document.getElementById('saveFridgeModal').classList.add('active');
-    setTimeout(function () { document.getElementById('fridgeName').focus(); }, 100);
-}
-function closeSaveFridgeModal() {
-    document.getElementById('saveFridgeModal').classList.remove('active');
-}
-
-function saveFridge() {
-    var name = document.getElementById('fridgeName').value.trim();
-    if (!name) { alert('Inserisci un nome.'); return; }
-    savedFridges[Date.now().toString()] = {
-        name: name,
-        date: new Date().toLocaleString('it-IT'),
-        items: JSON.parse(JSON.stringify(pantryItems))
-    };
-    saveData(); closeSaveFridgeModal(); updateSavedFridges();
-    alert('Frigorifero "' + name + '" salvato!');
-}
-
-function updateSavedFridges() {
-    var card = document.getElementById('savedFridgesCard');
-    var list = document.getElementById('savedFridgeList');
-    if (!card || !list) return;
-    var keys = Object.keys(savedFridges);
-    if (!keys.length) { card.style.display = 'none'; return; }
-    card.style.display = 'block';
-    list.innerHTML = keys.map(function (id) {
-        var f = savedFridges[id];
-        return '<div class="saved-fridge-item">'
-            + '<div class="saved-fridge-name">🧊 ' + f.name + '</div>'
-            + '<div class="saved-fridge-date">📅 ' + f.date + '</div>'
-            + '<div class="saved-fridge-date">📦 ' + Object.keys(f.items).length + ' ingredienti</div>'
-            + '<div class="saved-fridge-actions">'
-            + '<button class="btn btn-primary btn-small" onclick="loadFridge(\'' + id + '\')">📥 Carica</button>'
-            + '<button class="btn btn-warning btn-small" onclick="deleteFridge(\'' + id + '\')">🗑️</button>'
-            + '</div></div>';
+/* ---- DATALIST AUTOCOMPLETE ---- */
+function initIngredientiDatalist() {
+    var dl = document.getElementById('ingredientiDatalist');
+    if (!dl) return;
+    var items = getAllPantryItems();
+    dl.innerHTML = items.map(function (i) {
+        return '<option value="' + i.name + '">';
     }).join('');
 }
 
-function loadFridge(id) {
-    if (!confirm('Caricare questo frigorifero?')) return;
-    pantryItems = JSON.parse(JSON.stringify(savedFridges[id].items));
-    saveData(); renderPantryFiltered(dispensaFilterText); refreshAllViews();
+/* ============================================================
+   FRIGO
+   ============================================================ */
+
+function renderFridge() {
+    var el = document.getElementById('fridgeContent');
+    if (!el) return;
+
+    /* Mostra gli ingredienti con quantità > 0 come "nel frigo" */
+    var fridgeCats = ['🥩 Carne e Pesce', '🥛 Latticini e Uova', '🥦 Verdure', '🍎 Frutta'];
+    var fridgeItems = getAllPantryItems().filter(function (item) {
+        return fridgeCats.indexOf(item.category) !== -1;
+    });
+
+    if (!fridgeItems.length) {
+        el.innerHTML = '<div class="empty-state">'
+            + '<div class="empty-state-icon">❄️</div>'
+            + '<h3>Frigo vuoto</h3>'
+            + '<p>Gli ingredienti deperibili dalla dispensa (carne, verdure, latticini, frutta) appariranno qui.</p>'
+            + '</div>';
+        return;
+    }
+
+    var html = '<div class="fridge-items">';
+    fridgeItems.forEach(function (item) {
+        var qty = item.quantity || 0;
+        html += '<div class="fridge-item">'
+            + '<div class="fridge-item-icon">' + item.icon + '</div>'
+            + '<div class="fridge-item-name">' + item.name + '</div>'
+            + '<div class="fridge-item-qty">' + qty + ' ' + item.unit + '</div>'
+            + '<div class="fridge-qty-btns">'
+            + '<button class="qty-btn" onclick="adjustQty(\'' + escQ(item.name) + '\',-1)">−</button>'
+            + '<button class="qty-btn" onclick="adjustQty(\'' + escQ(item.name) + '\',1)">＋</button>'
+            + '</div></div>';
+    });
+    html += '</div>';
+    el.innerHTML = html;
 }
-function deleteFridge(id) {
-    if (!confirm('Eliminare "' + savedFridges[id].name + '"?')) return;
-    delete savedFridges[id]; saveData(); updateSavedFridges();
+
+/* ============================================================
+   UTILITY
+   ============================================================ */
+
+function getCategoryIcon(cat) {
+    var map = {
+        '🥩 Carne e Pesce':       '🥩',
+        '🥛 Latticini e Uova':    '🥛',
+        '🌾 Cereali e Legumi':    '🌾',
+        '🥦 Verdure':             '🥦',
+        '🍎 Frutta':              '🍎',
+        '🥑 Grassi e Condimenti': '🥑',
+        '🍫 Dolci e Snack':       '🍫',
+        '🧂 Cucina':              '🧂',
+        '🧂 Altro':               '🧂'
+    };
+    return cat ? (map[cat] || '🧂') : '🧂';
 }
-function clearFridge() {
-    if (!confirm('Svuotare il frigorifero?')) return;
-    Object.keys(pantryItems).forEach(function (k) { pantryItems[k].quantity = 0; });
-    saveData(); renderPantryFiltered(dispensaFilterText); refreshAllViews();
+
+function guessCategoryFromMeal(mealKey) {
+    var map = {
+        colazione: '🌾 Cereali e Legumi',
+        spuntino:  '🍎 Frutta',
+        pranzo:    '🌾 Cereali e Legumi',
+        merenda:   '🍎 Frutta',
+        cena:      '🥩 Carne e Pesce'
+    };
+    return map[mealKey] || '🧂 Altro';
+}
+
+function safeid(name) {
+    return String(name).replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+function escQ(str) {
+    return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
