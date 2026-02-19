@@ -24,9 +24,7 @@ function initFirebase() {
         firebase.auth().onAuthStateChanged(function (user) {
             currentUser = user;
             if (user) {
-                loadFromCloud(function () {
-                    refreshAllAppViews();
-                });
+                loadFromCloud(function () { refreshAllAppViews(); });
                 updateAuthUI(true, user.displayName, user.photoURL);
             } else {
                 updateAuthUI(false, null, null);
@@ -51,14 +49,6 @@ function signInWithGoogle() {
 function signOutUser() {
     if (!firebaseReady) return;
     firebase.auth().signOut();
-}
-
-function saveToCloud() {
-    if (!firebaseReady || !currentUser) return;
-    var ref = firebase.database().ref('users/' + currentUser.uid + '/nutriplan');
-    ref.set(buildSaveObject()).catch(function (e) {
-        console.warn('Cloud save error:', e);
-    });
 }
 
 function loadFromCloud(cb) {
@@ -88,7 +78,7 @@ function updateAuthUI(loggedIn, name, photo) {
     } else {
         btn.textContent = 'Accedi con Google';
         btn.onclick = signInWithGoogle;
-        if (info) info.textContent = 'Non connesso — dati salvati solo su questo dispositivo';
+        if (info) info.textContent = '';
         if (avatar) avatar.style.display = 'none';
         showCloudStatus('local');
     }
@@ -110,11 +100,11 @@ function showCloudStatus(status) {
 }
 
 function refreshAllAppViews() {
-    if (typeof renderMealPlan === 'function') renderMealPlan();
-    if (typeof renderPantry === 'function') renderPantry();
-    if (typeof renderFridge === 'function') renderFridge();
-    if (typeof updateLimits === 'function') updateLimits();
-    if (typeof buildCalendarBar === 'function') buildCalendarBar();
+    if (typeof renderMealPlan       === 'function') renderMealPlan();
+    if (typeof renderPantry         === 'function') renderPantry();
+    if (typeof renderFridge         === 'function') renderFridge();
+    if (typeof updateLimits         === 'function') updateLimits();
+    if (typeof buildCalendarBar     === 'function') buildCalendarBar();
 }
 
 /* ---- LOCALE ---- */
@@ -153,18 +143,31 @@ function applyLoadedData(data) {
             if (weeklyLimits[k]) Object.assign(weeklyLimits[k], data.limits[k]);
         });
     }
-    pantryItems         = data.pantry            || {};
-    savedFridges        = data.savedFridges      || {};
-    appHistory          = data.history           || {};
-    customRecipes       = data.customRecipes     || [];
-    customIngredients   = data.customIngredients || [];
-    spesaItems          = data.spesaItems        || [];
-    spesaLastGenerated  = data.spesaLastGenerated || null;
-    mealPlan = data.mealPlan
-        ? data.mealPlan
-        : JSON.parse(JSON.stringify(defaultMealPlan));
+    pantryItems        = data.pantry            || {};
+    savedFridges       = data.savedFridges      || {};
+    appHistory         = data.history           || {};
+    customRecipes      = data.customRecipes     || [];
+    customIngredients  = data.customIngredients || [];
+    spesaItems         = data.spesaItems        || [];
+    spesaLastGenerated = data.spesaLastGenerated || null;
 
-    // Pulisci storico più vecchio di 1 anno
+    /* ---- VALIDAZIONE mealPlan ---- */
+    var validMeals = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
+    if (data.mealPlan) {
+        var isValid = validMeals.some(function (m) {
+            return data.mealPlan[m]
+                && data.mealPlan[m].principale
+                && Array.isArray(data.mealPlan[m].principale)
+                && data.mealPlan[m].principale.length > 0;
+        });
+        mealPlan = isValid
+            ? data.mealPlan
+            : JSON.parse(JSON.stringify(defaultMealPlan));
+    } else {
+        mealPlan = JSON.parse(JSON.stringify(defaultMealPlan));
+    }
+
+    /* ---- Pulisci storico > 1 anno ---- */
     var cutoff = new Date();
     cutoff.setFullYear(cutoff.getFullYear() - 1);
     Object.keys(appHistory).forEach(function (dk) {
@@ -175,7 +178,10 @@ function applyLoadedData(data) {
 function loadData() {
     var raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-        try { applyLoadedData(JSON.parse(raw)); } catch (e) {
+        try {
+            applyLoadedData(JSON.parse(raw));
+        } catch (e) {
+            console.warn('loadData error:', e);
             mealPlan = JSON.parse(JSON.stringify(defaultMealPlan));
         }
     } else {
@@ -228,8 +234,9 @@ function checkIngredientAvailability(ing) {
         var available  = converted !== null ? converted : pQty;
         var sameFamily = converted !== null || pData.unit === ing.unit;
         result = {
-            matched: true, pantryName: pName, available: available,
-            availableUnit: ing.unit, required: ing.quantity, requiredUnit: ing.unit,
+            matched: true, pantryName: pName,
+            available: available, availableUnit: ing.unit,
+            required: ing.quantity, requiredUnit: ing.unit,
             sufficient: sameFamily && available >= ing.quantity,
             incompatibleUnits: !sameFamily
         };
@@ -238,7 +245,7 @@ function checkIngredientAvailability(ing) {
 }
 
 function checkAvailByName(name) {
-    var nl = name.toLowerCase();
+    var nl    = name.toLowerCase();
     var found = false;
     Object.keys(pantryItems).forEach(function (pName) {
         var pData = pantryItems[pName];
