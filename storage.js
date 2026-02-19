@@ -18,7 +18,7 @@ var STORAGE_KEY = 'nutriplanDataV8';
 function initFirebase() {
     try {
         if (typeof firebase === 'undefined') return;
-        if (!firebaseConfig || firebaseConfig.apiKey === 'LA-TUA-API-KEY') return;
+        if (typeof firebaseConfig === 'undefined' || !firebaseConfig.apiKey) return;
         firebase.initializeApp(firebaseConfig);
         firebaseReady = true;
         firebase.auth().onAuthStateChanged(function (user) {
@@ -135,15 +135,15 @@ function getDayData(dateKey) {
 /* ---- BUILD / APPLY ---- */
 function buildSaveObject() {
     return {
-        limits:            weeklyLimits,
-        pantry:            pantryItems,
-        savedFridges:      savedFridges,
-        history:           appHistory,
-        customRecipes:     customRecipes,
-        customIngredients: customIngredients,
-        mealPlan:          mealPlan,
-        spesaItems:        spesaItems,           // ← AGGIUNTO
-        spesaLastGenerated: spesaLastGenerated   // ← AGGIUNTO
+        limits:             weeklyLimits,
+        pantry:             pantryItems,
+        savedFridges:       savedFridges,
+        history:            appHistory,
+        customRecipes:      customRecipes,
+        customIngredients:  customIngredients,
+        mealPlan:           mealPlan,
+        spesaItems:         spesaItems,
+        spesaLastGenerated: spesaLastGenerated
     };
 }
 
@@ -153,13 +153,13 @@ function applyLoadedData(data) {
             if (weeklyLimits[k]) Object.assign(weeklyLimits[k], data.limits[k]);
         });
     }
-    pantryItems        = data.pantry            || {};
-    savedFridges       = data.savedFridges      || {};
-    appHistory         = data.history           || {};
-    customRecipes      = data.customRecipes     || [];
-    customIngredients  = data.customIngredients || [];
-    spesaItems         = data.spesaItems        || [];        // ← AGGIUNTO
-    spesaLastGenerated = data.spesaLastGenerated || null;     // ← AGGIUNTO
+    pantryItems         = data.pantry            || {};
+    savedFridges        = data.savedFridges      || {};
+    appHistory          = data.history           || {};
+    customRecipes       = data.customRecipes     || [];
+    customIngredients   = data.customIngredients || [];
+    spesaItems          = data.spesaItems        || [];
+    spesaLastGenerated  = data.spesaLastGenerated || null;
     mealPlan = data.mealPlan
         ? data.mealPlan
         : JSON.parse(JSON.stringify(defaultMealPlan));
@@ -223,9 +223,9 @@ function checkIngredientAvailability(ing) {
             pnl.split(' ').some(function (w) { return w.length > 2 && nl.includes(w); }) ||
             nl.split(' ').some(function (w) { return w.length > 2 && pnl.includes(w); });
         if (!match) return;
-        var pQty      = pData.quantity || 0;
-        var converted = convertUnit(pQty, pData.unit, ing.unit);
-        var available = converted !== null ? converted : pQty;
+        var pQty       = pData.quantity || 0;
+        var converted  = convertUnit(pQty, pData.unit, ing.unit);
+        var available  = converted !== null ? converted : pQty;
         var sameFamily = converted !== null || pData.unit === ing.unit;
         result = {
             matched: true, pantryName: pName, available: available,
