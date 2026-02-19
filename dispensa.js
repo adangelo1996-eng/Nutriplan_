@@ -21,7 +21,8 @@ function refreshAllViews() {
 }
 
 function renderPantry() {
-    dispensaFilterText = document.getElementById('dispensaSearch') ? document.getElementById('dispensaSearch').value : '';
+    dispensaFilterText = document.getElementById('dispensaSearch')
+        ? document.getElementById('dispensaSearch').value : '';
     renderPantryFiltered(dispensaFilterText);
 }
 
@@ -32,9 +33,7 @@ function renderPantryFiltered(query) {
     var totalVisible = 0;
     var html = '';
 
-    // Built-in categories
     pantryCategories.forEach(function (cat) {
-        // Include custom ingredients that belong to this category
         var builtIn = cat.items.filter(function (item) {
             return !q || item.name.toLowerCase().includes(q);
         });
@@ -51,7 +50,6 @@ function renderPantryFiltered(query) {
         html += '</div></div>';
     });
 
-    // Custom with no category or unknown category
     var uncategorized = customIngredients.filter(function (ci) {
         var knownCat = pantryCategories.some(function (c) { return c.label === ci.categoria; });
         return !knownCat && (!q || ci.name.toLowerCase().includes(q));
@@ -128,7 +126,10 @@ function clearDispensaSearch() {
 
 function addToPantry(name) {
     var item = getAllIngredients().find(function (i) { return i.name === name; });
-    pantryItems[name] = { quantity: 0, unit: (item && item.units ? item.units[0] : null) || (item && item.unit) || 'g' };
+    pantryItems[name] = {
+        quantity: 0,
+        unit: (item && item.units ? item.units[0] : null) || (item && item.unit) || 'g'
+    };
     saveData(); renderPantryFiltered(dispensaFilterText); refreshAllViews();
 }
 
@@ -139,7 +140,9 @@ function removeFromPantry(name) {
 
 function adjustQty(name, delta) {
     if (!pantryItems[name]) return;
-    pantryItems[name].quantity = Math.max(0, parseFloat(((pantryItems[name].quantity || 0) + delta).toFixed(3)));
+    pantryItems[name].quantity = Math.max(0, parseFloat(
+        ((pantryItems[name].quantity || 0) + delta).toFixed(3)
+    ));
     saveData(); renderPantryFiltered(dispensaFilterText); refreshAllViews();
 }
 
@@ -156,7 +159,19 @@ function openCustomIngModal() {
     document.getElementById('ciIcon').value = '';
     document.getElementById('ciUnit').value = 'g';
     document.getElementById('ciStep').value = '10';
-    document.getElementById('ciCategoria').value = '';
+
+    // Popola select categorie dinamicamente da pantryCategories
+    var sel = document.getElementById('ciCategoria');
+    sel.innerHTML = '<option value="">⭐ Personalizzati (nessuna categoria)</option>';
+    if (typeof pantryCategories !== 'undefined') {
+        pantryCategories.forEach(function (cat) {
+            var opt = document.createElement('option');
+            opt.value = cat.label;
+            opt.textContent = cat.label;
+            sel.appendChild(opt);
+        });
+    }
+
     document.getElementById('customIngModal').classList.add('active');
     setTimeout(function () { document.getElementById('ciName').focus(); }, 100);
 }
@@ -172,10 +187,15 @@ function saveCustomIngredient() {
     var step = parseFloat(document.getElementById('ciStep').value) || 10;
     var categoria = document.getElementById('ciCategoria').value || '';
     if (!name) { alert('Inserisci il nome.'); return; }
-    if (getAllIngredients().some(function (i) { return i.name.toLowerCase() === name.toLowerCase(); })) {
+    if (getAllIngredients().some(function (i) {
+        return i.name.toLowerCase() === name.toLowerCase();
+    })) {
         alert('Ingrediente già esistente.'); return;
     }
-    customIngredients.push({ id: 'ci_' + Date.now(), name: name, icon: icon, unit: unit, step: step, categoria: categoria });
+    customIngredients.push({
+        id: 'ci_' + Date.now(),
+        name: name, icon: icon, unit: unit, step: step, categoria: categoria
+    });
     saveData();
     closeCustomIngModal();
     renderPantryFiltered(dispensaFilterText);
@@ -194,7 +214,9 @@ function deleteCustomIngredient(name) {
 function renderFridge() {
     var container = document.getElementById('fridgeContent');
     if (!container) return;
-    var available = Object.entries(pantryItems).filter(function (e) { return (e[1].quantity || 0) > 0; });
+    var available = Object.entries(pantryItems).filter(function (e) {
+        return (e[1].quantity || 0) > 0;
+    });
     if (!available.length) {
         container.innerHTML = '<div class="fridge-empty"><h3>🍃 Frigorifero vuoto</h3><p>Aggiungi e quantifica dalla Dispensa.</p></div>';
         return;
@@ -204,7 +226,9 @@ function renderFridge() {
     pantryCategories.forEach(function (cat) {
         var catItems = available.filter(function (e) {
             return cat.items.some(function (i) { return i.name === e[0]; }) ||
-                customIngredients.some(function (ci) { return ci.name === e[0] && ci.categoria === cat.label; });
+                customIngredients.some(function (ci) {
+                    return ci.name === e[0] && ci.categoria === cat.label;
+                });
         });
         if (!catItems.length) return;
         html += '<div class="fridge-section"><h3>' + cat.label + '</h3><div class="fridge-items">';
@@ -214,7 +238,9 @@ function renderFridge() {
     var others = available.filter(function (e) {
         return !pantryCategories.some(function (cat) {
             return cat.items.some(function (i) { return i.name === e[0]; }) ||
-                customIngredients.some(function (ci) { return ci.name === e[0] && ci.categoria === cat.label; });
+                customIngredients.some(function (ci) {
+                    return ci.name === e[0] && ci.categoria === cat.label;
+                });
         });
     });
     if (others.length) {
@@ -247,12 +273,18 @@ function openSaveFridgeModal() {
     document.getElementById('saveFridgeModal').classList.add('active');
     setTimeout(function () { document.getElementById('fridgeName').focus(); }, 100);
 }
-function closeSaveFridgeModal() { document.getElementById('saveFridgeModal').classList.remove('active'); }
+function closeSaveFridgeModal() {
+    document.getElementById('saveFridgeModal').classList.remove('active');
+}
 
 function saveFridge() {
     var name = document.getElementById('fridgeName').value.trim();
     if (!name) { alert('Inserisci un nome.'); return; }
-    savedFridges[Date.now().toString()] = { name: name, date: new Date().toLocaleString('it-IT'), items: JSON.parse(JSON.stringify(pantryItems)) };
+    savedFridges[Date.now().toString()] = {
+        name: name,
+        date: new Date().toLocaleString('it-IT'),
+        items: JSON.parse(JSON.stringify(pantryItems))
+    };
     saveData(); closeSaveFridgeModal(); updateSavedFridges();
     alert('Frigorifero "' + name + '" salvato!');
 }
@@ -260,6 +292,7 @@ function saveFridge() {
 function updateSavedFridges() {
     var card = document.getElementById('savedFridgesCard');
     var list = document.getElementById('savedFridgeList');
+    if (!card || !list) return;
     var keys = Object.keys(savedFridges);
     if (!keys.length) { card.style.display = 'none'; return; }
     card.style.display = 'block';
