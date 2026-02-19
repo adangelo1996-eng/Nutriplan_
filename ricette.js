@@ -107,9 +107,12 @@ function buildRicettaCard(r) {
     var ings     = r.ingredienti || r.ingredients || [];
 
     /* Disponibilità */
-    var available = Object.keys(pantryItems).filter(function (p) {
-        return (pantryItems[p].quantity || 0) > 0;
-    });
+  var available = Object.keys(pantryItems).filter(function (p) {
+  /* GUARD: salta chiavi non valide */
+  if (!p || p === 'undefined' || p === 'null' || !p.trim()) return false;
+  return (pantryItems[p].quantity || 0) > 0;
+});
+
     var availCount = ings.filter(function (ing) {
         var n = (ing.name || ing.nome || '').toLowerCase();
         return available.some(function (av) {
