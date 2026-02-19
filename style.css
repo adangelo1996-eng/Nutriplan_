@@ -1313,12 +1313,54 @@ select.form-input { cursor: pointer; }
 /* ============================================================
    RESPONSIVE
    ============================================================ */
+
+/* Desktop: centra tutto in una colonna */
 @media (min-width: 600px) {
-    .pantry-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+    .pantry-grid  { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
     .ricette-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-    .auth-info { display: block; }
+    .auth-info    { display: block; }
 }
+
 @media (min-width: 900px) {
-    .app-header, .bottom-nav { border-radius: 0; }
-    .modal-content { border-radius: var(--radius-lg); margin-bottom: 40px; }
+    body { display: flex; justify-content: center; }
+
+    #landingPage { max-width: 500px; margin: 0 auto; }
+
+    #mainApp {
+        width: 900px;
+        max-width: 900px;
+        position: relative;
+        box-shadow: 0 0 40px rgba(0,0,0,.15);
+    }
+
+    .app-header {
+        width: 900px;
+        left: 50%;
+        transform: translateX(-50%);
+        margin: 0;
+    }
+
+    .bottom-nav {
+        width: 900px;
+        left: 50%;
+        transform: translateX(-50%);
+        margin: 0;
+    }
+
+    .modal-content {
+        border-radius: var(--radius-lg);
+        margin-bottom: 60px;
+    }
+
+    .offline-indicator {
+        /* Rimane centrato nella viewport */
+    }
 }
+
+/* Mobile piccolo */
+@media (max-width: 360px) {
+    .nav-tab span { display: none; }
+    .page-tab     { font-size: .72em; padding: 7px 4px; }
+    .ricette-grid { grid-template-columns: 1fr; }
+}
+
