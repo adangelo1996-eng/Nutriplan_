@@ -1,123 +1,95 @@
-function generatePDF(){
-    const area=document.getElementById('printArea');
-    const today=new Date();
-    const dk=selectedDateKey||formatDateKey(today);
-    const d=new Date(dk+'T00:00:00');
-    const DAYS=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
-    const MONTHS_F=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
-                    'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-    const dateStr=`${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS_F[d.getMonth()]} ${d.getFullYear()}`;
-    const turno=appHistory[dk]?.turno||'mattina';
-    const turnoLabel={mattina:'Mattina',pomeriggio:'Pomeriggio',notte1:'Notte (Prima)',notte2:'Notte (Seconda)'}[turno];
-    const dayData=appHistory[dk]||{usedItems:{},substitutions:{},turno};
-    const meals=['colazione','spuntino','pranzo','merenda','cena'];
-    const mealLabels={colazione:'Colazione ☕',spuntino:'Spuntino 🍎',pranzo:'Pranzo 🍽️',merenda:'Merenda 🥪',cena:'Cena 🌙'};
+function exportPDF() {
+    var MEAL_LABELS = {
+        colazione: 'Colazione', spuntino: 'Spuntino',
+        pranzo: 'Pranzo', merenda: 'Merenda', cena: 'Cena'
+    };
+    var MEALS_ORDER = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
 
-    /* ── SEZIONE 1: Piano del giorno ── */
-    let pianoRows='';
-    meals.forEach(meal=>{
-        const planData=mealPlan[turno]?.[meal]?.principale||[];
-        if(!planData.length) return;
-        const mealKey=turno+'__'+meal;
-        planData.forEach((item,idx)=>{
-            const sub=dayData.substitutions?.[mealKey]?.[idx];
-            const used=dayData.usedItems?.[mealKey]?.[idx];
-            const eff=sub||item;
-            let stato,cls;
-            if(used&&sub){stato='✓ Usato (sost.)';cls='ok';}
-            else if(used){stato='✓ Usato';cls='ok';}
-            else if(sub){stato='↔ Sostituito';cls='warn';}
-            else{stato='–';cls='';}
-            const nomeCell=sub
-                ?`<span style="text-decoration:line-through;color:#aaa;">${item.label}</span> → <strong>${sub.label}</strong>`
-                :item.label;
-            pianoRows+=`<tr>
-                <td>${mealLabels[meal]}</td>
-                <td>${nomeCell}</td>
-                <td>${eff.qty}${eff.unit}</td>
-                <td><span class="print-badge ${cls}">${stato}</span></td>
-            </tr>`;
+    var lines = [];
+    lines.push('NutriPlan — Piano Alimentare');
+    lines.push('Esportato il: ' + new Date().toLocaleString('it-IT'));
+    lines.push('');
+    lines.push('═══════════════════════════════════');
+    lines.push('');
+
+    // Piano giornaliero
+    lines.push('PIANO ALIMENTARE GIORNALIERO');
+    lines.push('');
+    MEALS_ORDER.forEach(function (meal) {
+        var items = (mealPlan[meal] && mealPlan[meal].principale) || [];
+        if (!items.length) return;
+        lines.push('▸ ' + (MEAL_LABELS[meal] || meal).toUpperCase());
+        items.forEach(function (item) {
+            lines.push('  • ' + item.label + '  ' + item.qty + ' ' + item.unit);
         });
+        lines.push('');
     });
 
-    /* ── SEZIONE 2: Lista spesa ── */
-    const spesaItems=buildFullSpesaList();
-    const mancanti=spesaItems.filter(i=>categorizeItem(i)==='mancante');
-    const scarsi=spesaItems.filter(i=>categorizeItem(i)==='scarso');
-    let spesaRows='';
-    [...mancanti,...scarsi].forEach(item=>{
-        const fi=getFridgeInfo(item);
-        const isMiss=mancanti.includes(item);
-        spesaRows+=`<tr>
-            <td>${item.label}</td>
-            <td>${item.qty}${item.unit}</td>
-            <td>${fi?fi.qty+' '+fi.unit:'–'}</td>
-            <td><span class="print-badge ${isMiss?'ko':'warn'}">${isMiss?'Mancante':'Insufficiente'}</span></td>
-        </tr>`;
+    lines.push('═══════════════════════════════════');
+    lines.push('');
+
+    // Dispensa
+    var pantryKeys = Object.keys(pantryItems).filter(function (k) {
+        return (pantryItems[k].quantity || 0) > 0;
     });
+    if (pantryKeys.length) {
+        lines.push('DISPENSA ATTUALE');
+        lines.push('');
+        pantryKeys.forEach(function (name) {
+            var d = pantryItems[name];
+            lines.push('  • ' + name + ': ' + d.quantity + ' ' + d.unit);
+        });
+        lines.push('');
+        lines.push('═══════════════════════════════════');
+        lines.push('');
+    }
 
-    /* ── SEZIONE 3: Limiti ── */
-    let limitiRows='';
-    Object.entries(weeklyLimits).forEach(([key,data])=>{
-        const pct=(data.current/data.max)*100;
-        limitiRows+=`<tr>
-            <td>${data.icon} ${key.replace(/_/g,' ')}</td>
-            <td>${data.current} ${data.unit}</td>
-            <td>${data.max} ${data.unit}</td>
-            <td><span class="print-badge ${pct>=100?'ko':pct>=70?'warn':'ok'}">${pct>=100?'Superato':pct>=70?'Attenzione':'OK'}</span></td>
-        </tr>`;
-    });
+    // Storico (ultimi 7 giorni)
+    var storicoKeys = Object.keys(appHistory).sort(function (a, b) {
+        return b.localeCompare(a);
+    }).slice(0, 7);
+    if (storicoKeys.length) {
+        lines.push('STORICO (ultimi 7 giorni)');
+        lines.push('');
+        var DAYS_IT   = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+        var MONTHS_IT = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu',
+                         'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+        storicoKeys.forEach(function (dk) {
+            var d = new Date(dk + 'T00:00:00');
+            var dayLabel = DAYS_IT[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS_IT[d.getMonth()];
+            var dayData  = appHistory[dk];
+            var usedItems = dayData.usedItems || {};
+            var totalUsed = 0;
+            Object.keys(usedItems).forEach(function (mk) {
+                totalUsed += Object.keys(usedItems[mk] || {}).length;
+            });
+            if (!totalUsed) return;
+            lines.push('▸ ' + dayLabel + ' (' + totalUsed + ' alimenti)');
+            MEALS_ORDER.forEach(function (meal) {
+                var mealUsed = usedItems[meal] || {};
+                var mealSubs = (dayData.substitutions || {})[meal] || {};
+                var planItems = (mealPlan[meal] && mealPlan[meal].principale) || [];
+                Object.keys(mealUsed).forEach(function (idx) {
+                    var i = parseInt(idx);
+                    var base = planItems[i] || { label: '?', qty: 0, unit: '' };
+                    var sub  = mealSubs[i];
+                    var eff  = sub || base;
+                    lines.push('  [' + (MEAL_LABELS[meal] || meal) + '] '
+                        + eff.label + ' ' + eff.qty + ' ' + eff.unit);
+                });
+            });
+            lines.push('');
+        });
+    }
 
-    /* ── SEZIONE 4: Frigo ── */
-    const fridgeItems=Object.entries(pantryItems).filter(([,d])=>(d.quantity||0)>0);
-    let fridgeRows=fridgeItems.map(([name,data])=>{
-        const item=getAllIngredients().find(i=>i.name===name);
-        return `<tr><td>${item?.icon||''} ${name}</td><td>${data.quantity} ${data.unit}</td></tr>`;
-    }).join('');
-
-    /* ── BUILD HTML ── */
-    area.innerHTML=`
-    <div class="print-header">
-        <h1>🌿 NutriPlan</h1>
-        <p>Riepilogo giornaliero — <strong>${dateStr}</strong></p>
-        <p>Turno: <strong>${turnoLabel}</strong> &nbsp;|&nbsp; Generato: ${today.toLocaleString('it-IT')}</p>
-    </div>
-
-    ${pianoRows?`
-    <div class="print-section">
-        <h2>📅 Piano Pasti del Giorno</h2>
-        <table class="print-table">
-            <thead><tr><th>Pasto</th><th>Ingrediente</th><th>Quantità</th><th>Stato</th></tr></thead>
-            <tbody>${pianoRows}</tbody>
-        </table>
-    </div>`:''}
-
-    ${spesaRows?`
-    <div class="print-section">
-        <h2>🛒 Lista della Spesa</h2>
-        <table class="print-table">
-            <thead><tr><th>Ingrediente</th><th>Necessario</th><th>Nel frigo</th><th>Stato</th></tr></thead>
-            <tbody>${spesaRows}</tbody>
-        </table>
-    </div>`:''}
-
-    <div class="print-section">
-        <h2>📊 Limiti Settimanali</h2>
-        <table class="print-table">
-            <thead><tr><th>Categoria</th><th>Usato</th><th>Massimo</th><th>Stato</th></tr></thead>
-            <tbody>${limitiRows}</tbody>
-        </table>
-    </div>
-
-    ${fridgeRows?`
-    <div class="print-section">
-        <h2>❄️ Contenuto Frigo</h2>
-        <table class="print-table" style="max-width:400px;">
-            <thead><tr><th>Ingrediente</th><th>Disponibile</th></tr></thead>
-            <tbody>${fridgeRows}</tbody>
-        </table>
-    </div>`:''}
-    `;
-
-    setTimeout(()=>window.print(),120);
+    var content = lines.join('\n');
+    var blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href   = url;
+    a.download = 'nutriplan_' + new Date().toISOString().slice(0, 10) + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
