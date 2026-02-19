@@ -1,186 +1,199 @@
-let spesaChecked={};
-let spesaCustomItems=[];
+var spesaItems = [];          // array {id, name, qty, unit, done, manual}
+var spesaLastGenerated = null;
 
-/* ── Raccoglie tutti gli ingredienti da TUTTI i turni (deduplicati) ── */
-function buildFullSpesaList(){
-    const turni=['mattina','pomeriggio','notte1','notte2'];
-    const meals=['colazione','spuntino','pranzo','merenda','cena'];
-    const needed={};
-    turni.forEach(turno=>{
-        meals.forEach(meal=>{
-            const items=mealPlan[turno]?.[meal]?.principale||[];
-            items.forEach(item=>{
-                if(!needed[item.label])
-                    needed[item.label]={label:item.label,qty:item.qty,unit:item.unit};
+/* ============================================================
+   RENDER PRINCIPALE
+   ============================================================ */
+function renderSpesa() {
+    var container = document.getElementById('spesaContent');
+    if (!container) return;
+
+    var html = '';
+
+    // Header con pulsanti
+    html += '<div class="spesa-header">';
+    html += '<div class="spesa-header-row">';
+    html += '<h2 class="spesa-title">🛒 Lista della Spesa</h2>';
+    html += '<button class="btn btn-primary btn-small" onclick="generateSpesa()">⚡ Genera</button>';
+    html += '</div>';
+    if (spesaLastGenerated) {
+        html += '<div class="spesa-subtitle">Aggiornata: ' + spesaLastGenerated + '</div>';
+    }
+    html += '</div>';
+
+    // Aggiungi manuale
+    html += '<div class="spesa-add-row">';
+    html += '<input type="text" id="spesaManualName" class="form-input" placeholder="Aggiungi articolo..." '
+        + 'onkeypress="if(event.key===\'Enter\')addSpesaManual()">';
+    html += '<button class="btn btn-secondary btn-small" onclick="addSpesaManual()">➕</button>';
+    html += '</div>';
+
+    if (!spesaItems.length) {
+        html += '<div class="empty-state">'
+            + '<div style="font-size:3em;margin-bottom:12px;">🛒</div>'
+            + '<h3>Lista vuota</h3>'
+            + '<p>Clicca <b>⚡ Genera</b> per creare automaticamente la lista '
+            + 'in base agli ingredienti mancanti dal tuo piano.</p>'
+            + '</div>';
+        container.innerHTML = html;
+        return;
+    }
+
+    // Statistiche rapide
+    var done  = spesaItems.filter(function (i) { return i.done; }).length;
+    var total = spesaItems.length;
+    var pct   = Math.round((done / total) * 100);
+    html += '<div class="spesa-progress-row">';
+    html += '<span class="spesa-progress-label">' + done + ' / ' + total + ' articoli</span>';
+    html += '<div class="spesa-progress-bar">'
+        + '<div class="spesa-progress-fill" style="width:' + pct + '%"></div></div>';
+    html += '</div>';
+
+    // Azioni bulk
+    html += '<div class="spesa-bulk-row">';
+    html += '<button class="btn btn-secondary btn-small" onclick="checkAllSpesa()">✓ Tutti</button>';
+    html += '<button class="btn btn-secondary btn-small" onclick="uncheckAllSpesa()">↺ Deseleziona</button>';
+    html += '<button class="btn btn-warning btn-small" onclick="clearDoneSpesa()">🗑 Rimuovi ✓</button>';
+    html += '<button class="btn btn-warning btn-small" onclick="clearAllSpesa()">✕ Svuota</button>';
+    html += '</div>';
+
+    // Separa da fare / fatto
+    var pending = spesaItems.filter(function (i) { return !i.done; });
+    var done_items = spesaItems.filter(function (i) { return i.done; });
+
+    if (pending.length) {
+        html += '<div class="spesa-section-title">📋 Da comprare (' + pending.length + ')</div>';
+        html += '<div class="spesa-list">';
+        pending.forEach(function (item) { html += buildSpesaItemHTML(item); });
+        html += '</div>';
+    }
+    if (done_items.length) {
+        html += '<div class="spesa-section-title" style="margin-top:16px;">✅ Nel carrello (' + done_items.length + ')</div>';
+        html += '<div class="spesa-list spesa-list-done">';
+        done_items.forEach(function (item) { html += buildSpesaItemHTML(item); });
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
+}
+
+function buildSpesaItemHTML(item) {
+    var esc = item.id;
+    var nameEsc = (item.name || '').replace(/'/g, "\\'");
+    return '<div class="spesa-item ' + (item.done ? 'done' : '') + '" id="spesaItem_' + esc + '">'
+        + '<div class="spesa-item-check" onclick="toggleSpesaItem(\'' + esc + '\')">'
+        + (item.done ? '✅' : '⬜') + '</div>'
+        + '<div class="spesa-item-info" onclick="toggleSpesaItem(\'' + esc + '\')">'
+        + '<div class="spesa-item-name">' + (item.name || '') + '</div>'
+        + (item.qty ? '<div class="spesa-item-qty">' + item.qty + ' ' + (item.unit || '') + '</div>' : '')
+        + '</div>'
+        + '<div class="spesa-item-actions">'
+        + (item.manual ? '<span class="spesa-badge-manual">custom</span>' : '<span class="spesa-badge-auto">auto</span>')
+        + '<button class="spesa-delete-btn" onclick="deleteSpesaItem(\'' + esc + '\')">✕</button>'
+        + '</div></div>';
+}
+
+/* ============================================================
+   GENERA LISTA AUTOMATICA
+   ============================================================ */
+function generateSpesa() {
+    var MEALS_ORDER = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
+    var needed = {};
+
+    MEALS_ORDER.forEach(function (meal) {
+        var items = (mealPlan[meal] && mealPlan[meal].principale) || [];
+        items.forEach(function (item) {
+            var name = item.label;
+            if (!name) return;
+            var avail = checkIngredientAvailability({
+                name: name, quantity: item.qty, unit: item.unit
             });
+            if (!avail.sufficient) {
+                if (!needed[name]) {
+                    needed[name] = { qty: item.qty, unit: item.unit };
+                }
+            }
         });
     });
-    return Object.values(needed);
-}
 
-/* ── Versione per-turno usata dal PDF ── */
-function buildSpesaList(turno){
-    const meals=['colazione','spuntino','pranzo','merenda','cena'];
-    const needed={};
-    meals.forEach(meal=>{
-        const items=mealPlan[turno]?.[meal]?.principale||[];
-        items.forEach(item=>{
-            if(!needed[item.label])
-                needed[item.label]={label:item.label,qty:item.qty,unit:item.unit};
+    // Mantieni gli item manuali già presenti
+    var manualItems = spesaItems.filter(function (i) { return i.manual; });
+    spesaItems = manualItems;
+
+    Object.keys(needed).forEach(function (name) {
+        var already = spesaItems.some(function (i) {
+            return i.name.toLowerCase() === name.toLowerCase();
         });
+        if (!already) {
+            spesaItems.push({
+                id: 'sp_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+                name: name,
+                qty: needed[name].qty,
+                unit: needed[name].unit,
+                done: false,
+                manual: false
+            });
+        }
     });
-    return Object.values(needed);
+
+    spesaLastGenerated = new Date().toLocaleString('it-IT');
+    saveData();
+    renderSpesa();
+
+    if (!Object.keys(needed).length) {
+        alert('✅ Hai tutto! Nessun ingrediente mancante dal piano.');
+    }
 }
 
-function categorizeItem(item){
-    const nl=item.label.toLowerCase();
-    let inFridge=false,sufficient=false;
-    for(const [pName,pData] of Object.entries(pantryItems)){
-        const pnl=pName.toLowerCase();
-        const match=pnl===nl||pnl.includes(nl)||nl.includes(pnl)||
-            pnl.split(' ').some(w=>w.length>2&&nl.includes(w))||
-            nl.split(' ').some(w=>w.length>2&&pnl.includes(w));
-        if(!match) continue;
-        inFridge=true;
-        const fridgeQty=pData.quantity||0;
-        const fridgeUnit=pData.unit||item.unit;
-        const converted=convertUnit(fridgeQty,fridgeUnit,item.unit);
-        const available=converted!==null?converted:fridgeQty;
-        sufficient=available>=item.qty;
-        break;
-    }
-    if(!inFridge) return 'mancante';
-    if(!sufficient) return 'scarso';
-    return 'ok';
+/* ============================================================
+   AZIONI ITEM
+   ============================================================ */
+function toggleSpesaItem(id) {
+    var item = spesaItems.find(function (i) { return i.id === id; });
+    if (item) { item.done = !item.done; saveData(); renderSpesa(); }
 }
 
-function getFridgeInfo(item){
-    const nl=item.label.toLowerCase();
-    for(const [pName,pData] of Object.entries(pantryItems)){
-        const pnl=pName.toLowerCase();
-        const match=pnl===nl||pnl.includes(nl)||nl.includes(pnl)||
-            pnl.split(' ').some(w=>w.length>2&&nl.includes(w))||
-            nl.split(' ').some(w=>w.length>2&&pnl.includes(w));
-        if(match) return{qty:pData.quantity||0,unit:pData.unit||item.unit};
-    }
-    return null;
+function deleteSpesaItem(id) {
+    spesaItems = spesaItems.filter(function (i) { return i.id !== id; });
+    saveData(); renderSpesa();
 }
 
-function renderSpesa(){
-    const container=document.getElementById('spesaContent');
-    const items=buildFullSpesaList();
-
-    const mancanti=items.filter(i=>categorizeItem(i)==='mancante');
-    const scarsi  =items.filter(i=>categorizeItem(i)==='scarso');
-    const ok      =items.filter(i=>categorizeItem(i)==='ok');
-
-    const totalItems=mancanti.length+scarsi.length+spesaCustomItems.length;
-    const boughtCount=Object.values(spesaChecked).filter(Boolean).length;
-    const pct=totalItems>0?Math.round((boughtCount/totalItems)*100):0;
-
-    let html='';
-
-    if(mancanti.length){
-        html+=`<div class="spesa-section">
-            <div class="spesa-section-title mancanti">❌ Mancanti nel frigo <span class="spesa-count">${mancanti.length}</span></div>`;
-        mancanti.forEach(item=>{
-            const id='spesa_'+item.label.replace(/\s/g,'_');
-            html+=buildSpesaItemHTML(id,item,spesaChecked[id]||false,'miss');
-        });
-        html+='</div>';
-    }
-
-    if(scarsi.length){
-        html+=`<div class="spesa-section">
-            <div class="spesa-section-title scarsi">⚠️ Quantità insufficiente <span class="spesa-count">${scarsi.length}</span></div>`;
-        scarsi.forEach(item=>{
-            const id='spesa_'+item.label.replace(/\s/g,'_');
-            const fi=getFridgeInfo(item);
-            html+=buildSpesaItemHTML(id,{...item,fridgeQty:fi?.qty,fridgeUnit:fi?.unit},spesaChecked[id]||false,'low');
-        });
-        html+='</div>';
-    }
-
-    if(spesaCustomItems.length){
-        html+=`<div class="spesa-section">
-            <div class="spesa-section-title custom">➕ Aggiunti manualmente <span class="spesa-count">${spesaCustomItems.length}</span></div>`;
-        spesaCustomItems.forEach((item,idx)=>{
-            const id='custom_'+idx;
-            const bought=spesaChecked[id]||false;
-            html+=`<button class="spesa-item ${bought?'bought':''}" onclick="toggleSpesaItem('${id}')">
-                <div class="spesa-item-check">${bought?'✓':''}</div>
-                <span class="spesa-item-name">${item.label}</span>
-                <span class="spesa-item-qty">${item.qty||''}</span>
-                <button onclick="event.stopPropagation();removeCustomSpesaItem(${idx})"
-                    style="background:none;border:none;cursor:pointer;color:var(--red);font-size:1em;padding:0 4px;flex-shrink:0;">🗑</button>
-            </button>`;
-        });
-        html+='</div>';
-    }
-
-    if(ok.length){
-        html+=`<div class="spesa-section">
-            <div class="spesa-section-title ok">✅ Già disponibile <span class="spesa-count">${ok.length}</span></div>`;
-        ok.forEach(item=>{
-            const fi=getFridgeInfo(item);
-            html+=`<div class="spesa-item" style="cursor:default;opacity:.65;">
-                <div class="spesa-item-check" style="background:var(--green);border-color:var(--green);color:#fff;">✓</div>
-                <span class="spesa-item-name">${item.label}</span>
-                <span class="spesa-item-qty">${fi?fi.qty+' '+fi.unit:'–'} / serve ${item.qty}${item.unit}</span>
-            </div>`;
-        });
-        html+='</div>';
-    }
-
-    if(!mancanti.length&&!scarsi.length&&!spesaCustomItems.length&&!ok.length){
-        html=`<div class="spesa-empty">
-            <div style="font-size:3em;margin-bottom:12px;">🎉</div>
-            <h3>Frigo al completo!</h3>
-            <p>Hai tutto il necessario.</p>
-        </div>`;
-    } else if(totalItems>0){
-        html+=`<div class="spesa-progress">
-            <div class="spesa-progress-label">
-                <span>Acquisti completati</span><span>${boughtCount} / ${totalItems}</span>
-            </div>
-            <div class="spesa-progress-bar">
-                <div class="spesa-progress-fill" style="width:${pct}%"></div>
-            </div>
-        </div>`;
-    }
-
-    container.innerHTML=html;
+function addSpesaManual() {
+    var input = document.getElementById('spesaManualName');
+    if (!input) return;
+    var name = input.value.trim();
+    if (!name) return;
+    spesaItems.push({
+        id: 'sp_' + Date.now(),
+        name: name, qty: 0, unit: '',
+        done: false, manual: true
+    });
+    input.value = '';
+    saveData(); renderSpesa();
 }
 
-function buildSpesaItemHTML(id,item,bought,statusType){
-    const statusClass=statusType==='miss'?'spesa-status-miss':'spesa-status-low';
-    const statusLabel=statusType==='miss'?'mancante':'scarso';
-    let qtyLabel=`${item.qty}${item.unit}`;
-    if(statusType==='low'&&item.fridgeQty!==undefined)
-        qtyLabel=`${item.fridgeQty}${item.fridgeUnit} → serve ${item.qty}${item.unit}`;
-    return `<button class="spesa-item ${bought?'bought':''}" onclick="toggleSpesaItem('${id}')">
-        <div class="spesa-item-check">${bought?'✓':''}</div>
-        <span class="spesa-item-name">${item.label}</span>
-        <span class="spesa-item-qty">${qtyLabel}</span>
-        <span class="spesa-item-status ${statusClass}">${statusLabel}</span>
-    </button>`;
+function checkAllSpesa() {
+    spesaItems.forEach(function (i) { i.done = true; });
+    saveData(); renderSpesa();
+}
+function uncheckAllSpesa() {
+    spesaItems.forEach(function (i) { i.done = false; });
+    saveData(); renderSpesa();
+}
+function clearDoneSpesa() {
+    spesaItems = spesaItems.filter(function (i) { return !i.done; });
+    saveData(); renderSpesa();
+}
+function clearAllSpesa() {
+    if (!confirm('Svuotare tutta la lista della spesa?')) return;
+    spesaItems = []; spesaLastGenerated = null;
+    saveData(); renderSpesa();
 }
 
-function toggleSpesaItem(id){spesaChecked[id]=!spesaChecked[id];renderSpesa();}
-function clearSpesaChecked(){spesaChecked={};renderSpesa();}
-
-function openSpesaItemModal(){
-    document.getElementById('spesaItemName').value='';
-    document.getElementById('spesaItemQty').value='';
-    document.getElementById('spesaItemModal').classList.add('active');
-    setTimeout(()=>document.getElementById('spesaItemName').focus(),100);
+/* ============================================================
+   MODAL SPESA (usato da app.js)
+   ============================================================ */
+function closeSpesaItemModal() {
+    var m = document.getElementById('spesaItemModal');
+    if (m) m.classList.remove('active');
 }
-function closeSpesaItemModal(){document.getElementById('spesaItemModal').classList.remove('active');}
-function confirmAddSpesaItem(){
-    const name=document.getElementById('spesaItemName').value.trim();
-    const qty=document.getElementById('spesaItemQty').value.trim();
-    if(!name){alert('❌ Inserisci un nome.');return;}
-    spesaCustomItems.push({label:name,qty});
-    closeSpesaItemModal();renderSpesa();
-}
-function removeCustomSpesaItem(idx){spesaCustomItems.splice(idx,1);renderSpesa();}
