@@ -9,6 +9,8 @@ var customIngredients = [];
 var mealPlan = {};
 var currentUser = null;
 var firebaseReady = false;
+var spesaItems = [];
+var spesaLastGenerated = null;
 
 var STORAGE_KEY = 'nutriplanDataV8';
 
@@ -73,8 +75,8 @@ function loadFromCloud(cb) {
 }
 
 function updateAuthUI(loggedIn, name, photo) {
-    var btn = document.getElementById('authBtn');
-    var info = document.getElementById('authInfo');
+    var btn    = document.getElementById('authBtn');
+    var info   = document.getElementById('authInfo');
     var avatar = document.getElementById('authAvatar');
     if (!btn) return;
     if (loggedIn) {
@@ -130,15 +132,18 @@ function getDayData(dateKey) {
     return appHistory[dateKey];
 }
 
+/* ---- BUILD / APPLY ---- */
 function buildSaveObject() {
     return {
-        limits: weeklyLimits,
-        pantry: pantryItems,
-        savedFridges: savedFridges,
-        history: appHistory,
-        customRecipes: customRecipes,
+        limits:            weeklyLimits,
+        pantry:            pantryItems,
+        savedFridges:      savedFridges,
+        history:           appHistory,
+        customRecipes:     customRecipes,
         customIngredients: customIngredients,
-        mealPlan: mealPlan
+        mealPlan:          mealPlan,
+        spesaItems:        spesaItems,           // ← AGGIUNTO
+        spesaLastGenerated: spesaLastGenerated   // ← AGGIUNTO
     };
 }
 
@@ -148,14 +153,18 @@ function applyLoadedData(data) {
             if (weeklyLimits[k]) Object.assign(weeklyLimits[k], data.limits[k]);
         });
     }
-    pantryItems = data.pantry || {};
-    savedFridges = data.savedFridges || {};
-    appHistory = data.history || {};
-    customRecipes = data.customRecipes || [];
-    customIngredients = data.customIngredients || [];
+    pantryItems        = data.pantry            || {};
+    savedFridges       = data.savedFridges      || {};
+    appHistory         = data.history           || {};
+    customRecipes      = data.customRecipes     || [];
+    customIngredients  = data.customIngredients || [];
+    spesaItems         = data.spesaItems        || [];        // ← AGGIUNTO
+    spesaLastGenerated = data.spesaLastGenerated || null;     // ← AGGIUNTO
     mealPlan = data.mealPlan
         ? data.mealPlan
         : JSON.parse(JSON.stringify(defaultMealPlan));
+
+    // Pulisci storico più vecchio di 1 anno
     var cutoff = new Date();
     cutoff.setFullYear(cutoff.getFullYear() - 1);
     Object.keys(appHistory).forEach(function (dk) {
@@ -190,6 +199,7 @@ function saveData() {
 }
 
 function saveMealPlan() { saveData(); }
+
 function resetMealPlanToDefault() {
     mealPlan = JSON.parse(JSON.stringify(defaultMealPlan));
     saveData();
@@ -208,12 +218,12 @@ function checkIngredientAvailability(ing) {
     var result = { matched: false, sufficient: false };
     Object.keys(pantryItems).forEach(function (pName) {
         var pData = pantryItems[pName];
-        var pnl = pName.toLowerCase();
+        var pnl   = pName.toLowerCase();
         var match = pnl === nl || pnl.includes(nl) || nl.includes(pnl) ||
             pnl.split(' ').some(function (w) { return w.length > 2 && nl.includes(w); }) ||
             nl.split(' ').some(function (w) { return w.length > 2 && pnl.includes(w); });
         if (!match) return;
-        var pQty = pData.quantity || 0;
+        var pQty      = pData.quantity || 0;
         var converted = convertUnit(pQty, pData.unit, ing.unit);
         var available = converted !== null ? converted : pQty;
         var sameFamily = converted !== null || pData.unit === ing.unit;
@@ -232,7 +242,7 @@ function checkAvailByName(name) {
     var found = false;
     Object.keys(pantryItems).forEach(function (pName) {
         var pData = pantryItems[pName];
-        var pnl = pName.toLowerCase();
+        var pnl   = pName.toLowerCase();
         var match = pnl === nl || pnl.includes(nl) || nl.includes(pnl) ||
             pnl.split(' ').some(function (w) { return w.length > 2 && nl.includes(w); }) ||
             nl.split(' ').some(function (w) { return w.length > 2 && pnl.includes(w); });
