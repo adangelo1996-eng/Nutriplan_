@@ -1,472 +1,423 @@
 <!DOCTYPE html>
 <html lang="it" data-theme="light">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#4a9b7f" id="metaThemeColor">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="NutriPlan">
-<meta name="mobile-web-app-capable" content="yes">
-<link rel="apple-touch-icon" id="appleTouchIcon" href="">
-<link rel="manifest" href="#" id="manifest-placeholder">
-<link rel="stylesheet" href="style.css">
-<title>NutriPlan</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>NutriPlan</title>
+    <link id="manifest-placeholder" rel="manifest">
+    <link id="appleTouchIcon" rel="apple-touch-icon">
+    <meta id="metaThemeColor" name="theme-color" content="#4a9b7f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="NutriPlan">
+
+    <!-- Firebase SDK — DEVE stare prima di tutto -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<datalist id="ingredientiSuggeriti"></datalist>
-
-<!-- ═══════════ BANNER ANDROID ═══════════ -->
-<div class="install-banner" id="installBanner">
-    <div class="install-content">
-        <h4>📱 Installa NutriPlan</h4>
-        <p>Aggiungila alla home screen!</p>
-    </div>
-    <div class="install-actions">
-        <button class="btn-install" id="installBtn">Installa</button>
-        <button class="btn-dismiss" id="dismissBtn">✕</button>
-    </div>
+<!-- ===================== LANDING ===================== -->
+<div id="landingPage">
+    <div id="landingLogo"></div>
+    <h1 class="landing-title">NutriPlan</h1>
+    <p class="landing-sub">Il tuo piano alimentare personale</p>
+    <button class="btn btn-primary btn-large" onclick="enterApp()">▶ Inizia</button>
 </div>
 
-<!-- ═══════════ BANNER IOS ═══════════ -->
-<div class="ios-banner" id="iosBanner">
-    <div class="ios-banner-inner">
-        <div class="ios-banner-icon">🌿</div>
-        <div class="ios-banner-text">
-            <strong>Installa NutriPlan</strong>
-            <span>Tocca <b>⎙ Condividi</b> → <b>"Aggiungi a Home"</b></span>
+<!-- ===================== MAIN APP ===================== -->
+<div id="mainApp">
+
+    <!-- HEADER -->
+    <header class="app-header">
+        <div class="header-left">
+            <canvas id="headerIcon" width="32" height="32"></canvas>
+            <span class="header-title">NutriPlan</span>
         </div>
-        <button class="ios-banner-close" onclick="closeIosBanner()">✕</button>
-    </div>
-</div>
-
-<div class="offline-indicator" id="offlineIndicator">📡 Modalità offline</div>
-
-<!-- ═══════════ LANDING ═══════════ -->
-<div class="landing" id="landingPage">
-    <div class="landing-content">
-        <div class="landing-logo" id="landingLogo"></div>
-        <h1>NutriPlan</h1>
-        <p>Il tuo piano alimentare naturale personalizzato.<br>Ricette, dispensa, frigo e limiti settimanali.</p>
-        <button class="btn-enter" onclick="enterApp()">Entra nell'App ✨</button>
-    </div>
-</div>
-
-<!-- ═══════════ APP ═══════════ -->
-<div class="app" id="mainApp">
-
-    <header>
-        <div class="header-top">
-            <div class="logo">
-                <canvas id="headerIcon" width="32" height="32" style="border-radius:8px;"></canvas>
-                <span>NutriPlan</span>
-            </div>
-            <div class="header-actions">
-                <button class="header-btn" id="darkToggle" onclick="toggleDarkMode()" title="Modalità scura">🌙</button>
-                <button class="header-btn" onclick="generatePDF()" title="Esporta PDF">📄</button>
-            </div>
+        <div class="header-center">
+            <span id="cloudStatus" class="cloud-status local">💾 Locale</span>
         </div>
-        <nav class="nav-tabs">
-            <button class="nav-tab active" onclick="showPage('piano',this)">📅 Piano</button>
-            <button class="nav-tab" onclick="showPage('frigo',this)">❄️ Frigo</button>
-            <button class="nav-tab" onclick="showPage('dispensa',this)">🏡 Dispensa</button>
-            <button class="nav-tab" onclick="showPage('spesa',this)">🛒 Spesa</button>
-            <button class="nav-tab" onclick="showPage('ricette',this)">🍳 Ricette</button>
-            <button class="nav-tab" onclick="showPage('limiti',this)">📊 Limiti</button>
-            <button class="nav-tab" onclick="showPage('statistiche',this)">📈 Stats</button>
-            <button class="nav-tab" onclick="showPage('storico',this)">📖 Storico</button>
-        </nav>
+        <div class="header-right">
+            <img id="authAvatar" class="auth-avatar" style="display:none" alt="avatar">
+            <span id="authInfo" class="auth-info"></span>
+            <button id="authBtn" class="btn btn-secondary btn-small" onclick="signInWithGoogle()">
+                Accedi con Google
+            </button>
+            <button id="darkToggle" class="btn-icon-only" onclick="toggleDarkMode()">🌙</button>
+        </div>
     </header>
 
-    <div class="calendar-bar-wrapper">
-        <div class="calendar-bar" id="calendarBar"></div>
-    </div>
+    <!-- NAVBAR -->
+    <nav class="bottom-nav">
+        <button class="nav-tab active" onclick="showPage('piano', this)">🏠<span>Piano</span></button>
+        <button class="nav-tab" onclick="showPage('dispensa', this)">🧺<span>Dispensa</span></button>
+        <button class="nav-tab" onclick="showPage('ricette', this)">📖<span>Ricette</span></button>
+        <button class="nav-tab" onclick="showPage('storico', this)">📅<span>Storico</span></button>
+        <button class="nav-tab" onclick="showPage('spesa', this)">🛒<span>Spesa</span></button>
+        <button class="nav-tab" onclick="showPage('statistiche', this)">📊<span>Stats</span></button>
+        <button class="nav-tab" onclick="showPage('profilo', this)">👤<span>Profilo</span></button>
+    </nav>
 
-    <div class="pages">
+    <!-- PAGES -->
+    <main class="app-main">
 
-        <!-- ═══════════ PIANO ═══════════ -->
-        <div class="page active" id="pianoPage">
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-icon">📅</span>
-                    <h2>Piano Alimentare</h2>
-                </div>
-                <div class="date-turno-row">
-                    <div class="current-date-label" id="currentDateLabel"></div>
-                    <div class="select-group">
-                        <label>Turno di Lavoro</label>
-                        <select id="daySelect" onchange="onTurnoChange()">
-                            <option value="mattina">Mattina</option>
-                            <option value="pomeriggio">Pomeriggio</option>
-                            <option value="notte1">Notte (Prima)</option>
-                            <option value="notte2">Notte (Seconda)</option>
-                        </select>
-                    </div>
-                    <div class="select-group">
-                        <label>Pasto</label>
-                        <select id="mealSelect" onchange="renderMealPlan()">
-                            <option value="colazione">Colazione</option>
-                            <option value="spuntino">Spuntino</option>
-                            <option value="pranzo">Pranzo</option>
-                            <option value="merenda">Merenda</option>
-                            <option value="cena">Cena</option>
-                        </select>
-                    </div>
-                </div>
+        <!-- ===== PIANO ===== -->
+        <div id="pianoPage" class="page active">
+            <!-- Calendario -->
+            <div class="calendar-bar-wrap">
+                <div id="calendarBar" class="calendar-bar"></div>
+            </div>
+            <div id="currentDateLabel" class="current-date-label"></div>
 
-                <div class="page-tabs">
-                    <button class="page-tab active" onclick="showPianoTab('turno',this)">🗓️ Per Turno</button>
-                    <button class="page-tab" onclick="showPianoTab('frigo',this)">❄️ Dal Frigo</button>
-                    <button class="page-tab" onclick="showPianoTab('ingredienti',this)">🥦 Per Ingredienti</button>
-                </div>
+            <!-- Tabs -->
+            <div class="page-tabs">
+                <button class="page-tab active" onclick="showPianoTab('pasto', this)">🍽️ Pasto</button>
+                <button class="page-tab" onclick="showPianoTab('frigo', this)">❄️ Frigo</button>
+                <button class="page-tab" onclick="showPianoTab('ingredienti', this)">🥦 Ingredienti</button>
+                <button class="page-tab" onclick="showPianoTab('limiti', this)">📊 Limiti</button>
+            </div>
 
-                <div class="page-tab-content active" id="pianoTabTurno">
-                    <div id="mealPlanContainer"></div>
+            <!-- Tab Pasto -->
+            <div id="pianoTabPasto" class="page-tab-content active">
+                <div class="meal-select-row">
+                    <select id="mealSelect" class="form-input meal-select" onchange="renderMealPlan()">
+                        <option value="colazione">☕ Colazione</option>
+                        <option value="spuntino">🍎 Spuntino</option>
+                        <option value="pranzo" selected>🍽️ Pranzo</option>
+                        <option value="merenda">🥪 Merenda</option>
+                        <option value="cena">🌙 Cena</option>
+                    </select>
                 </div>
+                <div id="mealPlanContainer"></div>
+            </div>
 
-                <div class="page-tab-content" id="pianoTabFrigo">
-                    <div class="step-indicator">
-                        <div class="step-badge">💡</div>
-                        <div class="step-text">Ricette suggerite in base a ciò che hai nel frigo.</div>
-                    </div>
-                    <div class="select-group" style="margin-bottom:16px;max-width:260px;">
-                        <label>Filtra per pasto</label>
-                        <select id="fridgeMealFilter" onchange="updateFridgeSuggestions()">
-                            <option value="tutti">Tutti i pasti</option>
-                            <option value="colazione">Colazione</option>
-                            <option value="spuntino">Spuntino</option>
-                            <option value="pranzo">Pranzo</option>
-                            <option value="merenda">Merenda</option>
-                            <option value="cena">Cena</option>
-                        </select>
-                    </div>
-                    <div id="fridgeSuggestionsList"></div>
+            <!-- Tab Frigo -->
+            <div id="pianoTabFrigo" class="page-tab-content">
+                <div class="section-header">
+                    <h3>❄️ Suggerimenti dal frigo</h3>
+                    <select id="fridgeMealFilter" class="form-input form-input-small" onchange="updateFridgeSuggestions()">
+                        <option value="tutti">Tutti i pasti</option>
+                        <option value="colazione">☕ Colazione</option>
+                        <option value="spuntino">🍎 Spuntino</option>
+                        <option value="pranzo">🍽️ Pranzo</option>
+                        <option value="merenda">🥪 Merenda</option>
+                        <option value="cena">🌙 Cena</option>
+                    </select>
                 </div>
+                <div id="fridgeSuggestionsList"></div>
+            </div>
 
-                <div class="page-tab-content" id="pianoTabIngredienti">
-                    <div class="step-indicator">
-                        <div class="step-badge">1</div>
-                        <div class="step-text">Seleziona ingredienti da usare oggi, poi clicca "Cerca Ricette".</div>
-                    </div>
-                    <div class="day-ingredients-grid" id="dayIngGrid"></div>
-                    <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
-                        <button class="btn btn-primary" onclick="searchByIngredients()">🔍 Cerca Ricette</button>
-                        <button class="btn btn-secondary" onclick="clearDayIngredients()">✕ Deseleziona</button>
-                    </div>
-                    <div id="ingredientSuggestionsList"></div>
+            <!-- Tab Ingredienti -->
+            <div id="pianoTabIngredienti" class="page-tab-content">
+                <div class="section-header">
+                    <h3>🥦 Cerca per ingredienti</h3>
+                    <button class="btn btn-secondary btn-small" onclick="clearDayIngredients()">✕ Pulisci</button>
                 </div>
+                <div id="dayIngGrid" class="day-ing-grid"></div>
+                <button class="btn btn-primary" onclick="searchByIngredients()"
+                    style="width:100%;margin-top:12px;">🔍 Cerca ricette</button>
+                <div id="ingredientSuggestionsList" style="margin-top:16px;"></div>
+            </div>
+
+            <!-- Tab Limiti -->
+            <div id="pianoTabLimiti" class="page-tab-content">
+                <div class="section-header">
+                    <h3>📊 Limiti settimanali</h3>
+                    <button class="btn btn-warning btn-small" onclick="resetWeek()">🔄 Reset</button>
+                </div>
+                <div id="limitsGrid" class="limits-grid"></div>
             </div>
         </div>
 
-        <!-- ═══════════ FRIGO ═══════════ -->
-        <div class="page" id="frigoPage">
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-icon">❄️</span>
-                    <h2>Frigorifero</h2>
-                </div>
-                <div class="fridge-controls">
-                    <button class="btn btn-success" onclick="openSaveFridgeModal()">💾 Salva</button>
-                    <button class="btn btn-warning" onclick="clearFridge()">🗑️ Svuota</button>
-                </div>
-                <div id="fridgeContent"></div>
+        <!-- ===== DISPENSA ===== -->
+        <div id="dispensaPage" class="page">
+            <div class="page-tabs">
+                <button class="page-tab active" onclick="showDispensaTab('dispensa', this)">🧺 Dispensa</button>
+                <button class="page-tab" onclick="showDispensaTab('frigo', this)">❄️ Frigo</button>
             </div>
-            <div class="card" id="savedFridgesCard" style="display:none;">
-                <div class="card-header">
-                    <span class="card-icon">📚</span>
-                    <h2>Frigoriferi Salvati</h2>
-                </div>
-                <div class="saved-fridge-list" id="savedFridgeList"></div>
-            </div>
-        </div>
 
-        <!-- ═══════════ DISPENSA ═══════════ -->
-        <div class="page" id="dispensaPage">
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-icon">🏡</span>
-                    <h2>Dispensa</h2>
-                    <button class="btn btn-primary btn-small"
+            <!-- Tab Dispensa -->
+            <div id="dispensaTabDispensa" class="page-tab-content active">
+                <!-- BARRA RICERCA + PULSANTE + -->
+                <div class="search-bar-row">
+                    <div class="search-input-wrap">
+                        <input type="text" id="dispensaSearch"
+                            placeholder="🔍 Cerca ingrediente..."
+                            oninput="filterDispensa(this.value)"
+                            class="form-input search-input">
+                        <button id="dispensaClearBtn" class="search-clear-btn"
+                            onclick="clearDispensaSearch()" style="display:none;">✕</button>
+                    </div>
+                    <!-- PULSANTE + PER INGREDIENTE CUSTOM -->
+                    <button class="btn btn-primary btn-add-ing"
                         onclick="openCustomIngModal()"
-                        style="margin-left:auto;">➕ Ingrediente</button>
-                </div>
-                <div class="dispensa-search-wrap">
-                    <input type="text" id="dispensaSearch" class="dispensa-search-input"
-                        placeholder="🔍 Cerca ingrediente..."
-                        oninput="filterDispensa(this.value)">
-                    <button class="dispensa-clear-btn" id="dispensaClearBtn"
-                        onclick="clearDispensaSearch()" style="display:none;">✕</button>
+                        title="Aggiungi ingrediente personalizzato">＋</button>
                 </div>
                 <div id="pantryContent"></div>
             </div>
-        </div>
 
-        <!-- ═══════════ SPESA ═══════════ -->
-        <div class="page" id="spesaPage">
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-icon">🛒</span>
-                    <h2>Lista della Spesa</h2>
-                </div>
-                <div class="spesa-controls">
-                    <div class="spesa-btn-row">
-                        <button class="btn btn-primary" onclick="renderSpesa()">🔄 Aggiorna</button>
-                        <button class="btn btn-secondary" onclick="clearSpesaChecked()">✕ Deseleziona</button>
-                        <button class="btn btn-success" onclick="openSpesaItemModal()">➕ Aggiungi</button>
+            <!-- Tab Frigo -->
+            <div id="dispensaTabFrigo" class="page-tab-content">
+                <div class="section-header">
+                    <h3>❄️ Il tuo frigo</h3>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-secondary btn-small" onclick="openSaveFridgeModal()">💾 Salva</button>
+                        <button class="btn btn-warning btn-small" onclick="clearFridge()">🗑️ Svuota</button>
                     </div>
                 </div>
-                <div id="spesaContent"></div>
+                <div id="fridgeContent"></div>
+                <div id="savedFridgesCard" style="display:none;margin-top:20px;">
+                    <h3 style="margin-bottom:12px;">📂 Frigo salvati</h3>
+                    <div id="savedFridgeList"></div>
+                </div>
             </div>
         </div>
 
-        <!-- ═══════════ RICETTE ═══════════ -->
-        <div class="page" id="ricettePage">
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-icon">🍳</span>
-                    <h2>Ricette</h2>
-                </div>
-                <div class="page-tabs">
-                    <button class="page-tab active" onclick="showRicetteTab('catalogo',this)">📚 Catalogo</button>
-                    <button class="page-tab" onclick="showRicetteTab('custom',this)">⭐ Le mie ricette</button>
-                </div>
+        <!-- ===== RICETTE ===== -->
+        <div id="ricettePage" class="page">
+            <div class="page-tabs">
+                <button class="page-tab active" onclick="showRicetteTab('catalogo', this)">📚 Catalogo</button>
+                <button class="page-tab" onclick="showRicetteTab('custom', this)">⭐ Le mie</button>
+            </div>
 
-                <!-- CATALOGO -->
-                <div class="page-tab-content active" id="ricetteTabCatalogo">
-                    <div class="ricette-filter-bar">
-                        <div class="dispensa-search-wrap" style="margin-bottom:0;">
-                            <input type="text" id="ricetteSearch" class="dispensa-search-input"
-                                placeholder="🔍 Cerca ricetta o ingrediente..."
-                                oninput="filterRicette(this.value)">
-                            <button class="dispensa-clear-btn" id="ricetteClearBtn"
-                                onclick="clearRicetteSearch()" style="display:none;">✕</button>
-                        </div>
-                        <div class="ricette-meal-btns">
-                            <button class="ricette-filter-btn active" onclick="setRicetteMealFilter('tutti',this)">Tutti</button>
-                            <button class="ricette-filter-btn" onclick="setRicetteMealFilter('colazione',this)" title="Colazione">☕</button>
-                            <button class="ricette-filter-btn" onclick="setRicetteMealFilter('spuntino',this)" title="Spuntino">🍎</button>
-                            <button class="ricette-filter-btn" onclick="setRicetteMealFilter('pranzo',this)" title="Pranzo">🍽️</button>
-                            <button class="ricette-filter-btn" onclick="setRicetteMealFilter('merenda',this)" title="Merenda">🥪</button>
-                            <button class="ricette-filter-btn" onclick="setRicetteMealFilter('cena',this)" title="Cena">🌙</button>
-                        </div>
+            <!-- Tab Catalogo -->
+            <div id="ricetteTabCatalogo" class="page-tab-content active">
+                <div class="search-bar-row">
+                    <div class="search-input-wrap">
+                        <input type="text" id="ricetteSearch"
+                            placeholder="🔍 Cerca ricetta o ingrediente..."
+                            oninput="filterRicette(this.value)"
+                            class="form-input search-input">
+                        <button id="ricetteClearBtn" class="search-clear-btn"
+                            onclick="clearRicetteSearch()" style="display:none;">✕</button>
                     </div>
-                    <div id="ricetteCatalogoContent"></div>
                 </div>
+                <div class="ricette-filter-row">
+                    <button class="ricette-filter-btn active" onclick="setRicetteMealFilter('tutti', this)">Tutti</button>
+                    <button class="ricette-filter-btn" onclick="setRicetteMealFilter('colazione', this)">☕</button>
+                    <button class="ricette-filter-btn" onclick="setRicetteMealFilter('spuntino', this)">🍎</button>
+                    <button class="ricette-filter-btn" onclick="setRicetteMealFilter('pranzo', this)">🍽️</button>
+                    <button class="ricette-filter-btn" onclick="setRicetteMealFilter('merenda', this)">🥪</button>
+                    <button class="ricette-filter-btn" onclick="setRicetteMealFilter('cena', this)">🌙</button>
+                </div>
+                <div id="ricetteCatalogoContent"></div>
+            </div>
 
-                <!-- LE MIE RICETTE -->
-                <div class="page-tab-content" id="ricetteTabCustom">
-                    <div style="margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                        <button class="btn btn-primary" onclick="openRicettaForm()">➕ Nuova Ricetta</button>
-                        <span style="font-size:.82em;color:var(--text-light);">
-                            Le tue ricette vengono aggiunte al catalogo e al suggeritore frigo.
-                        </span>
-                    </div>
-                    <div id="ricetteCustomContent"></div>
+            <!-- Tab Le mie -->
+            <div id="ricetteTabCustom" class="page-tab-content">
+                <div class="section-header">
+                    <h3>⭐ Le mie ricette</h3>
+                    <button class="btn btn-primary btn-small" onclick="openRicettaForm()">➕ Nuova Ricetta</button>
                 </div>
+                <div id="ricetteCustomContent"></div>
             </div>
         </div>
 
-        <!-- ═══════════ LIMITI ═══════════ -->
-        <div class="page" id="limitiPage">
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-icon">📊</span>
-                    <h2>Limiti Settimanali</h2>
-                </div>
-                <div class="limits-grid" id="limitsGrid"></div>
-                <center>
-                    <button class="btn-reset" onclick="resetWeek()">🔄 Reset Settimana</button>
-                </center>
-            </div>
+        <!-- ===== STORICO ===== -->
+        <div id="storicoPage" class="page">
+            <div id="storicoContent"></div>
         </div>
 
-        <!-- ═══════════ STATISTICHE ═══════════ -->
-        <div class="page" id="statistichePage">
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-icon">📈</span>
-                    <h2>Statistiche</h2>
-                </div>
-                <div id="statisticheContent"></div>
-            </div>
+        <!-- ===== SPESA ===== -->
+        <div id="spesaPage" class="page">
+            <div id="spesaContent"></div>
         </div>
 
-        <!-- ═══════════ STORICO ═══════════ -->
-        <div class="page" id="storicoPage">
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-icon">📖</span>
-                    <h2>Storico Giornaliero</h2>
-                </div>
-                <div id="storicoContent"></div>
-            </div>
+        <!-- ===== STATISTICHE ===== -->
+        <div id="statistichePage" class="page">
+            <div id="statisticheContent"></div>
         </div>
 
+        <!-- ===== PROFILO ===== -->
+        <div id="profiloPage" class="page">
+            <div id="profiloContent"></div>
+        </div>
+
+    </main>
+</div>
+
+<!-- ===================== MODALS ===================== -->
+
+<!-- Modal: Dettaglio Ricetta -->
+<div id="recipeModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="recipeModalTitle"></h3>
+            <button class="modal-close" onclick="closeRecipeModal()">✕</button>
+        </div>
+        <div id="recipeModalBody" class="modal-body"></div>
+        <div class="modal-footer">
+            <button id="recipeModalSelectBtn" class="btn btn-primary"
+                onclick="selectRecipeFromModal()" style="display:none;">✓ Usa questa ricetta</button>
+        </div>
     </div>
 </div>
 
-<!-- PRINT AREA -->
-<div id="printArea" class="print-only"></div>
-
-<!-- ═══════════ MODAL: SALVA FRIGO ═══════════ -->
-<div class="modal" id="saveFridgeModal">
+<!-- Modal: Salva Frigo -->
+<div id="saveFridgeModal" class="modal">
     <div class="modal-content">
-        <h3>💾 Salva Frigorifero</h3>
-        <input type="text" class="modal-input" id="fridgeName"
-            placeholder="Nome (es: Spesa 18 feb)">
-        <div class="modal-actions">
+        <div class="modal-header">
+            <h3>💾 Salva frigo</h3>
+            <button class="modal-close" onclick="closeSaveFridgeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Nome configurazione</label>
+                <input type="text" id="fridgeName" placeholder="es. Frigo lunedì..."
+                    class="form-input">
+            </div>
+        </div>
+        <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeSaveFridgeModal()">Annulla</button>
-            <button class="btn btn-primary" onclick="saveFridge()">Salva</button>
+            <button class="btn btn-primary" onclick="saveFridge()">💾 Salva</button>
         </div>
     </div>
 </div>
 
-<!-- ═══════════ MODAL: VISUALIZZA RICETTA ═══════════ -->
-<div class="modal" id="recipeModal">
-    <div class="modal-content wide">
-        <h3 id="recipeModalTitle">🥗 Ricetta</h3>
-        <div id="recipeModalBody"></div>
-        <div class="modal-actions" style="margin-top:14px;">
-            <button class="btn btn-secondary btn-small" onclick="closeRecipeModal()">Chiudi</button>
-            <button class="btn btn-primary btn-small" id="recipeModalSelectBtn"
-                onclick="selectRecipeFromModal()">✅ Usa questa ricetta</button>
-        </div>
-    </div>
-</div>
-
-<!-- ═══════════ MODAL: AGGIUNGI SPESA ═══════════ -->
-<div class="modal" id="spesaItemModal">
+<!-- Modal: Ingrediente Custom — CON CATEGORIA -->
+<div id="customIngModal" class="modal">
     <div class="modal-content">
-        <h3>➕ Aggiungi alla Spesa</h3>
-        <input type="text" class="modal-input" id="spesaItemName"
-            placeholder="Ingrediente (es: Spinaci)">
-        <input type="text" class="modal-input" id="spesaItemQty"
-            placeholder="Quantità (es: 300g)">
-        <div class="modal-actions">
-            <button class="btn btn-secondary" onclick="closeSpesaItemModal()">Annulla</button>
-            <button class="btn btn-primary" onclick="confirmAddSpesaItem()">Aggiungi</button>
+        <div class="modal-header">
+            <h3>➕ Nuovo Ingrediente</h3>
+            <button class="modal-close" onclick="closeCustomIngModal()">✕</button>
         </div>
-    </div>
-</div>
-
-<!-- ═══════════ MODAL: INGREDIENTE CUSTOM ═══════════ -->
-<div class="modal" id="customIngModal">
-    <div class="modal-content custom-ing-modal">
-        <h3>📦 Nuovo Ingrediente Personalizzato</h3>
-        <div class="select-group">
-            <label>Nome *</label>
-            <input type="text" id="ciName" class="modal-input"
-                placeholder="Es: Tempeh, Kefir, Tofu affumicato...">
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Nome *</label>
+                <input type="text" id="ciName" placeholder="es. Tofu, Tempeh, Edamame..."
+                    class="form-input">
+            </div>
+            <div class="form-group">
+                <label>Emoji / Icona</label>
+                <input type="text" id="ciIcon" placeholder="es. 🥗" class="form-input"
+                    maxlength="4">
+            </div>
+            <!-- CAMPO CATEGORIA -->
+            <div class="form-group">
+                <label>Categoria</label>
+                <select id="ciCategoria" class="form-input">
+                    <option value="">⭐ Personalizzati (nessuna categoria)</option>
+                    <!-- popolato dinamicamente da dispensa.js -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Unità di misura</label>
+                <select id="ciUnit" class="form-input">
+                    <option value="g">g (grammi)</option>
+                    <option value="ml">ml (millilitri)</option>
+                    <option value="pz">pz (pezzi)</option>
+                    <option value="cucchiai">cucchiai</option>
+                    <option value="cucchiaini">cucchiaini</option>
+                    <option value="tazze">tazze</option>
+                    <option value="fette">fette</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Step quantità (es. 10 = incrementi da 10)</label>
+                <input type="number" id="ciStep" value="10" min="1" class="form-input">
+            </div>
         </div>
-        <div class="select-group">
-            <label>Emoji / Icona</label>
-            <input type="text" id="ciIcon" class="modal-input"
-                placeholder="Es: 🌱" maxlength="4">
-        </div>
-        <div class="select-group">
-            <label>Unità di misura predefinita</label>
-            <select id="ciUnit" class="modal-input">
-                <option value="g">g — grammi</option>
-                <option value="kg">kg — chilogrammi</option>
-                <option value="ml">ml — millilitri</option>
-                <option value="l">l — litri</option>
-                <option value="pz">pz — pezzi</option>
-                <option value="fette">fette</option>
-                <option value="cucchiaio">cucchiaio</option>
-                <option value="cucchiaino">cucchiaino</option>
-                <option value="foglie">foglie</option>
-                <option value="qb">qb — quanto basta</option>
-            </select>
-        </div>
-        <div class="select-group">
-            <label>Step incremento (es: 10 = +10g per click)</label>
-            <input type="number" id="ciStep" class="modal-input"
-                value="10" min="1" max="1000">
-        </div>
-        <div class="modal-actions" style="margin-top:4px;">
+        <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeCustomIngModal()">Annulla</button>
-            <button class="btn btn-primary" onclick="saveCustomIngredient()">✅ Aggiungi</button>
+            <button class="btn btn-primary" onclick="saveCustomIngredient()">✓ Aggiungi</button>
         </div>
     </div>
 </div>
 
-<!-- ═══════════ MODAL: FORM NUOVA/MODIFICA RICETTA ═══════════ -->
-<div class="modal" id="ricettaFormModal">
-    <div class="modal-content ricetta-modal">
-        <div class="ricetta-modal-header">
+<!-- Modal: Form Ricetta Custom -->
+<div id="ricettaFormModal" class="modal">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
             <h3 id="ricettaFormTitle">🍳 Nuova Ricetta</h3>
-            <button class="ricetta-modal-close" onclick="closeRicettaForm()">✕</button>
+            <button class="modal-close" onclick="closeRicettaForm()">✕</button>
         </div>
-        <div class="ricetta-modal-body">
-
-            <!-- Info base -->
-            <div class="rf-section">
-                <div class="rf-section-title">📝 Informazioni base</div>
-                <div class="rf-row">
-                    <div class="select-group" style="flex:2;">
-                        <label>Nome ricetta *</label>
-                        <input type="text" id="rfNome" class="rf-input"
-                            placeholder="Es: Pasta al pesto con merluzzo">
-                    </div>
-                    <div class="select-group">
-                        <label>Tipo pasto *</label>
-                        <select id="rfPasto" class="rf-input">
-                            <option value="colazione">☕ Colazione</option>
-                            <option value="spuntino">🍎 Spuntino</option>
-                            <option value="pranzo" selected>🍽️ Pranzo</option>
-                            <option value="merenda">🥪 Merenda</option>
-                            <option value="cena">🌙 Cena</option>
-                        </select>
-                    </div>
-                </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Nome ricetta *</label>
+                <input type="text" id="rfNome" placeholder="es. Pasta al pomodoro..."
+                    class="form-input">
             </div>
-
-            <!-- Ingredienti -->
-            <div class="rf-section">
-                <div class="rf-section-title">🥦 Ingredienti</div>
+            <div class="form-group">
+                <label>Pasto</label>
+                <select id="rfPasto" class="form-input">
+                    <option value="colazione">☕ Colazione</option>
+                    <option value="spuntino">🍎 Spuntino</option>
+                    <option value="pranzo" selected>🍽️ Pranzo</option>
+                    <option value="merenda">🥪 Merenda</option>
+                    <option value="cena">🌙 Cena</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Ingredienti</label>
                 <div id="rfIngList"></div>
-                <button class="btn btn-secondary btn-small"
-                    onclick="addRfIng()" style="margin-top:10px;">
-                    ➕ Aggiungi ingrediente
-                </button>
+                <datalist id="ingredientiSuggeriti"></datalist>
+                <button class="btn btn-secondary btn-small" onclick="addRfIng()"
+                    style="margin-top:8px;">➕ Aggiungi ingrediente</button>
             </div>
-
-            <!-- Preparazione -->
-            <div class="rf-section">
-                <div class="rf-section-title">👨‍🍳 Preparazione *</div>
-                <textarea id="rfIstruzioni" class="rf-textarea"
-                    placeholder="Descrivi la preparazione passo passo...&#10;Es: Cuoci la pasta al dente. Frulla il pesto con basilico e olio..."></textarea>
+            <div class="form-group">
+                <label>Istruzioni / Preparazione</label>
+                <textarea id="rfIstruzioni" class="form-input form-textarea"
+                    rows="5" placeholder="Descrivi i passaggi di preparazione..."></textarea>
             </div>
-
-            <!-- Limiti -->
-            <div class="rf-section">
-                <div class="rf-section-title">⚠️ Conta per i limiti settimanali</div>
-                <p style="font-size:.8em;color:var(--text-light);margin-bottom:10px;">
-                    Seleziona le categorie che questa ricetta incrementa quando viene usata.
-                </p>
-                <div class="rf-limits-grid" id="rfLimitsGrid"></div>
-            </div>
-
         </div>
-        <div class="ricetta-modal-footer">
+        <div class="modal-footer">
             <button class="btn btn-secondary" onclick="closeRicettaForm()">Annulla</button>
-            <button class="btn btn-primary" onclick="saveRicettaForm()">💾 Salva Ricetta</button>
+            <button class="btn btn-primary" onclick="saveRicettaCustom()">✓ Salva Ricetta</button>
         </div>
     </div>
 </div>
 
-<!-- ═══════════ SCRIPTS ═══════════ -->
+<!-- Modal: Spesa Item -->
+<div id="spesaItemModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="spesaItemModalTitle">Articolo</h3>
+            <button class="modal-close" onclick="closeSpesaItemModal()">✕</button>
+        </div>
+        <div id="spesaItemModalBody" class="modal-body"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeSpesaItemModal()">Chiudi</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== BANNERS ===================== -->
+
+<div id="iosBanner" class="ios-banner">
+    <div class="ios-banner-content">
+        <span>📲 Installa NutriPlan: tocca <strong>Condividi</strong> poi <strong>"Aggiungi a Home"</strong></span>
+        <button onclick="closeIosBanner()">✕</button>
+    </div>
+</div>
+
+<div id="installBanner" class="install-banner">
+    <div class="install-banner-content">
+        <span>📲 Installa NutriPlan come app!</span>
+        <button id="installBtn" class="btn btn-primary btn-small">Installa</button>
+        <button id="dismissBtn" class="btn btn-secondary btn-small">✕</button>
+    </div>
+</div>
+
+<div id="offlineIndicator" class="offline-indicator">📵 Offline</div>
+
+<!-- ===================== SCRIPTS ===================== -->
+<!-- Ordine OBBLIGATORIO: firebase-config → data → storage → tutto il resto -->
+<script src="firebase-config.js"></script>
 <script src="data.js"></script>
 <script src="storage.js"></script>
 <script src="app.js"></script>
 <script src="piano.js"></script>
 <script src="dispensa.js"></script>
 <script src="ricette.js"></script>
+<script src="ricette_custom.js"></script>
 <script src="storico.js"></script>
 <script src="spesa.js"></script>
 <script src="statistiche.js"></script>
 <script src="pdf.js"></script>
-<script src="ricette_custom.js"></script>
+<script src="profilo.js"></script>
+
 </body>
 </html>
