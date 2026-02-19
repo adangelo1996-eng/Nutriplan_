@@ -1,5 +1,3 @@
-
-// Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBitbmjthQUvKyrHmADVLkvwENoVrXYxNY",
@@ -11,4 +9,3 @@ const firebaseConfig = {
   appId: "1:371119799995:web:309e59696041f3bbc9739e",
   measurementId: "G-VELZ8ZZYQ3"
 };
-
