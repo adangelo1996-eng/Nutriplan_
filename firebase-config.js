@@ -28,18 +28,23 @@ function initFirebase() {
     }
     firebaseReady = true;
 
-    /* Ascolta cambio stato autenticazione */
-    firebase.auth().onAuthStateChanged(function (user) {
-      currentUser = user;
-      if (user) {
-        showCloudStatus('saving');
-        updateAuthUI(user);
-        if (typeof loadFromCloud === 'function') loadFromCloud(user.uid);
-      } else {
-        updateAuthUI(null);
-        showCloudStatus('local');
-      }
-    });
+firebase.auth().onAuthStateChanged(function (user) {
+  currentUser = user;
+  if (user) {
+    showCloudStatus('saving');
+    updateAuthUI(user);
+    /* Aggiorna il profilo subito dopo il login */
+    if (typeof renderProfilo === 'function') renderProfilo();
+    if (typeof loadFromCloud === 'function') loadFromCloud(user.uid);
+  } else {
+    currentUser = null;
+    updateAuthUI(null);
+    showCloudStatus('local');
+    /* Aggiorna il profilo per mostrare il pulsante "Accedi" */
+    if (typeof renderProfilo === 'function') renderProfilo();
+  }
+});
+
 
   } catch (e) {
     console.warn('Firebase init error:', e);
