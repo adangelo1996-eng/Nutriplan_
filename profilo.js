@@ -119,19 +119,23 @@ function buildProfiloMealSection(md, mp) {
         html += '<div style="font-size:.72em;font-weight:800;color:var(--text-light);'
             + 'text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">'
             + c.label + '</div>';
-        items.forEach(function (item) {
-            var avail   = checkIngredientAvailability(item);
-            var dot     = avail.sufficient ? '🟢' : avail.matched ? '🟡' : '🔴';
-            var qtyText = (item.quantity && item.unit)
-                ? '<span style="color:var(--text-light);font-size:.85em;"> · ' + item.quantity + ' ' + item.unit + '</span>'
-                : '';
-            html += '<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;'
-                + 'background:var(--bg-light);border-radius:8px;margin-bottom:3px;">'
-                + '<span style="font-size:.85em;">' + dot + '</span>'
-                + '<span style="font-size:.86em;font-weight:600;">' + item.name + '</span>'
-                + qtyText
-                + '</div>';
-        });
+      items.forEach(function (item) {
+  /* GUARD: salta item non validi (evita crash su checkIngredientAvailability) */
+  if (!item || typeof item !== 'object' ||
+      !item.name || typeof item.name !== 'string' ||
+      !item.name.trim()) return;
+
+  var avail = checkIngredientAvailability(item);
+  var dot   = avail.sufficient ? '🟢' : avail.matched ? '🟡' : '🔴';
+  var qtyText = (item.quantity && item.unit)
+    ? ' · ' + item.quantity + ' ' + item.unit
+    : '';
+  html += '<div class="profilo-item-view">' +
+            dot + ' <span>' + item.name + '</span>' +
+            '<span class="qty-hint">' + qtyText + '</span>' +
+          '</div>';
+});
+
         html += '</div>';
     });
 
