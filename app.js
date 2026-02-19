@@ -42,9 +42,11 @@ function initIcons() {
     var iconUrl = bigCanvas.toDataURL('image/png');
     var ati = document.getElementById('appleTouchIcon');
     if (ati) ati.href = iconUrl;
-    var mf = { name: 'NutriPlan', short_name: 'NutriPlan', start_url: '/', display: 'standalone',
+    var mf = {
+        name: 'NutriPlan', short_name: 'NutriPlan', start_url: '/', display: 'standalone',
         background_color: '#4a9b7f', theme_color: '#4a9b7f',
-        icons: [{ src: iconUrl, sizes: '512x512', type: 'image/png' }] };
+        icons: [{ src: iconUrl, sizes: '512x512', type: 'image/png' }]
+    };
     var mp = document.getElementById('manifest-placeholder');
     if (mp) mp.href = URL.createObjectURL(new Blob([JSON.stringify(mf)], { type: 'application/json' }));
 }
@@ -100,8 +102,12 @@ document.getElementById('dismissBtn').addEventListener('click', function () {
     localStorage.setItem('installDismissed', '1');
 });
 
-window.addEventListener('online', function () { document.getElementById('offlineIndicator').classList.remove('show'); });
-window.addEventListener('offline', function () { document.getElementById('offlineIndicator').classList.add('show'); });
+window.addEventListener('online', function () {
+    document.getElementById('offlineIndicator').classList.remove('show');
+});
+window.addEventListener('offline', function () {
+    document.getElementById('offlineIndicator').classList.add('show');
+});
 
 /* ---- SERVICE WORKER ---- */
 if ('serviceWorker' in navigator) {
@@ -202,8 +208,6 @@ function showPage(name, btn) {
     document.querySelectorAll('.nav-tab').forEach(function (t) { t.classList.remove('active'); });
     document.getElementById(name + 'Page').classList.add('active');
     if (btn) btn.classList.add('active');
-    if (name === 'frigo') { renderFridge(); updateSavedFridges(); }
-    if (name === 'limiti') updateLimits();
     if (name === 'dispensa') renderPantry();
     if (name === 'storico') renderStorico();
     if (name === 'statistiche') renderStatistiche();
@@ -213,11 +217,22 @@ function showPage(name, btn) {
 }
 
 function showPianoTab(tab, btn) {
-    document.querySelectorAll('.page-tab-content').forEach(function (c) { c.classList.remove('active'); });
+    document.querySelectorAll('#pianoPage .page-tab-content').forEach(function (c) { c.classList.remove('active'); });
     document.querySelectorAll('#pianoPage .page-tab').forEach(function (t) { t.classList.remove('active'); });
     document.getElementById('pianoTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
     if (btn) btn.classList.add('active');
     if (tab === 'frigo') updateFridgeSuggestions();
+}
+
+/* ---- NUOVA: showDispensaTab ---- */
+function showDispensaTab(tab, btn) {
+    document.querySelectorAll('#dispensaPage .page-tab-content').forEach(function (c) { c.classList.remove('active'); });
+    document.querySelectorAll('#dispensaPage .page-tab').forEach(function (t) { t.classList.remove('active'); });
+    var tabId = tab === 'dispensa' ? 'dispensaTabDispensa' : 'dispensaTabFrigo';
+    document.getElementById(tabId).classList.add('active');
+    if (btn) btn.classList.add('active');
+    if (tab === 'frigo') { renderFridge(); updateSavedFridges(); }
+    if (tab === 'dispensa') renderPantry();
 }
 
 /* ---- LIMITI ---- */
@@ -246,7 +261,7 @@ function resetWeek() {
 }
 
 /* ---- MODAL LISTENERS ---- */
-['saveFridgeModal','recipeModal','spesaItemModal','customIngModal','ricettaFormModal'].forEach(function (id) {
+['saveFridgeModal', 'recipeModal', 'spesaItemModal', 'customIngModal', 'ricettaFormModal'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.addEventListener('click', function (e) {
         if (e.target.id === id) {
