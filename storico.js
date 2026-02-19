@@ -1,135 +1,142 @@
-function renderStorico() {
-    var container = document.getElementById('storicoContent');
-    if (!container) return;
+/* ============================================================
+   STORICO.JS
+   ============================================================ */
 
-    var keys = Object.keys(appHistory).sort(function (a, b) { return b.localeCompare(a); });
-    var recentKeys = keys.filter(function (dk) {
-        return Object.keys((appHistory[dk].usedItems || {})).some(function (mk) {
-            return Object.keys(appHistory[dk].usedItems[mk] || {}).length > 0;
+var storicoOpenDays = {};
+
+function renderStorico() {
+    var el = document.getElementById('storicoContent');
+    if (!el) return;
+
+    var keys = Object.keys(appHistory).sort(function (a, b) {
+        return b.localeCompare(a);
+    });
+
+    /* Filtra solo giorni con almeno un item usato */
+    keys = keys.filter(function (dk) {
+        var hd = appHistory[dk];
+        if (!hd || !hd.usedItems) return false;
+        return Object.keys(hd.usedItems).some(function (mk) {
+            return Object.keys(hd.usedItems[mk] || {}).length > 0;
         });
     });
 
-    if (!recentKeys.length) {
-        container.innerHTML = '<div class="empty-state">'
-            + '<div style="font-size:3em;margin-bottom:12px;">📅</div>'
+    if (!keys.length) {
+        el.innerHTML = '<div class="empty-state">'
+            + '<div class="empty-state-icon">📅</div>'
             + '<h3>Nessuno storico</h3>'
-            + '<p>I pasti registrati appariranno qui.</p>'
+            + '<p>Inizia a segnare i pasti consumati nella sezione Piano.</p>'
             + '</div>';
         return;
     }
 
-    var MEAL_LABELS = {
-        colazione: '☕ Colazione', spuntino: '🍎 Spuntino',
-        pranzo: '🍽️ Pranzo', merenda: '🥪 Merenda', cena: '🌙 Cena'
-    };
-    var DAYS_IT   = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
-    var MONTHS_IT = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu',
-                     'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+    var DAYS_IT   = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+    var MONTHS_IT = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
     var html = '<div class="storico-list">';
-
-    recentKeys.forEach(function (dk) {
-        var d = new Date(dk + 'T00:00:00');
+    keys.forEach(function (dk) {
+        var hd      = appHistory[dk] || {};
+        var used    = hd.usedItems  || {};
+        var subs    = hd.substitutions || {};
+        var d       = new Date(dk + 'T00:00:00');
+        var label   = DAYS_IT[d.getDay()] + ' ' + d.getDate() + ' '
+                    + MONTHS_IT[d.getMonth()] + ' ' + d.getFullYear();
+        var isOpen  = storicoOpenDays[dk];
         var isToday = dk === getCurrentDateKey();
-        var dayLabel = isToday
-            ? 'Oggi'
-            : DAYS_IT[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS_IT[d.getMonth()] + ' ' + d.getFullYear();
 
-        var dayData  = appHistory[dk];
-        var usedItems = dayData.usedItems || {};
-        var subs      = dayData.substitutions || {};
-
-        // Conta totale pasti usati
+        /* Conta totale item usati */
         var totalUsed = 0;
-        Object.keys(usedItems).forEach(function (mk) {
-            totalUsed += Object.keys(usedItems[mk] || {}).length;
+        Object.keys(used).forEach(function (mk) {
+            totalUsed += Object.keys(used[mk] || {}).length;
         });
 
-        html += '<div class="storico-day-card" onclick="toggleStoricoDay(\'' + dk + '\')">';
-        html += '<div class="storico-day-header">';
-        html += '<div class="storico-day-label">'
-            + (isToday ? '📍 ' : '📅 ') + dayLabel + '</div>';
-        html += '<div class="storico-day-meta">'
-            + totalUsed + ' aliment' + (totalUsed === 1 ? 'o' : 'i') + ' registrat'
-            + (totalUsed === 1 ? 'o' : 'i')
-            + ' <span class="storico-toggle-icon">▼</span></div>';
-        html += '</div>';
-        html += '<div class="storico-day-detail" id="storicoDetail_' + dk + '" style="display:none;">';
+        html += '<div class="storico-day-card"'
+            + ' onclick="toggleStoricoDay(\'' + dk + '\')">';
 
-        var MEALS_ORDER = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
-        MEALS_ORDER.forEach(function (meal) {
-            var mealUsed = usedItems[meal] || {};
-            var mealSubs = subs[meal] || {};
-            var planItems = (mealPlan[meal] && mealPlan[meal].principale) || [];
-            var usedCount = Object.keys(mealUsed).length;
-            if (!usedCount) return;
+        /* Header */
+        html += '<div class="storico-day-header">'
+            + '<div>'
+            + '<div class="storico-day-label">'
+            + (isToday ? '📍 ' : '') + label + '</div>'
+            + '<div class="storico-day-meta">'
+            + totalUsed + ' aliment' + (totalUsed === 1 ? 'o' : 'i') + ' consumat'
+            + (totalUsed === 1 ? 'o' : 'i') + '</div>'
+            + '</div>'
+            + '<span style="color:var(--text-light);font-size:1.1em;">'
+            + (isOpen ? '▲' : '▼') + '</span>'
+            + '</div>';
 
-            html += '<div class="storico-meal-block">';
-            html += '<div class="storico-meal-title">' + (MEAL_LABELS[meal] || meal) + '</div>';
+        /* Dettaglio */
+        if (isOpen) {
+            html += '<div class="storico-day-detail">';
+            var mealDefs = [
+                { key: 'colazione', label: '☕ Colazione' },
+                { key: 'spuntino',  label: '🍎 Spuntino'  },
+                { key: 'pranzo',    label: '🍽 Pranzo'    },
+                { key: 'merenda',   label: '🥪 Merenda'   },
+                { key: 'cena',      label: '🌙 Cena'      }
+            ];
+            mealDefs.forEach(function (md) {
+                var items   = Object.keys(used[md.key] || {});
+                var mSubs   = subs[md.key] || {};
+                if (!items.length) return;
 
-            Object.keys(mealUsed).forEach(function (idx) {
-                var i = parseInt(idx);
-                var base = planItems[i] || { label: '?', qty: 0, unit: '' };
-                var sub  = mealSubs[i];
-                var eff  = sub || base;
-                html += '<div class="storico-item">';
-                if (sub) {
-                    html += '<span class="storico-item-name">'
-                        + '<span style="text-decoration:line-through;opacity:.5;">' + base.label + '</span>'
-                        + ' → ' + sub.label + '</span>';
-                } else {
-                    html += '<span class="storico-item-name">' + eff.label + '</span>';
-                }
-                html += '<span class="storico-item-qty">' + eff.qty + ' ' + eff.unit + '</span>';
+                html += '<div class="storico-meal-block">';
+                html += '<div class="storico-meal-title">' + md.label + '</div>';
+                items.forEach(function (itemName) {
+                    var subName = mSubs[itemName];
+                    var planItems = getMealItemsForDay(md.key, dk);
+                    var planItem  = planItems.find(function (i) { return i.name === itemName; });
+                    var qtyText   = planItem && planItem.quantity
+                        ? planItem.quantity + ' ' + planItem.unit
+                        : '—';
+                    html += '<div class="storico-item">';
+                    if (subName) {
+                        html += '<span>'
+                            + '<span style="text-decoration:line-through;opacity:.5;">' + itemName + '</span>'
+                            + ' → <b>' + subName + '</b></span>';
+                    } else {
+                        html += '<span>' + itemName + '</span>';
+                    }
+                    html += '<span class="storico-item-qty">' + qtyText + '</span>';
+                    html += '</div>';
+                });
                 html += '</div>';
             });
 
-            html += '</div>';
-        });
+            /* Note sostituzioni generali */
+            var hasSubs = Object.keys(subs).some(function (mk) {
+                return Object.keys(subs[mk] || {}).length > 0;
+            });
+            if (hasSubs) {
+                html += '<div style="margin-top:8px;font-size:.76em;color:var(--text-light);">'
+                    + '🔄 Alcune sostituzioni applicate</div>';
+            }
 
-        // Pulsante vai al giorno
-        html += '<button class="btn btn-secondary btn-small storico-goto-btn" '
-            + 'onclick="event.stopPropagation();gotoStoricoDay(\'' + dk + '\')">'
-            + '📅 Vai a questo giorno</button>';
-        html += '</div>';
+            html += '</div>';
+        }
+
         html += '</div>';
     });
-
     html += '</div>';
-
-    // Pulsante reset storico
-    html += '<div style="text-align:center;margin-top:20px;">';
-    html += '<button class="btn btn-warning btn-small" onclick="clearStorico()">🗑️ Cancella storico</button>';
-    html += '</div>';
-
-    container.innerHTML = html;
+    el.innerHTML = html;
 }
 
 function toggleStoricoDay(dk) {
-    var el = document.getElementById('storicoDetail_' + dk);
-    if (!el) return;
-    var isOpen = el.style.display !== 'none';
-    el.style.display = isOpen ? 'none' : 'block';
-    // Ruota la freccia
-    var card = el.closest('.storico-day-card');
-    if (card) {
-        var icon = card.querySelector('.storico-toggle-icon');
-        if (icon) icon.textContent = isOpen ? '▼' : '▲';
-    }
-}
-
-function gotoStoricoDay(dk) {
-    if (typeof selectCalendarDay === 'function') selectCalendarDay(dk);
-    if (typeof showPage === 'function') {
-        showPage('piano', document.querySelector('.nav-tab'));
-        document.querySelectorAll('.nav-tab').forEach(function (t) { t.classList.remove('active'); });
-        document.querySelector('.nav-tab').classList.add('active');
-    }
-}
-
-function clearStorico() {
-    if (!confirm('Cancellare tutto lo storico? Questa azione non è reversibile.')) return;
-    appHistory = {};
-    saveData();
+    storicoOpenDays[dk] = !storicoOpenDays[dk];
     renderStorico();
+}
+
+function getMealItemsForDay(mealKey, dateKey) {
+    /* Restituisce gli item del piano per un dato giorno
+       (usa il piano corrente — idealmente andrebbe salvato per giorno) */
+    if (!mealPlan || !mealPlan[mealKey]) return [];
+    var m     = mealPlan[mealKey];
+    var items = [];
+    ['principale', 'contorno', 'frutta', 'extra'].forEach(function (cat) {
+        (m[cat] || []).forEach(function (item) {
+            items.push(item);
+        });
+    });
+    return items;
 }
