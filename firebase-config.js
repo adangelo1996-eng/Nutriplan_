@@ -1,7 +1,7 @@
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-var firebaseConfig = {
+const firebaseConfig = {
   apiKey: "AIzaSyBitbmjthQUvKyrHmADVLkvwENoVrXYxNY",
   authDomain: "nutriplan-100f9.firebaseapp.com",
   databaseURL: "https://nutriplan-100f9-default-rtdb.europe-west1.firebasedatabase.app",
