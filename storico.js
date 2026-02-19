@@ -128,15 +128,17 @@ function toggleStoricoDay(dk) {
 }
 
 function getMealItemsForDay(mealKey, dateKey) {
-    /* Restituisce gli item del piano per un dato giorno
-       (usa il piano corrente — idealmente andrebbe salvato per giorno) */
-    if (!mealPlan || !mealPlan[mealKey]) return [];
-    var m     = mealPlan[mealKey];
-    var items = [];
-    ['principale', 'contorno', 'frutta', 'extra'].forEach(function (cat) {
-        (m[cat] || []).forEach(function (item) {
-            items.push(item);
-        });
+  if (!mealPlan || !mealPlan[mealKey]) return [];
+  var m     = mealPlan[mealKey];
+  var items = [];
+  ['principale', 'contorno', 'frutta', 'extra'].forEach(function (cat) {
+    (m[cat] || []).forEach(function (item) {
+      /* GUARD */
+      if (!item || typeof item !== 'object' ||
+          !item.name || typeof item.name !== 'string' ||
+          !item.name.trim()) return;
+      items.push(item);
     });
-    return items;
+  });
+  return items;
 }
