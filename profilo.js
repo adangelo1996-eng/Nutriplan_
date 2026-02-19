@@ -1,371 +1,411 @@
 /* ============================================================
-   PROFILO.JS — gestione profilo utente e piano alimentare
+   PROFILO.JS — scheda utente + editor piano alimentare
+   Regola: ogni nuovo ingrediente DEVE avere una categoria
    ============================================================ */
 
+var profiloEditMode  = false;
+var editMealPlanData = null;
+
+/* ============================================================
+   RENDER PRINCIPALE
+   ============================================================ */
 function renderProfilo() {
-    var el = document.getElementById('profiloContent');
-    if (!el) return;
+  var el = document.getElementById('profiloPage');
+  if (!el) return;
 
-    var html = '';
+  el.innerHTML =
+    buildProfiloUserSection() +
+    buildProfiloLimitiSection() +
+    buildProfiloPianoSection();
+}
 
-    /* ---- SEZIONE UTENTE ---- */
-    html += '<div class="profilo-section">';
-    html += '<div class="profilo-title">👤 Account</div>';
+/* ---- SEZIONE UTENTE ---- */
+function buildProfiloUserSection() {
+  var user = (typeof currentUser !== 'undefined') ? currentUser : null;
+  var html = '<div class="profilo-section">';
 
-    if (currentUser) {
-        html += '<div class="profilo-user-card">';
-        if (currentUser.photoURL) {
-            html += '<img class="profilo-avatar" src="' + currentUser.photoURL + '" alt="avatar">';
-        } else {
-            html += '<div class="profilo-avatar-placeholder">👤</div>';
-        }
-        html += '<div>'
-            + '<div class="profilo-user-name">' + (currentUser.displayName || 'Utente') + '</div>'
-            + '<div class="profilo-user-email">' + (currentUser.email || '') + '</div>'
-            + '<div class="profilo-sync-info">☁️ Dati sincronizzati su cloud</div>'
-            + '</div></div>';
-        html += '<div style="margin-top:14px;display:flex;gap:8px;">'
-            + '<button class="btn btn-warning btn-small" onclick="signOutUser()">🚪 Disconnetti</button>'
-            + '<button class="btn btn-secondary btn-small" onclick="manualSync()">🔄 Sincronizza ora</button>'
-            + '</div>';
+  if (user) {
+    var name  = user.displayName || user.email || 'Utente';
+    var email = user.email || '';
+    var photo = user.photoURL;
+    html +=
+      '<div class="profilo-user-card">' +
+        (photo
+          ? '<img src="' + photo + '" class="profilo-avatar" alt="avatar">'
+          : '<div class="profilo-avatar-placeholder">👤</div>') +
+        '<div>' +
+          '<div class="profilo-user-name">'  + name  + '</div>' +
+          '<div class="profilo-user-email">' + email + '</div>' +
+          '<div class="profilo-sync-info">☁️ Dati sincronizzati</div>' +
+        '</div>' +
+      '</div>';
+  } else {
+    html +=
+      '<div class="profilo-noauth-card">' +
+        '<div style="font-size:2em;margin-bottom:10px">👤</div>' +
+        '<p style="margin-bottom:14px;color:var(--text-mid);font-size:.88em">' +
+          'Accedi con Google per sincronizzare i dati su tutti i dispositivi.' +
+        '</p>' +
+        '<button class="btn btn-primary" onclick="signInWithGoogle()">🔑 Accedi con Google</button>' +
+      '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+/* ---- SEZIONE LIMITI ---- */
+function buildProfiloLimitiSection() {
+  if (!weeklyLimits || !Object.keys(weeklyLimits).length) return '';
+  var html = '<div class="profilo-section"><h3 class="profilo-title">📊 Limiti settimanali</h3>';
+  html += '<div class="limits-grid">';
+  Object.keys(weeklyLimits).forEach(function (key) {
+    var d   = weeklyLimits[key];
+    var cur = d.current || 0;
+    var pct = Math.min(Math.round((cur / d.max) * 100), 100);
+    var cls = pct >= 100 ? 'exceeded' : pct >= 70 ? 'warning' : '';
+    html +=
+      '<div class="limit-card ' + cls + '">' +
+        '<div class="limit-card-icon">'   + (d.icon || '') + '</div>' +
+        '<div class="limit-card-name">'   + key + '</div>' +
+        '<div class="limit-progress-bar">' +
+          '<div class="limit-progress-fill ' + cls + '" style="width:' + pct + '%"></div>' +
+        '</div>' +
+        '<div class="limit-text ' + cls + '">' + cur + ' / ' + d.max + ' ' + (d.unit || '') + '</div>' +
+      '</div>';
+  });
+  html += '</div></div>';
+  return html;
+}
+
+/* ---- SEZIONE PIANO ---- */
+function buildProfiloPianoSection() {
+  var html =
+    '<div class="profilo-section">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
+        '<h3 class="profilo-title" style="margin:0">🥗 Piano alimentare</h3>' +
+        (profiloEditMode
+          ? '<div style="display:flex;gap:8px">' +
+              '<button class="btn btn-secondary btn-small" onclick="cancelProfiloEdit()">Annulla</button>' +
+              '<button class="btn btn-primary btn-small" onclick="saveProfiloPiano()">💾 Salva</button>' +
+            '</div>'
+          : '<button class="btn btn-secondary btn-small" onclick="startProfiloEdit()">✏️ Modifica</button>') +
+      '</div>';
+
+  var plan = profiloEditMode ? editMealPlanData : mealPlan;
+  var meals = [
+    { key: 'colazione', label: '☀️ Colazione' },
+    { key: 'spuntino',  label: '🍎 Spuntino'  },
+    { key: 'pranzo',    label: '🥗 Pranzo'    },
+    { key: 'merenda',   label: '🌙 Merenda'   },
+    { key: 'cena',      label: '🌆 Cena'      }
+  ];
+
+  meals.forEach(function (m) {
+    if (profiloEditMode) {
+      html += buildProfiloMealEdit(m.key, m.label, plan[m.key] || {});
     } else {
-        html += '<div class="profilo-noauth-card">'
-            + '<div style="font-size:2.5em;margin-bottom:10px;">🔒</div>'
-            + '<div style="font-weight:800;font-size:.95em;margin-bottom:6px;">Non sei connesso</div>'
-            + '<p style="font-size:.82em;color:var(--text-light);margin-bottom:14px;">Accedi per sincronizzare i dati su tutti i dispositivi</p>'
-            + '<button class="btn btn-primary" onclick="signInWithGoogle()">🔑 Accedi con Google</button>'
-            + '</div>';
+      html += buildProfiloMealView(m.key, m.label, plan[m.key] || {});
     }
-    html += '</div>';
+  });
 
-    /* ---- SEZIONE PIANO ALIMENTARE ---- */
-    html += '<div class="profilo-section">';
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
-        + '<div class="profilo-title" style="margin:0;">🥗 Piano alimentare</div>'
-        + '<div style="display:flex;gap:6px;">'
-        + '<button class="btn btn-small btn-primary" onclick="importaPianoAlimentare()">📥 Importa PDF</button>'
-        + '<button class="btn btn-small btn-secondary" onclick="resetMealPlanToDefault()">🔄 Reset</button>'
-        + '</div></div>';
-
-    var mealDefs = [
-        { key: 'colazione', label: '☕ Colazione',  icon: '☕' },
-        { key: 'spuntino',  label: '🍎 Spuntino',   icon: '🍎' },
-        { key: 'pranzo',    label: '🍽 Pranzo',     icon: '🍽' },
-        { key: 'merenda',   label: '🥪 Merenda',    icon: '🥪' },
-        { key: 'cena',      label: '🌙 Cena',       icon: '🌙' }
-    ];
-
-    mealDefs.forEach(function (md) {
-        var mp = mealPlan[md.key] || {};
-        html += buildProfiloMealSection(md, mp);
-    });
-
-    html += '</div>';
-
-    /* ---- SEZIONE DATI & PRIVACY ---- */
-    html += '<div class="profilo-section">';
-    html += '<div class="profilo-title">⚙️ Dati & Privacy</div>';
-    html += '<div style="display:flex;flex-direction:column;gap:8px;">';
-    html += '<button class="btn btn-secondary" onclick="exportData()">'
-        + '📤 Esporta dati (JSON)</button>';
-    html += '<button class="btn btn-secondary" onclick="importDataPrompt()">'
-        + '📥 Importa dati (JSON)</button>';
-    html += '<button class="btn btn-warning" onclick="clearAllData()">'
-        + '🗑 Cancella tutti i dati</button>';
-    html += '</div></div>';
-
-    /* ---- SEZIONE INFO APP ---- */
-    html += '<div class="profilo-section">';
-    html += '<div class="profilo-title">ℹ️ App</div>';
-    html += '<div style="font-size:.82em;color:var(--text-light);line-height:1.8;">'
-        + '<div>🍃 <b>NutriPlan</b> v1.0</div>'
-        + '<div>📅 Piano: ' + (getCurrentDateKey()) + '</div>'
-        + '<div>🧺 Ingredienti in dispensa: ' + Object.keys(pantryItems).length + '</div>'
-        + '<div>📖 Ricette custom: ' + (customRecipes ? customRecipes.length : 0) + '</div>'
-        + '<div>📅 Giorni nello storico: ' + Object.keys(appHistory).length + '</div>'
-        + '</div></div>';
-
-    el.innerHTML = html;
+  html += '</div>';
+  return html;
 }
 
-/* ---- BUILD SEZIONE PASTO ---- */
-function buildProfiloMealSection(md, mp) {
-    var cats = [
-        { key: 'principale', label: 'Principale' },
-        { key: 'contorno',   label: 'Contorno'   },
-        { key: 'frutta',     label: 'Frutta'      },
-        { key: 'extra',      label: 'Extra'       }
-    ];
-
-    var totalItems = 0;
-    cats.forEach(function (c) {
-        totalItems += ((mp[c.key] || []).length);
+/* ============================================================
+   MODALITÀ VISTA
+   ============================================================ */
+function buildProfiloMealView(mealKey, label, meal) {
+  var allItems = [];
+  ['principale', 'contorno', 'frutta', 'extra'].forEach(function (cat) {
+    (meal[cat] || []).forEach(function (item) {
+      if (!item || !item.name || typeof item.name !== 'string') return;
+      allItems.push(item);
     });
+  });
 
-    var html = '<div class="profilo-meal-section">';
-    html += '<div class="profilo-meal-header">'
-        + '<div class="profilo-meal-title">' + md.label + '</div>'
-        + '<div style="display:flex;gap:5px;align-items:center;">'
-        + '<span style="font-size:.74em;color:var(--text-light);">' + totalItems + ' alimenti</span>'
-        + '<button class="btn btn-small btn-secondary" onclick="toggleMealEdit(\'' + md.key + '\')" id="editBtn_' + md.key + '">✏️ Modifica</button>'
-        + '</div></div>';
+  var html = '<div class="profilo-meal-section">';
+  html += '<div class="profilo-meal-header"><span class="profilo-meal-title">' + label + '</span></div>';
 
-    /* Vista lettura */
-    html += '<div id="mealView_' + md.key + '">';
-    cats.forEach(function (c) {
-        var items = mp[c.key] || [];
-        if (!items.length) return;
-        html += '<div style="margin-bottom:8px;">';
-        html += '<div style="font-size:.72em;font-weight:800;color:var(--text-light);'
-            + 'text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">'
-            + c.label + '</div>';
-      items.forEach(function (item) {
-  /* GUARD: salta item non validi (evita crash su checkIngredientAvailability) */
-  if (!item || typeof item !== 'object' ||
-      !item.name || typeof item.name !== 'string' ||
-      !item.name.trim()) return;
-
-  var avail = checkIngredientAvailability(item);
-  var dot   = avail.sufficient ? '🟢' : avail.matched ? '🟡' : '🔴';
-  var qtyText = (item.quantity && item.unit)
-    ? ' · ' + item.quantity + ' ' + item.unit
-    : '';
-  html += '<div class="profilo-item-view">' +
-            dot + ' <span>' + item.name + '</span>' +
-            '<span class="qty-hint">' + qtyText + '</span>' +
-          '</div>';
-});
-
-        html += '</div>';
+  if (!allItems.length) {
+    html += '<div class="profilo-empty-meal">Nessun elemento nel piano.</div>';
+  } else {
+    allItems.forEach(function (item) {
+      var avail = checkIngredientAvailability(item);
+      var dot   = avail.sufficient ? '🟢' : avail.matched ? '🟡' : '🔴';
+      var qtyTxt = (item.quantity && item.unit) ? ' · ' + item.quantity + ' ' + item.unit : '';
+      html +=
+        '<div class="storico-item">' +
+          '<span>' + dot + ' ' + item.name + '</span>' +
+          '<span class="storico-item-qty">' + qtyTxt + '</span>' +
+        '</div>';
     });
+  }
 
-    if (!totalItems) {
-        html += '<div class="profilo-empty-meal">Nessun alimento impostato per questo pasto.</div>';
-    }
-    html += '</div>';
-
-    /* Vista modifica (nascosta) */
-    html += '<div id="mealEdit_' + md.key + '" style="display:none;">';
-    cats.forEach(function (c) {
-        html += '<div style="margin-bottom:12px;">';
-        html += '<div style="font-size:.74em;font-weight:800;color:var(--text-mid);'
-            + 'text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">'
-            + c.label + '</div>';
-        html += '<div id="editList_' + md.key + '_' + c.key + '">';
-        (mp[c.key] || []).forEach(function (item, idx) {
-            html += buildProfiloItemRow(md.key, c.key, item, idx);
-        });
-        html += '</div>';
-        html += '<button class="btn btn-secondary btn-small" style="margin-top:4px;"'
-            + ' onclick="addProfiloItem(\'' + md.key + '\',\'' + c.key + '\')">'
-            + '＋ Aggiungi ' + c.label.toLowerCase() + '</button>';
-        html += '</div>';
-    });
-    html += '<div style="display:flex;gap:6px;margin-top:8px;">'
-        + '<button class="btn btn-primary btn-small" onclick="saveMealEdit(\'' + md.key + '\')">💾 Salva</button>'
-        + '<button class="btn btn-secondary btn-small" onclick="cancelMealEdit(\'' + md.key + '\')">Annulla</button>'
-        + '</div>';
-    html += '</div>';
-
-    html += '</div>';
-    return html;
+  html += '</div>';
+  return html;
 }
 
-/* ---- RIGA ITEM MODIFICA ---- */
-function buildProfiloItemRow(mealKey, catKey, item, idx) {
-    var units = ['g','ml','pz','fette','cucchiai','cucchiaini','porzione'];
-    var unitOpts = units.map(function (u) {
-        return '<option value="' + u + '"' + (item.unit === u ? ' selected' : '') + '>' + u + '</option>';
-    }).join('');
-
-    return '<div class="profilo-item-row" id="prow_' + mealKey + '_' + catKey + '_' + idx + '">'
-        + '<input type="text" class="form-input profilo-item-name"'
-        + ' value="' + escQ2(item.name || '') + '"'
-        + ' placeholder="Nome alimento"'
-        + ' id="pname_' + mealKey + '_' + catKey + '_' + idx + '">'
-        + '<input type="number" class="form-input" style="width:70px;flex:none;" min="0" step="any"'
-        + ' value="' + (item.quantity || '') + '"'
-        + ' placeholder="Qtà"'
-        + ' id="pqty_' + mealKey + '_' + catKey + '_' + idx + '">'
-        + '<select class="form-input" style="width:90px;flex:none;"'
-        + ' id="punit_' + mealKey + '_' + catKey + '_' + idx + '">'
-        + unitOpts + '</select>'
-        + '<button class="btn btn-warning btn-small" style="flex:none;padding:6px 10px;"'
-        + ' onclick="removeProfiloItem(\'' + mealKey + '\',\'' + catKey + '\',' + idx + ')">🗑</button>'
-        + '</div>';
+/* ============================================================
+   MODALITÀ MODIFICA
+   ============================================================ */
+function startProfiloEdit() {
+  editMealPlanData = JSON.parse(JSON.stringify(mealPlan));
+  ['colazione','spuntino','pranzo','merenda','cena'].forEach(function (mk) {
+    if (!editMealPlanData[mk]) editMealPlanData[mk] = {};
+    ['principale','contorno','frutta','extra'].forEach(function (cat) {
+      if (!Array.isArray(editMealPlanData[mk][cat])) editMealPlanData[mk][cat] = [];
+    });
+  });
+  profiloEditMode = true;
+  renderProfilo();
 }
 
-/* ---- TOGGLE MODIFICA ---- */
-function toggleMealEdit(mealKey) {
-    var viewEl = document.getElementById('mealView_' + mealKey);
-    var editEl = document.getElementById('mealEdit_' + mealKey);
-    var btnEl  = document.getElementById('editBtn_' + mealKey);
-    if (!viewEl || !editEl) return;
-    var isEditing = editEl.style.display !== 'none';
-    if (isEditing) {
-        cancelMealEdit(mealKey);
+function cancelProfiloEdit() {
+  profiloEditMode  = false;
+  editMealPlanData = null;
+  renderProfilo();
+}
+
+function saveProfiloPiano() {
+  /* Rileggi i dati dai form */
+  var collected = {};
+  ['colazione','spuntino','pranzo','merenda','cena'].forEach(function (mk) {
+    collected[mk] = { principale: [], contorno: [], frutta: [], extra: [] };
+    ['principale','contorno','frutta','extra'].forEach(function (cat) {
+      var container = document.getElementById('edit_' + mk + '_' + cat);
+      if (!container) return;
+      var rows = container.querySelectorAll('.edit-item-row');
+      rows.forEach(function (row) {
+        var nameEl = row.querySelector('.edit-item-name');
+        var qtyEl  = row.querySelector('.edit-item-qty');
+        var unitEl = row.querySelector('.edit-item-unit');
+        var catEl  = row.querySelector('.edit-item-category');
+
+        var name = nameEl ? nameEl.value.trim() : '';
+        if (!name) return;
+
+        var qty  = qtyEl  ? (parseFloat(qtyEl.value) || null)  : null;
+        var unit = unitEl ? (unitEl.value || 'g')               : 'g';
+        var cat  = catEl  ? catEl.value : '';
+
+        /* Verifica/crea ingrediente se non esiste */
+        ensureIngredientExists(name, cat, unit);
+
+        collected[mk][cat].push({ name: name, quantity: qty, unit: unit });
+      });
+    });
+  });
+
+  mealPlan = collected;
+  saveData();
+  profiloEditMode  = false;
+  editMealPlanData = null;
+  renderProfilo();
+  renderMealPlan();
+  if (typeof renderPantry === 'function') renderPantry();
+}
+
+/* ---- Garantisce che l'ingrediente esista nel database ---- */
+function ensureIngredientExists(name, category, unit) {
+  if (!name || typeof name !== 'string' || !name.trim()) return;
+  var nm = name.trim();
+
+  /* Cerca nei default */
+  var inDefault = (typeof defaultIngredients !== 'undefined') &&
+    defaultIngredients.some(function (i) {
+      return i && i.name && i.name.toLowerCase() === nm.toLowerCase();
+    });
+  if (inDefault) return;
+
+  /* Cerca nei custom */
+  var inCustom = Array.isArray(customIngredients) &&
+    customIngredients.some(function (i) {
+      return i && i.name && i.name.toLowerCase() === nm.toLowerCase();
+    });
+  if (inCustom) return;
+
+  /* Non esiste: lo crea come custom CON categoria obbligatoria */
+  var cat  = (category && CATEGORIES.indexOf(category) !== -1) ? category : '🧂 Cucina';
+  var u    = unit || 'g';
+  var icon = getCategoryIcon(cat);
+  if (!Array.isArray(customIngredients)) customIngredients = [];
+  customIngredients.push({ name: nm, category: cat, unit: u, icon: icon });
+  if (!pantryItems[nm]) {
+    pantryItems[nm] = { quantity: 0, unit: u, category: cat, icon: icon, isCustom: true };
+  }
+}
+
+/* ---- RENDER FORM MODIFICA ---- */
+function buildProfiloMealEdit(mealKey, label, meal) {
+  var html =
+    '<div class="profilo-meal-section">' +
+      '<div class="profilo-meal-header">' +
+        '<span class="profilo-meal-title">' + label + '</span>' +
+      '</div>';
+
+  var catLabels = { principale: '🍽 Principale', contorno: '🥦 Contorno', frutta: '🍎 Frutta', extra: '➕ Extra' };
+  ['principale','contorno','frutta','extra'].forEach(function (cat) {
+    var items = (meal[cat] || []).filter(function (i) {
+      return i && i.name && typeof i.name === 'string';
+    });
+    html +=
+      '<div style="margin-bottom:10px">' +
+        '<div style="font-size:.74em;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">' +
+          catLabels[cat] +
+        '</div>' +
+        '<div id="edit_' + mealKey + '_' + cat + '">';
+
+    items.forEach(function (item) {
+      html += buildEditItemRow(item, cat);
+    });
+
+    html +=
+        '</div>' +
+        '<button class="btn btn-secondary btn-small" style="margin-top:6px" ' +
+          'onclick="addProfiloItem(\'' + mealKey + '\',\'' + cat + '\')">' +
+          '+ Aggiungi' +
+        '</button>' +
+      '</div>';
+  });
+
+  html += '</div>';
+  return html;
+}
+
+/* ---- SINGOLA RIGA MODIFICA ---- */
+function buildEditItemRow(item, cat) {
+  var name  = (item && item.name)     ? item.name     : '';
+  var qty   = (item && item.quantity) ? item.quantity : '';
+  var unit  = (item && item.unit)     ? item.unit     : 'g';
+
+  /* Determina categoria pre-selezionata cercando nell'ingrediente database */
+  var existingCat = getIngredientCategory(name);
+
+  /* Lista unità */
+  var units = ['g','ml','pz','fette','cucchiai','cucchiaini','porzione','kg','l'];
+  var unitOpts = units.map(function (u) {
+    return '<option value="' + u + '"' + (unit === u ? ' selected' : '') + '>' + u + '</option>';
+  }).join('');
+
+  /* Lista categorie — obbligatoria se ingrediente non noto */
+  var catOpts = CATEGORIES.map(function (c) {
+    return '<option value="' + c + '"' + (existingCat === c ? ' selected' : '') + '>' + c + '</option>';
+  }).join('');
+
+  /* Mostra selector categoria solo se l'ingrediente non è già nel database */
+  var catSelector = !existingCat
+    ? '<select class="form-input edit-item-category" title="Categoria (obbligatoria)" style="flex:2;min-width:120px;border-color:var(--warning)">' +
+        '<option value="">-- Categoria * --</option>' + catOpts +
+      '</select>'
+    : '<input type="hidden" class="edit-item-category" value="' + existingCat + '">';
+
+  return (
+    '<div class="edit-item-row profilo-item-row">' +
+      '<input type="text" class="form-input edit-item-name profilo-item-name" value="' + name + '" ' +
+        'placeholder="Ingrediente..." list="ingredientiDatalist" ' +
+        'onchange="onEditItemNameChange(this)">' +
+      '<input type="number" class="form-input edit-item-qty" value="' + qty + '" ' +
+        'placeholder="Qtà" min="0" step="any" style="width:60px;flex:none">' +
+      '<select class="form-input edit-item-unit" style="width:70px;flex:none">' + unitOpts + '</select>' +
+      catSelector +
+      '<button class="btn-icon-only" style="background:var(--bg-light);border:1.5px solid var(--border);color:var(--danger);width:32px;height:32px;flex-shrink:0" ' +
+        'onclick="removeEditItemRow(this)" title="Rimuovi">✕</button>' +
+    '</div>'
+  );
+}
+
+/* ============================================================
+   HELPERS FORM
+   ============================================================ */
+function addProfiloItem(mealKey, cat) {
+  var container = document.getElementById('edit_' + mealKey + '_' + cat);
+  if (!container) return;
+  var rowHtml = buildEditItemRow({ name: '', quantity: null, unit: 'g' }, cat);
+  container.insertAdjacentHTML('beforeend', rowHtml);
+}
+
+function removeEditItemRow(btn) {
+  var row = btn.closest('.edit-item-row');
+  if (row) row.remove();
+}
+
+/* Quando si cambia il nome dell'ingrediente:
+   - Se esiste nel database → nascondi il selector categoria
+   - Se NON esiste → mostra il selector (categoria obbligatoria) */
+function onEditItemNameChange(input) {
+  var row  = input.closest('.edit-item-row');
+  if (!row) return;
+  var name = input.value.trim();
+  if (!name) return;
+
+  var existingCat = getIngredientCategory(name);
+  var catEl = row.querySelector('.edit-item-category');
+  if (!catEl) return;
+
+  if (existingCat) {
+    /* Ingrediente noto: sostituisce il select con un hidden */
+    if (catEl.tagName === 'SELECT') {
+      var hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.className = 'edit-item-category';
+      hidden.value = existingCat;
+      catEl.replaceWith(hidden);
     } else {
-        viewEl.style.display = 'none';
-        editEl.style.display = 'block';
-        if (btnEl) btnEl.textContent = '✕ Chiudi';
+      catEl.value = existingCat;
     }
-}
-
-function cancelMealEdit(mealKey) {
-    var viewEl = document.getElementById('mealView_' + mealKey);
-    var editEl = document.getElementById('mealEdit_' + mealKey);
-    var btnEl  = document.getElementById('editBtn_' + mealKey);
-    if (viewEl) viewEl.style.display = 'block';
-    if (editEl) editEl.style.display = 'none';
-    if (btnEl)  btnEl.textContent = '✏️ Modifica';
-}
-
-/* ---- AGGIUNGI / RIMUOVI ITEM ---- */
-function addProfiloItem(mealKey, catKey) {
-    if (!mealPlan[mealKey]) mealPlan[mealKey] = {};
-    if (!mealPlan[mealKey][catKey]) mealPlan[mealKey][catKey] = [];
-    var idx = mealPlan[mealKey][catKey].length;
-    mealPlan[mealKey][catKey].push({ name: '', quantity: '', unit: 'g' });
-
-    var listEl = document.getElementById('editList_' + mealKey + '_' + catKey);
-    if (listEl) {
-        var div = document.createElement('div');
-        div.innerHTML = buildProfiloItemRow(mealKey, catKey, { name: '', quantity: '', unit: 'g' }, idx);
-        listEl.appendChild(div.firstChild);
+  } else {
+    /* Ingrediente sconosciuto: mostra il select con bordo arancione */
+    if (catEl.tagName !== 'SELECT') {
+      var catOpts = CATEGORIES.map(function (c) {
+        return '<option value="' + c + '">' + c + '</option>';
+      }).join('');
+      var sel = document.createElement('select');
+      sel.className = 'form-input edit-item-category';
+      sel.title  = 'Categoria (obbligatoria)';
+      sel.style.cssText = 'flex:2;min-width:120px;border-color:var(--warning)';
+      sel.innerHTML = '<option value="">-- Categoria * --</option>' + catOpts;
+      catEl.replaceWith(sel);
     }
-    /* Focus sul nuovo campo */
-    setTimeout(function () {
-        var inp = document.getElementById('pname_' + mealKey + '_' + catKey + '_' + idx);
-        if (inp) inp.focus();
-    }, 50);
+  }
 }
 
-function removeProfiloItem(mealKey, catKey, idx) {
-    var rowEl = document.getElementById('prow_' + mealKey + '_' + catKey + '_' + idx);
-    if (rowEl) rowEl.remove();
+/* Cerca la categoria di un ingrediente nel database (default + custom) */
+function getIngredientCategory(name) {
+  if (!name || typeof name !== 'string') return null;
+  var nl = name.toLowerCase().trim();
+  if (!nl) return null;
+
+  var all = [];
+  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
+    all = all.concat(defaultIngredients);
+  }
+  if (Array.isArray(customIngredients)) {
+    all = all.concat(customIngredients);
+  }
+
+  var found = all.find(function (i) {
+    return i && i.name && i.name.toLowerCase().trim() === nl;
+  });
+  return found ? found.category : null;
 }
 
-/* ---- SALVA MODIFICA ---- */
-function saveMealEdit(mealKey) {
-    var cats = ['principale', 'contorno', 'frutta', 'extra'];
-    if (!mealPlan[mealKey]) mealPlan[mealKey] = {};
-
-    cats.forEach(function (catKey) {
-        var listEl = document.getElementById('editList_' + mealKey + '_' + catKey);
-        if (!listEl) return;
-
-        var rows = listEl.querySelectorAll('.profilo-item-row');
-        var items = [];
-        rows.forEach(function (row) {
-            var idParts = row.id.split('_'); // prow_mealKey_catKey_idx
-            var idx = idParts[idParts.length - 1];
-            var nameEl = document.getElementById('pname_' + mealKey + '_' + catKey + '_' + idx);
-            var qtyEl  = document.getElementById('pqty_'  + mealKey + '_' + catKey + '_' + idx);
-            var unitEl = document.getElementById('punit_' + mealKey + '_' + catKey + '_' + idx);
-            if (!nameEl) return;
-            var name = nameEl.value.trim();
-            if (!name) return;
-            items.push({
-                name:     name,
-                quantity: qtyEl  ? parseFloat(qtyEl.value)  || null : null,
-                unit:     unitEl ? unitEl.value : 'g'
-            });
-        });
-        mealPlan[mealKey][catKey] = items;
-    });
-
-    saveData();
-    cancelMealEdit(mealKey);
-    renderProfilo();
-    renderMealPlan();
-    alert('✅ Piano aggiornato!');
-}
-
-/* ---- IMPORTA PDF ---- */
-function importaPianoAlimentare() {
-    if (typeof importPianoPDF === 'function') {
-        importPianoPDF();
-    } else {
-        alert('Funzione di importazione PDF non disponibile.\nAssicurati che il file pdf.js sia caricato.');
-    }
-}
-
-/* ---- SYNC MANUALE ---- */
-function manualSync() {
-    if (!firebaseReady || !currentUser) {
-        alert('Non sei connesso. Accedi prima con Google.');
-        return;
-    }
-    showCloudStatus('saving');
-    var ref = firebase.database().ref('users/' + currentUser.uid + '/nutriplan');
-    ref.set(buildSaveObject()).then(function () {
-        showCloudStatus('synced');
-        alert('✅ Sincronizzazione completata!');
-    }).catch(function (e) {
-        showCloudStatus('local');
-        alert('❌ Errore sincronizzazione: ' + e.message);
-    });
-}
-
-/* ---- EXPORT / IMPORT / CLEAR ---- */
-function exportData() {
-    var obj  = buildSaveObject();
-    var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
-    a.href   = url;
-    a.download = 'nutriplan_backup_' + getCurrentDateKey() + '.json';
-    a.click();
-    URL.revokeObjectURL(url);
-}
-
-function importDataPrompt() {
-    var input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = function (e) {
-        var file = e.target.files[0];
-        if (!file) return;
-        var reader = new FileReader();
-        reader.onload = function (ev) {
-            try {
-                var data = JSON.parse(ev.target.result);
-                applyLoadedData(data);
-                saveData();
-                refreshAllAppViews();
-                renderProfilo();
-                alert('✅ Dati importati correttamente!');
-            } catch (err) {
-                alert('❌ File non valido: ' + err.message);
-            }
-        };
-        reader.readAsText(file);
+/* ============================================================
+   getCategoryIcon (se non già definita in dispensa.js)
+   ============================================================ */
+if (typeof getCategoryIcon === 'undefined') {
+  function getCategoryIcon(cat) {
+    var map = {
+      '🥩 Carne e Pesce':       '🥩',
+      '🥛 Latticini e Uova':    '🥛',
+      '🌾 Cereali e Legumi':    '🌾',
+      '🥦 Verdure':             '🥦',
+      '🍎 Frutta':              '🍎',
+      '🥑 Grassi e Condimenti': '🥑',
+      '🍫 Dolci e Snack':       '🍫',
+      '🧂 Cucina':              '🧂'
     };
-    input.click();
-}
-
-function clearAllData() {
-    if (!confirm('⚠️ Sei sicuro di voler cancellare TUTTI i dati?\nQuesta azione è irreversibile.')) return;
-    if (!confirm('CONFERMA: cancellare tutto?')) return;
-    localStorage.removeItem(STORAGE_KEY);
-    pantryItems       = {};
-    savedFridges      = {};
-    appHistory        = {};
-    customRecipes     = [];
-    customIngredients = [];
-    spesaItems        = [];
-    mealPlan          = JSON.parse(JSON.stringify(defaultMealPlan));
-    Object.keys(weeklyLimits).forEach(function (k) { weeklyLimits[k].current = 0; });
-    saveData();
-    refreshAllAppViews();
-    renderProfilo();
-    alert('✅ Dati cancellati.');
-}
-
-/* ---- UTILITY ---- */
-function escQ2(str) {
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+    return (cat && map[cat]) ? map[cat] : '🧂';
+  }
 }
