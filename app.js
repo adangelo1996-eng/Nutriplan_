@@ -122,22 +122,7 @@ window.addEventListener('beforeinstallprompt', function (e) {
   }
 });
 
-/* ============================================================
-   ONLINE / OFFLINE
-   ============================================================ */
-function checkOnlineStatus() {
-  var el = document.getElementById('offlineIndicator');
-  if (!el) return;
-  fetch('https://www.gstatic.com/generate_204', {
-    method: 'HEAD', mode: 'no-cors', cache: 'no-store'
-  }).then(function () {
-    el.classList.remove('show');
-  }).catch(function () {
-    el.classList.add('show');
-  });
-}
-window.addEventListener('online',  checkOnlineStatus);
-window.addEventListener('offline', checkOnlineStatus);
+
 
 /* ============================================================
    CALENDARIO
