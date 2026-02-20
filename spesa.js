@@ -9,7 +9,7 @@ function renderSpesa() {
   var el = document.getElementById('spesaContent');
   if (!el) return;
 
-  var items  = typeof shoppingList !== 'undefined' ? shoppingList : [];
+  var items  = typeof spesaItems !== 'undefined' ? spesaItems : [];
   var manual = items.filter(function(i){ return i.manual; });
   var auto   = items.filter(function(i){ return !i.manual; });
 
@@ -85,7 +85,7 @@ function buildSpesaCard(item, idx) {
    AZIONI
 ══════════════════════════════════════════════ */
 function toggleBought(idx) {
-  var items = typeof shoppingList !== 'undefined' ? shoppingList : [];
+  var items = typeof spesaItems !== 'undefined' ? spesaItems : [];
   if (!items[idx]) return;
   items[idx].bought = !items[idx].bought;
 
@@ -98,7 +98,7 @@ function toggleBought(idx) {
 }
 
 function removeSpesaItem(idx) {
-  var items = typeof shoppingList !== 'undefined' ? shoppingList : [];
+  var items = typeof spesaItems !== 'undefined' ? spesaItems : [];
   items.splice(idx, 1);
   saveData();
   renderSpesa();
@@ -106,7 +106,7 @@ function removeSpesaItem(idx) {
 
 function clearBoughtItems() {
   if (!confirm('Rimuovere tutti gli articoli acquistati?')) return;
-  shoppingList = (typeof shoppingList !== 'undefined' ? shoppingList : [])
+  spesaItems = (typeof spesaItems !== 'undefined' ? spesaItems : [])
     .filter(function(i){ return !i.bought; });
   saveData();
   renderSpesa();
@@ -132,8 +132,8 @@ function generateShoppingList() {
   });
 
   /* mantieni i manuali, sostituisci gli auto */
-  var manual = (typeof shoppingList !== 'undefined' ? shoppingList : []).filter(function(i){ return i.manual; });
-  shoppingList = manual.concat(Object.values(needed));
+  var manual = (typeof spesaItems !== 'undefined' ? spesaItems : []).filter(function(i){ return i.manual; });
+  spesaItems = manual.concat(Object.values(needed));
   saveData();
   renderSpesa();
 }
@@ -162,8 +162,8 @@ function confirmSpesaItem() {
   if (!name) return;
   var qty  = parseFloat(qtyEl ? qtyEl.value : '') || null;
   var unit = unitEl ? unitEl.value : 'g';
-  if (typeof shoppingList === 'undefined') shoppingList = [];
-  shoppingList.push({ name:name, quantity:qty, unit:unit, manual:true, bought:false });
+  if (typeof spesaItems === 'undefined') spesaItems = [];
+  spesaItems.push({ name:name, quantity:qty, unit:unit, manual:true, bought:false });
   saveData();
   closeSpesaItemModal();
   renderSpesa();
@@ -176,7 +176,7 @@ function openSpesaQtyModal(idx) {
   var inp     = document.getElementById('spesaQtyInput');
   var unitSel = document.getElementById('spesaQtyUnit');
   if (!modal) return;
-  var item = (typeof shoppingList !== 'undefined' && shoppingList[idx]) ? shoppingList[idx] : null;
+  var item = (typeof spesaItems !== 'undefined' && spesaItems[idx]) ? spesaItems[idx] : null;
   if (!item) return;
   if (label)   label.textContent = item.name;
   if (inp)     inp.value = item.quantity || '';
@@ -200,7 +200,7 @@ function confirmSpesaQty() {
   var val  = parseFloat(inp.value);
   var unit = unitSel ? unitSel.value : 'g';
   if (!isNaN(idx) && !isNaN(val) && val > 0) {
-    var item = shoppingList[idx];
+    var item = spesaItems[idx];
     if (item && typeof addFromSpesa === 'function') {
       addFromSpesa(item.name, val, unit);
     }
