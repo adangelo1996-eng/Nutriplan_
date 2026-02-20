@@ -109,27 +109,28 @@ function renderRicetteGrid() {
   grid.innerHTML = filtered.map(function (r) { return buildRicettaCard(r); }).join('');
 }
 
-/* ---- CARD ---- */
 function buildRicettaCard(r) {
   var name     = r.nome || r.name || 'Ricetta';
   var icon     = r.icon || r.icona || '🍽';
   var isCustom = r.isCustom || false;
   var ings     = r.ingredienti || r.ingredients || [];
 
-  /* Pasto label (può essere array) */
-  var pastoVal = r.pasto || '';
+  /* ── Pasto label (può essere array) ── */
+  var pastoVal   = r.pasto || '';
   var pastoLabel = Array.isArray(pastoVal)
     ? pastoVal.map(capFirst).join(' · ')
     : capFirst(pastoVal);
 
-  /* Disponibilità */
-  var availKeys = Object.keys(pantryItems).filter(function (p) {
-    return p && p !== 'undefined' && p !== 'null' && (pantryItems[p].quantity || 0) > 0;
+  /* ── Disponibilità (guard su pantryItems) ── */
+  var safeItems  = (typeof pantryItems !== 'undefined' && pantryItems) ? pantryItems : {};
+  var availKeys  = Object.keys(safeItems).filter(function (p) {
+    return p && p !== 'undefined' && p !== 'null' && (safeItems[p].quantity || 0) > 0;
   });
   var availCount = ings.filter(function (ing) {
-    var n = (ing.name || ing.nome || '').toLowerCase();
+    var n = (ing.name || ing.nome || '').toLowerCase().trim();
+    if (!n) return false;
     return availKeys.some(function (av) {
-      var al = av.toLowerCase();
+      var al = av.toLowerCase().trim();
       return al === n || al.includes(n) || n.includes(al);
     });
   }).length;
@@ -138,13 +139,16 @@ function buildRicettaCard(r) {
   var availCls = pct >= 80 ? 'rcb-avail' : pct >= 40 ? 'rcb-partial' : 'rcb-missing';
   var availTxt = pct >= 80 ? '✔ Disponibile' : pct >= 40 ? '⚠ Parziale' : '✖ Mancante';
 
-  var ingPreview = ings.slice(0, 3).map(function (i) { return i.name || i.nome || ''; }).filter(Boolean).join(', ');
+  var ingPreview = ings.slice(0, 3)
+    .map(function (i) { return i.name || i.nome || ''; })
+    .filter(Boolean).join(', ');
   if (ings.length > 3) ingPreview += ' +' + (ings.length - 3);
 
   var safeName = name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
   return (
-    '<div class="ricetta-card' + (isCustom ? ' custom-card' : '') + '" onclick="openRecipeModal(\'' + safeName + '\')">' +
+    '<div class="ricetta-card' + (isCustom ? ' custom-card' : '') +
+        '" onclick="openRecipeModal(\'' + safeName + '\')">' +
       '<div class="ricetta-card-head">' +
         '<div class="ricetta-card-icon">' + icon + '</div>' +
         '<div class="ricetta-card-info">' +
@@ -160,6 +164,7 @@ function buildRicettaCard(r) {
     '</div>'
   );
 }
+
 
 /* ---- MODAL DETTAGLIO ---- */
 function openRecipeModal(name) {
