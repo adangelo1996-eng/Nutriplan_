@@ -1,617 +1,300 @@
-/* ============================================================
-   DISPENSA.JS — v3  FRIGO-ONLY
-   Una sola vista: card stile frigo per tutto ciò che hai.
-   Gli ingredienti appaiono solo quando qty > 0 (aggiunti
-   manualmente o dalla spesa). La dispensa "a lista" è rimossa.
-   ============================================================ */
+/*
+   DISPENSA.JS — v4  stile rc-card unificato
+*/
 
 var pantrySearchQuery = '';
 
-/* ============================================================
-   UTILITY
-   ============================================================ */
+/* ── UTILITY ── */
 function getCategoryIcon(cat) {
   var map = {
-    '🥩 Carne e Pesce':       '🥩',
-    '🥛 Latticini e Uova':    '🥛',
-    '🌾 Cereali e Legumi':    '🌾',
-    '🥦 Verdure':             '🥦',
-    '🍎 Frutta':              '🍎',
-    '🥑 Grassi e Condimenti': '🥑',
-    '🍫 Dolci e Snack':       '🍫',
-    '🧂 Cucina':              '🧂',
-    '🧂 Altro':               '🧂'
+    '🥩 Carne e Pesce':'🥩','🥛 Latticini e Uova':'🥛','🌾 Cereali e Legumi':'🌾',
+    '🥦 Verdure':'🥦','🍎 Frutta':'🍎','🥑 Grassi e Condimenti':'🥑',
+    '🍫 Dolci e Snack':'🍫','🧂 Cucina':'🧂','🧂 Altro':'🧂'
   };
   return (cat && map[cat]) ? map[cat] : '🧂';
 }
-
-function safeid(name) {
-  return String(name).replace(/[^a-zA-Z0-9]/g, '_');
-}
-
-function escQ(str) {
-  return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
-}
-
+function safeid(n) { return String(n).replace(/[^a-zA-Z0-9]/g,'_'); }
+function escQ(str) { return String(str).replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 function getStep(unit) {
   if (['kg','l'].indexOf(unit) !== -1) return 0.1;
   if (['pz','fette','cucchiai','cucchiaini','porzione'].indexOf(unit) !== -1) return 1;
   return 10;
 }
+function isValidPantryKey(k) { return k && typeof k==='string' && k.trim()!=='' && k!=='undefined' && k!=='null'; }
+function isValidItem(item) { return item && typeof item==='object' && item.name && typeof item.name==='string' && item.name.trim()!==''; }
 
-function isValidPantryKey(k) {
-  return k && typeof k === 'string' && k.trim() !== '' && k !== 'undefined' && k !== 'null';
-}
-
-function isValidItem(item) {
-  return item && typeof item === 'object' &&
-    item.name && typeof item.name === 'string' && item.name.trim() !== '';
-}
-
-/* ============================================================
-   CATALOGO COMPLETO (per autocomplete, ricette, disponibilità)
-   Usato internamente — non più visualizzato come lista
-   ============================================================ */
+/* ── CATALOGO COMPLETO ── */
 function getAllPantryItems() {
-  var result = [];
-  var seen   = {};
-
-  /* 1. Dal piano */
+  var result = [], seen = {};
   var mealKeys = ['colazione','spuntino','pranzo','merenda','cena'];
-  mealKeys.forEach(function (mk) {
-    var mp = (typeof mealPlan !== 'undefined' && mealPlan && mealPlan[mk]) ? mealPlan[mk] : {};
-    ['principale','contorno','frutta','extra'].forEach(function (cat) {
+  mealKeys.forEach(function(mk){
+    var mp = (typeof mealPlan!=='undefined' && mealPlan && mealPlan[mk]) ? mealPlan[mk] : {};
+    ['principale','contorno','frutta','extra'].forEach(function(cat){
       var arr = mp[cat];
       if (!Array.isArray(arr)) return;
-      arr.forEach(function (item) {
+      arr.forEach(function(item){
         if (!isValidItem(item)) return;
         var name = item.name.trim();
         if (seen[name]) return;
         seen[name] = true;
-        var pd = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) ? pantryItems[name] : {};
-        result.push({
-          name:     name,
-          quantity: typeof pd.quantity === 'number' ? pd.quantity : 0,
-          unit:     pd.unit || item.unit || 'g',
-          category: pd.category || '🧂 Altro',
-          icon:     pd.icon     || getCategoryIcon(pd.category || '🧂 Altro'),
-          isCustom: false
-        });
+        var pd = (typeof pantryItems!=='undefined' && pantryItems && pantryItems[name]) ? pantryItems[name] : {};
+        result.push({ name:name, quantity:typeof pd.quantity==='number'?pd.quantity:0, unit:pd.unit||item.unit||'g', category:pd.category||'🧂 Altro', icon:pd.icon||getCategoryIcon(pd.category||'🧂 Altro'), isCustom:false });
       });
     });
   });
-
-  /* 2. Default */
-  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
-    defaultIngredients.forEach(function (item) {
+  if (typeof defaultIngredients!=='undefined' && Array.isArray(defaultIngredients)) {
+    defaultIngredients.forEach(function(item){
       if (!isValidItem(item)) return;
       var name = item.name.trim();
       if (seen[name]) return;
       seen[name] = true;
-      var pd = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) ? pantryItems[name] : {};
-      result.push({
-        name:     name,
-        quantity: typeof pd.quantity === 'number' ? pd.quantity : 0,
-        unit:     pd.unit || item.unit || 'g',
-        category: item.category || '🧂 Altro',
-        icon:     item.icon     || getCategoryIcon(item.category),
-        isCustom: false
-      });
+      var pd = (typeof pantryItems!=='undefined' && pantryItems && pantryItems[name]) ? pantryItems[name] : {};
+      result.push({ name:name, quantity:typeof pd.quantity==='number'?pd.quantity:0, unit:pd.unit||item.unit||'g', category:item.category||'🧂 Altro', icon:item.icon||getCategoryIcon(item.category), isCustom:false });
     });
   }
-
-  /* 3. Custom */
-  if (typeof customIngredients !== 'undefined' && Array.isArray(customIngredients)) {
-    customIngredients.forEach(function (item) {
+  if (typeof customIngredients!=='undefined' && Array.isArray(customIngredients)) {
+    customIngredients.forEach(function(item){
       if (!isValidItem(item)) return;
       var name = item.name.trim();
       if (seen[name]) return;
       seen[name] = true;
-      var pd = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) ? pantryItems[name] : {};
-      result.push({
-        name:     name,
-        quantity: typeof pd.quantity === 'number' ? pd.quantity : 0,
-        unit:     pd.unit || item.unit || 'g',
-        category: item.category || '🧂 Altro',
-        icon:     item.icon     || getCategoryIcon(item.category),
-        isCustom: true
-      });
+      var pd = (typeof pantryItems!=='undefined' && pantryItems && pantryItems[name]) ? pantryItems[name] : {};
+      result.push({ name:name, quantity:typeof pd.quantity==='number'?pd.quantity:0, unit:pd.unit||item.unit||'g', category:item.category||'🧂 Altro', icon:item.icon||getCategoryIcon(item.category), isCustom:true });
     });
   }
-
-  /* 4. Qualsiasi altro in pantryItems con qty > 0 */
-  if (typeof pantryItems !== 'undefined' && pantryItems && typeof pantryItems === 'object') {
-    Object.keys(pantryItems).forEach(function (name) {
-      if (!isValidPantryKey(name) || seen[name]) return;
+  if (typeof pantryItems!=='undefined' && pantryItems && typeof pantryItems==='object') {
+    Object.keys(pantryItems).forEach(function(name){
+      if (!isValidPantryKey(name)||seen[name]) return;
       seen[name] = true;
       var pd = pantryItems[name];
-      if (!pd || typeof pd !== 'object') return;
-      result.push({
-        name:     name,
-        quantity: typeof pd.quantity === 'number' ? pd.quantity : 0,
-        unit:     pd.unit     || 'g',
-        category: pd.category || '🧂 Altro',
-        icon:     pd.icon     || '🧂',
-        isCustom: pd.isCustom || false
-      });
+      if (!pd||typeof pd!=='object') return;
+      result.push({ name:name, quantity:typeof pd.quantity==='number'?pd.quantity:0, unit:pd.unit||'g', category:pd.category||'🧂 Altro', icon:pd.icon||'🧂', isCustom:pd.isCustom||false });
     });
   }
-
-  result.sort(function (a, b) {
-    if (b.quantity !== a.quantity) return b.quantity - a.quantity;
-    return a.name.localeCompare(b.name, 'it');
-  });
+  result.sort(function(a,b){ if (b.quantity!==a.quantity) return b.quantity-a.quantity; return a.name.localeCompare(b.name,'it'); });
   return result;
 }
 
-/* ============================================================
-   RENDER FRIGO  (unica vista — ex renderPantry)
-   ============================================================ */
+/* ── RENDER (alias) ── */
 function renderPantry() { renderFridge(); }
 
 function renderFridge() {
   var el = document.getElementById('pantryContent');
   if (!el) return;
 
-  /* Solo elementi con qty > 0 */
-  var active = getAllPantryItems().filter(function (i) {
-    return isValidItem(i) && (i.quantity || 0) > 0;
-  });
+  var active = getAllPantryItems().filter(function(i){ return isValidItem(i) && (i.quantity||0) > 0; });
 
-  /* Filtro ricerca */
   if (pantrySearchQuery) {
     var q = pantrySearchQuery;
-    active = active.filter(function (i) {
-      return i.name.toLowerCase().includes(q) ||
-             (i.category || '').toLowerCase().includes(q);
+    active = active.filter(function(i){
+      return i.name.toLowerCase().includes(q) || (i.category||'').toLowerCase().includes(q);
     });
   }
 
-  /* ── STATO VUOTO ── */
+  /* ── VUOTO ── */
   if (!active.length) {
     el.innerHTML =
-      '<div class="empty-state">' +
-        '<div class="empty-state-icon">❄️</div>' +
-        '<h3>' + (pantrySearchQuery ? 'Nessun risultato' : 'Frigo vuoto') + '</h3>' +
+      '<div class="rc-empty">' +
+        '<div style="font-size:2.5rem;">❄️</div>' +
         '<p>' + (pantrySearchQuery
-          ? 'Nessun ingrediente corrisponde a &ldquo;' + pantrySearchQuery + '&rdquo;.'
-          : 'Aggiungi ingredienti con <b>＋</b> oppure segna acquisti nella&nbsp;<b>Spesa</b>.') +
+          ? 'Nessun ingrediente corrisponde a "'+pantrySearchQuery+'".'
+          : 'Il frigo è vuoto.<br>Aggiungi ingredienti con <strong>＋</strong> oppure segna acquisti nella <strong>Spesa</strong>.') +
         '</p>' +
-        (!pantrySearchQuery
-          ? '<button class="btn btn-primary" style="margin-top:14px" onclick="openCustomIngModal()">＋ Aggiungi ingrediente</button>'
-          : '') +
       '</div>';
+    updateSavedFridgesList();
     return;
   }
 
   /* ── RAGGRUPPA PER CATEGORIA ── */
-  var byCategory = {};
-  active.forEach(function (item) {
-    var cat = item.category || '🧂 Altro';
-    if (!byCategory[cat]) byCategory[cat] = [];
-    byCategory[cat].push(item);
-  });
-
-  var catOrder = [
-    '🥩 Carne e Pesce','🥛 Latticini e Uova','🌾 Cereali e Legumi',
-    '🥦 Verdure','🍎 Frutta','🥑 Grassi e Condimenti',
-    '🍫 Dolci e Snack','🧂 Cucina','🧂 Altro'
-  ];
-
-  var sortedCats = Object.keys(byCategory).sort(function (a, b) {
-    var ia = catOrder.indexOf(a); if (ia < 0) ia = 999;
-    var ib = catOrder.indexOf(b); if (ib < 0) ib = 999;
-    return ia - ib;
+  var groups = {};
+  active.forEach(function(i){
+    var cat = i.category || '🧂 Altro';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(i);
   });
 
   var html = '';
-  sortedCats.forEach(function (cat) {
-    var items = byCategory[cat];
-    var count = items.length;
+  Object.keys(groups).sort().forEach(function(cat){
+    var icon = getCategoryIcon(cat);
     html +=
-      '<div class="fridge-category-section">' +
-        '<div class="category-title">' +
-          cat +
-          '<span class="cat-count-badge">' + count + '</span>' +
+      '<div style="margin-bottom:20px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+          '<span style="font-size:1.1em;">'+icon+'</span>' +
+          '<span style="font-weight:600;color:var(--text-2);font-size:.9em;text-transform:uppercase;letter-spacing:.05em;">'+cat.replace(/^[^\s]+\s/,'')+'</span>' +
+          '<span class="rc-badge" style="background:var(--bg2);color:var(--text-2);">'+groups[cat].length+'</span>' +
         '</div>' +
-        '<div class="fridge-items">';
-    items.forEach(function (item) {
-      html += buildFridgeCard(item);
-    });
-    html += '</div></div>';
+        '<div class="fridge-items">' +
+          groups[cat].map(function(item){
+            var sid   = safeid(item.name);
+            var step  = getStep(item.unit);
+            var qty   = typeof item.quantity==='number' ? item.quantity : 0;
+            var warn  = qty <= step ? ' style="border:1.5px solid var(--warn);"' : '';
+            return '<div class="fridge-card"'+warn+'>' +
+              '<div class="fridge-icon">'+item.icon+'</div>' +
+              '<div class="fridge-name">'+item.name+'</div>' +
+              '<div class="fridge-qty" onclick="openQtyEditor(\''+escQ(item.name)+'\')" style="cursor:pointer;" title="Modifica quantità">'+
+                qty+' <span style="font-size:.75em;opacity:.7;">'+item.unit+'</span>' +
+              '</div>' +
+              '<div style="display:flex;gap:4px;justify-content:center;margin-top:6px;">' +
+                '<button class="qty-btn minus" onclick="adjustQty(\''+escQ(item.name)+'\',-'+step+')">−</button>' +
+                '<button class="qty-btn plus"  onclick="adjustQty(\''+escQ(item.name)+'\','+step+')">+</button>' +
+              '</div>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>';
   });
 
   el.innerHTML = html;
+  updateSavedFridgesList();
 }
 
-/* ============================================================
-   CARD FRIGO
-   ============================================================ */
-function buildFridgeCard(item) {
-  if (!isValidItem(item)) return '';
-  var name     = item.name;
-  var qty      = typeof item.quantity === 'number' ? item.quantity : 0;
-  var unit     = item.unit || 'g';
-  var icon     = item.icon || getCategoryIcon(item.category);
-  var isCustom = item.isCustom || false;
-  var sid      = safeid(name);
-  var en       = escQ(name);
-
-  return (
-    '<div class="fridge-item" id="fc_' + sid + '">' +
-      /* Icona categoria */
-      '<div class="fridge-item-icon">' + icon + '</div>' +
-      /* Nome + delete (solo custom) */
-      '<div class="fridge-item-name">' +
-        name +
-        (isCustom
-          ? ' <button class="fridge-delete-btn" onclick="deleteFridgeItem(event,\'' + en + '\')" title="Rimuovi">✕</button>'
-          : '') +
-      '</div>' +
-      /* Quantità — cliccabile per input diretto */
-      '<div class="fridge-item-qty" ' +
-           'onclick="openQtyEditor(\'' + en + '\')" ' +
-           'title="Tocca per modificare" ' +
-           'style="cursor:pointer">' +
-        '<span id="fqty_' + sid + '">' + qty + '</span> ' + unit +
-      '</div>' +
-      /* Bottoni +/- */
-      '<div class="fridge-qty-btns">' +
-        '<button class="qty-btn" onclick="adjustQty(\'' + en + '\',-1)">−</button>' +
-        '<button class="qty-btn" onclick="adjustQty(\'' + en + '\',1)">＋</button>' +
-      '</div>' +
-    '</div>'
-  );
+/* ── MODIFICA QUANTITÀ ── */
+function openQtyEditor(name) {
+  var modal = document.getElementById('qtyEditorModal');
+  var lbl   = document.getElementById('qtyEditorLabel');
+  var inp   = document.getElementById('qtyEditorInput');
+  var sel   = document.getElementById('qtyEditorUnit');
+  if (!modal||!inp) return;
+  var item  = (pantryItems && pantryItems[name]) ? pantryItems[name] : {};
+  if (lbl) lbl.textContent = name;
+  inp.value = item.quantity||0;
+  if (sel) sel.value = item.unit||'g';
+  inp.dataset.name = name;
+  modal.classList.add('active');
+  setTimeout(function(){ inp.focus(); inp.select(); }, 100);
 }
 
-/* ============================================================
-   AZIONI QUANTITÀ
-   ============================================================ */
+function confirmQtyEdit() {
+  var inp  = document.getElementById('qtyEditorInput');
+  var sel  = document.getElementById('qtyEditorUnit');
+  var modal= document.getElementById('qtyEditorModal');
+  if (!inp) return;
+  var name = inp.dataset.name;
+  var val  = parseFloat(inp.value);
+  if (!name || isNaN(val) || val < 0) return;
+  if (!pantryItems[name]) pantryItems[name] = {};
+  pantryItems[name].quantity = val;
+  if (sel) pantryItems[name].unit = sel.value;
+  saveData();
+  if (modal) modal.classList.remove('active');
+  renderFridge();
+}
+
 function adjustQty(name, delta) {
   if (!isValidPantryKey(name)) return;
-  initPantryItem(name);
-  var step = getStep(pantryItems[name].unit || 'g');
-  pantryItems[name].quantity = Math.max(
-    0,
-    Math.round(((pantryItems[name].quantity || 0) + delta * step) * 100) / 100
-  );
-  saveData();
-  /* Aggiorna card in-place; se qty = 0 ri-renderizza tutto */
-  if (pantryItems[name].quantity <= 0) {
-    renderFridge();
-  } else {
-    updateFridgeCardInPlace(name);
-  }
-  /* Aggiorna suggerimenti frigo nel tab Piano se aperto */
-  if (typeof updateFridgeSuggestions === 'function') updateFridgeSuggestions();
-}
-
-function setQty(name, val) {
-  if (!isValidPantryKey(name)) return;
-  initPantryItem(name);
-  var qty = Math.max(0, parseFloat(val) || 0);
-  pantryItems[name].quantity = Math.round(qty * 100) / 100;
-  saveData();
-  if (pantryItems[name].quantity <= 0) {
-    renderFridge();
-  } else {
-    updateFridgeCardInPlace(name);
-  }
-}
-
-function setUnit(name, unit) {
-  if (!isValidPantryKey(name)) return;
-  initPantryItem(name);
-  pantryItems[name].unit = unit;
-  saveData();
-}
-
-function initPantryItem(name) {
-  if (!isValidPantryKey(name)) return;
-  if (typeof pantryItems === 'undefined') return;
-  if (!pantryItems[name]) {
-    var found = getAllPantryItems().find(function (i) { return i.name === name; });
-    pantryItems[name] = {
-      quantity: 0,
-      unit:     found ? found.unit     : 'g',
-      category: found ? found.category : '🧂 Altro',
-      icon:     found ? found.icon     : '🧂',
-      isCustom: false
-    };
-  }
-}
-
-/* Aggiorna solo il display della quantità nella card esistente */
-function updateFridgeCardInPlace(name) {
-  var sid  = safeid(name);
-  var el   = document.getElementById('fqty_' + sid);
-  if (!el) { renderFridge(); return; }
-  var pd   = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) ? pantryItems[name] : {};
-  var qty  = typeof pd.quantity === 'number' ? pd.quantity : 0;
-  el.textContent = qty;
-}
-
-/* Compatibilità con il vecchio nome usato in app.js */
-function updatePantryCardInPlace(name) { updateFridgeCardInPlace(name); }
-
-/* ============================================================
-   EDITOR QUANTITÀ (tap sulla qty)
-   ============================================================ */
-var _qtyEditorTarget = null;
-
-function openQtyEditor(name) {
-  _qtyEditorTarget = name;
-  var pd   = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) ? pantryItems[name] : {};
-  var qty  = typeof pd.quantity === 'number' ? pd.quantity : 0;
-  var unit = pd.unit || 'g';
-
-  var titleEl = document.getElementById('qtyEditorTitle');
-  var qtyEl   = document.getElementById('qtyEditorValue');
-  var unitEl  = document.getElementById('qtyEditorUnit');
-
-  if (titleEl) titleEl.textContent = '✏️ ' + name;
-  if (qtyEl)   qtyEl.value  = qty;
-
-  if (unitEl) {
-    var units = ['g','ml','pz','fette','cucchiai','cucchiaini','porzione','kg','l'];
-    unitEl.innerHTML = units.map(function (u) {
-      return '<option value="' + u + '"' + (unit === u ? ' selected' : '') + '>' + u + '</option>';
-    }).join('');
-  }
-
-  var m = document.getElementById('qtyEditorModal');
-  if (m) {
-    m.classList.add('active');
-    setTimeout(function() { if (qtyEl) { qtyEl.select(); } }, 80);
-  }
-}
-
-function closeQtyEditor() {
-  var m = document.getElementById('qtyEditorModal');
-  if (m) m.classList.remove('active');
-  _qtyEditorTarget = null;
-}
-
-function confirmQtyEditor() {
-  var name  = _qtyEditorTarget;
-  var qtyEl = document.getElementById('qtyEditorValue');
-  var unitEl= document.getElementById('qtyEditorUnit');
-  if (!name) { closeQtyEditor(); return; }
-  var qty  = parseFloat(qtyEl  ? qtyEl.value  : 0) || 0;
-  var unit = unitEl ? unitEl.value : 'g';
-  initPantryItem(name);
-  pantryItems[name].quantity = Math.max(0, Math.round(qty * 100) / 100);
-  pantryItems[name].unit     = unit;
-  saveData();
-  closeQtyEditor();
-  if (pantryItems[name].quantity <= 0) {
-    renderFridge();
-  } else {
-    updateFridgeCardInPlace(name);
-  }
-}
-
-/* ============================================================
-   RIMOZIONE INGREDIENTE
-   ============================================================ */
-function deleteFridgeItem(e, name) {
-  e.stopPropagation();
-  if (!confirm('Rimuovere "' + name + '" dal frigo?')) return;
-  if (typeof pantryItems !== 'undefined' && pantryItems[name]) {
-    delete pantryItems[name];
-  }
-  if (typeof customIngredients !== 'undefined' && Array.isArray(customIngredients)) {
-    customIngredients = customIngredients.filter(function (i) { return i.name !== name; });
-  }
+  if (!pantryItems[name]) pantryItems[name] = { quantity:0, unit:'g' };
+  var cur  = typeof pantryItems[name].quantity==='number' ? pantryItems[name].quantity : 0;
+  var next = Math.max(0, Math.round((cur + delta) * 100) / 100);
+  pantryItems[name].quantity = next;
   saveData();
   renderFridge();
-  if (typeof initIngredientiDatalist === 'function') initIngredientiDatalist();
 }
 
-/* Compatibilità vecchio nome */
-function deleteCustomIng(name) {
-  deleteFridgeItem({ stopPropagation: function(){} }, name);
+/* ── AGGIUNGI DA SPESA ── */
+function addFromSpesa(name, qty, unit) {
+  if (!isValidPantryKey(name)) return;
+  if (!pantryItems[name]) pantryItems[name] = { quantity:0, unit: unit||'g', category:'🧂 Altro' };
+  var cur = typeof pantryItems[name].quantity==='number' ? pantryItems[name].quantity : 0;
+  pantryItems[name].quantity = Math.round((cur + parseFloat(qty||0)) * 100) / 100;
+  if (unit) pantryItems[name].unit = unit;
+  saveData();
+  renderFridge();
 }
 
-/* ============================================================
-   AGGIUNGI INGREDIENTE
-   ============================================================ */
-function openCustomIngModal() {
-  var m = document.getElementById('customIngModal');
-  if (!m) return;
-  var nameEl = document.getElementById('customIngName');
-  var catEl  = document.getElementById('customIngCategory');
-  var unitEl = document.getElementById('customIngUnit');
-  var qtyEl  = document.getElementById('customIngQty');
-  if (nameEl) { nameEl.value = ''; nameEl.focus(); }
-  if (catEl)  catEl.value  = '';
-  if (unitEl) unitEl.value = 'g';
-  if (qtyEl)  qtyEl.value  = '';
-  m.classList.add('active');
-}
-
-function closeCustomIngModal() {
-  var m = document.getElementById('customIngModal');
-  if (m) m.classList.remove('active');
-}
-
-function addCustomIngredient() {
-  var nameEl = document.getElementById('customIngName');
-  var catEl  = document.getElementById('customIngCategory');
-  var unitEl = document.getElementById('customIngUnit');
-  var qtyEl  = document.getElementById('customIngQty');
-
-  var name = (nameEl ? nameEl.value : '').trim();
-  var cat  = catEl  ? catEl.value  : '🧂 Altro';
-  var unit = unitEl ? unitEl.value : 'g';
+/* ── AGGIUNGI INGREDIENTE MANUALE ── */
+function submitAddIngredient() {
+  var nameEl = document.getElementById('addIngName');
+  var catEl  = document.getElementById('addIngCategory');
+  var qtyEl  = document.getElementById('addIngQty');
+  var unitEl = document.getElementById('addIngUnit');
+  var errEl  = document.getElementById('addIngError');
+  if (!nameEl) return;
+  var name = nameEl.value.trim();
+  var cat  = catEl ? catEl.value : '';
   var qty  = parseFloat(qtyEl ? qtyEl.value : 0) || 0;
-
-  if (!name) { alert("Inserisci il nome dell'ingrediente."); return; }
-  if (!cat)  { alert("Seleziona una categoria."); return; }
-
-  var icon = getCategoryIcon(cat);
-
-  /* Verifica duplicato */
-  var nl   = name.toLowerCase();
-  var dup  = getAllPantryItems().some(function (i) {
-    return isValidItem(i) && i.name.toLowerCase() === nl;
-  });
-  if (dup && qty === 0) {
-    /* Esiste già ma qty = 0: porta qty a 1 */
-    var existing = getAllPantryItems().find(function (i) { return i.name.toLowerCase() === nl; });
-    if (existing) {
-      initPantryItem(existing.name);
-      pantryItems[existing.name].quantity = 1;
-      saveData();
-      closeCustomIngModal();
-      renderFridge();
-      return;
-    }
+  var unit = unitEl ? unitEl.value : 'g';
+  if (!name) { if (errEl) errEl.textContent='Inserisci il nome.'; return; }
+  if (!cat)  { if (errEl) errEl.textContent='Seleziona una categoria.'; return; }
+  if (errEl) errEl.textContent = '';
+  if (!pantryItems[name]) pantryItems[name] = {};
+  pantryItems[name].quantity = (pantryItems[name].quantity||0) + qty;
+  pantryItems[name].unit     = unit;
+  pantryItems[name].category = cat;
+  pantryItems[name].icon     = getCategoryIcon(cat);
+  if (!customIngredients.find(function(i){ return i.name===name; })) {
+    customIngredients.push({ name:name, unit:unit, category:cat, icon:getCategoryIcon(cat) });
   }
-
-  /* Crea nuovo */
-  if (!dup) {
-    if (!Array.isArray(customIngredients)) customIngredients = [];
-    customIngredients.push({ name: name, category: cat, unit: unit, icon: icon });
-  }
-  if (typeof pantryItems !== 'undefined') {
-    if (!pantryItems[name]) {
-      pantryItems[name] = { quantity: qty, unit: unit, category: cat, icon: icon, isCustom: true };
-    } else {
-      pantryItems[name].quantity = (pantryItems[name].quantity || 0) + qty;
-      if (qty > 0) pantryItems[name].unit = unit;
-    }
-  }
-
   saveData();
-  closeCustomIngModal();
+  var modal = document.getElementById('addIngModal');
+  if (modal) modal.classList.remove('active');
+  if (nameEl) nameEl.value='';
+  if (qtyEl)  qtyEl.value='';
   renderFridge();
-  if (typeof initIngredientiDatalist === 'function') initIngredientiDatalist();
+  updateIngredientDatalist();
 }
 
-/* ============================================================
-   FILTRO RICERCA
-   ============================================================ */
-function filterPantry(query) {
-  pantrySearchQuery = (query || '').trim().toLowerCase();
-  renderFridge();
+/* ── FRIGO SALVATI ── */
+function updateSavedFridgesList() {
+  var el = document.getElementById('savedFridgesContent2');
+  if (!el) return;
+  var keys = Object.keys(savedFridges||{});
+  if (!keys.length) {
+    el.innerHTML = '<p style="color:var(--text-3);font-size:.9em;padding:8px 0;">Nessuna configurazione salvata.</p>';
+    return;
+  }
+  el.innerHTML = keys.map(function(k){
+    var f = savedFridges[k];
+    var n = Object.keys(f.items||{}).length;
+    return '<div class="rc-card" style="display:flex;align-items:center;gap:10px;padding:12px 16px;margin-bottom:8px;">' +
+      '<span style="flex:1;font-weight:500;">'+k+'</span>' +
+      '<span class="rc-badge">'+n+' ing.</span>' +
+      '<button class="rc-btn-icon" title="Carica" onclick="loadFridge(\''+escQ(k)+'\')">📥</button>' +
+      '<button class="rc-btn-icon" title="Elimina" onclick="deleteFridge(\''+escQ(k)+'\')">🗑️</button>' +
+    '</div>';
+  }).join('');
 }
 
-function clearPantrySearch() {
-  var inp = document.getElementById('pantrySearch');
-  if (inp) inp.value = '';
-  filterPantry('');
-}
-
-/* ============================================================
-   FRIGO SALVATI  (config complete)
-   ============================================================ */
-function openSaveFridgeModal() {
-  var m = document.getElementById('saveFridgeModal');
-  if (!m) return;
-  var inp = document.getElementById('fridgeName');
-  if (inp) inp.value = '';
-  m.classList.add('active');
-  setTimeout(function() { if (inp) inp.focus(); }, 80);
-}
-
-function closeSaveFridgeModal() {
-  var m = document.getElementById('saveFridgeModal');
-  if (m) m.classList.remove('active');
-}
-
-function saveFridge() {
-  var name = (document.getElementById('fridgeName').value || '').trim();
+function saveFridgeConfig() {
+  var modal = document.getElementById('saveFridgeModal');
+  var inp   = document.getElementById('saveFridgeName');
+  if (!inp) return;
+  var name = inp.value.trim();
   if (!name) { alert('Inserisci un nome.'); return; }
-  if (typeof savedFridges === 'undefined') return;
-  savedFridges[name] = {
-    items: JSON.parse(JSON.stringify(typeof pantryItems !== 'undefined' ? pantryItems : {})),
-    date:  new Date().toLocaleDateString('it-IT')
-  };
+  if (!savedFridges) savedFridges = {};
+  savedFridges[name] = { items: JSON.parse(JSON.stringify(pantryItems||{})), savedAt: new Date().toISOString() };
   saveData();
-  closeSaveFridgeModal();
-  updateSavedFridges();
+  if (modal) modal.classList.remove('active');
+  if (inp) inp.value = '';
+  updateSavedFridgesList();
 }
 
 function loadFridge(name) {
-  if (typeof savedFridges === 'undefined' || !savedFridges[name]) return;
-  if (!confirm('Caricare "' + name + '"? Il frigo attuale sarà sovrascritto.')) return;
-  if (typeof pantryItems !== 'undefined') {
-    pantryItems = JSON.parse(JSON.stringify(savedFridges[name].items || {}));
+  if (!confirm('Caricare "'+name+'"? Sostituirà il frigo attuale.')) return;
+  if (savedFridges && savedFridges[name]) {
+    pantryItems = JSON.parse(JSON.stringify(savedFridges[name].items||{}));
+    saveData();
+    renderFridge();
   }
-  saveData();
-  renderFridge();
-  if (typeof updateFridgeSuggestions === 'function') updateFridgeSuggestions();
-  updateSavedFridges();
 }
 
 function deleteFridge(name) {
-  if (!confirm('Eliminare "' + name + '"?')) return;
-  if (typeof savedFridges !== 'undefined') delete savedFridges[name];
+  if (!confirm('Eliminare "'+name+'"?')) return;
+  delete savedFridges[name];
   saveData();
-  updateSavedFridges();
+  updateSavedFridgesList();
 }
 
-/* ============================================================
-   DATALIST AUTOCOMPLETE
-   ============================================================ */
-function initIngredientiDatalist() {
+/* ── RICERCA ── */
+function searchPantry(q) {
+  pantrySearchQuery = (q||'').trim().toLowerCase();
+  renderFridge();
+}
+
+/* ── DATALIST ── */
+function updateIngredientDatalist() {
   var dl = document.getElementById('ingredientiDatalist');
   if (!dl) return;
-  dl.innerHTML = getAllPantryItems()
-    .filter(function (i) { return isValidItem(i); })
-    .map(function (i) {
-      return '<option value="' + i.name.replace(/"/g,'&quot;') + '">';
-    }).join('');
-}
-
-/* ============================================================
-   DISPONIBILITÀ INGREDIENTE (usata da piano.js)
-   ============================================================ */
-function checkIngredientAvailability(item) {
-  if (!isValidItem(item)) return { sufficient: false, matched: false, available: 0, availableUnit: 'g' };
-  var name  = item.name.toLowerCase().trim();
-  var reqQty  = item.quantity || 0;
-  var reqUnit = item.unit || 'g';
-
-  /* Cerca corrispondenza */
-  var matchKey = null;
-  if (typeof pantryItems !== 'undefined' && pantryItems) {
-    Object.keys(pantryItems).forEach(function (k) {
-      if (!isValidPantryKey(k)) return;
-      var kl = k.toLowerCase().trim();
-      if (kl === name || kl.includes(name) || name.includes(kl)) {
-        if (!matchKey || k.toLowerCase() === name) matchKey = k;
-      }
-    });
-  }
-
-  if (!matchKey) return { sufficient: false, matched: false, available: 0, availableUnit: reqUnit };
-
-  var pd  = pantryItems[matchKey];
-  var avail = typeof pd.quantity === 'number' ? pd.quantity : 0;
-  var availUnit = pd.unit || reqUnit;
-
-  if (reqQty <= 0) return { sufficient: avail > 0, matched: avail > 0, available: avail, availableUnit: availUnit };
-
-  var conv = convertUnit(avail, availUnit, reqUnit);
-  var avComparable = conv !== null ? conv : avail;
-  return {
-    sufficient:    avComparable >= reqQty,
-    matched:       avail > 0,
-    available:     avail,
-    availableUnit: availUnit
-  };
-}
-
-/* ============================================================
-   CONVERSIONE UNITÀ
-   ============================================================ */
-function convertUnit(value, fromUnit, toUnit) {
-  if (!fromUnit || !toUnit || fromUnit === toUnit) return value;
-  var conv = { kg: { g: 1000 }, g: { kg: 0.001 }, l: { ml: 1000 }, ml: { l: 0.001 } };
-  if (conv[fromUnit] && conv[fromUnit][toUnit] !== undefined) {
-    return Math.round(value * conv[fromUnit][toUnit] * 10000) / 10000;
-  }
-  return null;
+  var all = getAllPantryItems().map(function(i){ return i.name; });
+  dl.innerHTML = all.map(function(n){ return '<option value="'+escQ(n)+'">'; }).join('');
 }
