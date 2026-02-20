@@ -7,39 +7,41 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="NutriPlan" />
-  <meta name="theme-color" content="#1c4434" />
+  <meta id="metaThemeColor" name="theme-color" content="#1c4434" />
   <title>NutriPlan</title>
-  <link rel="manifest" href="manifest.json" />
+  <link id="manifest-placeholder" rel="manifest" href="data:application/json,{}" />
+  <link id="appleTouchIcon" rel="apple-touch-icon" href="" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap"
+        rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════
-     LANDING PAGE
-══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════
+     LANDING
+══════════════════════════════════════════════ -->
 <div id="landingPage">
-  <div id="landingLogo">🥗</div>
+  <div id="landingLogo">🌿</div>
   <h1 class="landing-title">NutriPlan</h1>
   <p class="landing-sub">Il tuo piano alimentare personale</p>
   <button class="btn btn-primary btn-large" onclick="startApp()">▶ Inizia</button>
 </div>
 
-<!-- ══════════════════════════════════════════
+<!-- ══════════════════════════════════════════════
      APP SHELL
-══════════════════════════════════════════ -->
+══════════════════════════════════════════════ -->
 <div id="appShell" style="display:none;">
 
-  <!-- HEADER -->
+  <!-- ═══ HEADER ═══ -->
   <header class="app-header">
     <div class="app-inner">
 
       <!-- Sinistra: logo + titolo -->
       <div class="header-left">
-        <img id="headerIcon" src="icon-192.png" width="32" height="32"
-             alt="NutriPlan" onerror="this.style.display='none'" />
+        <canvas id="headerIcon" width="32" height="32"
+                style="border-radius:8px;flex-shrink:0;"></canvas>
         <span class="header-title">NutriPlan</span>
       </div>
 
@@ -52,28 +54,37 @@
 
       <!-- Destra: tema + auth -->
       <div class="header-right">
-        <button class="btn-icon-only" onclick="toggleTheme()" title="Cambia tema" aria-label="Cambia tema">
-          🌙
-        </button>
-        <div id="authUserPill" class="auth-user-pill" onclick="openAuthModal()" style="display:none;">
-          <img id="authAvatar" class="auth-avatar" src="" alt="Avatar" />
+        <button class="btn-icon-only"
+                data-theme-toggle
+                onclick="toggleTheme()"
+                title="Cambia tema"
+                aria-label="Cambia tema">🌙</button>
+
+        <!-- Pill utente loggato -->
+        <div id="authUserPill" class="auth-user-pill"
+             onclick="openAuthModal()" style="display:none;">
+          <img id="authAvatar" class="auth-avatar" src="" alt="Avatar"
+               onerror="this.style.display='none'" />
           <span id="authUserName" class="auth-info">Utente</span>
         </div>
-        <button id="authLoginBtn" class="btn-icon-only" onclick="openAuthModal()" title="Accedi" aria-label="Accedi">
-          👤
-        </button>
+
+        <!-- Bottone login (se non loggato) -->
+        <button id="authLoginBtn" class="btn-icon-only"
+                onclick="openAuthModal()"
+                title="Accedi" aria-label="Accedi">👤</button>
       </div>
+
     </div>
   </header>
 
-  <!-- SIDEBAR (desktop) -->
+  <!-- ═══ SIDEBAR desktop ═══ -->
   <nav class="sidebar-nav" id="sidebarNav">
     <div class="sidebar-section-label">Piano</div>
-    <button class="nav-tab active" data-page="piano" onclick="switchPage('piano')">
+    <button class="nav-tab active" data-page="piano"   onclick="switchPage('piano')">
       <span class="nav-icon">🏠</span>
       <span class="nav-label">Piano</span>
     </button>
-    <button class="nav-tab" data-page="pantry" onclick="switchPage('pantry')">
+    <button class="nav-tab" data-page="pantry"  onclick="switchPage('pantry')">
       <span class="nav-icon">❄️</span>
       <span class="nav-label">Frigo</span>
     </button>
@@ -86,11 +97,11 @@
       <span class="nav-icon">📅</span>
       <span class="nav-label">Storico</span>
     </button>
-    <button class="nav-tab" data-page="spesa" onclick="switchPage('spesa')">
+    <button class="nav-tab" data-page="spesa"   onclick="switchPage('spesa')">
       <span class="nav-icon">🛒</span>
       <span class="nav-label">Spesa</span>
     </button>
-    <button class="nav-tab" data-page="stats" onclick="switchPage('stats')">
+    <button class="nav-tab" data-page="stats"   onclick="switchPage('stats')">
       <span class="nav-icon">📊</span>
       <span class="nav-label">Stats</span>
     </button>
@@ -100,11 +111,14 @@
     </button>
   </nav>
 
-  <!-- MAIN CONTENT -->
+  <!-- ═══ MAIN CONTENT ═══ -->
   <main class="app-main">
 
-    <!-- ══ PAGINA: PIANO ══ -->
+    <!-- ────────────────────────────────────────
+         PAGINA: PIANO
+    ──────────────────────────────────────── -->
     <section id="pianoPasto" class="page active">
+
       <div class="page-header">
         <div>
           <div class="page-header-title">Il tuo piano 🍽</div>
@@ -115,16 +129,21 @@
         </div>
       </div>
 
-      <!-- Tab interno piano -->
+      <!-- Tab interni piano -->
       <div class="page-tabs" id="pianoTabs">
-        <button class="page-tab active" data-tab="pasto"        onclick="switchPianoTab('pasto')">🍽 Pasto</button>
-        <button class="page-tab"        data-tab="frigo-piano"  onclick="switchPianoTab('frigo-piano')">❄️ Frigo</button>
-        <button class="page-tab"        data-tab="ingredienti"  onclick="switchPianoTab('ingredienti')">🌿 Ingredienti</button>
-        <button class="page-tab"        data-tab="limiti"       onclick="switchPianoTab('limiti')">📊 Limiti</button>
+        <button class="page-tab active" data-tab="pasto"
+                onclick="switchPianoTab('pasto')">🍽 Pasto</button>
+        <button class="page-tab" data-tab="frigo-piano"
+                onclick="switchPianoTab('frigo-piano')">❄️ Frigo</button>
+        <button class="page-tab" data-tab="ingredienti"
+                onclick="switchPianoTab('ingredienti')">🌿 Ingredienti</button>
+        <button class="page-tab" data-tab="limiti"
+                onclick="switchPianoTab('limiti')">📊 Limiti</button>
       </div>
 
-      <!-- Tab: Pasto -->
+      <!-- ── TAB: Pasto ── -->
       <div class="page-tab-content active" id="tab-pasto">
+
         <!-- Calendario -->
         <div class="calendar-wrap">
           <div class="calendar-bar-wrap">
@@ -133,61 +152,54 @@
           <div class="current-date-label" id="selectedDateLabel"></div>
         </div>
 
-        <!-- Progresso pasti -->
-        <div id="mealProgressWrap" class="meal-progress-wrap" style="display:none;">
-          <div class="progress-block">
-            <div class="progress-block-header">
-              <span class="progress-label">Pasti completati oggi</span>
-              <span class="progress-value" id="mealProgressVal">0/5</span>
-            </div>
-            <div class="progress-track">
-              <div class="progress-fill" id="mealProgressBar" style="width:0%"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Riepilogo veloce pasti completati -->
-        <div id="mealSummaryCard" class="card" style="margin-bottom:16px;">
+        <!-- Riepilogo pasti completati -->
+        <div class="card" style="margin-bottom:16px;padding:12px 16px;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <span style="font-size:.84rem;font-weight:700;">Pasti completati oggi</span>
             <span class="pill pill-primary" id="mealSummaryCount">0 / 5</span>
           </div>
         </div>
 
-        <!-- Selettore pasto -->
+        <!-- Selettore pasto — scrollabile -->
         <div class="meal-selector" id="mealSelector">
-          <button class="meal-btn active" data-meal="colazione" onclick="selectMeal('colazione')">
+          <button class="meal-btn active" data-meal="colazione"
+                  onclick="selectMeal('colazione')">
             <span class="meal-btn-icon">☀️</span>
             <span class="meal-btn-label">Colazione</span>
             <span class="meal-btn-count" id="cnt-colazione">0</span>
           </button>
-          <button class="meal-btn" data-meal="spuntino" onclick="selectMeal('spuntino')">
+          <button class="meal-btn" data-meal="spuntino"
+                  onclick="selectMeal('spuntino')">
             <span class="meal-btn-icon">🍎</span>
             <span class="meal-btn-label">Spuntino</span>
             <span class="meal-btn-count" id="cnt-spuntino">0</span>
           </button>
-          <button class="meal-btn" data-meal="pranzo" onclick="selectMeal('pranzo')">
+          <button class="meal-btn" data-meal="pranzo"
+                  onclick="selectMeal('pranzo')">
             <span class="meal-btn-icon">🍽</span>
             <span class="meal-btn-label">Pranzo</span>
             <span class="meal-btn-count" id="cnt-pranzo">0</span>
           </button>
-          <button class="meal-btn" data-meal="merenda" onclick="selectMeal('merenda')">
+          <button class="meal-btn" data-meal="merenda"
+                  onclick="selectMeal('merenda')">
             <span class="meal-btn-icon">🥪</span>
             <span class="meal-btn-label">Merenda</span>
             <span class="meal-btn-count" id="cnt-merenda">0</span>
           </button>
-          <button class="meal-btn" data-meal="cena" onclick="selectMeal('cena')">
+          <button class="meal-btn" data-meal="cena"
+                  onclick="selectMeal('cena')">
             <span class="meal-btn-icon">🌙</span>
             <span class="meal-btn-label">Cena</span>
             <span class="meal-btn-count" id="cnt-cena">0</span>
           </button>
         </div>
 
-        <!-- Contenuto pasto selezionato -->
+        <!-- Contenuto pasto -->
         <div id="mealContent"></div>
-      </div>
 
-      <!-- Tab: Frigo (nel piano) -->
+      </div><!-- /tab-pasto -->
+
+      <!-- ── TAB: Frigo nel piano ── -->
       <div class="page-tab-content" id="tab-frigo-piano">
         <div class="section-header">
           <div>
@@ -198,22 +210,24 @@
         <div id="fridgeRecipesContent"></div>
       </div>
 
-      <!-- Tab: Ingredienti -->
+      <!-- ── TAB: Ingredienti ── -->
       <div class="page-tab-content" id="tab-ingredienti">
         <div class="section-header">
           <div>
             <div class="section-title">🌿 Ingredienti del giorno</div>
             <div class="section-subtitle">Tutti gli ingredienti nel piano odierno</div>
           </div>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-secondary btn-small" onclick="saveFridgeConfig()">💾 Salva</button>
-            <button class="btn btn-secondary btn-small" onclick="openSavedFridgeModal()">📁 Frigo salvati</button>
+          <div style="display:flex;gap:8px;flex-shrink:0;">
+            <button class="btn btn-secondary btn-small"
+                    onclick="saveFridgeConfig()">💾 Salva</button>
+            <button class="btn btn-secondary btn-small"
+                    onclick="openSavedFridgeModal()">📁 Frigo salvati</button>
           </div>
         </div>
         <div id="ingredientiContent"></div>
       </div>
 
-      <!-- Tab: Limiti -->
+      <!-- ── TAB: Limiti ── -->
       <div class="page-tab-content" id="tab-limiti">
         <div class="section-header">
           <div>
@@ -223,38 +237,51 @@
         </div>
         <div id="limitiContent"></div>
       </div>
-    </section>
 
-    <!-- ══ PAGINA: FRIGO ══ -->
+    </section><!-- /pianoPasto -->
+
+    <!-- ────────────────────────────────────────
+         PAGINA: FRIGO
+    ──────────────────────────────────────── -->
     <section id="pantryPage" class="page">
+
       <div class="page-header">
         <div>
           <div class="page-header-title">❄️ Frigo</div>
           <div class="page-header-sub">Ingredienti disponibili</div>
         </div>
         <div class="page-header-actions">
-          <button class="btn btn-secondary btn-small" onclick="openSavedFridgeModal()">📁 Salvati</button>
-          <button class="btn btn-primary btn-small"   onclick="openAddFridgeModal()">➕ Aggiungi</button>
+          <button class="btn btn-secondary btn-small"
+                  onclick="openSavedFridgeModal()">📁 Salvati</button>
+          <button class="btn btn-primary btn-small"
+                  onclick="openAddFridgeModal()">➕ Aggiungi</button>
         </div>
       </div>
 
-      <!-- Barra ricerca -->
+      <!-- Ricerca -->
       <div class="search-bar-row">
         <div class="search-input-wrap">
           <span class="search-icon">🔍</span>
-          <input type="search" id="pantrySearch" placeholder="Cerca ingrediente…"
+          <input type="search" id="pantrySearch"
+                 placeholder="Cerca ingrediente o categoria…"
                  oninput="filterPantry(this.value)"
                  onsearch="filterPantry(this.value)" />
-          <button class="search-clear-btn" onclick="clearPantrySearch()" aria-label="Cancella ricerca">✕</button>
+          <button class="search-clear-btn"
+                  onclick="clearPantrySearch()"
+                  aria-label="Cancella ricerca">✕</button>
         </div>
       </div>
 
-      <!-- Lista ingredienti frigo -->
+      <!-- Lista frigo — popolata da dispensa.js -->
       <div id="pantryContent"></div>
-    </section>
 
-    <!-- ══ PAGINA: RICETTE ══ -->
+    </section><!-- /pantryPage -->
+
+    <!-- ────────────────────────────────────────
+         PAGINA: RICETTE
+    ──────────────────────────────────────── -->
     <section id="ricettePage" class="page">
+
       <div class="page-header">
         <div>
           <div class="page-header-title">📖 Ricette</div>
@@ -263,8 +290,10 @@
       </div>
 
       <div class="page-tabs" id="ricetteTabs">
-        <button class="page-tab active" data-tab="catalogo"  onclick="switchRicetteTab('catalogo')">📖 Catalogo</button>
-        <button class="page-tab"        data-tab="mie"       onclick="switchRicetteTab('mie')">⭐ Le mie</button>
+        <button class="page-tab active" data-tab="catalogo"
+                onclick="switchRicetteTab('catalogo')">📖 Catalogo</button>
+        <button class="page-tab" data-tab="mie"
+                onclick="switchRicetteTab('mie')">⭐ Le mie</button>
       </div>
 
       <!-- Tab: Catalogo -->
@@ -273,18 +302,23 @@
         <div id="ricetteContent"></div>
       </div>
 
-      <!-- Tab: Le mie -->
+      <!-- Tab: Le mie ricette -->
       <div class="page-tab-content" id="tab-mie">
         <div class="section-header">
           <div class="section-title">⭐ Le mie ricette</div>
-          <button class="btn btn-primary btn-small" onclick="openNewRicettaModal()">＋ Nuova</button>
+          <button class="btn btn-primary btn-small"
+                  onclick="openNewRicettaModal()">＋ Nuova</button>
         </div>
         <div id="customRicetteContent"></div>
       </div>
-    </section>
 
-    <!-- ══ PAGINA: STORICO ══ -->
+    </section><!-- /ricettePage -->
+
+    <!-- ────────────────────────────────────────
+         PAGINA: STORICO
+    ──────────────────────────────────────── -->
     <section id="storicoPage" class="page">
+
       <div class="page-header">
         <div>
           <div class="page-header-title">📅 Storico pasti</div>
@@ -292,25 +326,35 @@
         </div>
       </div>
       <div id="storicoContent"></div>
+
     </section>
 
-    <!-- ══ PAGINA: SPESA ══ -->
+    <!-- ────────────────────────────────────────
+         PAGINA: SPESA
+    ──────────────────────────────────────── -->
     <section id="spesaPage" class="page">
+
       <div class="page-header">
         <div>
           <div class="page-header-title">🛒 Lista spesa</div>
           <div class="page-header-sub">Cosa comprare</div>
         </div>
         <div class="page-header-actions">
-          <button class="btn btn-secondary btn-small" onclick="clearCompletedSpesa()">🗑 Pulisci</button>
-          <button class="btn btn-primary btn-small"   onclick="openAddSpesaModal()">➕ Aggiungi</button>
+          <button class="btn btn-secondary btn-small"
+                  onclick="clearCompletedSpesa ? clearCompletedSpesa() : null">🗑 Pulisci</button>
+          <button class="btn btn-primary btn-small"
+                  onclick="openAddSpesaModal ? openAddSpesaModal() : null">➕ Aggiungi</button>
         </div>
       </div>
       <div id="spesaContent"></div>
+
     </section>
 
-    <!-- ══ PAGINA: STATS ══ -->
+    <!-- ────────────────────────────────────────
+         PAGINA: STATS
+    ──────────────────────────────────────── -->
     <section id="statsPage" class="page">
+
       <div class="page-header">
         <div>
           <div class="page-header-title">📊 Statistiche</div>
@@ -318,10 +362,14 @@
         </div>
       </div>
       <div id="statsContent"></div>
+
     </section>
 
-    <!-- ══ PAGINA: PROFILO ══ -->
+    <!-- ────────────────────────────────────────
+         PAGINA: PROFILO
+    ──────────────────────────────────────── -->
     <section id="profiloPage" class="page">
+
       <div class="page-header">
         <div>
           <div class="page-header-title">👤 Profilo</div>
@@ -329,38 +377,46 @@
         </div>
       </div>
       <div id="profiloContent"></div>
+
     </section>
 
   </main><!-- /app-main -->
 
-  <!-- BOTTOM NAV (mobile) -->
+  <!-- ═══ BOTTOM NAV mobile ═══ -->
   <nav class="bottom-nav" id="bottomNav">
     <div class="app-inner">
-      <button class="nav-tab active" data-page="piano"   onclick="switchPage('piano')">
+      <button class="nav-tab active" data-page="piano"
+              onclick="switchPage('piano')">
         <span class="nav-icon">🏠</span>
         <span class="nav-label">Piano</span>
       </button>
-      <button class="nav-tab" data-page="pantry"  onclick="switchPage('pantry')">
+      <button class="nav-tab" data-page="pantry"
+              onclick="switchPage('pantry')">
         <span class="nav-icon">❄️</span>
         <span class="nav-label">Frigo</span>
       </button>
-      <button class="nav-tab" data-page="ricette" onclick="switchPage('ricette')">
+      <button class="nav-tab" data-page="ricette"
+              onclick="switchPage('ricette')">
         <span class="nav-icon">📖</span>
         <span class="nav-label">Ricette</span>
       </button>
-      <button class="nav-tab" data-page="storico" onclick="switchPage('storico')">
+      <button class="nav-tab" data-page="storico"
+              onclick="switchPage('storico')">
         <span class="nav-icon">📅</span>
         <span class="nav-label">Storico</span>
       </button>
-      <button class="nav-tab" data-page="spesa"   onclick="switchPage('spesa')">
+      <button class="nav-tab" data-page="spesa"
+              onclick="switchPage('spesa')">
         <span class="nav-icon">🛒</span>
         <span class="nav-label">Spesa</span>
       </button>
-      <button class="nav-tab" data-page="stats"   onclick="switchPage('stats')">
+      <button class="nav-tab" data-page="stats"
+              onclick="switchPage('stats')">
         <span class="nav-icon">📊</span>
         <span class="nav-label">Stats</span>
       </button>
-      <button class="nav-tab" data-page="profilo" onclick="switchPage('profilo')">
+      <button class="nav-tab" data-page="profilo"
+              onclick="switchPage('profilo')">
         <span class="nav-icon">👤</span>
         <span class="nav-label">Profilo</span>
       </button>
@@ -369,13 +425,13 @@
 
 </div><!-- /appShell -->
 
-<!-- ══════════════════════════════════════════
+<!-- ══════════════════════════════════════════════
      MODALI
-══════════════════════════════════════════ -->
+══════════════════════════════════════════════ -->
 
-<!-- ── Ricetta dettaglio ── -->
+<!-- ── Dettaglio ricetta ── -->
 <div class="modal" id="recipeModal">
-  <div class="modal-content">
+  <div class="modal-content modal-content-large">
     <div class="modal-header">
       <h3>Ricetta</h3>
       <button class="modal-close" onclick="closeRecipeModal()">✕</button>
@@ -383,12 +439,14 @@
     <div class="modal-body" id="recipeModalBody"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeRecipeModal()">Chiudi</button>
-      <button class="btn btn-primary"   onclick="addRecipeToPlan()">✅ Aggiungi al piano</button>
+      <button class="btn btn-primary"   onclick="addRecipeToPlan && addRecipeToPlan()">
+        ✅ Aggiungi al piano
+      </button>
     </div>
   </div>
 </div>
 
-<!-- ── Salva frigo ── -->
+<!-- ── Salva configurazione frigo ── -->
 <div class="modal" id="saveFridgeModal">
   <div class="modal-content modal-content-small">
     <div class="modal-header">
@@ -398,11 +456,15 @@
     <div class="modal-body">
       <div class="form-group">
         <label>Nome configurazione</label>
-        <input type="text" id="fridgeConfigName" placeholder="Es. Frigo lunedì…" />
+        <input type="text" id="fridgeConfigName"
+               placeholder="Es. Frigo lunedì…"
+               onkeydown="if(event.key==='Enter') confirmSaveFridge()" />
       </div>
       <div style="display:flex;gap:8px;margin-top:8px;">
-        <button class="btn btn-secondary" style="flex:1;" onclick="closeSaveFridgeModal()">Annulla</button>
-        <button class="btn btn-primary"   style="flex:1;" onclick="confirmSaveFridge()">💾 Salva</button>
+        <button class="btn btn-secondary" style="flex:1;"
+                onclick="closeSaveFridgeModal()">Annulla</button>
+        <button class="btn btn-primary"   style="flex:1;"
+                onclick="confirmSaveFridge()">💾 Salva</button>
       </div>
     </div>
   </div>
@@ -415,11 +477,13 @@
       <h3>📁 Configurazioni salvate</h3>
       <button class="modal-close" onclick="closeSavedFridgeModal()">✕</button>
     </div>
-    <div class="modal-body" id="savedFridgeList"></div>
+    <div class="modal-body" id="savedFridgeList">
+      <div class="rc-empty"><p>Nessuna configurazione salvata.</p></div>
+    </div>
   </div>
 </div>
 
-<!-- ── Aggiungi al frigo ── -->
+<!-- ── Aggiungi ingrediente al frigo ── -->
 <div class="modal" id="addFridgeModal">
   <div class="modal-content modal-content-small">
     <div class="modal-header">
@@ -427,12 +491,17 @@
       <button class="modal-close" onclick="closeAddFridgeModal()">✕</button>
     </div>
     <div class="modal-body">
+
       <div class="form-group">
         <label>Ingrediente</label>
-        <input type="text" id="newFridgeItem" placeholder="Es. Pollo, Latte…"
-               list="ingredientiAutocomplete" autocomplete="off" />
+        <input type="text" id="newFridgeItem"
+               placeholder="Es. Pollo, Latte…"
+               list="ingredientiAutocomplete"
+               autocomplete="off"
+               onkeydown="if(event.key==='Enter') confirmAddFridge()" />
         <datalist id="ingredientiAutocomplete"></datalist>
       </div>
+
       <div class="form-group">
         <label>Categoria</label>
         <select id="newFridgeCategory">
@@ -447,12 +516,15 @@
           <option value="🧂 Cucina">🧂 Cucina</option>
         </select>
       </div>
-      <div style="display:flex;gap:8px;">
+
+      <div style="display:flex;gap:8px;align-items:flex-end;">
         <div class="form-group" style="flex:1;margin-bottom:0;">
-          <label>Quantità iniziale</label>
-          <input type="number" id="newFridgeQty" min="0" step="any" placeholder="0" />
+          <label>Quantità</label>
+          <input type="number" id="newFridgeQty"
+                 min="0" step="any" placeholder="0"
+                 onkeydown="if(event.key==='Enter') confirmAddFridge()" />
         </div>
-        <div class="form-group" style="width:90px;margin-bottom:0;">
+        <div class="form-group" style="width:96px;margin-bottom:0;">
           <label>Unità</label>
           <select id="newFridgeUnit">
             <option value="g">g</option>
@@ -467,42 +539,54 @@
           </select>
         </div>
       </div>
+
       <div style="display:flex;gap:8px;margin-top:20px;">
-        <button class="btn btn-secondary" style="flex:1;" onclick="closeAddFridgeModal()">Annulla</button>
-        <button class="btn btn-primary"   style="flex:1;" onclick="confirmAddFridge()">➕ Aggiungi</button>
+        <button class="btn btn-secondary" style="flex:1;"
+                onclick="closeAddFridgeModal()">Annulla</button>
+        <button class="btn btn-primary"   style="flex:1;"
+                onclick="confirmAddFridge()">➕ Aggiungi</button>
       </div>
+
     </div>
   </div>
 </div>
 
-<!-- ── Modifica quantità frigo (click su riga) ── -->
+<!-- ── Modifica quantità frigo (click su riga ingrediente) ── -->
 <div class="modal" id="editQtyModal">
   <div class="modal-content modal-content-small">
     <div class="modal-header">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span id="eqmIcon" style="font-size:1.6rem;"></span>
-        <h3 id="eqmName" style="font-size:.96rem;font-weight:800;"></h3>
+      <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+        <span id="eqmIcon" style="font-size:1.6rem;flex-shrink:0;"></span>
+        <h3 id="eqmName"
+            style="font-size:.94rem;font-weight:800;
+                   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></h3>
       </div>
       <button class="modal-close" onclick="closeQtyModal()">✕</button>
     </div>
-    <div class="modal-body" style="padding:24px 20px;">
+    <div class="modal-body" style="padding:20px;">
       <p style="font-size:.8rem;color:var(--text-light);margin-bottom:16px;">
         Inserisci la quantità manualmente
       </p>
       <div style="display:flex;align-items:center;gap:10px;">
-        <input type="number" id="eqmInput" min="0" step="any"
-               style="flex:1;font-size:1.2rem;font-weight:800;text-align:center;"
-               placeholder="0" />
+        <input type="number" id="eqmInput"
+               min="0" step="any" placeholder="0"
+               style="flex:1;font-size:1.3rem;font-weight:800;text-align:center;"
+               onkeydown="if(event.key==='Enter') confirmQtyModal();
+                          if(event.key==='Escape') closeQtyModal();" />
         <span id="eqmUnit"
-              style="font-size:.9rem;font-weight:700;color:var(--text-light);
-                     background:var(--bg-subtle);border:1.5px solid var(--border);
-                     border-radius:var(--r);padding:11px 14px;white-space:nowrap;">
-          g
-        </span>
+              style="font-size:.88rem;font-weight:700;
+                     color:var(--text-light);
+                     background:var(--bg-subtle);
+                     border:1.5px solid var(--border);
+                     border-radius:var(--r);
+                     padding:10px 14px;
+                     white-space:nowrap;flex-shrink:0;">g</span>
       </div>
       <div style="display:flex;gap:8px;margin-top:20px;">
-        <button class="btn btn-secondary" style="flex:1;" onclick="closeQtyModal()">Annulla</button>
-        <button class="btn btn-primary"   style="flex:1;" onclick="confirmQtyModal()">✅ Conferma</button>
+        <button class="btn btn-secondary" style="flex:1;"
+                onclick="closeQtyModal()">Annulla</button>
+        <button class="btn btn-primary"   style="flex:1;"
+                onclick="confirmQtyModal()">✅ Conferma</button>
       </div>
     </div>
   </div>
@@ -516,10 +600,13 @@
       <button class="modal-close" onclick="closeNewRicettaModal()">✕</button>
     </div>
     <div class="modal-body">
+
       <div class="form-group">
         <label>Nome</label>
-        <input type="text" id="newRicettaNome" placeholder="Es. Pasta al pomodoro…" />
+        <input type="text" id="newRicettaNome"
+               placeholder="Es. Pasta al pomodoro…" />
       </div>
+
       <div class="form-group">
         <label>Pasto ideale</label>
         <select id="newRicettaPasto">
@@ -530,13 +617,19 @@
           <option value="cena">🌙 Cena</option>
         </select>
       </div>
+
       <div class="form-group">
         <label>Ingredienti</label>
         <div id="newRicettaIngList" class="ing-preview-list"></div>
         <div class="add-ing-row" style="margin-top:8px;">
-          <input type="text"   id="newIngName" placeholder="Ingrediente"
-                 list="ingredientiAutocomplete" autocomplete="off" style="flex:2;" />
-          <input type="number" id="newIngQty"  placeholder="Qtà" min="0" step="any" style="flex:1;" />
+          <input type="text"   id="newIngName"
+                 placeholder="Ingrediente"
+                 list="ingredientiAutocomplete"
+                 autocomplete="off"
+                 style="flex:2;" />
+          <input type="number" id="newIngQty"
+                 placeholder="Qtà" min="0" step="any"
+                 style="flex:1;" />
           <select id="newIngUnit" style="flex:1;">
             <option value="g">g</option>
             <option value="ml">ml</option>
@@ -548,22 +641,28 @@
             <option value="kg">kg</option>
             <option value="l">l</option>
           </select>
-          <button class="btn-add-ing" onclick="addIngToNewRicetta()">＋</button>
+          <button class="btn-add-ing"
+                  onclick="addIngToNewRicetta && addIngToNewRicetta()">＋</button>
         </div>
       </div>
+
       <div class="form-group">
         <label>Preparazione</label>
-        <textarea id="newRicettaPrep" placeholder="Descrivi i passaggi…" rows="4"></textarea>
+        <textarea id="newRicettaPrep"
+                  placeholder="Descrivi i passaggi…" rows="4"></textarea>
       </div>
+
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeNewRicettaModal()">Annulla</button>
-      <button class="btn btn-primary"   onclick="saveNewRicetta()">💾 Salva ricetta</button>
+      <button class="btn btn-secondary"
+              onclick="closeNewRicettaModal()">Annulla</button>
+      <button class="btn btn-primary"
+              onclick="saveNewRicetta && saveNewRicetta()">💾 Salva ricetta</button>
     </div>
   </div>
 </div>
 
-<!-- ── Quantità acquistata (da spesa → frigo) ── -->
+<!-- ── Quantità acquistata (spesa → frigo) ── -->
 <div class="modal" id="purchasedQtyModal">
   <div class="modal-content modal-content-small">
     <div class="modal-header">
@@ -575,8 +674,10 @@
         Inserisci la quantità acquistata per aggiornare il frigo automaticamente.
       </p>
       <div style="display:flex;gap:8px;align-items:center;">
-        <input type="number" id="purchasedQtyInput" min="0" step="any"
-               placeholder="0" style="flex:1;" />
+        <input type="number" id="purchasedQtyInput"
+               min="0" step="any" placeholder="0"
+               style="flex:1;"
+               onkeydown="if(event.key==='Enter') confirmPurchasedQty && confirmPurchasedQty()" />
         <select id="purchasedQtyUnit" style="width:100px;">
           <option value="g">g</option>
           <option value="ml">ml</option>
@@ -590,14 +691,16 @@
         </select>
       </div>
       <div style="display:flex;gap:8px;margin-top:20px;">
-        <button class="btn btn-secondary" style="flex:1;" onclick="skipPurchasedQty()">Salta</button>
-        <button class="btn btn-primary"   style="flex:1;" onclick="confirmPurchasedQty()">✅ Conferma</button>
+        <button class="btn btn-secondary" style="flex:1;"
+                onclick="skipPurchasedQty && skipPurchasedQty()">Salta</button>
+        <button class="btn btn-primary"   style="flex:1;"
+                onclick="confirmPurchasedQty && confirmPurchasedQty()">✅ Conferma</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ── Auth ── -->
+<!-- ── Auth (login / profilo) ── -->
 <div class="modal" id="authModal">
   <div class="modal-content modal-content-small">
     <div class="modal-header">
@@ -608,44 +711,58 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     BANNER iOS PWA
-══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════
+     BANNER iOS / PWA
+══════════════════════════════════════════════ -->
+
+<!-- iOS Safari -->
 <div class="ios-banner" id="iosBanner">
   <div class="ios-banner-icon">📲</div>
   <div class="ios-banner-text">
     <strong>Installa NutriPlan come app</strong>
-    Tocca <strong>⬆️ Condividi</strong> poi <strong>"Aggiungi a schermata Home"</strong>
+    Tocca <strong>⬆️ Condividi</strong> poi
+    <strong>"Aggiungi a schermata Home"</strong>
   </div>
-  <button class="ios-banner-close" onclick="dismissIosBanner()" aria-label="Chiudi">✕</button>
+  <button class="ios-banner-close"
+          onclick="dismissIosBanner()"
+          aria-label="Chiudi">✕</button>
 </div>
 
-<!-- ── Pulsante installa PWA (Android/Chrome) ── -->
-<div id="installPwaBanner" style="display:none;position:fixed;bottom:calc(var(--nav-h) + 12px);
-     left:14px;right:14px;z-index:400;background:var(--bg-card);border-radius:var(--r-xl);
-     padding:14px 16px;box-shadow:var(--shadow-lg);border:1.5px solid var(--border);
-     display:none;align-items:center;gap:12px;">
-  <span style="font-size:1.6rem;">📲</span>
+<!-- Android / Chrome -->
+<div id="installPwaBanner"
+     style="display:none;position:fixed;
+            bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px);
+            left:14px;right:14px;z-index:400;
+            background:var(--bg-card);border-radius:var(--r-xl);
+            padding:14px 16px;box-shadow:var(--shadow-lg);
+            border:1.5px solid var(--border);
+            align-items:center;gap:12px;">
+  <span style="font-size:1.6rem;flex-shrink:0;">📲</span>
   <span style="flex:1;font-size:.82rem;color:var(--text-mid);">
-    <strong style="display:block;color:var(--text);">Installa NutriPlan come app</strong>
+    <strong style="display:block;color:var(--text);margin-bottom:2px;">
+      Installa NutriPlan come app
+    </strong>
   </span>
-  <button class="btn btn-primary btn-small" onclick="installPwa()">Installa</button>
-  <button class="btn-icon-only" onclick="dismissInstallBanner()" style="flex-shrink:0;">✕</button>
+  <button class="btn btn-primary btn-small"
+          onclick="installPwa()">Installa</button>
+  <button class="btn-icon-only"
+          onclick="dismissInstallBanner()"
+          style="flex-shrink:0;" aria-label="Chiudi">✕</button>
 </div>
 
-<!-- ══════════════════════════════════════════
-     TOAST CONTAINER
-══════════════════════════════════════════ -->
-<div class="toast-container" id="toastContainer"></div>
-
-<!-- ══════════════════════════════════════════
+<!-- ══════════════════════════════════════════════
      SYNC BANNER
-══════════════════════════════════════════ -->
+══════════════════════════════════════════════ -->
 <div class="sync-banner" id="syncBanner"></div>
 
-<!-- ══════════════════════════════════════════
-     SCRIPTS
-══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════════
+     TOAST CONTAINER
+══════════════════════════════════════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══════════════════════════════════════════════
+     SCRIPTS — ordine importante
+══════════════════════════════════════════════ -->
 <script src="firebase-config.js"></script>
 <script src="data.js"></script>
 <script src="storage.js"></script>
