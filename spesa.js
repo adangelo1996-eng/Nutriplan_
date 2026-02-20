@@ -1,283 +1,215 @@
-/* ============================================================
-   SPESA.JS
-   ============================================================ */
+/*
+   SPESA.JS — v4  stile rc-card unificato
+*/
 
+/* ══════════════════════════════════════════════
+   RENDER PRINCIPALE
+══════════════════════════════════════════════ */
 function renderSpesa() {
   var el = document.getElementById('spesaContent');
   if (!el) return;
 
-  var html =
-    '<div class="spesa-header-row">' +
-      '<div>' +
-        '<div class="spesa-title">🛒 Lista della spesa</div>' +
-        '<div class="spesa-subtitle">Generata il: ' + (spesaLastGenerated || '—') + '</div>' +
-      '</div>' +
-      '<div style="display:flex;gap:6px">' +
-        '<button class="btn btn-primary btn-small" onclick="generateSpesa()">⚡ Genera</button>' +
-        '<button class="btn btn-secondary btn-small" onclick="clearDoneSpesa()">🧹 Pulisci</button>' +
-        '<button class="btn btn-warning btn-small" onclick="clearAllSpesa()">🗑 Svuota</button>' +
-      '</div>' +
+  var items  = typeof shoppingList !== 'undefined' ? shoppingList : [];
+  var manual = items.filter(function(i){ return i.manual; });
+  var auto   = items.filter(function(i){ return !i.manual; });
+
+  /* ── toolbar ── */
+  var toolbar =
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">' +
+      '<button class="rc-btn rc-btn-primary" onclick="generateShoppingList()">⚡ Genera</button>' +
+      '<button class="rc-btn rc-btn-outline" onclick="openSpesaItemModal()">＋ Aggiungi</button>' +
+      '<button class="rc-btn rc-btn-outline" onclick="clearBoughtItems()">🗑️ Rimuovi acquistati</button>' +
     '</div>';
 
-  /* Aggiungi manuale */
-  html +=
-    '<div class="spesa-add-row" style="margin:12px 0">' +
-      '<input type="text" id="spesaManualInput" class="form-input" placeholder="Aggiungi articolo manuale..." onkeypress="spesaManualKeypress(event)" list="ingredientiDatalist">' +
-      '<button class="btn btn-primary" onclick="addManualSpesaItem()">＋</button>' +
-    '</div>';
-
-  if (!spesaItems || !spesaItems.length) {
-    html +=
-      '<div class="empty-state"><div class="empty-state-icon">🛒</div>' +
-      '<h3>Lista vuota</h3><p>Premi <b>⚡ Genera</b> per creare automaticamente la lista dagli ingredienti mancanti nel tuo piano.</p></div>';
-    el.innerHTML = html;
+  if (!items.length) {
+    el.innerHTML =
+      toolbar +
+      '<div class="rc-empty">' +
+        '<div style="font-size:2.5rem;">🛒</div>' +
+        '<p>Premi <strong>⚡ Genera</strong> per creare automaticamente la lista dagli ingredienti mancanti nel tuo piano.</p>' +
+      '</div>';
     return;
   }
 
-  /* Progress */
-  var doneCount  = spesaItems.filter(function (i) { return i.done; }).length;
-  var totalCount = spesaItems.length;
-  var pct        = Math.round((doneCount / totalCount) * 100);
-  html +=
-    '<div class="spesa-progress-row">' +
-      '<span class="spesa-progress-label">' + doneCount + '/' + totalCount + '</span>' +
-      '<div class="spesa-progress-bar"><div class="spesa-progress-fill" style="width:' + pct + '%"></div></div>' +
-      '<span class="spesa-progress-label">' + pct + '%</span>' +
-    '</div>';
+  var html = toolbar;
 
-  /* Da fare — raggruppati per categoria */
-  var todo = spesaItems.filter(function (i) { return !i.done; });
-  var done = spesaItems.filter(function (i) { return i.done; });
-
-  if (todo.length) {
-    var byCat = {};
-    todo.forEach(function (item) {
-      var cat = item.category || '🧂 Altro';
-      if (!byCat[cat]) byCat[cat] = [];
-      byCat[cat].push(item);
-    });
-    var catOrder = ['🥩 Carne e Pesce','🥛 Latticini e Uova','🌾 Cereali e Legumi','🥦 Verdure','🍎 Frutta','🥑 Grassi e Condimenti','🍫 Dolci e Snack','🧂 Cucina','🧂 Altro'];
-    Object.keys(byCat).sort(function (a, b) {
-      var ia = catOrder.indexOf(a); var ib = catOrder.indexOf(b);
-      return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
-    }).forEach(function (cat) {
-      html += '<div class="spesa-section-title">' + cat + '</div>';
-      html += '<div class="spesa-list">';
-      byCat[cat].forEach(function (item) { html += buildSpesaItemHtml(item, false); });
-      html += '</div>';
-    });
+  /* ── SEZIONE AUTO ── */
+  if (auto.length) {
+    html +=
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+        '<span style="font-weight:700;font-size:.95em;">🤖 Dal piano</span>' +
+        '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">'+auto.length+'</span>' +
+      '</div>' +
+      auto.map(function(item, idx){ return buildSpesaCard(item, items.indexOf(item)); }).join('') +
+      '<div style="margin-bottom:20px;"></div>';
   }
 
-  if (done.length) {
-    html += '<div class="spesa-section-title" style="margin-top:10px">✅ Già acquistati</div>';
-    html += '<div class="spesa-list spesa-list-done">';
-    done.forEach(function (item) { html += buildSpesaItemHtml(item, true); });
-    html += '</div>';
+  /* ── SEZIONE MANUALE ── */
+  if (manual.length) {
+    html +=
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+        '<span style="font-weight:700;font-size:.95em;">✏️ Aggiunti manualmente</span>' +
+        '<span class="rc-badge" style="background:var(--bg2);color:var(--text-2);">'+manual.length+'</span>' +
+      '</div>' +
+      manual.map(function(item){ return buildSpesaCard(item, items.indexOf(item)); }).join('');
   }
 
   el.innerHTML = html;
 }
 
-/* ---- HTML SINGOLO ITEM ---- */
-function buildSpesaItemHtml(item, isDone) {
-  var idx    = spesaItems.indexOf(item);
-  var badge  = item.isAuto
-    ? '<span class="spesa-badge-auto">Auto</span>'
-    : '<span class="spesa-badge-manual">Manuale</span>';
-  var qtyTxt = item.purchasedQty
-    ? item.purchasedQty + (item.unit ? ' ' + item.unit : '')
-    : (item.quantity ? item.quantity + (item.unit ? ' ' + item.unit : '') : '');
+/* ── CARD SINGOLO ITEM ── */
+function buildSpesaCard(item, idx) {
+  var bought  = item.bought ? true : false;
+  var opacity = bought ? 'opacity:.45;' : '';
+  var strike  = bought ? 'text-decoration:line-through;color:var(--text-3);' : '';
+  var qty     = item.quantity ? item.quantity + ' ' + (item.unit||'g') : '';
 
   return (
-    '<div class="spesa-item' + (isDone ? ' done' : '') + '" onclick="toggleSpesaItem(' + idx + ')">' +
-      '<span class="spesa-item-check">' + (isDone ? '✅' : '⬜') + '</span>' +
-      '<div class="spesa-item-info">' +
-        '<div class="spesa-item-name">' + item.name + '</div>' +
-        (qtyTxt ? '<div class="spesa-item-qty">' + qtyTxt + '</div>' : '') +
+    '<div class="rc-card" style="display:flex;align-items:center;gap:12px;padding:12px 16px;margin-bottom:8px;'+opacity+'" data-idx="'+idx+'">' +
+      '<button onclick="toggleBought('+idx+')" style="background:none;border:none;cursor:pointer;font-size:1.3em;padding:0;flex-shrink:0;">' +
+        (bought ? '✅' : '<span style="width:22px;height:22px;border:2px solid var(--border);border-radius:50%;display:inline-block;"></span>') +
+      '</button>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-weight:500;'+strike+'">'+item.name+'</div>' +
+        (qty ? '<div style="font-size:.82em;color:var(--text-3);">'+qty+'</div>' : '') +
       '</div>' +
-      '<div class="spesa-item-actions">' +
-        badge +
-        '<button class="spesa-delete-btn" onclick="deleteSpesaItem(event,' + idx + ')">🗑</button>' +
-      '</div>' +
+      (item.manual
+        ? '<span class="rc-badge" style="background:var(--bg2);color:var(--text-3);">manuale</span>'
+        : '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">piano</span>') +
+      '<button class="rc-btn-icon" onclick="removeSpesaItem('+idx+')" title="Rimuovi">🗑️</button>' +
     '</div>'
   );
 }
 
-/* ---- TOGGLE CON QUANTITÀ ---- */
-function toggleSpesaItem(idx) {
-  var item = spesaItems[idx];
-  if (!item) return;
-  if (item.done) {
-    /* Riattiva — toglila dall'acquistato e rimuovi dalla dispensa */
-    item.done = false;
-    if (item.purchasedQty && item.purchasedQty > 0 && pantryItems[item.name]) {
-      pantryItems[item.name].quantity = Math.max(
-        0,
-        (pantryItems[item.name].quantity || 0) - item.purchasedQty
-      );
-    }
-    item.purchasedQty = null;
-    saveData();
-    renderSpesa();
-    if (typeof renderPantry === 'function') renderPantry();
-    if (typeof renderFridge === 'function') renderFridge();
-  } else {
-    /* Segna come acquistato → mostra modale quantità */
-    openSpesaQuantityModal(idx);
+/* ══════════════════════════════════════════════
+   AZIONI
+══════════════════════════════════════════════ */
+function toggleBought(idx) {
+  var items = typeof shoppingList !== 'undefined' ? shoppingList : [];
+  if (!items[idx]) return;
+  items[idx].bought = !items[idx].bought;
+
+  /* se appena acquistato → apri modal quantità */
+  if (items[idx].bought) {
+    openSpesaQtyModal(idx);
   }
-}
-
-/* ---- MODALE QUANTITÀ ACQUISTATA ---- */
-var _pendingSpesaIdx = null;
-
-function openSpesaQuantityModal(idx) {
-  _pendingSpesaIdx = idx;
-  var item = spesaItems[idx];
-  if (!item) return;
-
-  var modal = document.getElementById('spesaItemModal');
-  if (!modal) {
-    /* fallback prompt se il modal non esiste nell'HTML */
-    var qInput = prompt('Quantità acquistata di ' + item.name + ' (' + (item.unit || 'g') + '):\n(Lascia vuoto per saltare)', item.quantity || '');
-    confirmSpesaQuantity(qInput);
-    return;
-  }
-
-  var titleEl = document.getElementById('spesaItemModalTitle');
-  var qtyEl   = document.getElementById('spesaItemQty');
-  var unitEl  = document.getElementById('spesaItemUnit');
-
-  if (titleEl) titleEl.textContent = '✅ ' + item.name + ' — quantità acquistata';
-  if (qtyEl)   qtyEl.value  = item.quantity || '';
-  if (unitEl) {
-    var units = ['g','ml','pz','fette','cucchiai','cucchiaini','porzione','kg','l'];
-    unitEl.innerHTML = units.map(function (u) {
-      return '<option value="' + u + '"' + ((item.unit || 'g') === u ? ' selected' : '') + '>' + u + '</option>';
-    }).join('');
-  }
-  modal.classList.add('active');
-}
-
-function closeSpesaItemModal() {
-  var m = document.getElementById('spesaItemModal');
-  if (m) m.classList.remove('active');
-  _pendingSpesaIdx = null;
-}
-
-function confirmSpesaQuantity(qtyOverride) {
-  var idx  = _pendingSpesaIdx;
-  var item = (idx !== null && spesaItems[idx]) ? spesaItems[idx] : null;
-
-  var qty, unit;
-  if (qtyOverride !== undefined) {
-    qty  = parseFloat(qtyOverride) || 0;
-    unit = (item && item.unit) ? item.unit : 'g';
-  } else {
-    var qtyEl  = document.getElementById('spesaItemQty');
-    var unitEl = document.getElementById('spesaItemUnit');
-    qty  = parseFloat(qtyEl  ? qtyEl.value  : 0) || 0;
-    unit = (unitEl ? unitEl.value : null) || (item ? item.unit : 'g') || 'g';
-  }
-
-  if (item) {
-    item.done         = true;
-    item.purchasedQty = qty;
-    item.unit         = unit;
-
-    /* Aggiorna pantryItems */
-    if (qty > 0) {
-      var name = item.name;
-      if (!pantryItems[name]) {
-        var cat  = item.category || guessCatFromName(name);
-        var icon = (typeof getCategoryIcon === 'function') ? getCategoryIcon(cat) : '🧂';
-        pantryItems[name] = { quantity: qty, unit: unit, category: cat, icon: icon, isCustom: false };
-      } else {
-        pantryItems[name].quantity = Math.round(((pantryItems[name].quantity || 0) + qty) * 100) / 100;
-        if (unit) pantryItems[name].unit = unit;
-      }
-    }
-  }
-
   saveData();
-  closeSpesaItemModal();
   renderSpesa();
-  if (typeof renderPantry === 'function') renderPantry();
-  if (typeof renderFridge === 'function') renderFridge();
 }
 
-/* ---- GENERA ---- */
-function generateSpesa() {
-  var newItems = [];
-  ['colazione','spuntino','pranzo','merenda','cena'].forEach(function (mk) {
-    var mp = mealPlan[mk] || {};
-    ['principale','contorno','frutta','extra'].forEach(function (cat) {
-      (mp[cat] || []).forEach(function (item) {
-        if (!item || typeof item !== 'object' || !item.name || typeof item.name !== 'string' || !item.name.trim()) return;
-        var avail = checkIngredientAvailability(item);
-        if (!avail.sufficient) {
-          var name   = item.name.trim();
-          var exists = (spesaItems || []).some(function (s) { return s.name && s.name.toLowerCase() === name.toLowerCase() && s.isAuto; });
-          if (!exists) {
-            var pd  = pantryItems[name] || {};
-            var cat2 = pd.category || guessCatFromName(name);
-            newItems.push({ name: name, quantity: item.quantity || null, unit: item.unit || 'g', category: cat2, isAuto: true, done: false });
-          }
+function removeSpesaItem(idx) {
+  var items = typeof shoppingList !== 'undefined' ? shoppingList : [];
+  items.splice(idx, 1);
+  saveData();
+  renderSpesa();
+}
+
+function clearBoughtItems() {
+  if (!confirm('Rimuovere tutti gli articoli acquistati?')) return;
+  shoppingList = (typeof shoppingList !== 'undefined' ? shoppingList : [])
+    .filter(function(i){ return !i.bought; });
+  saveData();
+  renderSpesa();
+}
+
+/* ── GENERA DA PIANO ── */
+function generateShoppingList() {
+  var needed = {};
+  ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk){
+    var plan = (mealPlan && mealPlan[mk]) ? mealPlan[mk] : {};
+    ['principale','contorno','frutta','extra'].forEach(function(cat){
+      if (!Array.isArray(plan[cat])) return;
+      plan[cat].forEach(function(item){
+        if (!item || !item.name) return;
+        var name = item.name.trim();
+        var inFridge = typeof pantryItems !== 'undefined' && pantryItems &&
+                       pantryItems[name] && (pantryItems[name].quantity||0) > 0;
+        if (!inFridge) {
+          if (!needed[name]) needed[name] = { name:name, quantity:item.quantity||null, unit:item.unit||'g', manual:false, bought:false };
         }
       });
     });
   });
 
-  if (!newItems.length) { alert('✅ Tutti gli ingredienti del piano sono già disponibili in dispensa!'); return; }
-  spesaItems = (spesaItems || []).filter(function (i) { return !i.isAuto; }).concat(newItems);
-  spesaLastGenerated = new Date().toLocaleDateString('it-IT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  /* mantieni i manuali, sostituisci gli auto */
+  var manual = (typeof shoppingList !== 'undefined' ? shoppingList : []).filter(function(i){ return i.manual; });
+  shoppingList = manual.concat(Object.values(needed));
   saveData();
   renderSpesa();
 }
 
-/* ---- MANUALE ---- */
-function addManualSpesaItem() {
-  var inp  = document.getElementById('spesaManualInput');
-  var name = inp ? inp.value.trim() : '';
+/* ── MODAL AGGIUNGI MANUALE ── */
+function openSpesaItemModal() {
+  var modal = document.getElementById('spesaItemModal');
+  if (modal) modal.classList.add('active');
+  var inp = document.getElementById('spesaItemName');
+  if (inp) { inp.value=''; setTimeout(function(){ inp.focus(); },100); }
+  var qtyInp = document.getElementById('spesaItemQty');
+  if (qtyInp) qtyInp.value = '';
+}
+
+function closeSpesaItemModal() {
+  var modal = document.getElementById('spesaItemModal');
+  if (modal) modal.classList.remove('active');
+}
+
+function confirmSpesaItem() {
+  var nameEl = document.getElementById('spesaItemName');
+  var qtyEl  = document.getElementById('spesaItemQty');
+  var unitEl = document.getElementById('spesaItemUnit');
+  if (!nameEl) return;
+  var name = nameEl.value.trim();
   if (!name) return;
-  if (!spesaItems) spesaItems = [];
-  spesaItems.push({ name: name, quantity: null, unit: 'g', category: guessCatFromName(name), isAuto: false, done: false });
-  if (inp) inp.value = '';
+  var qty  = parseFloat(qtyEl ? qtyEl.value : '') || null;
+  var unit = unitEl ? unitEl.value : 'g';
+  if (typeof shoppingList === 'undefined') shoppingList = [];
+  shoppingList.push({ name:name, quantity:qty, unit:unit, manual:true, bought:false });
   saveData();
+  closeSpesaItemModal();
   renderSpesa();
 }
-function spesaManualKeypress(e) { if (e.key === 'Enter') addManualSpesaItem(); }
 
-/* ---- DELETE / PULISCI ---- */
-function deleteSpesaItem(e, idx) {
-  e.stopPropagation();
-  spesaItems.splice(idx, 1);
-  saveData(); renderSpesa();
-}
-function clearDoneSpesa() {
-  spesaItems = (spesaItems || []).filter(function (i) { return !i.done; });
-  saveData(); renderSpesa();
-}
-function clearAllSpesa() {
-  if (!confirm('Svuotare tutta la lista della spesa?')) return;
-  spesaItems = []; spesaLastGenerated = null;
-  saveData(); renderSpesa();
+/* ── MODAL QUANTITÀ ACQUISTATA ── */
+function openSpesaQtyModal(idx) {
+  var modal   = document.getElementById('spesaQtyModal');
+  var label   = document.getElementById('spesaQtyLabel');
+  var inp     = document.getElementById('spesaQtyInput');
+  var unitSel = document.getElementById('spesaQtyUnit');
+  if (!modal) return;
+  var item = (typeof shoppingList !== 'undefined' && shoppingList[idx]) ? shoppingList[idx] : null;
+  if (!item) return;
+  if (label)   label.textContent = item.name;
+  if (inp)     inp.value = item.quantity || '';
+  if (unitSel) unitSel.value = item.unit || 'g';
+  inp && (inp.dataset.idx = idx);
+  modal.classList.add('active');
+  setTimeout(function(){ if(inp){ inp.focus(); inp.select(); } },100);
 }
 
-/* ---- UTILITY ---- */
-function guessCatFromName(name) {
-  if (!name) return '🧂 Cucina';
-  var nl  = name.toLowerCase();
-  var map = [
-    { words: ['pollo','manzo','salmone','tonno','carne','pesce','merluzzo','bresaola','prosciutto','tacchino','polpo','calamari','seppie','orata','spigola','branzino','tofu'], cat: '🥩 Carne e Pesce' },
-    { words: ['latte','yogurt','formaggio','ricotta','mozzarella','parmigiano','uovo','uova','skyr','kefir','actimel'],                                                         cat: '🥛 Latticini e Uova' },
-    { words: ['pasta','riso','pane','farro','orzo','quinoa','avena','fagioli','ceci','lenticchie','legumi','cereali','piadina','wasa','gallette','crackers','gnocchi','patate'], cat: '🌾 Cereali e Legumi' },
-    { words: ['insalata','spinaci','broccoli','carote','pomodori','zucchine','melanzane','peperoni','verdure','cavolo','cetriolo','finocchio','lattuga','radicchio'],            cat: '🥦 Verdure' },
-    { words: ['mela','pera','banana','arancia','kiwi','fragole','uva','pesca','frutta','mango','noci','mandorle','pistacchi','nocciole'],                                       cat: '🍎 Frutta' },
-    { words: ['olio','olive','avocado','semi','condimento','pesto','miele','marmellata'],                                                                                        cat: '🥑 Grassi e Condimenti' },
-    { words: ['cioccolato','biscotti','snack','dolci','nutella','barretta','cornetto','budino','cocco'],                                                                          cat: '🍫 Dolci e Snack' }
-  ];
-  for (var i = 0; i < map.length; i++) {
-    if (map[i].words.some(function (w) { return nl.includes(w); })) return map[i].cat;
+function closeSpesaQtyModal() {
+  var modal = document.getElementById('spesaQtyModal');
+  if (modal) modal.classList.remove('active');
+}
+
+function confirmSpesaQty() {
+  var inp     = document.getElementById('spesaQtyInput');
+  var unitSel = document.getElementById('spesaQtyUnit');
+  var modal   = document.getElementById('spesaQtyModal');
+  if (!inp) return;
+  var idx  = parseInt(inp.dataset.idx);
+  var val  = parseFloat(inp.value);
+  var unit = unitSel ? unitSel.value : 'g';
+  if (!isNaN(idx) && !isNaN(val) && val > 0) {
+    var item = shoppingList[idx];
+    if (item && typeof addFromSpesa === 'function') {
+      addFromSpesa(item.name, val, unit);
+    }
   }
-  return '🧂 Cucina';
+  if (modal) modal.classList.remove('active');
+  renderSpesa();
+}
+
+function skipSpesaQty() {
+  closeSpesaQtyModal();
+  renderSpesa();
 }
