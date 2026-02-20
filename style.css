@@ -1707,3 +1707,95 @@ textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
   .fridge-items { grid-template-columns: repeat(4,1fr); }
   .rc-grid  { grid-template-columns: repeat(2,1fr); }
 }
+/* ══════════════════════════════════════════
+   FIX MOBILE — etichette nav + pill overflow
+══════════════════════════════════════════ */
+
+/* Nav bar bottom — testo sempre visibile */
+.nav-tab {
+  min-width: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+}
+.nav-tab span {
+  display: block;
+  font-size: .62em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.nav-tab svg,
+.nav-tab .nav-icon {
+  font-size: 1.25em;
+  flex-shrink: 0;
+}
+
+/* Sotto ~360px nascondi testo e mostra solo icona */
+@media (max-width: 374px) {
+  .nav-tab span { display: none; }
+  .nav-tab       { padding: 6px 2px; }
+}
+
+/* rf-pill selettore pasto — scrollabile orizzontalmente */
+#mealSelector {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 6px;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#mealSelector::-webkit-scrollbar { display: none; }
+
+.rf-pill {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Filtri ricette — stessa cosa */
+#ricetteFilterRow {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 6px;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#ricetteFilterRow::-webkit-scrollbar { display: none; }
+
+/* Page tab (Catalogo / Le mie) */
+.page-tabs {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+}
+.page-tabs::-webkit-scrollbar { display: none; }
+.page-tab {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Card frigo — griglia adattiva su schermi piccoli */
+@media (max-width: 480px) {
+  .fridge-items {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
+  .fridge-card {
+    padding: 10px 8px;
+  }
+  .fridge-name {
+    font-size: .78em;
+  }
+}
+
+/* Stat grid — 2 colonne su mobile */
+@media (max-width: 480px) {
+  .stats-grid,
+  [style*="grid-template-columns:repeat(auto-fill,minmax(140px"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
