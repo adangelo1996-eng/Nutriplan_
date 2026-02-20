@@ -801,12 +801,37 @@ function resetPiano()          { resetDay();             }
 function saveNewRicetta()      { if (typeof saveCustomRicetta === 'function') saveCustomRicetta(); }
 function addIngToNewRicetta()  { if (typeof addIngredientToNew === 'function') addIngredientToNew(); }
 
-/* ── Alias renderPiano / renderRicette ─────────────── */
+/* ── Alias renderPiano / renderRicette / renderStats / renderIngredienti ─── */
 function renderPiano() {
   if (typeof renderMealPlan === 'function') renderMealPlan();
 }
 function renderRicette() {
   if (typeof renderRicettePage === 'function') renderRicettePage();
+}
+function renderStats() {
+  if (typeof renderStatistiche === 'function') renderStatistiche();
+}
+function renderIngredienti() {
+  var el = document.getElementById('ingredientiContent');
+  if (!el) return;
+  if (typeof renderDayIngGrid === 'function') {
+    /* Rimappa il target su ingredientiContent */
+    var orig = document.getElementById('dayIngGrid');
+    if (!orig) {
+      var proxy = document.createElement('div');
+      proxy.id = 'dayIngGrid';
+      el.innerHTML = '';
+      el.appendChild(proxy);
+    }
+    renderDayIngGrid();
+    /* Sposta il contenuto reso in ingredientiContent */
+    var grid = document.getElementById('dayIngGrid');
+    if (grid && grid.parentElement !== el) {
+      el.innerHTML = '';
+      el.appendChild(grid);
+    }
+  }
+  if (typeof renderFridgeRecipes === 'function') renderFridgeRecipes();
 }
 
 /* ── signOut → usa quella in firebase-config.js ─────── */
