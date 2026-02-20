@@ -1,256 +1,250 @@
-/* ============================================================
-   STATISTICHE.JS
-   ============================================================ */
+/*
+   STATISTICHE.JS — v4  stile rc-card unificato
+*/
 
 function renderStatistiche() {
-    var el = document.getElementById('statisticheContent');
-    if (!el) return;
+  var el = document.getElementById('statisticheContent');
+  if (!el) return;
 
-    var html = '';
+  var stats = computeStats();
+  var html  = '';
 
-    /* ---- STAT CARDS ---- */
-    var stats = computeStats();
-    html += '<div class="stat-cards-row">'
-        + statCard('📅', stats.totalDays,    'Giorni tracciati', '')
-        + statCard('✅', stats.totalUsed,    'Pasti consumati',  '')
-        + statCard('🔄', stats.totalSubs,    'Sostituzioni',     '')
-        + statCard('🏆', stats.bestStreak,   'Giorni di fila',   '')
-        + '</div>';
+  /* ══════════════════════════════════════════
+     STAT CARDS RIEPILOGO
+  ══════════════════════════════════════════ */
+  var statItems = [
+    { emoji:'📅', label:'Giorni registrati', value: stats.totalDays },
+    { emoji:'✅', label:'Pasti completati',  value: stats.totalMeals },
+    { emoji:'🌿', label:'Ingredienti unici', value: stats.uniqueIngredients },
+    { emoji:'🔄', label:'Sostituzioni',      value: stats.totalSubs }
+  ];
 
-    /* ---- GRAFICO SETTIMANALE ---- */
-    html += '<div class="stat-section">';
-    html += '<div class="stat-section-title">📊 Ultimi 7 giorni</div>';
-    html += buildWeekChart();
-    html += '</div>';
+  html +=
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px;">' +
+    statItems.map(function(s){
+      return (
+        '<div class="rc-card" style="padding:18px 16px;text-align:center;">' +
+          '<div style="font-size:1.8rem;margin-bottom:6px;">'+s.emoji+'</div>' +
+          '<div style="font-size:1.6rem;font-weight:800;color:var(--primary);">'+s.value+'</div>' +
+          '<div style="font-size:.78em;color:var(--text-3);margin-top:4px;">'+s.label+'</div>' +
+        '</div>'
+      );
+    }).join('') +
+    '</div>';
 
-    /* ---- COMPLETAMENTO PER PASTO ---- */
-    html += '<div class="stat-section">';
-    html += '<div class="stat-section-title">🍽 Completamento per pasto</div>';
-    html += buildMealCompletionBars();
-    html += '</div>';
+  /* ══════════════════════════════════════════
+     ALIMENTI PIÙ CONSUMATI
+  ══════════════════════════════════════════ */
+  html += buildStatSection(
+    '🏆 Alimenti più consumati',
+    stats.topIngredients,
+    function(item){
+      var pct = stats.topIngredients.length ? Math.round((item.count / stats.topIngredients[0].count) * 100) : 0;
+      return (
+        '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">' +
+          '<span style="font-weight:600;min-width:20px;text-align:right;color:var(--primary);">'+item.rank+'.</span>' +
+          '<span style="flex:1;font-weight:500;">'+item.name+'</span>' +
+          '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">'+item.count+'×</span>' +
+          '<div style="width:80px;">' +
+            '<div class="rc-progress-track">' +
+              '<div class="rc-progress-fill" style="width:'+pct+'%;"></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    },
+    'Nessun alimento registrato ancora.'
+  );
 
-    /* ---- TOP ALIMENTI ---- */
-    html += '<div class="stat-section">';
-    html += '<div class="stat-section-title">⭐ Alimenti più usati</div>';
-    html += buildTopFoods();
-    html += '</div>';
+  /* ══════════════════════════════════════════
+     PASTI PIÙ COMPLETI
+  ══════════════════════════════════════════ */
+  var mealLabels = { colazione:'☀️ Colazione', spuntino:'🍎 Spuntino', pranzo:'🍽 Pranzo', merenda:'🥪 Merenda', cena:'🌙 Cena' };
+  var mealStats  = Object.keys(stats.mealCounts||{}).map(function(mk){
+    return { key:mk, label:mealLabels[mk]||mk, count:stats.mealCounts[mk] };
+  }).sort(function(a,b){ return b.count-a.count; });
 
-    /* ---- LIMITI SETTIMANALI ---- */
-    html += '<div class="stat-section">';
-    html += '<div class="stat-section-title">📋 Limiti settimanali</div>';
-    html += buildLimitsSummary();
-    html += '</div>';
+  html += buildStatSection(
+    '🍽 Pasti per fascia',
+    mealStats,
+    function(item){
+      var max = mealStats.length ? mealStats[0].count : 1;
+      var pct = max > 0 ? Math.round((item.count / max) * 100) : 0;
+      return (
+        '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">' +
+          '<span style="flex:1;font-weight:500;">'+item.label+'</span>' +
+          '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">'+item.count+' volte</span>' +
+          '<div style="width:80px;">' +
+            '<div class="rc-progress-track">' +
+              '<div class="rc-progress-fill" style="width:'+pct+'%;"></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    },
+    'Nessun dato disponibile.'
+  );
 
-    el.innerHTML = html;
+  /* ══════════════════════════════════════════
+     LIMITI SETTIMANALI — STATO
+  ══════════════════════════════════════════ */
+  var limiti = (typeof weeklyLimits !== 'undefined') ? weeklyLimits : {};
+  var limitItems = [
+    { key:'carne',     label:'Carne',     emoji:'🥩' },
+    { key:'pesce',     label:'Pesce',     emoji:'🐟' },
+    { key:'uova',      label:'Uova',      emoji:'🥚' },
+    { key:'latticini', label:'Latticini', emoji:'🥛' },
+    { key:'legumi',    label:'Legumi',    emoji:'🌱' },
+    { key:'cereali',   label:'Cereali',   emoji:'🌾' },
+    { key:'frutta',    label:'Frutta',    emoji:'🍎' },
+    { key:'verdura',   label:'Verdura',   emoji:'🥦' }
+  ].filter(function(li){ return limiti[li.key] !== undefined && limiti[li.key] > 0; });
+
+  if (limitItems.length) {
+    var weekUsage = computeWeekUsage();
+    html +=
+      '<div class="rc-card" style="margin-bottom:16px;">' +
+        '<div style="padding:18px 20px;">' +
+          '<div style="font-weight:700;font-size:.95em;margin-bottom:14px;">📊 Limiti settimana corrente</div>' +
+          limitItems.map(function(li){
+            var limit = limiti[li.key] || 0;
+            var used  = weekUsage[li.key] || 0;
+            var pct   = limit > 0 ? Math.min(100, Math.round((used/limit)*100)) : 0;
+            var over  = used > limit;
+            var fillColor = over ? 'var(--danger)' : pct > 75 ? 'var(--warn)' : 'var(--primary)';
+            var badgeBg   = over ? '#fde8e8' : 'var(--primary-light)';
+            var badgeCol  = over ? 'var(--danger)' : 'var(--primary)';
+            return (
+              '<div style="margin-bottom:14px;">' +
+                '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+                  '<span>'+li.emoji+'</span>' +
+                  '<span style="flex:1;font-weight:500;font-size:.9em;">'+li.label+'</span>' +
+                  '<span class="rc-badge" style="background:'+badgeBg+';color:'+badgeCol+';">'+
+                    used+' / '+limit+
+                  '</span>' +
+                '</div>' +
+                '<div class="rc-progress-track">' +
+                  '<div class="rc-progress-fill" style="width:'+pct+'%;background:'+fillColor+';"></div>' +
+                '</div>' +
+              '</div>'
+            );
+          }).join('') +
+        '</div>' +
+      '</div>';
+  }
+
+  el.innerHTML = html;
 }
 
-/* ---- STAT CARD ---- */
-function statCard(icon, value, label, unit) {
-    return '<div class="stat-card">'
-        + '<div class="stat-card-icon">'  + icon  + '</div>'
-        + '<div class="stat-card-value">' + value + '</div>'
-        + '<div class="stat-card-label">' + label + '</div>'
-        + (unit ? '<div class="stat-card-unit">' + unit + '</div>' : '')
-        + '</div>';
+/* ══════════════════════════════════════════
+   HELPER — sezione con lista
+══════════════════════════════════════════ */
+function buildStatSection(title, items, rowFn, emptyMsg) {
+  var rows = items.length
+    ? items.map(rowFn).join('')
+    : '<p style="color:var(--text-3);font-size:.88em;padding:8px 0;">'+emptyMsg+'</p>';
+  return (
+    '<div class="rc-card" style="margin-bottom:16px;">' +
+      '<div style="padding:18px 20px;">' +
+        '<div style="font-weight:700;font-size:.95em;margin-bottom:12px;">'+title+'</div>' +
+        rows +
+      '</div>' +
+    '</div>'
+  );
 }
 
-/* ---- COMPUTE STATS ---- */
+/* ══════════════════════════════════════════
+   CALCOLO STATISTICHE
+══════════════════════════════════════════ */
 function computeStats() {
-    var totalDays = 0, totalUsed = 0, totalSubs = 0;
-    var streak = 0, bestStreak = 0, lastDate = null;
+  var totalDays         = 0;
+  var totalMeals        = 0;
+  var totalSubs         = 0;
+  var ingredientCounts  = {};
+  var mealCounts        = { colazione:0, spuntino:0, pranzo:0, merenda:0, cena:0 };
 
-    var keys = Object.keys(appHistory).sort();
-    keys.forEach(function (dk) {
-        var hd  = appHistory[dk] || {};
-        var used = hd.usedItems || {};
-        var subs = hd.substitutions || {};
+  Object.keys(appHistory||{}).forEach(function(dk){
+    var hd = appHistory[dk];
+    if (!hd || !hd.usedItems) return;
+    var hasAny = false;
+    Object.keys(hd.usedItems).forEach(function(mk){
+      var items = Object.keys(hd.usedItems[mk]||{});
+      if (!items.length) return;
+      hasAny = true;
+      totalMeals += items.length;
+      if (mealCounts[mk] !== undefined) mealCounts[mk]++;
+      items.forEach(function(name){
+        ingredientCounts[name] = (ingredientCounts[name]||0) + 1;
+      });
+    });
+    if (hd.substitutions) {
+      Object.keys(hd.substitutions).forEach(function(mk){
+        totalSubs += Object.keys(hd.substitutions[mk]||{}).length;
+      });
+    }
+    if (hasAny) totalDays++;
+  });
 
-        var dayUsed = 0;
-        Object.keys(used).forEach(function (mk) {
-            dayUsed += Object.keys(used[mk] || {}).length;
-        });
-        if (!dayUsed) return;
+  var topIngredients = Object.keys(ingredientCounts)
+    .map(function(name){ return { name:name, count:ingredientCounts[name] }; })
+    .sort(function(a,b){ return b.count - a.count; })
+    .slice(0, 10)
+    .map(function(item, i){ return Object.assign({}, item, { rank: i+1 }); });
 
-        totalDays++;
-        totalUsed += dayUsed;
+  return {
+    totalDays:         totalDays,
+    totalMeals:        totalMeals,
+    totalSubs:         totalSubs,
+    uniqueIngredients: Object.keys(ingredientCounts).length,
+    topIngredients:    topIngredients,
+    mealCounts:        mealCounts
+  };
+}
 
-        Object.keys(subs).forEach(function (mk) {
-            totalSubs += Object.keys(subs[mk] || {}).length;
-        });
+/* ══════════════════════════════════════════
+   USO SETTIMANALE (per limiti)
+══════════════════════════════════════════ */
+function computeWeekUsage() {
+  var usage   = {};
+  var today   = new Date();
+  var weekAgo = new Date(today);
+  weekAgo.setDate(today.getDate() - 6);
 
-        /* Streak */
-        if (lastDate) {
-            var prev = new Date(lastDate + 'T00:00:00');
-            var curr = new Date(dk       + 'T00:00:00');
-            var diff = (curr - prev) / 86400000;
-            if (diff === 1) {
-                streak++;
-            } else {
-                streak = 1;
-            }
-        } else {
-            streak = 1;
+  /* mappa nome ingrediente → categoria limite */
+  var catMap = {
+    '🥩 Carne e Pesce': 'carne',
+    '🥛 Latticini e Uova': 'latticini',
+    '🌾 Cereali e Legumi': 'cereali',
+    '🥦 Verdure': 'verdura',
+    '🍎 Frutta': 'frutta'
+  };
+
+  Object.keys(appHistory||{}).forEach(function(dk){
+    var parts = dk.split('-');
+    if (parts.length !== 3) return;
+    var d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    if (d < weekAgo || d > today) return;
+    var hd = appHistory[dk];
+    if (!hd || !hd.usedItems) return;
+    Object.keys(hd.usedItems).forEach(function(mk){
+      Object.keys(hd.usedItems[mk]||{}).forEach(function(name){
+        var pi  = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) ? pantryItems[name] : null;
+        var cat = pi ? catMap[pi.category] : null;
+        if (cat) usage[cat] = (usage[cat]||0) + 1;
+        /* uova separato */
+        if (name.toLowerCase().includes('uov')) usage['uova'] = (usage['uova']||0) + 1;
+        /* pesce separato */
+        if (name.toLowerCase().includes('pesce') || name.toLowerCase().includes('tonno') ||
+            name.toLowerCase().includes('salmone') || name.toLowerCase().includes('merluzzo')) {
+          usage['pesce'] = (usage['pesce']||0) + 1;
         }
-        bestStreak = Math.max(bestStreak, streak);
-        lastDate   = dk;
+        /* legumi separato */
+        if (name.toLowerCase().includes('legumi') || name.toLowerCase().includes('ceci') ||
+            name.toLowerCase().includes('lenticch') || name.toLowerCase().includes('fagioli')) {
+          usage['legumi'] = (usage['legumi']||0) + 1;
+        }
+      });
     });
-
-    return { totalDays: totalDays, totalUsed: totalUsed, totalSubs: totalSubs, bestStreak: bestStreak };
-}
-
-/* ---- GRAFICO SETTIMANA ---- */
-function buildWeekChart() {
-    var DAYS_SHORT = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
-    var today      = new Date(); today.setHours(0,0,0,0);
-    var days       = [];
-
-    for (var i = 6; i >= 0; i--) {
-        var d = new Date(today); d.setDate(today.getDate() - i);
-        var dk = formatDateKey(d);
-        var hd = appHistory[dk] || {};
-        var used = hd.usedItems || {};
-        var count = 0;
-        Object.keys(used).forEach(function (mk) {
-            count += Object.keys(used[mk] || {}).length;
-        });
-        days.push({ dk: dk, label: DAYS_SHORT[d.getDay()], count: count, isToday: i === 0 });
-    }
-
-    var maxVal = Math.max.apply(null, days.map(function (d) { return d.count; })) || 1;
-
-    var html = '<div class="stat-bar-chart">';
-    days.forEach(function (d) {
-        var h   = maxVal > 0 ? Math.round((d.count / maxVal) * 100) : 0;
-        var cls = 'stat-bar-fill' + (d.isToday ? ' today' : '');
-        html += '<div class="stat-bar-col">'
-            + '<div class="stat-bar-val">' + (d.count || '') + '</div>'
-            + '<div class="stat-bar-wrap">'
-            + '<div class="' + cls + '" style="height:' + h + '%"></div>'
-            + '</div>'
-            + '<div class="stat-bar-label">' + d.label + '</div>'
-            + '</div>';
-    });
-    html += '</div>';
-    return html;
-}
-
-/* ---- COMPLETAMENTO PER PASTO ---- */
-function buildMealCompletionBars() {
-    var mealDefs = [
-        { key: 'colazione', label: '☕ Colazione' },
-        { key: 'spuntino',  label: '🍎 Spuntino'  },
-        { key: 'pranzo',    label: '🍽 Pranzo'    },
-        { key: 'merenda',   label: '🥪 Merenda'   },
-        { key: 'cena',      label: '🌙 Cena'      }
-    ];
-
-    var mealTotals = {};
-    var mealUsedCount = {};
-    mealDefs.forEach(function (md) {
-        mealTotals[md.key]    = 0;
-        mealUsedCount[md.key] = 0;
-    });
-
-    Object.keys(appHistory).forEach(function (dk) {
-        var hd   = appHistory[dk] || {};
-        var used = hd.usedItems || {};
-        mealDefs.forEach(function (md) {
-            var items = getMealItemsForStats(md.key);
-            mealTotals[md.key]    += items.length;
-            mealUsedCount[md.key] += Object.keys(used[md.key] || {}).length;
-        });
-    });
-
-    var hasData = mealDefs.some(function (md) { return mealTotals[md.key] > 0; });
-    if (!hasData) return '<div class="stat-empty">Nessun dato disponibile.</div>';
-
-    var html = '<div class="stat-meal-bars">';
-    mealDefs.forEach(function (md) {
-        var tot = mealTotals[md.key];
-        var usd = mealUsedCount[md.key];
-        var pct = tot > 0 ? Math.round((usd / tot) * 100) : 0;
-        var cls = pct >= 80 ? 'great' : pct >= 50 ? 'ok' : 'low';
-        html += '<div class="stat-meal-row">'
-            + '<div class="stat-meal-label">' + md.label + '</div>'
-            + '<div class="stat-meal-bar-wrap">'
-            + '<div class="stat-meal-bar-fill ' + cls + '" style="width:' + pct + '%"></div>'
-            + '</div>'
-            + '<div class="stat-meal-pct">' + pct + '%</div>'
-            + '</div>';
-    });
-    html += '</div>';
-    return html;
-}
-
-/* ---- TOP ALIMENTI ---- */
-function buildTopFoods() {
-    var counts = {};
-    Object.keys(appHistory).forEach(function (dk) {
-        var hd   = appHistory[dk] || {};
-        var used = hd.usedItems || {};
-        Object.keys(used).forEach(function (mk) {
-            Object.keys(used[mk] || {}).forEach(function (name) {
-                counts[name] = (counts[name] || 0) + 1;
-            });
-        });
-    });
-
-    var sorted = Object.keys(counts).sort(function (a, b) {
-        return counts[b] - counts[a];
-    }).slice(0, 8);
-
-    if (!sorted.length) return '<div class="stat-empty">Nessun alimento consumato.</div>';
-
-    var medals = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣'];
-    var html = '<div class="stat-top-list">';
-    sorted.forEach(function (name, i) {
-        html += '<div class="stat-top-item">'
-            + '<div class="stat-top-rank">' + (medals[i] || (i + 1) + '.') + '</div>'
-            + '<div class="stat-top-name">'  + name + '</div>'
-            + '<div class="stat-top-count">' + counts[name] + '×</div>'
-            + '</div>';
-    });
-    html += '</div>';
-    return html;
-}
-
-/* ---- LIMITI SUMMARY ---- */
-function buildLimitsSummary() {
-    if (!weeklyLimits || !Object.keys(weeklyLimits).length) {
-        return '<div class="stat-empty">Nessun limite configurato.</div>';
-    }
-    var html = '<div class="limits-grid">';
-    Object.keys(weeklyLimits).forEach(function (key) {
-        var data = weeklyLimits[key];
-        var pct  = Math.min(Math.round((data.current / data.max) * 100), 100);
-        var cls  = pct >= 100 ? 'exceeded' : pct >= 70 ? 'warning' : '';
-        html += '<div class="limit-card">'
-            + '<div class="limit-card-icon">'  + data.icon + '</div>'
-            + '<div class="limit-card-name">'  + key.replace(/_/g,' ') + '</div>'
-            + '<div class="limit-progress-bar">'
-            + '<div class="limit-progress-fill ' + cls + '" style="width:' + pct + '%"></div>'
-            + '</div>'
-            + '<div class="limit-text ' + cls + '">'
-            + data.current + '/' + data.max + ' ' + data.unit + '</div>'
-            + '</div>';
-    });
-    html += '</div>';
-    return html;
-}
-
-/* ---- UTILITY ---- */
-function getMealItemsForStats(mealKey) {
-    if (!mealPlan || !mealPlan[mealKey]) return [];
-    var m = mealPlan[mealKey];
-    var items = [];
-    ['principale','contorno','frutta','extra'].forEach(function (cat) {
-        (m[cat] || []).forEach(function (item) { items.push(item); });
-    });
-    return items;
-}
-
-function formatDateKey(d) {
-    return d.getFullYear() + '-'
-        + String(d.getMonth() + 1).padStart(2,'0') + '-'
-        + String(d.getDate()).padStart(2,'0');
+  });
+  return usage;
 }
