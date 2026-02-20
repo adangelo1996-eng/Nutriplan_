@@ -1,17 +1,18 @@
 /* ============================================================
-   APP.JS — icone, dark mode, navigazione, calendario, limiti
-   ============================================================ */
+   APP.JS — v5
+   Navigazione, icone, dark mode, calendario, limiti, init
+============================================================ */
 
-/* ---- CLEANUP SERVICE WORKER VECCHIO ---- */
+/* ── Cleanup Service Worker ── */
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function (regs) {
-    regs.forEach(function (r) { r.unregister(); });
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(r) { r.unregister(); });
   });
 }
 
-/* ============================================================
+/* ══════════════════════════════════════════════════
    ICONA CANVAS
-   ============================================================ */
+══════════════════════════════════════════════════ */
 function drawAppIcon(canvas, size) {
   size = size || 512;
   canvas.width = canvas.height = size;
@@ -37,24 +38,30 @@ function drawAppIcon(canvas, size) {
   ctx.arc(size * 0.3, size * 0.25, size * 0.35, 0, Math.PI * 2);
   ctx.fill();
   ctx.font = 'bold ' + Math.round(size * 0.52) + 'px serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
   ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = size * 0.04;
+  ctx.shadowColor = 'rgba(0,0,0,0.2)';
+  ctx.shadowBlur = size * 0.04;
   ctx.fillText('🌿', size / 2, size * 0.52);
 }
 
 function initIcons() {
   var hc = document.getElementById('headerIcon');
-  if (hc) drawAppIcon(hc, 32);
+  if (hc && hc.tagName === 'CANVAS') drawAppIcon(hc, 32);
+
   var lc = document.createElement('canvas');
   drawAppIcon(lc, 90);
   var ldiv = document.getElementById('landingLogo');
   if (ldiv) { ldiv.innerHTML = ''; ldiv.appendChild(lc); }
+
   var bigCanvas = document.createElement('canvas');
   drawAppIcon(bigCanvas, 512);
   var iconUrl = bigCanvas.toDataURL('image/png');
+
   var ati = document.getElementById('appleTouchIcon');
   if (ati) ati.href = iconUrl;
+
   var mf = {
     name: 'NutriPlan', short_name: 'NutriPlan',
     start_url: '/', display: 'standalone',
@@ -67,9 +74,9 @@ function initIcons() {
   );
 }
 
-/* ============================================================
+/* ══════════════════════════════════════════════════
    DARK MODE
-   ============================================================ */
+══════════════════════════════════════════════════ */
 function initDarkMode() {
   var saved = localStorage.getItem('nutriplanDark');
   var prefersDark = window.matchMedia('(prefers-color-scheme:dark)').matches;
@@ -79,70 +86,185 @@ function initDarkMode() {
 function applyDarkMode(isDark, save) {
   if (save === undefined) save = true;
   document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  /* Aggiorna icona bottone tema — supporta sia id darkToggle che btn-icon-only nel header */
   var btn = document.getElementById('darkToggle');
   if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+  /* Aggiorna tutti i bottoni tema nell'header (classe btn-icon-only con 🌙/☀️) */
+  document.querySelectorAll('[data-theme-toggle]').forEach(function(b) {
+    b.textContent = isDark ? '☀️' : '🌙';
+  });
   var meta = document.getElementById('metaThemeColor');
   if (meta) meta.content = isDark ? '#152318' : '#4a9b7f';
   if (save) localStorage.setItem('nutriplanDark', isDark ? '1' : '0');
 }
 
+/* Alias compatibili — entrambi funzionano */
 function toggleDarkMode() {
   applyDarkMode(document.documentElement.getAttribute('data-theme') !== 'dark');
 }
+function toggleTheme() { toggleDarkMode(); }
 
-/* ============================================================
+/* ══════════════════════════════════════════════════
    iOS / PWA
-   ============================================================ */
-function isIos() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+══════════════════════════════════════════════════ */
+function isIos() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
 function isInStandaloneMode() {
   return window.navigator.standalone === true ||
          window.matchMedia('(display-mode:standalone)').matches;
 }
-function closeIosBanner() {
+
+/* Alias compatibili per ios banner */
+function closeIosBanner()   { dismissIosBanner(); }
+function dismissIosBanner() {
   var b = document.getElementById('iosBanner');
   if (b) b.classList.remove('show');
   localStorage.setItem('iosBannerDismissed', '1');
 }
+
 function initIosBanner() {
   if (isIos() && !isInStandaloneMode() && !localStorage.getItem('iosBannerDismissed')) {
-    setTimeout(function () {
+    setTimeout(function() {
       var b = document.getElementById('iosBanner');
       if (b) b.classList.add('show');
     }, 2000);
   }
 }
 
-var deferredPrompt;
-window.addEventListener('beforeinstallprompt', function (e) {
+var deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
   e.preventDefault();
   deferredPrompt = e;
   if (!localStorage.getItem('installDismissed')) {
-    var b = document.getElementById('installBanner');
-    if (b) b.classList.add('show');
+    var b = document.getElementById('installPwaBanner');
+    if (b) b.style.display = 'flex';
   }
 });
 
+function installPwa() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
+  dismissInstallBanner();
+}
+function dismissInstallBanner() {
+  var b = document.getElementById('installPwaBanner');
+  if (b) b.style.display = 'none';
+  localStorage.setItem('installDismissed', '1');
+}
 
+/* ══════════════════════════════════════════════════
+   NAVIGAZIONE PAGINE
+══════════════════════════════════════════════════ */
+var PAGE_MAP = {
+  'piano':   'pianoPasto',
+  'pantry':  'pantryPage',
+  'ricette': 'ricettePage',
+  'storico': 'storicoPage',
+  'spesa':   'spesaPage',
+  'stats':   'statsPage',
+  'profilo': 'profiloPage'
+};
 
-/* ============================================================
+var currentPage = 'piano';
+
+function switchPage(pageKey) {
+  if (!PAGE_MAP[pageKey]) return;
+  currentPage = pageKey;
+
+  /* Nasconde tutte le pagine */
+  Object.values(PAGE_MAP).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+
+  /* Mostra pagina target */
+  var target = document.getElementById(PAGE_MAP[pageKey]);
+  if (target) target.classList.add('active');
+
+  /* Aggiorna nav tab — bottom nav */
+  document.querySelectorAll('.bottom-nav .nav-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.page === pageKey);
+  });
+
+  /* Aggiorna nav tab — sidebar */
+  document.querySelectorAll('.sidebar-nav .nav-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.page === pageKey);
+  });
+
+  /* Render specifico per pagina */
+  if (pageKey === 'pantry')  { renderFridge(); }
+  if (pageKey === 'ricette') { if (typeof renderRicette === 'function') renderRicette(); }
+  if (pageKey === 'storico') { if (typeof renderStorico === 'function') renderStorico(); }
+  if (pageKey === 'spesa')   { if (typeof renderSpesa   === 'function') renderSpesa(); }
+  if (pageKey === 'stats')   { if (typeof renderStats   === 'function') renderStats(); }
+  if (pageKey === 'profilo') { if (typeof renderProfilo === 'function') renderProfilo(); }
+}
+
+/* ══════════════════════════════════════════════════
+   TAB INTERNI — PIANO
+══════════════════════════════════════════════════ */
+var currentPianoTab = 'pasto';
+
+function switchPianoTab(tabKey) {
+  currentPianoTab = tabKey;
+
+  /* Tab buttons */
+  document.querySelectorAll('#pianoTabs .page-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.tab === tabKey);
+  });
+
+  /* Tab content */
+  document.querySelectorAll('#pianoPasto .page-tab-content').forEach(function(c) {
+    c.classList.toggle('active', c.id === 'tab-' + tabKey);
+  });
+
+  /* Render specifico */
+  if (tabKey === 'frigo-piano')  { if (typeof renderFridgeRecipes  === 'function') renderFridgeRecipes(); }
+  if (tabKey === 'ingredienti')  { if (typeof renderIngredienti    === 'function') renderIngredienti(); }
+  if (tabKey === 'limiti')       { renderLimiti(); }
+}
+
+/* ══════════════════════════════════════════════════
+   TAB INTERNI — RICETTE
+══════════════════════════════════════════════════ */
+var currentRicetteTab = 'catalogo';
+
+function switchRicetteTab(tabKey) {
+  currentRicetteTab = tabKey;
+
+  document.querySelectorAll('#ricetteTabs .page-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.tab === tabKey);
+  });
+  document.querySelectorAll('#ricettePage .page-tab-content').forEach(function(c) {
+    c.classList.toggle('active', c.id === 'tab-' + tabKey);
+  });
+
+  if (tabKey === 'catalogo') { if (typeof renderRicette        === 'function') renderRicette(); }
+  if (tabKey === 'mie')      { if (typeof renderCustomRicette  === 'function') renderCustomRicette(); }
+}
+
+/* ══════════════════════════════════════════════════
    CALENDARIO
-   ============================================================ */
+══════════════════════════════════════════════════ */
 var DAYS_IT   = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
 var MONTHS_IT = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
 function buildCalendarBar() {
   var bar = document.getElementById('calendarBar');
   if (!bar) return;
-  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
   var html = '';
   for (var i = -30; i <= 30; i++) {
     var d = new Date(today);
     d.setDate(today.getDate() + i);
-    var dk       = formatDateKey(d);
+    var dk = formatDateKey(d);
     var isToday  = dk === getCurrentDateKey();
     var isActive = dk === selectedDateKey;
-    var hd       = appHistory[dk] || {};
-    var hasData  = Object.keys(hd.usedItems || {}).some(function (mk) {
+    var hd = (typeof appHistory !== 'undefined' && appHistory[dk]) ? appHistory[dk] : {};
+    var hasData = Object.keys(hd.usedItems || {}).some(function(mk) {
       return Object.keys((hd.usedItems || {})[mk] || {}).length > 0;
     });
     var isPast = d < today && !isToday;
@@ -152,197 +274,417 @@ function buildCalendarBar() {
       (hasData  ? ' has-data' : '') +
       (isPast   ? ' cal-past' : '');
     html +=
-      '<div class="' + cls + '" onclick="selectCalendarDay(\'' + dk + '\')">' +
-        '<span class="cal-dow">'   + DAYS_IT[d.getDay()]   + '</span>' +
-        '<span class="cal-date">'  + d.getDate()           + '</span>' +
-        '<span class="cal-month">' + MONTHS_IT[d.getMonth()] + '</span>' +
+      '<div class="' + cls + '" onclick="selectDate(\'' + dk + '\')" data-dk="' + dk + '">' +
+        '<span class="cal-day-name">' + DAYS_IT[d.getDay()] + '</span>' +
+        '<span class="cal-day-num">'  + d.getDate() + '</span>' +
+        '<span class="cal-day-month">' + MONTHS_IT[d.getMonth()] + '</span>' +
+        (hasData ? '<span class="cal-dot"></span>' : '') +
       '</div>';
   }
   bar.innerHTML = html;
-  setTimeout(function () {
+
+  /* Scroll al giorno attivo */
+  setTimeout(function() {
     var active = bar.querySelector('.cal-day.active');
-    if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  }, 100);
+    if (active) active.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+  }, 80);
 }
 
-function formatDateKey(d) {
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0');
+function updateDateLabel() {
+  var el = document.getElementById('selectedDateLabel');
+  if (!el) return;
+  var d = selectedDateKey ? parseDateKey(selectedDateKey) : new Date();
+  var today = new Date(); today.setHours(0,0,0,0);
+  var diff = Math.round((d - today) / 86400000);
+  var prefix = diff === 0 ? 'Oggi, ' : diff === -1 ? 'Ieri, ' : diff === 1 ? 'Domani, ' : '';
+  el.textContent = prefix + DAYS_IT[d.getDay()] + ' ' + d.getDate() + ' ' +
+                   MONTHS_IT[d.getMonth()] + ' ' + d.getFullYear();
 }
 
-function selectCalendarDay(dk) {
+function selectDate(dk) {
   selectedDateKey = dk;
-  var d   = new Date(dk + 'T00:00:00');
-  var lbl = document.getElementById('currentDateLabel');
-  if (lbl) lbl.textContent =
-    DAYS_IT[d.getDay()] + ' ' + d.getDate() + ' ' +
-    MONTHS_IT[d.getMonth()] + ' ' + d.getFullYear();
-  getDayData(dk);
   buildCalendarBar();
-  renderMealPlan();
+  updateDateLabel();
+  if (typeof renderPiano === 'function') renderPiano();
 }
 
-/* ============================================================
-   ENTER APP
-   ============================================================ */
-function enterApp() {
-  var landing = document.getElementById('landingPage');
-  var main    = document.getElementById('mainApp');
-  if (landing) landing.style.display = 'none';
-  if (main)    main.classList.add('active');
-
-  loadData();
-  initFirebase();   /* definita in firebase-config.js */
-
-  selectedDateKey = getCurrentDateKey();
-  getDayData(selectedDateKey);
-  buildCalendarBar();
-  selectCalendarDay(selectedDateKey);
-  renderPantry();
-  renderFridge();
-  updateLimits();
-  initDayIngGrid();
-  updateFridgeSuggestions();
-  initIosBanner();
-  checkOnlineStatus();
-  if (typeof initIngredientiDatalist === 'function') initIngredientiDatalist();
-}
-
-/* ============================================================
-   NAVIGAZIONE
-   ============================================================ */
-function showPage(name, btn) {
-  document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });
-  document.querySelectorAll('.nav-tab').forEach(function (t) { t.classList.remove('active'); });
-  var page = document.getElementById(name + 'Page');
-  if (page) page.classList.add('active');
-  if (btn)  btn.classList.add('active');
-  var map = {
-    dispensa:    renderPantry,
-    storico:     renderStorico,
-    statistiche: renderStatistiche,
-    ricette:     renderRicettePage,
-    spesa:       renderSpesa,
-    profilo:     renderProfilo
-  };
-  if (map[name] && typeof map[name] === 'function') map[name]();
-}
-
-function showPianoTab(tab, btn) {
-  document.querySelectorAll('#pianoPage .page-tab-content').forEach(function (c) { c.classList.remove('active'); });
-  document.querySelectorAll('#pianoPage .page-tab').forEach(function (t) { t.classList.remove('active'); });
-  var id = 'pianoTab' + tab.charAt(0).toUpperCase() + tab.slice(1);
-  var el = document.getElementById(id);
-  if (el) el.classList.add('active');
-  if (btn) btn.classList.add('active');
-  if (tab === 'frigo')  updateFridgeSuggestions();
-  if (tab === 'limiti') updateLimits();
-}
-
-function showDispensaTab(tab, btn) {
-  document.querySelectorAll('#dispensaPage .page-tab-content').forEach(function (c) { c.classList.remove('active'); });
-  document.querySelectorAll('#dispensaPage .page-tab').forEach(function (t) { t.classList.remove('active'); });
-  var tabId = tab === 'dispensa' ? 'dispensaTabDispensa' : 'dispensaTabFrigo';
-  var el = document.getElementById(tabId);
-  if (el) el.classList.add('active');
-  if (btn) btn.classList.add('active');
-  if (tab === 'frigo')    { renderFridge(); updateSavedFridges(); }
-  if (tab === 'dispensa') renderPantry();
-}
-
-/* ============================================================
-   LIMITI SETTIMANALI — unica definizione canonica
-   ============================================================ */
-function updateLimits() {
-  var grid = document.getElementById('limitsGrid');
-  if (!grid) return;
-  if (!weeklyLimits || !Object.keys(weeklyLimits).length) {
-    grid.innerHTML = '<p class="empty-hint">Nessun limite configurato.</p>';
+/* ══════════════════════════════════════════════════
+   LIMITI SETTIMANALI
+══════════════════════════════════════════════════ */
+function renderLimiti() {
+  var el = document.getElementById('limitiContent');
+  if (!el) return;
+  if (typeof weeklyLimits === 'undefined' || !weeklyLimits ||
+      Object.keys(weeklyLimits).length === 0) {
+    el.innerHTML = '<div class="rc-empty"><div style="font-size:2rem;">📊</div>' +
+                   '<p>Nessun limite configurato.</p></div>';
     return;
   }
-  var html = '';
-  Object.keys(weeklyLimits).forEach(function (key) {
+  var html = '<div class="limits-grid">';
+  Object.keys(weeklyLimits).forEach(function(key) {
     var data = weeklyLimits[key];
     var cur  = data.current || 0;
     var pct  = Math.min(Math.round((cur / data.max) * 100), 100);
     var cls  = pct >= 100 ? 'exceeded' : pct >= 70 ? 'warning' : '';
     html +=
       '<div class="limit-card ' + cls + '">' +
-        '<div class="limit-icon">'  + (data.icon || '') + '</div>' +
-        '<div class="limit-name">'  + key.replace(/_/g, ' ') + '</div>' +
-        '<div class="limit-bar-wrap">' +
-          '<div class="limit-bar ' + cls + '" style="width:' + pct + '%"></div>' +
+        '<div class="limit-card-icon">' + (data.icon || '📊') + '</div>' +
+        '<div class="limit-card-name">' + (data.name || key) + '</div>' +
+        '<div class="limit-progress-bar">' +
+          '<div class="limit-progress-fill ' + cls + '" style="width:' + pct + '%"></div>' +
         '</div>' +
-        '<div class="limit-count">' + cur + '/' + data.max + ' ' + (data.unit || '') + '</div>' +
+        '<div class="limit-text ' + cls + '">' + cur + ' / ' + data.max + ' ' + (data.unit || '') + '</div>' +
       '</div>';
   });
-  grid.innerHTML = html;
+  html += '</div>';
+  el.innerHTML = html;
 }
 
-/* unica definizione di resetWeek — rimuove la duplicazione con storage.js */
-function resetWeek() {
-  if (!confirm('Resettare tutti i contatori settimanali?')) return;
-  Object.keys(weeklyLimits).forEach(function (k) { weeklyLimits[k].current = 0; });
-  saveData();
-  updateLimits();
-  renderMealPlan();
+/* ══════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════ */
+function showToast(msg, type, duration) {
+  type     = type     || 'info';
+  duration = duration || 2800;
+  var container = document.getElementById('toastContainer');
+  if (!container) return;
+  var t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(function() {
+    t.classList.add('removing');
+    setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 250);
+  }, duration);
 }
 
-/* ============================================================
-   MODAL LISTENERS (eseguiti dopo il DOM)
-   ============================================================ */
-function initModalListeners() {
-  ['saveFridgeModal','recipeModal','spesaItemModal','customIngModal','ricettaFormModal']
-    .forEach(function (id) {
-      var el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('click', function (e) {
-        if (e.target.id !== id) return;
-        var closers = {
-          saveFridgeModal:   closeSaveFridgeModal,
-          recipeModal:       closeRecipeModal,
-          spesaItemModal:    closeSpesaItemModal,
-          customIngModal:    closeCustomIngModal,
-          ricettaFormModal:  closeRicettaForm
-        };
-        if (closers[id]) closers[id]();
-      });
+/* ══════════════════════════════════════════════════
+   CLOUD STATUS
+══════════════════════════════════════════════════ */
+function updateCloudStatus(state, text) {
+  var el = document.getElementById('cloudStatus');
+  if (!el) return;
+  el.className = 'cloud-status ' + (state || 'local');
+  var span = el.querySelector('span');
+  if (span) span.textContent = text || (state === 'synced' ? '✓ Sincronizzato' :
+                                         state === 'saving'  ? '⏳ Salvataggio…' :
+                                         state === 'error'   ? '✗ Errore sync'  : '☁ Locale');
+}
+
+/* ══════════════════════════════════════════════════
+   AUTH UI
+══════════════════════════════════════════════════ */
+function updateAuthUI(user) {
+  var pill    = document.getElementById('authUserPill');
+  var loginBtn= document.getElementById('authLoginBtn');
+  var avatar  = document.getElementById('authAvatar');
+  var name    = document.getElementById('authUserName');
+
+  if (user) {
+    if (pill)     { pill.style.display = 'flex'; }
+    if (loginBtn) { loginBtn.style.display = 'none'; }
+    if (avatar)   { avatar.src = user.photoURL || ''; }
+    if (name)     { name.textContent = (user.displayName || user.email || 'Utente').split(' ')[0]; }
+    updateCloudStatus('synced', '✓ Sincronizzato');
+  } else {
+    if (pill)     { pill.style.display = 'none'; }
+    if (loginBtn) { loginBtn.style.display = 'flex'; }
+    updateCloudStatus('local', '☁ Locale');
+  }
+}
+
+function openAuthModal() {
+  var modal = document.getElementById('authModal');
+  if (!modal) return;
+  var body  = document.getElementById('authModalBody');
+  var title = document.getElementById('authModalTitle');
+  var user  = (typeof currentUser !== 'undefined') ? currentUser : null;
+
+  if (user) {
+    if (title) title.textContent = 'Account';
+    if (body) body.innerHTML =
+      '<div style="text-align:center;padding:16px 0;">' +
+        '<img src="' + (user.photoURL || '') + '" alt="Avatar" ' +
+             'style="width:64px;height:64px;border-radius:50%;margin:0 auto 12px;' +
+                    'border:3px solid var(--primary);display:block;" ' +
+             'onerror="this.style.display=\'none\'" />' +
+        '<div style="font-weight:800;font-size:1rem;">' + (user.displayName || '') + '</div>' +
+        '<div style="font-size:.78rem;color:var(--text-light);margin:4px 0 20px;">' + (user.email || '') + '</div>' +
+        '<button class="btn btn-danger btn-small" onclick="signOutUser()">Esci</button>' +
+      '</div>';
+  } else {
+    if (title) title.textContent = 'Accedi';
+    if (body) body.innerHTML =
+      '<div style="padding:8px 0;">' +
+        '<p style="font-size:.82rem;color:var(--text-light);text-align:center;margin-bottom:20px;">' +
+          'Accedi per sincronizzare i dati su tutti i dispositivi.' +
+        '</p>' +
+        '<button class="btn-google" onclick="signInWithGoogle()">' +
+          '<svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>' +
+          'Continua con Google' +
+        '</button>' +
+      '</div>';
+  }
+  modal.classList.add('active');
+}
+
+function closeAuthModal() {
+  var modal = document.getElementById('authModal');
+  if (modal) modal.classList.remove('active');
+}
+
+/* ══════════════════════════════════════════════════
+   MODAL HELPERS
+══════════════════════════════════════════════════ */
+function closeRecipeModal() {
+  var m = document.getElementById('recipeModal');
+  if (m) m.classList.remove('active');
+}
+function closeSaveFridgeModal() {
+  var m = document.getElementById('saveFridgeModal');
+  if (m) m.classList.remove('active');
+}
+function openSavedFridgeModal() {
+  var m = document.getElementById('savedFridgeModal');
+  if (!m) return;
+  var list = document.getElementById('savedFridgeList');
+  if (list && typeof renderSavedFridgeList === 'function') renderSavedFridgeList(list);
+  m.classList.add('active');
+}
+function closeSavedFridgeModal() {
+  var m = document.getElementById('savedFridgeModal');
+  if (m) m.classList.remove('active');
+}
+function openAddFridgeModal() {
+  var m = document.getElementById('addFridgeModal');
+  if (!m) return;
+  var inp = document.getElementById('newFridgeItem');
+  if (inp) { inp.value = ''; inp.focus(); }
+  var qty = document.getElementById('newFridgeQty');
+  if (qty) qty.value = '';
+  m.classList.add('active');
+  populateIngAutocomplete();
+}
+function closeAddFridgeModal() {
+  var m = document.getElementById('addFridgeModal');
+  if (m) m.classList.remove('active');
+}
+function openNewRicettaModal() {
+  var m = document.getElementById('newRicettaModal');
+  if (m) m.classList.add('active');
+}
+function closeNewRicettaModal() {
+  var m = document.getElementById('newRicettaModal');
+  if (m) m.classList.remove('active');
+}
+function closePurchasedQtyModal() {
+  var m = document.getElementById('purchasedQtyModal');
+  if (m) m.classList.remove('active');
+}
+
+/* Chiudi modali cliccando sfondo */
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.modal').forEach(function(modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) modal.classList.remove('active');
     });
-
-  var fridgeNameEl = document.getElementById('fridgeName');
-  if (fridgeNameEl) fridgeNameEl.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') saveFridge();
   });
+});
 
-  var installBtn = document.getElementById('installBtn');
-  if (installBtn) installBtn.addEventListener('click', function () {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    deferredPrompt = null;
-    var b = document.getElementById('installBanner');
-    if (b) b.classList.remove('show');
-  });
-
-  var dismissBtn = document.getElementById('dismissBtn');
-  if (dismissBtn) dismissBtn.addEventListener('click', function () {
-    var b = document.getElementById('installBanner');
-    if (b) b.classList.remove('show');
-    localStorage.setItem('installDismissed', '1');
-  });
-
-  document.addEventListener('click', function (e) {
-    if (!e.target.closest('.sub-drawer') && !e.target.closest('.meal-item-btn')) {
-      document.querySelectorAll('.sub-drawer.open').forEach(function (d) {
-        d.classList.remove('open');
-      });
-    }
-  });
+/* ══════════════════════════════════════════════════
+   FRIGO — helpers interfaccia
+══════════════════════════════════════════════════ */
+function clearPantrySearch() {
+  var inp = document.getElementById('pantrySearch');
+  if (inp) inp.value = '';
+  filterPantry('');
 }
 
-/* ============================================================
-   INIT
-   ============================================================ */
-initIcons();
-initDarkMode();
-initModalListeners();
+function populateIngAutocomplete() {
+  var dl = document.getElementById('ingredientiAutocomplete');
+  if (!dl) return;
+  var items = typeof getAllPantryItems === 'function' ? getAllPantryItems() : [];
+  dl.innerHTML = items.map(function(i) {
+    return '<option value="' + i.name.replace(/"/g, '&quot;') + '">';
+  }).join('');
+}
+
+function confirmAddFridge() {
+  var name = (document.getElementById('newFridgeItem') || {}).value || '';
+  var cat  = (document.getElementById('newFridgeCategory') || {}).value || '🧂 Altro';
+  var qty  = parseFloat((document.getElementById('newFridgeQty') || {}).value || '0');
+  var unit = (document.getElementById('newFridgeUnit') || {}).value || 'g';
+
+  name = name.trim();
+  if (!name) { showToast('⚠️ Inserisci il nome dell\'ingrediente', 'warning'); return; }
+  if (isNaN(qty) || qty < 0) qty = 0;
+
+  if (!pantryItems) pantryItems = {};
+  var existing = pantryItems[name] || {};
+  pantryItems[name] = Object.assign({}, existing, {
+    quantity: qty,
+    unit:     unit,
+    category: cat,
+    icon:     typeof getCategoryIcon === 'function' ? getCategoryIcon(cat) : '🧂'
+  });
+
+  if (typeof saveData === 'function') saveData();
+  closeAddFridgeModal();
+  renderFridge();
+  showToast('✅ ' + name + ' aggiunto al frigo', 'success');
+}
+
+function saveFridgeConfig() {
+  var m = document.getElementById('saveFridgeModal');
+  if (m) m.classList.add('active');
+  var inp = document.getElementById('fridgeConfigName');
+  if (inp) { inp.value = ''; setTimeout(function() { inp.focus(); }, 120); }
+}
+
+function confirmSaveFridge() {
+  var inp  = document.getElementById('fridgeConfigName');
+  var name = inp ? inp.value.trim() : '';
+  if (!name) { showToast('⚠️ Inserisci un nome per la configurazione', 'warning'); return; }
+  if (typeof saveData !== 'function') return;
+
+  var configs = JSON.parse(localStorage.getItem('nutriplanFridgeConfigs') || '[]');
+  configs.push({
+    id:    Date.now(),
+    name:  name,
+    date:  new Date().toLocaleDateString('it-IT'),
+    items: JSON.parse(JSON.stringify(pantryItems || {}))
+  });
+  localStorage.setItem('nutriplanFridgeConfigs', JSON.stringify(configs));
+  closeSaveFridgeModal();
+  showToast('💾 Frigo "' + name + '" salvato', 'success');
+}
+
+function renderSavedFridgeList(container) {
+  var configs = JSON.parse(localStorage.getItem('nutriplanFridgeConfigs') || '[]');
+  if (!configs.length) {
+    container.innerHTML = '<div class="rc-empty"><p>Nessuna configurazione salvata.</p></div>';
+    return;
+  }
+  container.innerHTML = configs.map(function(cfg) {
+    return '<div class="saved-fridge-item">' +
+      '<div class="saved-fridge-info">' +
+        '<div class="saved-fridge-name">' + cfg.name + '</div>' +
+        '<div class="saved-fridge-date">' + cfg.date + '</div>' +
+      '</div>' +
+      '<div class="saved-fridge-actions">' +
+        '<button class="rc-btn rc-btn-sm rc-btn-primary" ' +
+                'onclick="loadFridgeConfig(' + cfg.id + ')">Carica</button>' +
+        '<button class="rc-btn rc-btn-sm" style="color:var(--danger)" ' +
+                'onclick="deleteFridgeConfig(' + cfg.id + ')">🗑</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function loadFridgeConfig(id) {
+  var configs = JSON.parse(localStorage.getItem('nutriplanFridgeConfigs') || '[]');
+  var cfg = configs.find(function(c) { return c.id === id; });
+  if (!cfg) return;
+  pantryItems = JSON.parse(JSON.stringify(cfg.items));
+  if (typeof saveData === 'function') saveData();
+  closeSavedFridgeModal();
+  renderFridge();
+  showToast('📁 Frigo "' + cfg.name + '" caricato', 'success');
+}
+
+function deleteFridgeConfig(id) {
+  var configs = JSON.parse(localStorage.getItem('nutriplanFridgeConfigs') || '[]');
+  configs = configs.filter(function(c) { return c.id !== id; });
+  localStorage.setItem('nutriplanFridgeConfigs', JSON.stringify(configs));
+  var m = document.getElementById('savedFridgeModal');
+  var list = document.getElementById('savedFridgeList');
+  if (list) renderSavedFridgeList(list);
+  showToast('🗑 Configurazione eliminata', 'info');
+}
+
+/* ══════════════════════════════════════════════════
+   UPDATE ALL UI
+══════════════════════════════════════════════════ */
+function updateAllUI() {
+  if (typeof renderPiano   === 'function') renderPiano();
+  if (typeof renderFridge  === 'function' && currentPage === 'pantry') renderFridge();
+  if (typeof renderRicette === 'function' && currentPage === 'ricette') renderRicette();
+  if (typeof renderSpesa   === 'function' && currentPage === 'spesa') renderSpesa();
+  if (typeof renderStats   === 'function' && currentPage === 'stats') renderStats();
+}
+
+/* ══════════════════════════════════════════════════
+   RESET GIORNATA
+══════════════════════════════════════════════════ */
+function resetDay() {
+  if (!confirm('Vuoi resettare il piano di oggi?')) return;
+  if (typeof mealPlan !== 'undefined') {
+    ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk) {
+      if (mealPlan[mk]) {
+        ['principale','contorno','frutta','extra'].forEach(function(cat) {
+          mealPlan[mk][cat] = [];
+        });
+      }
+    });
+  }
+  if (typeof saveData === 'function') saveData();
+  if (typeof renderPiano === 'function') renderPiano();
+  showToast('🔄 Piano resettato', 'info');
+}
+
+/* ══════════════════════════════════════════════════
+   INIT APP
+══════════════════════════════════════════════════ */
+function startApp() {
+  var landing = document.getElementById('landingPage');
+  var shell   = document.getElementById('appShell');
+  if (landing) landing.style.display = 'none';
+  if (shell)   shell.style.display   = 'block';
+
+  initDarkMode();
+  initIcons();
+  initIosBanner();
+
+  if (typeof loadData === 'function') loadData();
+
+  /* Init data defaults */
+  if (typeof selectedDateKey === 'undefined' || !selectedDateKey) {
+    if (typeof getCurrentDateKey === 'function') {
+      window.selectedDateKey = getCurrentDateKey();
+    }
+  }
+
+  buildCalendarBar();
+  updateDateLabel();
+
+  /* Render pagina iniziale */
+  if (typeof renderPiano === 'function') renderPiano();
+
+  /* Pagina attiva di default */
+  switchPage('piano');
+}
+
+/* Auto-start se non c'è landing page */
+document.addEventListener('DOMContentLoaded', function() {
+  initDarkMode();
+
+  /* Aggiorna icona tema nell'header (data-theme-toggle) */
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.querySelectorAll('[data-theme-toggle]').forEach(function(b) {
+    b.textContent = isDark ? '☀️' : '🌙';
+  });
+
+  /* Se l'appShell è già visibile (no landing), init diretto */
+  var shell = document.getElementById('appShell');
+  if (shell && shell.style.display !== 'none' && shell.style.display !== '') {
+    startApp();
+  }
+
+  /* Firebase auth listener */
+  if (typeof firebase !== 'undefined' && firebase.auth) {
+    firebase.auth().onAuthStateChanged(function(user) {
+      window.currentUser = user || null;
+      updateAuthUI(user);
+    });
+  }
+});
