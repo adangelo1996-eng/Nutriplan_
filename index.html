@@ -7,46 +7,30 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>NutriPlan</title>
-  <link id="manifest-placeholder" rel="manifest" href="">
-  <link id="appleTouchIcon" rel="apple-touch-icon" href="">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 
   <style>
     /* ── SIDEBAR DESKTOP ── */
     .sidebar-nav {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      width: var(--sidebar-w, 210px);
-      background: var(--bg-card);
-      border-right: 1px solid var(--border);
-      flex-direction: column;
-      padding-top: var(--header-h, 56px);
-      z-index: 100;
-      overflow-y: auto;
-      box-shadow: 2px 0 12px rgba(0,0,0,.06);
+      display: none; position: fixed; top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-w, 210px); background: var(--bg-card);
+      border-right: 1px solid var(--border); flex-direction: column;
+      padding-top: var(--header-h, 56px); z-index: 100;
+      overflow-y: auto; box-shadow: 2px 0 12px rgba(0,0,0,.06);
     }
     .sidebar-nav .nav-tab {
-      flex: none;
-      flex-direction: row;
-      justify-content: flex-start;
-      gap: 12px;
-      padding: 13px 20px;
-      border-radius: 0;
-      font-size: .88em;
-      width: 100%;
-      color: var(--text-mid);
+      flex: none; flex-direction: row; justify-content: flex-start;
+      gap: 12px; padding: 13px 20px; border-radius: 0;
+      font-size: .88em; width: 100%; color: var(--text-mid);
     }
-    .sidebar-nav .nav-tab .nav-icon { font-size: 1.2em; }
+    .sidebar-nav .nav-tab .nav-icon  { font-size: 1.2em; }
     .sidebar-nav .nav-tab .nav-label { font-size: 1em; max-width: none; }
     .sidebar-nav .nav-tab.active {
-      background: var(--primary-light);
-      color: var(--primary);
+      background: var(--primary-light); color: var(--primary);
       border-left: 3px solid var(--primary);
     }
     .sidebar-nav .nav-tab.active::after { display: none; }
-
     @media (min-width: 768px) {
       .sidebar-nav { display: flex; }
       .bottom-nav  { display: none !important; }
@@ -67,6 +51,7 @@
       animation: fadeIn .18s ease;
     }
     .modal-content-large { max-width: 600px; }
+    .modal-content-small { max-width: 320px; }
     .modal-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 16px 18px; border-bottom: 1px solid var(--border);
@@ -74,10 +59,9 @@
     }
     .modal-header h3 { font-size: 1em; font-weight: 800; margin: 0; }
     .modal-close {
-      background: none; border: none; font-size: 1.1em;
-      cursor: pointer; color: var(--text-light); padding: 4px;
-      line-height: 1; border-radius: var(--radius-xs);
-      transition: background .2s;
+      background: none; border: none; font-size: 1.1em; cursor: pointer;
+      color: var(--text-light); padding: 4px; line-height: 1;
+      border-radius: var(--radius-xs); transition: background .2s;
     }
     .modal-close:hover { background: var(--border); }
     .modal-body   { padding: 18px; }
@@ -86,13 +70,56 @@
       padding: 14px 18px; border-top: 1px solid var(--border);
     }
 
+    /* ── FRIGO CARD ── */
+    .fridge-category-section { margin-bottom: 22px; }
+    .category-title { font-size: .78em; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .cat-count-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: var(--primary); color: #fff; font-size: .62em; font-weight: 800;
+      width: 18px; height: 18px; border-radius: 50%;
+    }
+    .fridge-items {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+      gap: 10px;
+    }
+    .fridge-item {
+      background: var(--bg-card); border-radius: var(--radius);
+      padding: 14px 10px 12px; text-align: center;
+      box-shadow: var(--shadow); border: 1.5px solid var(--border);
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      transition: border-color .2s, box-shadow .2s; position: relative;
+    }
+    .fridge-item:hover { border-color: var(--primary); box-shadow: var(--shadow-lg); }
+    .fridge-item-icon  { font-size: 2em; line-height: 1; margin-bottom: 2px; }
+    .fridge-item-name  { font-size: .76em; font-weight: 700; line-height: 1.3; word-break: break-word; }
+    .fridge-item-qty   {
+      font-size: .85em; color: var(--primary); font-weight: 800;
+      background: var(--primary-light); border-radius: var(--radius-xs);
+      padding: 2px 8px; margin: 2px 0; cursor: pointer; transition: background .2s;
+    }
+    .fridge-item-qty:hover { background: color-mix(in srgb, var(--primary) 20%, transparent); }
+    .fridge-qty-btns { display: flex; gap: 6px; margin-top: 4px; }
+    .qty-btn {
+      width: 30px; height: 30px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-xs); background: var(--bg-light);
+      cursor: pointer; font-size: 1em; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text); transition: all .15s; flex-shrink: 0;
+    }
+    .qty-btn:hover  { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .qty-btn:active { transform: scale(.88); }
+    .fridge-delete-btn {
+      background: none; border: none; cursor: pointer; font-size: .7em;
+      color: var(--text-light); position: absolute; top: 5px; right: 5px;
+      padding: 2px 4px; border-radius: var(--radius-xs); transition: color .2s;
+    }
+    .fridge-delete-btn:hover { color: var(--danger, #e05252); }
+
     /* ── STORICO ── */
     .storico-list { display: flex; flex-direction: column; gap: 8px; }
     .storico-day  { background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
-    .storico-day-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 14px; cursor: pointer; gap: 8px;
-    }
+    .storico-day-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; cursor: pointer; gap: 8px; }
     .storico-day-header:hover { background: var(--bg-light); }
     .storico-day-label  { font-weight: 800; font-size: .9em; }
     .storico-day-count  { font-size: .78em; color: var(--text-light); font-weight: 600; }
@@ -100,9 +127,9 @@
     .storico-day-detail { padding: 0 14px 12px; }
     .storico-meal-block { margin-bottom: 10px; }
     .storico-meal-title { font-size: .76em; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-    .storico-item       { display: flex; align-items: center; justify-content: space-between; font-size: .84em; padding: 4px 0; border-bottom: 1px solid var(--border); }
+    .storico-item { display: flex; align-items: center; justify-content: space-between; font-size: .84em; padding: 4px 0; border-bottom: 1px solid var(--border); }
     .storico-item:last-child { border-bottom: none; }
-    .storico-item-qty   { color: var(--text-light); font-size: .9em; }
+    .storico-item-qty { color: var(--text-light); font-size: .9em; }
 
     /* ── SPESA ── */
     .spesa-header-row   { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
@@ -124,7 +151,7 @@
     .spesa-item-qty     { font-size: .76em; color: var(--text-light); margin-top: 2px; }
     .spesa-item-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
     .spesa-badge-auto   { font-size: .65em; font-weight: 800; background: var(--primary-light); color: var(--primary); padding: 2px 6px; border-radius: 10px; }
-    .spesa-badge-manual { font-size: .65em; font-weight: 800; background: var(--bg2, #e6ede9); color: var(--text-light); padding: 2px 6px; border-radius: 10px; }
+    .spesa-badge-manual { font-size: .65em; font-weight: 800; background: var(--bg-light); color: var(--text-light); padding: 2px 6px; border-radius: 10px; }
     .spesa-delete-btn   { background: none; border: none; cursor: pointer; font-size: .85em; color: var(--text-light); padding: 3px; border-radius: var(--radius-xs); }
     .spesa-delete-btn:hover { color: var(--danger, #e05252); background: var(--bg-light); }
     .spesa-add-row      { display: flex; gap: 8px; align-items: center; }
@@ -148,40 +175,50 @@
     .edit-item-row        { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
 
     /* ── STATS ── */
-    .stats-grid         { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 10px; margin-bottom: 20px; }
-    .stat-card          { background: var(--bg-card); border-radius: var(--radius); padding: 16px 12px; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-    .stat-card-icon     { font-size: 1.8em; margin-bottom: 6px; }
-    .stat-card-value    { font-size: 1.4em; font-weight: 800; color: var(--primary); }
-    .stat-card-label    { font-size: .72em; color: var(--text-light); margin-top: 3px; font-weight: 700; }
+    .stats-grid   { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 10px; margin-bottom: 20px; }
+    .stat-card    { background: var(--bg-card); border-radius: var(--radius); padding: 16px 12px; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+    .stat-card-icon  { font-size: 1.8em; margin-bottom: 6px; }
+    .stat-card-value { font-size: 1.4em; font-weight: 800; color: var(--primary); }
+    .stat-card-label { font-size: .72em; color: var(--text-light); margin-top: 3px; font-weight: 700; }
 
-    /* ── LIMITS ── */
-    .limit-card         { background: var(--bg-card); border-radius: var(--radius); padding: 14px 12px; text-align: center; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
-    .limit-card.warning { border-color: var(--warning, #f0a500); }
-    .limit-card.exceeded{ border-color: var(--danger, #e05252); }
-    .limit-card-icon    { font-size: 1.6em; margin-bottom: 5px; }
-    .limit-card-name    { font-size: .72em; font-weight: 800; color: var(--text-light); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .04em; }
-    .limit-progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
-    .limit-progress-fill{ height: 100%; background: var(--primary); border-radius: 3px; transition: width .4s; }
+    /* ── LIMITI ── */
+    .limit-card       { background: var(--bg-card); border-radius: var(--radius); padding: 14px 12px; text-align: center; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+    .limit-card.warning  { border-color: var(--warning, #f0a500); }
+    .limit-card.exceeded { border-color: var(--danger,  #e05252); }
+    .limit-card-icon  { font-size: 1.6em; margin-bottom: 5px; }
+    .limit-card-name  { font-size: .72em; font-weight: 800; color: var(--text-light); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .04em; }
+    .limit-progress-bar  { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
+    .limit-progress-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width .4s; }
     .limit-progress-fill.warning  { background: var(--warning, #f0a500); }
-    .limit-progress-fill.exceeded { background: var(--danger, #e05252); }
+    .limit-progress-fill.exceeded { background: var(--danger,  #e05252); }
     .limit-text         { font-size: .76em; font-weight: 800; color: var(--text-mid); }
     .limit-text.warning  { color: var(--warning, #f0a500); }
-    .limit-text.exceeded { color: var(--danger, #e05252); }
+    .limit-text.exceeded { color: var(--danger,  #e05252); }
 
     /* ── EMPTY STATE ── */
-    .empty-state        { text-align: center; padding: 48px 20px; color: var(--text-light); }
-    .empty-state-icon   { font-size: 2.6em; margin-bottom: 12px; }
-    .empty-state h3     { font-size: 1em; font-weight: 800; color: var(--text-mid); margin-bottom: 6px; }
-    .empty-state p      { font-size: .84em; line-height: 1.6; }
+    .empty-state      { text-align: center; padding: 48px 20px; color: var(--text-light); }
+    .empty-state-icon { font-size: 2.6em; margin-bottom: 12px; }
+    .empty-state h3   { font-size: 1em; font-weight: 800; color: var(--text-mid); margin-bottom: 6px; }
+    .empty-state p    { font-size: .84em; line-height: 1.6; }
 
-    /* ── IOS BANNER ── */
-    .ios-banner         { display: none; position: fixed; bottom: 80px; left: 16px; right: 16px; background: var(--bg-card); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow-lg); z-index: 400; border: 1px solid var(--border); }
-    .ios-banner.show    { display: flex; align-items: center; gap: 10px; }
-    .install-banner     { display: none; position: fixed; top: calc(var(--header-h,56px) + 8px); left: 50%; transform: translateX(-50%); background: var(--bg-card); border-radius: var(--radius); padding: 10px 14px; box-shadow: var(--shadow-lg); z-index: 300; border: 1px solid var(--border); gap: 10px; align-items: center; white-space: nowrap; font-size: .84em; font-weight: 700; }
+    /* ── BANNERS ── */
+    .ios-banner {
+      display: none; position: fixed; bottom: 80px; left: 16px; right: 16px;
+      background: var(--bg-card); border-radius: var(--radius); padding: 14px 16px;
+      box-shadow: var(--shadow-lg); z-index: 400; border: 1px solid var(--border);
+    }
+    .ios-banner.show { display: flex; align-items: center; gap: 10px; }
+    .install-banner {
+      display: none; position: fixed; top: calc(var(--header-h,56px) + 8px);
+      left: 50%; transform: translateX(-50%);
+      background: var(--bg-card); border-radius: var(--radius); padding: 10px 14px;
+      box-shadow: var(--shadow-lg); z-index: 300; border: 1px solid var(--border);
+      gap: 10px; align-items: center; white-space: nowrap; font-size: .84em; font-weight: 700;
+    }
     .install-banner.show { display: flex; }
 
-    /* ── RICETTA FORM ROW ── */
-    .rf-ing-row { display: flex; gap: 5px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+    /* ── RICETTA FORM ── */
+    .rf-ing-row  { display: flex; gap: 5px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
     .rf-ing-name { flex: 2; min-width: 100px; }
     .rf-ing-qty  { width: 68px !important; flex: none; }
     .rf-ing-unit { width: 78px !important; flex: none; }
@@ -199,6 +236,7 @@
   <button class="btn btn-primary btn-large" onclick="enterApp()">▶ Inizia</button>
 </div>
 
+
 <!-- ============================================================
      APP
      ============================================================ -->
@@ -213,15 +251,24 @@
       </div>
       <div class="header-right">
         <span id="cloudStatus" class="cloud-status local">💾 Locale</span>
+        <!-- Accedi — visibile se NON loggato -->
         <button id="loginBtn"
                 class="btn-icon-only"
                 onclick="signInWithGoogle()"
-                title="Accedi con Google">🔑</button>
+                title="Accedi con Google"
+                style="display:flex">🔑</button>
+        <!-- Avatar — visibile se loggato -->
+        <div id="authUserPill" class="auth-user-pill" style="display:none">
+          <img id="authAvatar" class="auth-avatar" src="" alt="">
+          <span id="authName" class="auth-info"></span>
+        </div>
+        <!-- Disconnetti — visibile se loggato -->
         <button id="logoutBtn"
                 class="btn-icon-only"
                 onclick="signOut()"
                 title="Disconnetti"
                 style="display:none">🚪</button>
+        <!-- Dark mode -->
         <button id="darkToggle"
                 class="btn-icon-only"
                 onclick="toggleDarkMode()"
@@ -230,13 +277,13 @@
     </div>
   </header>
 
-  <!-- ── SIDEBAR (desktop) ── -->
+  <!-- ── SIDEBAR (desktop ≥768px) ── -->
   <aside class="sidebar-nav">
     <button class="nav-tab active" onclick="showPage('piano',this)">
       <span class="nav-icon">🏠</span><span class="nav-label">Piano</span>
     </button>
     <button class="nav-tab" onclick="showPage('dispensa',this)">
-      <span class="nav-icon">🧺</span><span class="nav-label">Dispensa</span>
+      <span class="nav-icon">❄️</span><span class="nav-label">Frigo</span>
     </button>
     <button class="nav-tab" onclick="showPage('ricette',this)">
       <span class="nav-icon">📖</span><span class="nav-label">Ricette</span>
@@ -258,9 +305,10 @@
   <!-- ── CONTENUTO ── -->
   <main class="app-main">
 
-    <!-- ══ PIANO ══ -->
+    <!-- ════════════════ PIANO ════════════════ -->
     <div id="pianoPage" class="page active">
 
+      <!-- Calendario -->
       <div class="calendar-wrap">
         <div class="calendar-bar-wrap">
           <div class="calendar-bar" id="calendarBar"></div>
@@ -268,6 +316,7 @@
         <div class="current-date-label" id="currentDateLabel"></div>
       </div>
 
+      <!-- Tabs -->
       <div class="page-tabs">
         <button class="page-tab active" onclick="showPianoTab('pasto',this)">🍽 Pasto</button>
         <button class="page-tab"        onclick="showPianoTab('frigo',this)">❄️ Frigo</button>
@@ -275,14 +324,14 @@
         <button class="page-tab"        onclick="showPianoTab('limiti',this)">📊 Limiti</button>
       </div>
 
-      <!-- TAB PASTO -->
+      <!-- TAB: PASTO -->
       <div id="pianoTabPasto" class="page-tab-content active">
         <div id="mealProgressWrap"></div>
         <div id="mealSelector" class="meal-selector"></div>
         <div id="mealItemsList"></div>
       </div>
 
-      <!-- TAB FRIGO -->
+      <!-- TAB: FRIGO (suggerimenti ricette) -->
       <div id="pianoTabFrigo" class="page-tab-content">
         <div class="section-header">
           <span class="section-title">❄️ Ricette con quel che hai</span>
@@ -295,7 +344,7 @@
         <div id="savedFridgesContent"></div>
       </div>
 
-      <!-- TAB INGREDIENTI GIORNO -->
+      <!-- TAB: INGREDIENTI DEL GIORNO -->
       <div id="pianoTabGiorno" class="page-tab-content">
         <div class="section-header">
           <span class="section-title">🌿 Ingredienti del giorno</span>
@@ -303,7 +352,7 @@
         <div id="dayIngredientsGrid"></div>
       </div>
 
-      <!-- TAB LIMITI -->
+      <!-- TAB: LIMITI SETTIMANALI -->
       <div id="pianoTabLimiti" class="page-tab-content">
         <div class="section-header">
           <span class="section-title">📊 Limiti settimanali</span>
@@ -315,52 +364,42 @@
     </div><!-- /pianoPage -->
 
 
-    <!-- ══ DISPENSA ══ -->
+    <!-- ════════════════ FRIGO (ex Dispensa) ════════════════ -->
     <div id="dispensaPage" class="page">
 
-      <div class="page-tabs">
-        <button class="page-tab active" onclick="showDispensaTab('dispensa',this)">🧺 Dispensa</button>
-        <button class="page-tab"        onclick="showDispensaTab('frigo',this)">❄️ Frigo</button>
+      <!-- Barra ricerca + pulsanti azione -->
+      <div class="search-bar-row" style="margin-bottom:14px">
+        <div class="search-input-wrap" style="flex:1">
+          <input type="text"
+                 id="pantrySearch"
+                 class="form-input search-input"
+                 placeholder="🔍 Cerca nel frigo..."
+                 oninput="filterPantry(this.value)"
+                 list="ingredientiDatalist">
+          <button class="search-clear-btn" onclick="clearPantrySearch()">✕</button>
+        </div>
+        <button class="btn-add-ing"
+                onclick="openCustomIngModal()"
+                title="Aggiungi ingrediente">＋</button>
+        <button class="btn btn-secondary btn-small"
+                onclick="openSaveFridgeModal()"
+                style="flex-shrink:0"
+                title="Salva configurazione">💾</button>
       </div>
 
-      <!-- TAB DISPENSA -->
-      <div id="dispensaTabDispensa" class="page-tab-content active">
-        <div class="search-bar-row">
-          <div class="search-input-wrap">
-            <input type="text"
-                   id="pantrySearch"
-                   class="form-input search-input"
-                   placeholder="🔍 Cerca ingrediente..."
-                   oninput="filterPantry(this.value)"
-                   list="ingredientiDatalist">
-            <button class="search-clear-btn" onclick="clearPantrySearch()">✕</button>
-          </div>
-          <button class="btn-add-ing" onclick="openCustomIngModal()" title="Aggiungi">＋</button>
-        </div>
-        <div id="pantryContent"></div>
-      </div>
+      <!-- Griglia frigo -->
+      <div id="pantryContent"></div>
 
-      <!-- TAB FRIGO -->
-      <div id="dispensaTabFrigo" class="page-tab-content">
-        <div class="section-header">
-          <span class="section-title">❄️ Nel frigo ora</span>
-          <button class="btn btn-secondary btn-small" onclick="openSaveFridgeModal()">💾 Salva</button>
-        </div>
-        <p style="font-size:.8em;color:var(--text-light);margin-bottom:14px;line-height:1.5">
-          Il frigo mostra gli ingredienti deperibili presenti in dispensa.
-          Si aggiorna quando aggiungi ingredienti o segni acquisti dalla spesa.
-        </p>
-        <div id="fridgeContent"></div>
-        <div class="section-header" style="margin-top:20px">
-          <span class="section-title">📁 Frigo salvati</span>
-        </div>
-        <div id="savedFridgesContent2"></div>
+      <!-- Configurazioni salvate -->
+      <div class="section-header" style="margin-top:24px">
+        <span class="section-title">📁 Configurazioni salvate</span>
       </div>
+      <div id="savedFridgesContent2"></div>
 
     </div><!-- /dispensaPage -->
 
 
-    <!-- ══ RICETTE ══ -->
+    <!-- ════════════════ RICETTE ════════════════ -->
     <div id="ricettePage" class="page">
 
       <div class="page-tabs">
@@ -391,7 +430,7 @@
     </div><!-- /ricettePage -->
 
 
-    <!-- ══ STORICO ══ -->
+    <!-- ════════════════ STORICO ════════════════ -->
     <div id="storicoPage" class="page">
       <div class="section-header">
         <span class="section-title">📅 Storico pasti</span>
@@ -400,13 +439,13 @@
     </div>
 
 
-    <!-- ══ SPESA ══ -->
+    <!-- ════════════════ SPESA ════════════════ -->
     <div id="spesaPage" class="page">
       <div id="spesaContent"></div>
     </div>
 
 
-    <!-- ══ STATISTICHE ══ -->
+    <!-- ════════════════ STATISTICHE ════════════════ -->
     <div id="statistichePage" class="page">
       <div class="section-header">
         <span class="section-title">📊 Statistiche</span>
@@ -415,7 +454,7 @@
     </div>
 
 
-    <!-- ══ PROFILO ══ -->
+    <!-- ════════════════ PROFILO ════════════════ -->
     <div id="profiloPage" class="page">
       <!-- popolato da renderProfilo() in profilo.js -->
     </div>
@@ -429,7 +468,7 @@
         <span class="nav-icon">🏠</span><span class="nav-label">Piano</span>
       </button>
       <button class="nav-tab" onclick="showPage('dispensa',this)">
-        <span class="nav-icon">🧺</span><span class="nav-label">Dispensa</span>
+        <span class="nav-icon">❄️</span><span class="nav-label">Frigo</span>
       </button>
       <button class="nav-tab" onclick="showPage('ricette',this)">
         <span class="nav-icon">📖</span><span class="nav-label">Ricette</span>
@@ -471,11 +510,11 @@
   </div>
 </div>
 
-<!-- SALVA FRIGO -->
+<!-- SALVA CONFIGURAZIONE FRIGO -->
 <div class="modal" id="saveFridgeModal">
-  <div class="modal-content">
+  <div class="modal-content modal-content-small">
     <div class="modal-header">
-      <h3>💾 Salva configurazione frigo</h3>
+      <h3>💾 Salva frigo</h3>
       <button class="modal-close" onclick="closeSaveFridgeModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -493,20 +532,20 @@
   </div>
 </div>
 
-<!-- AGGIUNGI INGREDIENTE CUSTOM -->
+<!-- AGGIUNGI AL FRIGO (manuale) -->
 <div class="modal" id="customIngModal">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>➕ Aggiungi ingrediente</h3>
+      <h3>➕ Aggiungi al frigo</h3>
       <button class="modal-close" onclick="closeCustomIngModal()">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label>Nome <span style="color:var(--danger,#e05252)">*</span></label>
+        <label>Ingrediente <span style="color:var(--danger,#e05252)">*</span></label>
         <input type="text" id="customIngName" class="form-input"
-               placeholder="es. Tofu, Avena..."
+               placeholder="es. Pollo, Salmone, Yogurt..."
                list="ingredientiDatalist"
-               onkeypress="if(event.key==='Enter')addCustomIngredient()">
+               onkeypress="if(event.key==='Enter')document.getElementById('customIngQty').focus()">
       </div>
       <div class="form-group">
         <label>Categoria <span style="color:var(--danger,#e05252)">*</span></label>
@@ -522,17 +561,27 @@
           <option value="🧂 Cucina">🧂 Cucina</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Unità di misura</label>
-        <select id="customIngUnit" class="form-input">
-          <option value="g">g</option>
-          <option value="ml">ml</option>
-          <option value="pz">pz</option>
-          <option value="fette">fette</option>
-          <option value="cucchiai">cucchiai</option>
-          <option value="cucchiaini">cucchiaini</option>
-          <option value="porzione">porzione</option>
-        </select>
+      <div style="display:flex;gap:8px">
+        <div class="form-group" style="flex:1">
+          <label>Quantità iniziale</label>
+          <input type="number" id="customIngQty" class="form-input"
+                 placeholder="es. 200" min="0" step="any"
+                 onkeypress="if(event.key==='Enter')addCustomIngredient()">
+        </div>
+        <div class="form-group" style="width:94px;flex:none">
+          <label>Unità</label>
+          <select id="customIngUnit" class="form-input">
+            <option value="g">g</option>
+            <option value="ml">ml</option>
+            <option value="pz">pz</option>
+            <option value="fette">fette</option>
+            <option value="cucchiai">cucchiai</option>
+            <option value="cucchiaini">cucchiaini</option>
+            <option value="porzione">porzione</option>
+            <option value="kg">kg</option>
+            <option value="l">l</option>
+          </select>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -542,7 +591,39 @@
   </div>
 </div>
 
-<!-- NUOVA RICETTA -->
+<!-- EDITOR QUANTITÀ (tap sulla qty della card) -->
+<div class="modal" id="qtyEditorModal">
+  <div class="modal-content modal-content-small">
+    <div class="modal-header">
+      <h3 id="qtyEditorTitle">✏️ Modifica quantità</h3>
+      <button class="modal-close" onclick="closeQtyEditor()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="qtyEditorValue" class="form-input"
+               placeholder="Quantità" min="0" step="any" style="flex:1"
+               onkeypress="if(event.key==='Enter')confirmQtyEditor()">
+        <select id="qtyEditorUnit" class="form-input" style="width:90px;flex:none">
+          <option value="g">g</option>
+          <option value="ml">ml</option>
+          <option value="pz">pz</option>
+          <option value="fette">fette</option>
+          <option value="cucchiai">cucchiai</option>
+          <option value="cucchiaini">cucchiaini</option>
+          <option value="porzione">porzione</option>
+          <option value="kg">kg</option>
+          <option value="l">l</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeQtyEditor()">Annulla</button>
+      <button class="btn btn-primary"   onclick="confirmQtyEditor()">✅ Conferma</button>
+    </div>
+  </div>
+</div>
+
+<!-- NUOVA / MODIFICA RICETTA -->
 <div class="modal" id="ricettaFormModal">
   <div class="modal-content modal-content-large">
     <div class="modal-header">
@@ -567,14 +648,14 @@
       <div class="form-group">
         <label>Ingredienti</label>
         <div id="rfIngList"></div>
-        <button class="btn btn-secondary btn-small" style="margin-top:6px" onclick="addRfIngRow()">＋ Ingrediente</button>
+        <button class="btn btn-secondary btn-small" style="margin-top:6px"
+                onclick="addRfIngRow()">＋ Ingrediente</button>
       </div>
       <div class="form-group">
         <label>Preparazione</label>
         <textarea id="rfPrep" class="form-input form-textarea"
                   placeholder="Descrivi i passaggi..."></textarea>
       </div>
-      <input type="hidden" id="rfEditIdx" value="">
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeRicettaForm()">Annulla</button>
@@ -585,14 +666,14 @@
 
 <!-- SPESA: QUANTITÀ ACQUISTATA -->
 <div class="modal" id="spesaItemModal">
-  <div class="modal-content">
+  <div class="modal-content modal-content-small">
     <div class="modal-header">
       <h3 id="spesaItemModalTitle">✅ Quantità acquistata</h3>
       <button class="modal-close" onclick="closeSpesaItemModal()">✕</button>
     </div>
     <div class="modal-body">
-      <p style="color:var(--text-mid);font-size:.88em;margin-bottom:16px;line-height:1.6">
-        Inserisci la quantità acquistata per aggiornare automaticamente dispensa e frigo.
+      <p style="color:var(--text-mid);font-size:.87em;margin-bottom:16px;line-height:1.6">
+        Inserisci la quantità acquistata per aggiornare il frigo automaticamente.
       </p>
       <div style="display:flex;gap:8px;align-items:center">
         <input type="number" id="spesaItemQty" class="form-input"
@@ -620,32 +701,31 @@
 
 <!-- iOS BANNER -->
 <div class="ios-banner" id="iosBanner">
-  <span>📲 Installa NutriPlan</span>
-  <span style="flex:1;font-size:.8em;color:var(--text-light)">Tocca ⬆️ poi "Aggiungi a schermata Home"</span>
+  <span style="font-size:1.3em">📲</span>
+  <span style="flex:1;font-size:.82em;color:var(--text-mid)">
+    Tocca <b>⬆️ Condividi</b> poi <b>"Aggiungi a schermata Home"</b>
+  </span>
   <button class="btn btn-secondary btn-small" onclick="closeIosBanner()">✕</button>
 </div>
 
-<!-- INSTALL BANNER (PWA Android/Chrome) -->
+<!-- PWA INSTALL BANNER (Android/Chrome) -->
 <div class="install-banner" id="installBanner">
   <span>📲 Installa NutriPlan come app</span>
   <button class="btn btn-primary btn-small" id="installBtn">Installa</button>
   <button class="btn btn-secondary btn-small" id="dismissBtn">✕</button>
 </div>
 
-<!-- DATALIST AUTOCOMPLETE -->
+<!-- DATALIST AUTOCOMPLETE globale -->
 <datalist id="ingredientiDatalist"></datalist>
 
 
 <!-- ============================================================
      SCRIPTS — ordine fondamentale
      ============================================================ -->
-
-<!-- Firebase Compat SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<!-- App scripts in ordine corretto -->
 <script src="data.js"></script>
 <script src="storage.js"></script>
 <script src="app.js"></script>
@@ -657,72 +737,187 @@
 <script src="profilo.js"></script>
 <script src="firebase-config.js"></script>
 
+
 <!-- ============================================================
-     PATCH E STUB INLINE
-     (caricati DOPO tutti gli altri — possono sovrascrivere)
+     PATCH INLINE — caricate DOPO tutti gli altri script
      ============================================================ -->
 <script>
 
-/* ---- 1. Stats stub (stats.js non esiste) ---- */
+/* ── updateAuthUI ── */
+function updateAuthUI(user) {
+  var loginBtn   = document.getElementById('loginBtn');
+  var logoutBtn  = document.getElementById('logoutBtn');
+  var authPill   = document.getElementById('authUserPill');
+  var authAvatar = document.getElementById('authAvatar');
+  var authName   = document.getElementById('authName');
+  if (user) {
+    if (loginBtn)  loginBtn.style.display  = 'none';
+    if (logoutBtn) logoutBtn.style.display = 'flex';
+    if (authPill)  authPill.style.display  = 'flex';
+    if (authAvatar && user.photoURL)    authAvatar.src         = user.photoURL;
+    if (authName   && user.displayName) authName.textContent   = user.displayName.split(' ')[0];
+  } else {
+    if (loginBtn)  loginBtn.style.display  = 'flex';
+    if (logoutBtn) logoutBtn.style.display = 'none';
+    if (authPill)  authPill.style.display  = 'none';
+    if (authAvatar) authAvatar.src         = '';
+    if (authName)   authName.textContent   = '';
+  }
+}
+
+/* ── showCloudStatus ── */
+function showCloudStatus(status) {
+  var el  = document.getElementById('cloudStatus');
+  if (!el) return;
+  var map = {
+    local:  { cls: 'local',  text: '💾 Locale'          },
+    saving: { cls: 'saving', text: '⏳ Salvataggio...'  },
+    synced: { cls: 'synced', text: '☁️ Sincronizzato'   },
+    error:  { cls: 'error',  text: '⚠️ Errore sync'     }
+  };
+  var s = map[status] || map.local;
+  el.className   = 'cloud-status ' + s.cls;
+  el.textContent = s.text;
+}
+
+/* ── checkOnlineStatus stub ── */
+function checkOnlineStatus() { showCloudStatus('local'); }
+
+/* ── initCalendar alias ── */
+function initCalendar() {
+  if (typeof buildCalendarBar === 'function') buildCalendarBar();
+}
+
+/* ── renderWeeklyLimits alias ── */
+function renderWeeklyLimits() {
+  if (typeof updateLimits === 'function') updateLimits();
+}
+
+/* ── resetWeek ── */
+function resetWeek() {
+  if (!confirm('Resettare i contatori settimanali?')) return;
+  if (typeof weeklyLimits !== 'undefined') {
+    Object.keys(weeklyLimits).forEach(function(k) {
+      if (weeklyLimits[k]) weeklyLimits[k].current = 0;
+    });
+  }
+  if (typeof saveData === 'function') saveData();
+  if (typeof updateLimits === 'function') updateLimits();
+}
+
+/* ── clearPantrySearch ── */
+function clearPantrySearch() {
+  var inp = document.getElementById('pantrySearch');
+  if (inp) inp.value = '';
+  if (typeof filterPantry === 'function') filterPantry('');
+}
+
+/* ── initDayIngGrid ── */
+function initDayIngGrid() {
+  if (typeof updateFridgeSuggestions === 'function') updateFridgeSuggestions();
+  var el = document.getElementById('dayIngredientsGrid');
+  if (!el) return;
+  var allItems = (typeof getAllPantryItems === 'function') ? getAllPantryItems() : [];
+  var active   = allItems.filter(function(i) { return (i.quantity || 0) > 0; });
+  if (!active.length) {
+    el.innerHTML =
+      '<div class="empty-state"><div class="empty-state-icon">🛒</div>' +
+      '<h3>Nessun ingrediente</h3>' +
+      '<p>Aggiungi ingredienti al frigo o segna acquisti dalla spesa.</p></div>';
+    return;
+  }
+  var html = '<div class="fridge-items" style="margin-top:8px">';
+  active.forEach(function(item) {
+    html += '<div class="fridge-item" style="pointer-events:none">' +
+      '<div class="fridge-item-icon">' + (item.icon || '🧂') + '</div>' +
+      '<div class="fridge-item-name">'  + item.name + '</div>' +
+      '<div class="fridge-item-qty">'   + item.quantity + ' ' + item.unit + '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+/* ── updateSavedFridges ── */
+function updateSavedFridges() {
+  ['savedFridgesContent','savedFridgesContent2'].forEach(function(elId) {
+    var el = document.getElementById(elId);
+    if (!el) return;
+    var keys = Object.keys(typeof savedFridges !== 'undefined' ? savedFridges : {});
+    if (!keys.length) {
+      el.innerHTML = '<p style="color:var(--text-light);font-size:.84em;margin-top:6px">Nessuna configurazione salvata.</p>';
+      return;
+    }
+    el.innerHTML = keys.map(function(k) {
+      var f  = savedFridges[k];
+      var n  = Object.keys(f.items || {}).length;
+      var sk = k.replace(/'/g, "\\'");
+      return '<div class="saved-fridge-item">' +
+        '<div class="saved-fridge-name">📁 ' + k + '</div>' +
+        '<div class="saved-fridge-date">🕐 ' + (f.date || '') + ' · ' + n + ' ingredienti</div>' +
+        '<div class="saved-fridge-actions">' +
+          '<button class="btn btn-secondary btn-small" onclick="loadFridge(\'' + sk + '\')">📂 Carica</button>' +
+          '<button class="btn btn-warning btn-small"   onclick="deleteFridge(\'' + sk + '\')">🗑</button>' +
+        '</div></div>';
+    }).join('');
+  });
+}
+
+/* ── showPage override: aggiorna anche sidebar ── */
+(function() {
+  var _orig = window.showPage;
+  if (typeof _orig !== 'function') return;
+  window.showPage = function(name, btn) {
+    _orig(name, btn);
+    /* Sincronizza sidebar */
+    document.querySelectorAll('.sidebar-nav .nav-tab').forEach(function(t) {
+      t.classList.remove('active');
+    });
+    /* Trova il tasto sidebar corrispondente */
+    var sidebarBtns = document.querySelectorAll('.sidebar-nav .nav-tab');
+    sidebarBtns.forEach(function(b) {
+      var onclick = b.getAttribute('onclick') || '';
+      if (onclick.indexOf("'" + name + "'") !== -1) b.classList.add('active');
+    });
+    /* render extra */
+    if (name === 'dispensa') {
+      if (typeof renderFridge === 'function') renderFridge();
+      updateSavedFridges();
+    }
+    if (name === 'statistiche' && typeof renderStatistiche === 'function') renderStatistiche();
+  };
+})();
+
+/* ── Stats stub (stats.js non esiste) ── */
 function renderStatistiche() {
   var el = document.getElementById('statsContent');
   if (!el) return;
-  var totalDays  = Object.keys(appHistory || {}).filter(function(dk) {
-    var hd = appHistory[dk]; if (!hd || !hd.usedItems) return false;
-    return Object.keys(hd.usedItems).some(function(mk) { return Object.keys(hd.usedItems[mk]||{}).length > 0; });
-  }).length;
+  var totalDays = Object.keys(typeof appHistory !== 'undefined' ? appHistory : {})
+    .filter(function(dk) {
+      var hd = appHistory[dk];
+      if (!hd || !hd.usedItems) return false;
+      return Object.keys(hd.usedItems).some(function(mk) {
+        return Object.keys(hd.usedItems[mk] || {}).length > 0;
+      });
+    }).length;
   var allMeals = ['colazione','spuntino','pranzo','merenda','cena'];
   var totalUsed = 0;
-  Object.keys(appHistory || {}).forEach(function(dk) {
-    var ui = (appHistory[dk]||{}).usedItems || {};
-    allMeals.forEach(function(mk) { totalUsed += Object.keys(ui[mk]||{}).length; });
+  Object.keys(typeof appHistory !== 'undefined' ? appHistory : {}).forEach(function(dk) {
+    var ui = (appHistory[dk] || {}).usedItems || {};
+    allMeals.forEach(function(mk) { totalUsed += Object.keys(ui[mk] || {}).length; });
   });
-  var pantryCount = Object.keys(pantryItems || {}).filter(function(k) {
-    return k && k !== 'undefined' && (pantryItems[k].quantity||0) > 0;
-  }).length;
+  var pantryCount = Object.keys(typeof pantryItems !== 'undefined' ? pantryItems : {})
+    .filter(function(k) { return k && k !== 'undefined' && ((pantryItems[k] || {}).quantity || 0) > 0; }).length;
   el.innerHTML =
     '<div class="stats-grid">' +
       '<div class="stat-card"><div class="stat-card-icon">📅</div><div class="stat-card-value">' + totalDays + '</div><div class="stat-card-label">Giorni tracciati</div></div>' +
       '<div class="stat-card"><div class="stat-card-icon">✅</div><div class="stat-card-value">' + totalUsed + '</div><div class="stat-card-label">Alimenti consumati</div></div>' +
-      '<div class="stat-card"><div class="stat-card-icon">🧺</div><div class="stat-card-value">' + pantryCount + '</div><div class="stat-card-label">In dispensa ora</div></div>' +
-      '<div class="stat-card"><div class="stat-card-icon">📖</div><div class="stat-card-value">' + ((customRecipes||[]).length) + '</div><div class="stat-card-label">Ricette personali</div></div>' +
+      '<div class="stat-card"><div class="stat-card-icon">❄️</div><div class="stat-card-value">' + pantryCount + '</div><div class="stat-card-label">Nel frigo ora</div></div>' +
+      '<div class="stat-card"><div class="stat-card-icon">📖</div><div class="stat-card-value">' + ((typeof customRecipes !== 'undefined' ? customRecipes : []).length) + '</div><div class="stat-card-label">Ricette personali</div></div>' +
     '</div>';
 }
 
-/* ---- 2. checkOnlineStatus stub ---- */
-function checkOnlineStatus() {
-  var s = navigator.onLine ? 'local' : 'local';
-  showCloudStatus(s);
-}
-
-/* ---- 3. Override showCloudStatus per allinearsi alle classi CSS ---- */
-function showCloudStatus(status) {
-  var el = document.getElementById('cloudStatus');
-  if (!el) return;
-  var map = {
-    local:  { cls: 'local',  text: '💾 Locale'         },
-    saving: { cls: 'saving', text: '⏳ Salvataggio...' },
-    synced: { cls: 'synced', text: '☁️ Sincronizzato'  },
-    error:  { cls: 'error',  text: '⚠️ Errore sync'    }
-  };
-  var s = map[status] || map.local;
-  el.className = 'cloud-status ' + s.cls;
-  el.textContent = s.text;
-}
-
-/* ---- 4. Patch adjustQty → aggiorna anche il frigo ---- */
-(function() {
-  var _orig = window.adjustQty;
-  if (typeof _orig !== 'function') return;
-  window.adjustQty = function(name, delta) {
-    _orig(name, delta);
-    /* Aggiorna il frigo se è visibile */
-    var fc = document.getElementById('fridgeContent');
-    if (fc && typeof renderFridge === 'function') renderFridge();
-  };
-})();
-
-/* ---- 5. Ricetta form: alias e CRUD ---- */
+/* ── Ricetta form CRUD ── */
 var _rfEditIdx = null;
 
 function openRicettaForm(idx) {
@@ -733,16 +928,17 @@ function openRicettaForm(idx) {
   var prepEl  = document.getElementById('rfPrep');
   var ingList = document.getElementById('rfIngList');
   if (!nomeEl) return;
-  if (_rfEditIdx !== null && customRecipes[_rfEditIdx]) {
-    var r = customRecipes[_rfEditIdx];
-    if (titleEl)  titleEl.textContent = '✏️ Modifica ricetta';
+  var customs = typeof customRecipes !== 'undefined' ? customRecipes : [];
+  if (_rfEditIdx !== null && customs[_rfEditIdx]) {
+    var r = customs[_rfEditIdx];
+    if (titleEl) titleEl.textContent = '✏️ Modifica ricetta';
     nomeEl.value  = r.name || '';
     pastoEl.value = Array.isArray(r.pasto) ? r.pasto[0] : (r.pasto || 'pranzo');
     prepEl.value  = r.preparazione || '';
     ingList.innerHTML = '';
     (r.ingredienti || []).forEach(function(ing) { addRfIngRow(ing); });
   } else {
-    if (titleEl)  titleEl.textContent = '⭐ Nuova ricetta';
+    if (titleEl) titleEl.textContent = '⭐ Nuova ricetta';
     nomeEl.value  = '';
     pastoEl.value = 'pranzo';
     prepEl.value  = '';
@@ -750,7 +946,7 @@ function openRicettaForm(idx) {
     addRfIngRow();
   }
   var m = document.getElementById('ricettaFormModal');
-  if (m) m.classList.add('active');
+  if (m) { m.classList.add('active'); setTimeout(function() { nomeEl.focus(); }, 80); }
 }
 
 function closeRicettaForm() {
@@ -765,15 +961,16 @@ function addRfIngRow(ing) {
   if (!list) return;
   var units = ['g','ml','pz','fette','cucchiai','cucchiaini','porzione','kg','l'];
   var unitOpts = units.map(function(u) {
-    return '<option value="' + u + '"' + ((ing.unit||'g') === u ? ' selected' : '') + '>' + u + '</option>';
+    return '<option value="' + u + '"' + ((ing.unit || 'g') === u ? ' selected' : '') + '>' + u + '</option>';
   }).join('');
   var row = document.createElement('div');
   row.className = 'rf-ing-row';
   row.innerHTML =
-    '<input type="text" class="form-input rf-ing-name" value="' + (ing.name||'') + '" placeholder="Ingrediente..." list="ingredientiDatalist">' +
-    '<input type="number" class="form-input rf-ing-qty" value="' + (ing.quantity||'') + '" placeholder="Qtà" min="0" step="any">' +
+    '<input type="text"   class="form-input rf-ing-name" value="' + (ing.name || '') + '" placeholder="Ingrediente..." list="ingredientiDatalist">' +
+    '<input type="number" class="form-input rf-ing-qty"  value="' + (ing.quantity || '') + '" placeholder="Qtà" min="0" step="any">' +
     '<select class="form-input rf-ing-unit">' + unitOpts + '</select>' +
-    '<button class="btn-icon-only" style="width:32px;height:32px;background:var(--bg-light);border:1.5px solid var(--border);color:var(--danger,#e05252)" onclick="this.closest(\'.rf-ing-row\').remove()">✕</button>';
+    '<button style="width:30px;height:30px;border:1.5px solid var(--border);border-radius:var(--radius-xs);background:var(--bg-light);cursor:pointer;color:var(--danger,#e05252);font-size:.9em" ' +
+            'onclick="this.closest(\'.rf-ing-row\').remove()">✕</button>';
   list.appendChild(row);
 }
 
@@ -790,99 +987,54 @@ function saveCustomRicetta() {
     if (n) ings.push({ name: n, quantity: q, unit: u });
   });
   var ricetta = { name: nome, icon: '🍽', pasto: pasto, ingredienti: ings, preparazione: prep, isCustom: true };
-  if (!Array.isArray(customRecipes)) customRecipes = [];
+  if (typeof customRecipes === 'undefined') customRecipes = [];
   if (_rfEditIdx !== null && customRecipes[_rfEditIdx]) {
     customRecipes[_rfEditIdx] = ricetta;
   } else {
     customRecipes.push(ricetta);
   }
-  saveData();
+  if (typeof saveData === 'function') saveData();
   closeRicettaForm();
   if (typeof renderCustomRicette === 'function') renderCustomRicette();
 }
 
-function editCustomRicetta(idx) { openRicettaForm(idx); }
-
+function editCustomRicetta(idx)   { openRicettaForm(idx); }
 function deleteCustomRicetta(idx) {
   if (!confirm('Eliminare questa ricetta?')) return;
   customRecipes.splice(idx, 1);
-  saveData();
+  if (typeof saveData === 'function') saveData();
   if (typeof renderCustomRicette === 'function') renderCustomRicette();
 }
 
-/* ---- 6. updateSavedFridges: aggiorna entrambi i contenitori ---- */
-function updateSavedFridges() {
-  ['savedFridgesContent','savedFridgesContent2'].forEach(function(elId) {
-    var el = document.getElementById(elId);
-    if (!el) return;
-    var keys = Object.keys(savedFridges || {});
-    if (!keys.length) {
-      el.innerHTML = '<p style="color:var(--text-light);font-size:.84em">Nessuna configurazione salvata.</p>';
-      return;
-    }
-    el.innerHTML = keys.map(function(k) {
-      var f  = savedFridges[k];
-      var n  = Object.keys(f.items || {}).length;
-      var sk = k.replace(/'/g,"\\'");
-      return '<div class="saved-fridge-item">' +
-        '<div class="saved-fridge-name">📁 ' + k + '</div>' +
-        '<div class="saved-fridge-date">🕐 ' + (f.date||'') + ' · ' + n + ' ingredienti</div>' +
-        '<div class="saved-fridge-actions">' +
-          '<button class="btn btn-secondary btn-small" onclick="loadFridge(\'' + sk + '\')">📂 Carica</button>' +
-          '<button class="btn btn-warning btn-small" onclick="deleteFridge(\'' + sk + '\')">🗑</button>' +
-        '</div></div>';
-    }).join('');
-  });
-}
-
-/* ---- 7. initCalendar alias (usato da alcune versioni di piano.js) ---- */
-function initCalendar() {
-  if (typeof buildCalendarBar === 'function') buildCalendarBar();
-}
-
-/* ---- 8. renderWeeklyLimits alias (usato da alcune versioni) ---- */
-function renderWeeklyLimits() {
-  if (typeof updateLimits === 'function') updateLimits();
-}
-
-/* ---- 9. initDayIngGrid: mostra gli ingredienti del giorno ---- */
-function initDayIngGrid() {
-  var el = document.getElementById('dayIngredientsGrid');
-  if (!el) return;
-  var allItems = (typeof getAllPantryItems === 'function') ? getAllPantryItems() : [];
-  var active = allItems.filter(function(i) { return (i.quantity||0) > 0; });
-  if (!active.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🛒</div><h3>Nessun ingrediente</h3><p>Aggiungi quantità in dispensa o segna acquisti dalla spesa.</p></div>';
-    return;
-  }
-  var html = '<div class="pantry-grid" style="margin-top:8px">';
-  active.forEach(function(item) {
-    html += '<div class="pantry-item active">' +
-      '<div class="pantry-item-top">' +
-        '<div class="pantry-item-name-row">' +
-          '<span class="pantry-icon">' + item.icon + '</span>' +
-          '<span class="pantry-name">' + item.name + '</span>' +
-        '</div>' +
-      '</div>' +
-      '<div style="font-size:.82em;color:var(--primary);font-weight:800;margin-top:4px">' + item.quantity + ' ' + item.unit + '</div>' +
-    '</div>';
-  });
-  html += '</div>';
-  el.innerHTML = html;
-}
-
-/* ---- 10. Chiusura modale cliccando fuori ---- */
+/* ── Chiusura modale cliccando fuori ── */
 document.addEventListener('click', function(e) {
-  var modalIds = ['recipeModal','saveFridgeModal','customIngModal','ricettaFormModal','spesaItemModal'];
-  modalIds.forEach(function(id) {
+  ['recipeModal','saveFridgeModal','customIngModal','qtyEditorModal',
+   'ricettaFormModal','spesaItemModal'].forEach(function(id) {
     var m = document.getElementById(id);
-    if (m && m.classList.contains('active') && e.target === m) {
-      m.classList.remove('active');
-    }
+    if (m && m.classList.contains('active') && e.target === m) m.classList.remove('active');
   });
 });
 
-</script>
+/* ── Canvas logo ── */
+function drawLogo(id, size) {
+  var c = document.getElementById(id);
+  if (!c) return;
+  c.width = size; c.height = size;
+  var ctx = c.getContext('2d');
+  var g   = ctx.createLinearGradient(0, 0, size, size);
+  g.addColorStop(0, '#4caf85'); g.addColorStop(1, '#2a6350');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold ' + Math.round(size * 0.46) + 'px Poppins,sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('N', size / 2, size / 2);
+}
+document.addEventListener('DOMContentLoaded', function() {
+  drawLogo('headerIcon', 32);
+  if (typeof initIngredientiDatalist === 'function') initIngredientiDatalist();
+});
 
+</script>
 </body>
 </html>
