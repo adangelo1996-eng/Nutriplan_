@@ -1,0 +1,228 @@
+/* ══════════════════════════════════════════════════
+   NUTRIPLAN — nav.css
+   Sezioni: 5. Sidebar  6. Bottom Nav
+══════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════
+   5. SIDEBAR
+══════════════════════════════════════════════════ */
+.sidebar-nav {
+  display: none;
+  position: fixed;
+  top: var(--header-h);
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  flex-direction: column;
+  padding: 14px 10px;
+  z-index: 200;
+  overflow-y: auto;
+}
+
+/* Etichetta sezione (es. "Piano", "Gestione") */
+.sidebar-section-label {
+  font-size: .65rem;
+  font-weight: 700;
+  color: var(--text-light);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  padding: 4px 12px 8px;
+  margin-top: 6px;
+  white-space: nowrap;        /* non va mai a capo */
+}
+
+/* ── Tab in sidebar ────────────────────────────── */
+.sidebar-nav .nav-tab {
+  /* reset dal bottom-nav */
+  flex: none;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  max-width: none;
+
+  /* layout */
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r);
+  width: 100%;
+  font-size: .84rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  border: 1.5px solid transparent;
+  background: none;
+  cursor: pointer;
+  transition: all var(--t);
+  margin-bottom: 2px;
+
+  /* FIX etichette troncate */
+  overflow: visible;
+  white-space: nowrap;
+  position: relative;
+}
+
+/* Icona quadrata */
+.sidebar-nav .nav-tab .nav-icon {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: var(--r-sm);
+  background: var(--bg-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1em;
+  flex-shrink: 0;
+  transition: all var(--t);
+  transform: none !important;  /* annulla translateY del bottom-nav */
+}
+
+/* FIX PRINCIPALE — sovrascrive overflow:hidden
+   e text-overflow:ellipsis ereditati dal bottom-nav */
+.sidebar-nav .nav-tab .nav-label {
+  flex: 1;
+  min-width: 0;
+  font-size: .88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: visible;      /* ← era hidden */
+  text-overflow: unset;   /* ← era ellipsis */
+  max-width: none;        /* ← era 100% */
+}
+
+/* Hover */
+.sidebar-nav .nav-tab:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+.sidebar-nav .nav-tab:hover .nav-icon {
+  background: var(--primary-light);
+}
+
+/* Attivo */
+.sidebar-nav .nav-tab.active {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary-mid);
+}
+.sidebar-nav .nav-tab.active .nav-icon {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(61,139,111,.3);
+}
+
+/* Nasconde il pallino/linea che serve solo al bottom-nav */
+.sidebar-nav .nav-tab::after,
+.sidebar-nav .nav-tab.active::after {
+  display: none !important;
+}
+
+/* Badge notifica dentro sidebar */
+.sidebar-nav .nav-tab .counter-badge {
+  position: static;
+  margin-left: auto;
+}
+
+/* Attiva sidebar su desktop */
+@media (min-width: 768px) {
+  .sidebar-nav { display: flex; }
+}
+
+/* ══════════════════════════════════════════════════
+   6. BOTTOM NAV  (mobile)
+══════════════════════════════════════════════════ */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 300;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 16px rgba(0,0,0,.07);
+  height: var(--nav-h);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav .app-inner {
+  display: flex;
+  align-items: stretch;
+  padding: 0;
+  height: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+.bottom-nav .app-inner::-webkit-scrollbar { display: none; }
+
+/* ── Base nav-tab ──────────────────────────────── */
+/* Usato dal bottom-nav. La sidebar sovrascrive
+   solo dove necessario (vedi sezione 5) */
+.nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 48px;
+  max-width: 80px;
+  gap: 2px;
+  padding: 0 4px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--text-light);
+  position: relative;
+  transition: color var(--t);
+}
+
+.nav-icon {
+  font-size: 1.25em;
+  line-height: 1;
+  transition: transform var(--t);
+  flex-shrink: 0;
+}
+
+/* Le etichette del bottom-nav possono troncarsi:
+   hanno spazio limitato (max 80px per tab) */
+.nav-label {
+  font-size: .58em;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Stato attivo bottom-nav */
+.nav-tab.active             { color: var(--primary); }
+.nav-tab.active .nav-icon   { transform: translateY(-1px); }
+.nav-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px; height: 3px;
+  background: var(--primary);
+  border-radius: 3px 3px 0 0;
+}
+
+/* Badge su tab bottom-nav */
+.nav-tab .counter-badge {
+  position: absolute;
+  top: 6px;
+  right: calc(50% - 20px);
+  font-size: .54rem;
+  min-width: 15px; height: 15px;
+}
+
+/* Su schermi molto piccoli nasconde le label */
+@media (max-width: 359px) {
+  .nav-label { display: none; }
+  .nav-tab   { padding: 0 2px; min-width: 36px; }
+}
+
+/* Su desktop nasconde il bottom-nav */
+@media (min-width: 768px) {
+  .bottom-nav { display: none !important; }
+}
