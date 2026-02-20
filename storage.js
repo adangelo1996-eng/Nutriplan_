@@ -255,6 +255,23 @@ function convertUnit(value, fromUnit, toUnit) {
 }
 
 /* ============================================================
+   ADD FROM SPESA → aggiunge articolo acquistato alla dispensa
+   ============================================================ */
+function addFromSpesa(name, quantity, unit) {
+  if (!name || typeof name !== 'string' || !name.trim()) return;
+  if (!pantryItems) pantryItems = {};
+  var existing = pantryItems[name] || {};
+  var prev = typeof existing.quantity === 'number' ? existing.quantity : 0;
+  pantryItems[name] = Object.assign({}, existing, {
+    quantity: parseFloat((prev + (parseFloat(quantity) || 0)).toFixed(3)),
+    unit:     unit || existing.unit || 'g'
+  });
+  saveData();
+  if (typeof renderFridge  === 'function') renderFridge();
+  if (typeof renderPantry  === 'function') renderPantry();
+}
+
+/* ============================================================
    REFRESH TUTTE LE VISTE (robusta: non crasha se un modulo
    non è ancora caricato)
    ============================================================ */

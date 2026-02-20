@@ -246,6 +246,22 @@ function switchRicetteTab(tabKey) {
 }
 
 /* ══════════════════════════════════════════════════
+   DATE UTILITIES
+══════════════════════════════════════════════════ */
+function formatDateKey(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+function parseDateKey(dk) {
+  if (!dk) return new Date();
+  var parts = dk.split('-');
+  if (parts.length !== 3) return new Date();
+  return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+}
+
+/* ══════════════════════════════════════════════════
    CALENDARIO
 ══════════════════════════════════════════════════ */
 var DAYS_IT   = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
@@ -371,27 +387,7 @@ function updateCloudStatus(state, text) {
                                          state === 'error'   ? '✗ Errore sync'  : '☁ Locale');
 }
 
-/* ══════════════════════════════════════════════════
-   AUTH UI
-══════════════════════════════════════════════════ */
-function updateAuthUI(user) {
-  var pill    = document.getElementById('authUserPill');
-  var loginBtn= document.getElementById('authLoginBtn');
-  var avatar  = document.getElementById('authAvatar');
-  var name    = document.getElementById('authUserName');
-
-  if (user) {
-    if (pill)     { pill.style.display = 'flex'; }
-    if (loginBtn) { loginBtn.style.display = 'none'; }
-    if (avatar)   { avatar.src = user.photoURL || ''; }
-    if (name)     { name.textContent = (user.displayName || user.email || 'Utente').split(' ')[0]; }
-    updateCloudStatus('synced', '✓ Sincronizzato');
-  } else {
-    if (pill)     { pill.style.display = 'none'; }
-    if (loginBtn) { loginBtn.style.display = 'flex'; }
-    updateCloudStatus('local', '☁ Locale');
-  }
-}
+/* updateAuthUI è definita in firebase-config.js con i corretti ID HTML */
 
 function openAuthModal() {
   var modal = document.getElementById('authModal');
@@ -804,6 +800,39 @@ function closeNewRicetta()     { closeNewRicettaModal(); }
 function resetPiano()          { resetDay();             }
 function saveNewRicetta()      { if (typeof saveCustomRicetta === 'function') saveCustomRicetta(); }
 function addIngToNewRicetta()  { if (typeof addIngredientToNew === 'function') addIngredientToNew(); }
+
+/* ── Alias renderPiano / renderRicette / renderStats / renderIngredienti ─── */
+function renderPiano() {
+  if (typeof renderMealPlan === 'function') renderMealPlan();
+}
+function renderRicette() {
+  if (typeof renderRicettePage === 'function') renderRicettePage();
+}
+function renderStats() {
+  if (typeof renderStatistiche === 'function') renderStatistiche();
+}
+function renderIngredienti() {
+  var el = document.getElementById('ingredientiContent');
+  if (!el) return;
+  if (typeof renderDayIngGrid === 'function') {
+    /* Rimappa il target su ingredientiContent */
+    var orig = document.getElementById('dayIngGrid');
+    if (!orig) {
+      var proxy = document.createElement('div');
+      proxy.id = 'dayIngGrid';
+      el.innerHTML = '';
+      el.appendChild(proxy);
+    }
+    renderDayIngGrid();
+    /* Sposta il contenuto reso in ingredientiContent */
+    var grid = document.getElementById('dayIngGrid');
+    if (grid && grid.parentElement !== el) {
+      el.innerHTML = '';
+      el.appendChild(grid);
+    }
+  }
+  if (typeof renderFridgeRecipes === 'function') renderFridgeRecipes();
+}
 
 /* ── signOut → usa quella in firebase-config.js ─────── */
 if (typeof signOut === 'undefined') {

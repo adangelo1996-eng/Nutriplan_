@@ -31,7 +31,7 @@ function buildProfiloUserSection() {
           '</div>' +
         '</div>' +
         (user
-          ? '<button class="rc-btn rc-btn-outline" onclick="signOutUser()" style="width:100%;">🚪 Esci</button>'
+          ? '<button class="rc-btn rc-btn-outline" onclick="signOut()" style="width:100%;">🚪 Esci</button>'
           : '<button class="rc-btn rc-btn-primary" onclick="signInWithGoogle()" style="width:100%;">🔑 Accedi con Google</button>' +
             '<p style="font-size:.8em;color:var(--text-3);margin-top:8px;text-align:center;">Accedi per sincronizzare i dati su tutti i dispositivi.</p>'
         ) +

@@ -20,7 +20,7 @@ function exportPDF() {
         if (!items.length) return;
         lines.push('▸ ' + (MEAL_LABELS[meal] || meal).toUpperCase());
         items.forEach(function (item) {
-            lines.push('  • ' + item.label + '  ' + item.qty + ' ' + item.unit);
+            lines.push('  • ' + (item.name || '') + '  ' + (item.quantity || '') + ' ' + (item.unit || ''));
         });
         lines.push('');
     });
@@ -69,13 +69,10 @@ function exportPDF() {
                 var mealUsed = usedItems[meal] || {};
                 var mealSubs = (dayData.substitutions || {})[meal] || {};
                 var planItems = (mealPlan[meal] && mealPlan[meal].principale) || [];
-                Object.keys(mealUsed).forEach(function (idx) {
-                    var i = parseInt(idx);
-                    var base = planItems[i] || { label: '?', qty: 0, unit: '' };
-                    var sub  = mealSubs[i];
-                    var eff  = sub || base;
-                    lines.push('  [' + (MEAL_LABELS[meal] || meal) + '] '
-                        + eff.label + ' ' + eff.qty + ' ' + eff.unit);
+                Object.keys(mealUsed).forEach(function (name) {
+                    var sub = mealSubs[name];
+                    var displayName = sub || name;
+                    lines.push('  [' + (MEAL_LABELS[meal] || meal) + '] ' + displayName);
                 });
             });
             lines.push('');
