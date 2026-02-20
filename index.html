@@ -3,32 +3,204 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta id="metaThemeColor" name="theme-color" content="#4a9b7f">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#3d8b6f">
   <title>NutriPlan</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="icons/icon-192.png">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link id="manifest-placeholder" rel="manifest" href="">
+  <link id="appleTouchIcon" rel="apple-touch-icon" href="">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* ── SIDEBAR DESKTOP ── */
+    .sidebar-nav {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-w, 210px);
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      flex-direction: column;
+      padding-top: var(--header-h, 56px);
+      z-index: 100;
+      overflow-y: auto;
+      box-shadow: 2px 0 12px rgba(0,0,0,.06);
+    }
+    .sidebar-nav .nav-tab {
+      flex: none;
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 12px;
+      padding: 13px 20px;
+      border-radius: 0;
+      font-size: .88em;
+      width: 100%;
+      color: var(--text-mid);
+    }
+    .sidebar-nav .nav-tab .nav-icon { font-size: 1.2em; }
+    .sidebar-nav .nav-tab .nav-label { font-size: 1em; max-width: none; }
+    .sidebar-nav .nav-tab.active {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-left: 3px solid var(--primary);
+    }
+    .sidebar-nav .nav-tab.active::after { display: none; }
+
+    @media (min-width: 768px) {
+      .sidebar-nav { display: flex; }
+      .bottom-nav  { display: none !important; }
+      .app-main    { margin-left: var(--sidebar-w, 210px) !important; margin-bottom: 0 !important; }
+    }
+
+    /* ── MODAL ── */
+    .modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.45); z-index: 500;
+      align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: var(--bg-card); border-radius: var(--radius-lg);
+      width: 100%; max-width: 480px; max-height: 90dvh;
+      overflow-y: auto; box-shadow: var(--shadow-lg);
+      animation: fadeIn .18s ease;
+    }
+    .modal-content-large { max-width: 600px; }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 18px; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: var(--bg-card); z-index: 1;
+    }
+    .modal-header h3 { font-size: 1em; font-weight: 800; margin: 0; }
+    .modal-close {
+      background: none; border: none; font-size: 1.1em;
+      cursor: pointer; color: var(--text-light); padding: 4px;
+      line-height: 1; border-radius: var(--radius-xs);
+      transition: background .2s;
+    }
+    .modal-close:hover { background: var(--border); }
+    .modal-body   { padding: 18px; }
+    .modal-footer {
+      display: flex; gap: 8px; justify-content: flex-end;
+      padding: 14px 18px; border-top: 1px solid var(--border);
+    }
+
+    /* ── STORICO ── */
+    .storico-list { display: flex; flex-direction: column; gap: 8px; }
+    .storico-day  { background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+    .storico-day-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; cursor: pointer; gap: 8px;
+    }
+    .storico-day-header:hover { background: var(--bg-light); }
+    .storico-day-label  { font-weight: 800; font-size: .9em; }
+    .storico-day-count  { font-size: .78em; color: var(--text-light); font-weight: 600; }
+    .storico-day-toggle { color: var(--text-light); font-size: .9em; }
+    .storico-day-detail { padding: 0 14px 12px; }
+    .storico-meal-block { margin-bottom: 10px; }
+    .storico-meal-title { font-size: .76em; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+    .storico-item       { display: flex; align-items: center; justify-content: space-between; font-size: .84em; padding: 4px 0; border-bottom: 1px solid var(--border); }
+    .storico-item:last-child { border-bottom: none; }
+    .storico-item-qty   { color: var(--text-light); font-size: .9em; }
+
+    /* ── SPESA ── */
+    .spesa-header-row   { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+    .spesa-title        { font-size: 1.05em; font-weight: 800; }
+    .spesa-subtitle     { font-size: .76em; color: var(--text-light); margin-top: 2px; }
+    .spesa-section-title{ font-size: .74em; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: .06em; margin: 14px 0 6px; }
+    .spesa-progress-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .spesa-progress-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .spesa-progress-fill{ height: 100%; background: linear-gradient(90deg, var(--primary), var(--success, #3aaa6e)); border-radius: 3px; transition: width .5s; }
+    .spesa-progress-label{ font-size: .78em; font-weight: 700; color: var(--text-mid); white-space: nowrap; }
+    .spesa-list         { display: flex; flex-direction: column; gap: 5px; }
+    .spesa-item         { display: flex; align-items: center; gap: 10px; background: var(--bg-card); border-radius: var(--radius-sm); padding: 11px 12px; border: 1.5px solid var(--border); cursor: pointer; transition: all .2s; }
+    .spesa-item:hover   { background: var(--bg-light); }
+    .spesa-item.done    { opacity: .6; }
+    .spesa-item-check   { font-size: 1.1em; flex-shrink: 0; }
+    .spesa-item-info    { flex: 1; min-width: 0; }
+    .spesa-item-name    { font-size: .88em; font-weight: 700; }
+    .spesa-item.done .spesa-item-name { text-decoration: line-through; color: var(--text-light); }
+    .spesa-item-qty     { font-size: .76em; color: var(--text-light); margin-top: 2px; }
+    .spesa-item-actions { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .spesa-badge-auto   { font-size: .65em; font-weight: 800; background: var(--primary-light); color: var(--primary); padding: 2px 6px; border-radius: 10px; }
+    .spesa-badge-manual { font-size: .65em; font-weight: 800; background: var(--bg2, #e6ede9); color: var(--text-light); padding: 2px 6px; border-radius: 10px; }
+    .spesa-delete-btn   { background: none; border: none; cursor: pointer; font-size: .85em; color: var(--text-light); padding: 3px; border-radius: var(--radius-xs); }
+    .spesa-delete-btn:hover { color: var(--danger, #e05252); background: var(--bg-light); }
+    .spesa-add-row      { display: flex; gap: 8px; align-items: center; }
+
+    /* ── PROFILO ── */
+    .profilo-section    { background: var(--bg-card); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 14px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+    .profilo-title      { font-size: .95em; font-weight: 800; margin: 0 0 14px; }
+    .profilo-user-card  { display: flex; align-items: center; gap: 14px; }
+    .profilo-avatar     { width: 56px; height: 56px; border-radius: 50%; border: 3px solid var(--primary); }
+    .profilo-avatar-placeholder { width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light); display: flex; align-items: center; justify-content: center; font-size: 1.6em; flex-shrink: 0; }
+    .profilo-user-name  { font-weight: 800; font-size: 1em; }
+    .profilo-user-email { font-size: .78em; color: var(--text-light); margin-top: 2px; }
+    .profilo-sync-info  { font-size: .74em; color: var(--primary); margin-top: 4px; font-weight: 700; }
+    .profilo-noauth-card{ text-align: center; padding: 20px 10px; }
+    .profilo-meal-section { background: var(--bg-light); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; border: 1px solid var(--border); }
+    .profilo-meal-header  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .profilo-meal-title   { font-size: .82em; font-weight: 800; }
+    .profilo-empty-meal   { font-size: .8em; color: var(--text-light); font-style: italic; }
+    .profilo-item-row     { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+    .profilo-item-name    { flex: 2; min-width: 100px; }
+    .edit-item-row        { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+
+    /* ── STATS ── */
+    .stats-grid         { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 10px; margin-bottom: 20px; }
+    .stat-card          { background: var(--bg-card); border-radius: var(--radius); padding: 16px 12px; text-align: center; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+    .stat-card-icon     { font-size: 1.8em; margin-bottom: 6px; }
+    .stat-card-value    { font-size: 1.4em; font-weight: 800; color: var(--primary); }
+    .stat-card-label    { font-size: .72em; color: var(--text-light); margin-top: 3px; font-weight: 700; }
+
+    /* ── LIMITS ── */
+    .limit-card         { background: var(--bg-card); border-radius: var(--radius); padding: 14px 12px; text-align: center; box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+    .limit-card.warning { border-color: var(--warning, #f0a500); }
+    .limit-card.exceeded{ border-color: var(--danger, #e05252); }
+    .limit-card-icon    { font-size: 1.6em; margin-bottom: 5px; }
+    .limit-card-name    { font-size: .72em; font-weight: 800; color: var(--text-light); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .04em; }
+    .limit-progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 5px; }
+    .limit-progress-fill{ height: 100%; background: var(--primary); border-radius: 3px; transition: width .4s; }
+    .limit-progress-fill.warning  { background: var(--warning, #f0a500); }
+    .limit-progress-fill.exceeded { background: var(--danger, #e05252); }
+    .limit-text         { font-size: .76em; font-weight: 800; color: var(--text-mid); }
+    .limit-text.warning  { color: var(--warning, #f0a500); }
+    .limit-text.exceeded { color: var(--danger, #e05252); }
+
+    /* ── EMPTY STATE ── */
+    .empty-state        { text-align: center; padding: 48px 20px; color: var(--text-light); }
+    .empty-state-icon   { font-size: 2.6em; margin-bottom: 12px; }
+    .empty-state h3     { font-size: 1em; font-weight: 800; color: var(--text-mid); margin-bottom: 6px; }
+    .empty-state p      { font-size: .84em; line-height: 1.6; }
+
+    /* ── IOS BANNER ── */
+    .ios-banner         { display: none; position: fixed; bottom: 80px; left: 16px; right: 16px; background: var(--bg-card); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow-lg); z-index: 400; border: 1px solid var(--border); }
+    .ios-banner.show    { display: flex; align-items: center; gap: 10px; }
+    .install-banner     { display: none; position: fixed; top: calc(var(--header-h,56px) + 8px); left: 50%; transform: translateX(-50%); background: var(--bg-card); border-radius: var(--radius); padding: 10px 14px; box-shadow: var(--shadow-lg); z-index: 300; border: 1px solid var(--border); gap: 10px; align-items: center; white-space: nowrap; font-size: .84em; font-weight: 700; }
+    .install-banner.show { display: flex; }
+
+    /* ── RICETTA FORM ROW ── */
+    .rf-ing-row { display: flex; gap: 5px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+    .rf-ing-name { flex: 2; min-width: 100px; }
+    .rf-ing-qty  { width: 68px !important; flex: none; }
+    .rf-ing-unit { width: 78px !important; flex: none; }
+  </style>
 </head>
 <body>
 
 <!-- ============================================================
-     LANDING PAGE
+     LANDING
      ============================================================ -->
 <div id="landingPage">
-  <div id="landingLogo">
-    <canvas id="landingCanvas" width="96" height="96"></canvas>
-  </div>
+  <div id="landingLogo"></div>
   <div class="landing-title">NutriPlan</div>
   <div class="landing-sub">Il tuo piano alimentare personale</div>
-  <button class="btn btn-primary btn-large" onclick="startApp()">▶ Inizia</button>
+  <button class="btn btn-primary btn-large" onclick="enterApp()">▶ Inizia</button>
 </div>
 
 <!-- ============================================================
-     APP PRINCIPALE
+     APP
      ============================================================ -->
 <div id="mainApp">
 
@@ -36,51 +208,59 @@
   <header class="app-header">
     <div class="app-inner">
       <div class="header-left">
-        <canvas id="headerCanvas" width="32" height="32"></canvas>
+        <canvas id="headerIcon" width="32" height="32"></canvas>
         <span class="header-title">NutriPlan</span>
       </div>
       <div class="header-right">
-
-        <!-- Stato cloud -->
         <span id="cloudStatus" class="cloud-status local">💾 Locale</span>
-
-        <!-- Auth: Accedi -->
         <button id="loginBtn"
                 class="btn-icon-only"
                 onclick="signInWithGoogle()"
-                title="Accedi con Google"
-                style="display:flex">
-          🔑
-        </button>
-
-        <!-- Auth: Utente loggato -->
-        <div id="authUserPill" class="auth-user-pill" style="display:none">
-          <img id="authAvatar" class="auth-avatar" src="" alt="avatar">
-          <span id="authName" class="auth-info"></span>
-        </div>
-
-        <!-- Disconnetti (solo quando loggato) -->
+                title="Accedi con Google">🔑</button>
         <button id="logoutBtn"
                 class="btn-icon-only"
                 onclick="signOut()"
                 title="Disconnetti"
-                style="display:none">
-          🚪
-        </button>
-
-        <!-- Dark mode -->
-        <button class="btn-icon-only" onclick="toggleTheme()" id="themeBtn" title="Tema">🌙</button>
+                style="display:none">🚪</button>
+        <button id="darkToggle"
+                class="btn-icon-only"
+                onclick="toggleDarkMode()"
+                title="Tema">🌙</button>
       </div>
     </div>
   </header>
 
+  <!-- ── SIDEBAR (desktop) ── -->
+  <aside class="sidebar-nav">
+    <button class="nav-tab active" onclick="showPage('piano',this)">
+      <span class="nav-icon">🏠</span><span class="nav-label">Piano</span>
+    </button>
+    <button class="nav-tab" onclick="showPage('dispensa',this)">
+      <span class="nav-icon">🧺</span><span class="nav-label">Dispensa</span>
+    </button>
+    <button class="nav-tab" onclick="showPage('ricette',this)">
+      <span class="nav-icon">📖</span><span class="nav-label">Ricette</span>
+    </button>
+    <button class="nav-tab" onclick="showPage('storico',this)">
+      <span class="nav-icon">📅</span><span class="nav-label">Storico</span>
+    </button>
+    <button class="nav-tab" onclick="showPage('spesa',this)">
+      <span class="nav-icon">🛒</span><span class="nav-label">Spesa</span>
+    </button>
+    <button class="nav-tab" onclick="showPage('statistiche',this)">
+      <span class="nav-icon">📊</span><span class="nav-label">Stats</span>
+    </button>
+    <button class="nav-tab" onclick="showPage('profilo',this)">
+      <span class="nav-icon">👤</span><span class="nav-label">Profilo</span>
+    </button>
+  </aside>
+
   <!-- ── CONTENUTO ── -->
   <main class="app-main">
 
-    <!-- ══════════════ PIANO ══════════════ -->
-    <div id="pianoPianoPage" class="page active">
+    <!-- ══ PIANO ══ -->
+    <div id="pianoPage" class="page active">
 
-      <!-- Calendario -->
       <div class="calendar-wrap">
         <div class="calendar-bar-wrap">
           <div class="calendar-bar" id="calendarBar"></div>
@@ -88,7 +268,6 @@
         <div class="current-date-label" id="currentDateLabel"></div>
       </div>
 
-      <!-- Tabs interni del Piano -->
       <div class="page-tabs">
         <button class="page-tab active" onclick="showPianoTab('pasto',this)">🍽 Pasto</button>
         <button class="page-tab"        onclick="showPianoTab('frigo',this)">❄️ Frigo</button>
@@ -96,39 +275,27 @@
         <button class="page-tab"        onclick="showPianoTab('limiti',this)">📊 Limiti</button>
       </div>
 
-      <!-- TAB: PASTO -->
+      <!-- TAB PASTO -->
       <div id="pianoTabPasto" class="page-tab-content active">
         <div id="mealProgressWrap"></div>
         <div id="mealSelector" class="meal-selector"></div>
         <div id="mealItemsList"></div>
       </div>
 
-      <!-- TAB: FRIGO -->
+      <!-- TAB FRIGO -->
       <div id="pianoTabFrigo" class="page-tab-content">
         <div class="section-header">
-          <span class="section-title">❄️ Suggerimenti dal frigo</span>
-          <div style="display:flex;gap:6px;align-items:center">
-            <select id="fridgeSuggestionFilter"
-                    class="form-input"
-                    style="width:auto;font-size:.8em;padding:6px 10px;"
-                    onchange="updateFridgeSuggestions()">
-              <option value="all">Tutti i pasti</option>
-              <option value="colazione">Colazione</option>
-              <option value="pranzo">Pranzo</option>
-              <option value="cena">Cena</option>
-            </select>
-            <button class="btn btn-secondary btn-small" onclick="openSaveFridgeModal()">💾 Salva</button>
-          </div>
+          <span class="section-title">❄️ Ricette con quel che hai</span>
+          <button class="btn btn-secondary btn-small" onclick="openSaveFridgeModal()">💾 Salva</button>
         </div>
         <div id="fridgeSuggestions"></div>
-
         <div class="section-header" style="margin-top:20px">
           <span class="section-title">📁 Frigo salvati</span>
         </div>
         <div id="savedFridgesContent"></div>
       </div>
 
-      <!-- TAB: INGREDIENTI DEL GIORNO -->
+      <!-- TAB INGREDIENTI GIORNO -->
       <div id="pianoTabGiorno" class="page-tab-content">
         <div class="section-header">
           <span class="section-title">🌿 Ingredienti del giorno</span>
@@ -136,28 +303,27 @@
         <div id="dayIngredientsGrid"></div>
       </div>
 
-      <!-- TAB: LIMITI -->
+      <!-- TAB LIMITI -->
       <div id="pianoTabLimiti" class="page-tab-content">
         <div class="section-header">
           <span class="section-title">📊 Limiti settimanali</span>
-          <button class="btn btn-secondary btn-small" onclick="resetWeeklyLimits()">🔄 Reset</button>
+          <button class="btn btn-secondary btn-small" onclick="resetWeek()">🔄 Reset</button>
         </div>
-        <div id="weeklyLimitsGrid" class="limits-grid"></div>
+        <div id="limitsGrid" class="limits-grid"></div>
       </div>
 
-    </div><!-- /pianoPianoPage -->
+    </div><!-- /pianoPage -->
 
 
-    <!-- ══════════════ DISPENSA ══════════════ -->
+    <!-- ══ DISPENSA ══ -->
     <div id="dispensaPage" class="page">
 
-      <!-- Tabs: Dispensa / Frigo -->
       <div class="page-tabs">
         <button class="page-tab active" onclick="showDispensaTab('dispensa',this)">🧺 Dispensa</button>
         <button class="page-tab"        onclick="showDispensaTab('frigo',this)">❄️ Frigo</button>
       </div>
 
-      <!-- TAB: DISPENSA -->
+      <!-- TAB DISPENSA -->
       <div id="dispensaTabDispensa" class="page-tab-content active">
         <div class="search-bar-row">
           <div class="search-input-wrap">
@@ -169,22 +335,22 @@
                    list="ingredientiDatalist">
             <button class="search-clear-btn" onclick="clearPantrySearch()">✕</button>
           </div>
-          <button class="btn-add-ing" onclick="openAddIngModal()" title="Aggiungi ingrediente">＋</button>
+          <button class="btn-add-ing" onclick="openCustomIngModal()" title="Aggiungi">＋</button>
         </div>
         <div id="pantryContent"></div>
       </div>
 
-      <!-- TAB: FRIGO -->
+      <!-- TAB FRIGO -->
       <div id="dispensaTabFrigo" class="page-tab-content">
         <div class="section-header">
           <span class="section-title">❄️ Nel frigo ora</span>
-          <button class="btn btn-secondary btn-small" onclick="openSaveFridgeModal()">💾 Salva frigo</button>
+          <button class="btn btn-secondary btn-small" onclick="openSaveFridgeModal()">💾 Salva</button>
         </div>
-        <p style="font-size:.8em;color:var(--text-light);margin-bottom:14px">
-          Il frigo si aggiorna quando aggiungi ingredienti dalla dispensa o segni acquisti dalla spesa.
+        <p style="font-size:.8em;color:var(--text-light);margin-bottom:14px;line-height:1.5">
+          Il frigo mostra gli ingredienti deperibili presenti in dispensa.
+          Si aggiorna quando aggiungi ingredienti o segni acquisti dalla spesa.
         </p>
         <div id="fridgeContent"></div>
-
         <div class="section-header" style="margin-top:20px">
           <span class="section-title">📁 Frigo salvati</span>
         </div>
@@ -194,7 +360,7 @@
     </div><!-- /dispensaPage -->
 
 
-    <!-- ══════════════ RICETTE ══════════════ -->
+    <!-- ══ RICETTE ══ -->
     <div id="ricettePage" class="page">
 
       <div class="page-tabs">
@@ -202,24 +368,22 @@
         <button class="page-tab"        onclick="showRicetteTab('mie',this)">⭐ Le mie</button>
       </div>
 
-      <!-- TAB: CATALOGO -->
       <div id="ricetteTabCatalogo" class="page-tab-content active">
         <input type="text"
                id="ricetteSearch"
                class="form-input"
                placeholder="🔍 Cerca ricetta o ingrediente..."
-               style="margin-bottom:12px;"
+               style="margin-bottom:12px"
                oninput="filterRicette(this.value)"
                list="ingredientiDatalist">
         <div id="ricetteFilterRow" class="ricette-filter-row"></div>
         <div id="ricetteGrid" class="ricette-grid"></div>
       </div>
 
-      <!-- TAB: LE MIE -->
       <div id="ricetteTabMie" class="page-tab-content">
         <div class="section-header">
           <span class="section-title">⭐ Le mie ricette</span>
-          <button class="btn btn-primary btn-small" onclick="openCustomRicettaModal()">＋ Nuova</button>
+          <button class="btn btn-primary btn-small" onclick="openRicettaForm()">＋ Nuova</button>
         </div>
         <div id="customRicetteList"></div>
       </div>
@@ -227,23 +391,23 @@
     </div><!-- /ricettePage -->
 
 
-    <!-- ══════════════ STORICO ══════════════ -->
+    <!-- ══ STORICO ══ -->
     <div id="storicoPage" class="page">
       <div class="section-header">
-        <span class="section-title">📅 Storico</span>
+        <span class="section-title">📅 Storico pasti</span>
       </div>
       <div id="storicoContent"></div>
     </div>
 
 
-    <!-- ══════════════ SPESA ══════════════ -->
+    <!-- ══ SPESA ══ -->
     <div id="spesaPage" class="page">
       <div id="spesaContent"></div>
     </div>
 
 
-    <!-- ══════════════ STATS ══════════════ -->
-    <div id="statsPage" class="page">
+    <!-- ══ STATISTICHE ══ -->
+    <div id="statistichePage" class="page">
       <div class="section-header">
         <span class="section-title">📊 Statistiche</span>
       </div>
@@ -251,44 +415,36 @@
     </div>
 
 
-    <!-- ══════════════ PROFILO ══════════════ -->
+    <!-- ══ PROFILO ══ -->
     <div id="profiloPage" class="page">
-      <!-- popolato da profilo.js → renderProfilo() -->
+      <!-- popolato da renderProfilo() in profilo.js -->
     </div>
 
+  </main>
 
-  </main><!-- /app-main -->
-
-  <!-- ── BOTTOM NAV ── -->
+  <!-- ── BOTTOM NAV (mobile) ── -->
   <nav class="bottom-nav">
     <div class="app-inner">
-      <button class="nav-tab active" id="navPiano"    onclick="showPage('piano')">
-        <span class="nav-icon">🏠</span>
-        <span class="nav-label">Piano</span>
+      <button class="nav-tab active" onclick="showPage('piano',this)">
+        <span class="nav-icon">🏠</span><span class="nav-label">Piano</span>
       </button>
-      <button class="nav-tab"        id="navDispensa" onclick="showPage('dispensa')">
-        <span class="nav-icon">🧺</span>
-        <span class="nav-label">Dispensa</span>
+      <button class="nav-tab" onclick="showPage('dispensa',this)">
+        <span class="nav-icon">🧺</span><span class="nav-label">Dispensa</span>
       </button>
-      <button class="nav-tab"        id="navRicette"  onclick="showPage('ricette')">
-        <span class="nav-icon">📖</span>
-        <span class="nav-label">Ricette</span>
+      <button class="nav-tab" onclick="showPage('ricette',this)">
+        <span class="nav-icon">📖</span><span class="nav-label">Ricette</span>
       </button>
-      <button class="nav-tab"        id="navStorico"  onclick="showPage('storico')">
-        <span class="nav-icon">📅</span>
-        <span class="nav-label">Storico</span>
+      <button class="nav-tab" onclick="showPage('storico',this)">
+        <span class="nav-icon">📅</span><span class="nav-label">Storico</span>
       </button>
-      <button class="nav-tab"        id="navSpesa"    onclick="showPage('spesa')">
-        <span class="nav-icon">🛒</span>
-        <span class="nav-label">Spesa</span>
+      <button class="nav-tab" onclick="showPage('spesa',this)">
+        <span class="nav-icon">🛒</span><span class="nav-label">Spesa</span>
       </button>
-      <button class="nav-tab"        id="navStats"    onclick="showPage('stats')">
-        <span class="nav-icon">📊</span>
-        <span class="nav-label">Stats</span>
+      <button class="nav-tab" onclick="showPage('statistiche',this)">
+        <span class="nav-icon">📊</span><span class="nav-label">Stats</span>
       </button>
-      <button class="nav-tab"        id="navProfilo"  onclick="showPage('profilo')">
-        <span class="nav-icon">👤</span>
-        <span class="nav-label">Profilo</span>
+      <button class="nav-tab" onclick="showPage('profilo',this)">
+        <span class="nav-icon">👤</span><span class="nav-label">Profilo</span>
       </button>
     </div>
   </nav>
@@ -300,7 +456,7 @@
      MODALI
      ============================================================ -->
 
-<!-- ── RICETTA DETTAGLIO ── -->
+<!-- RICETTA DETTAGLIO -->
 <div class="modal" id="recipeModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -310,12 +466,12 @@
     <div class="modal-body" id="recipeModalBody"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeRecipeModal()">Chiudi</button>
-      <button class="btn btn-primary"   onclick="applyRecipeToMeal()">✅ Applica al piano</button>
+      <button class="btn btn-primary"   onclick="applyRecipeToMeal()">✅ Aggiungi al piano</button>
     </div>
   </div>
 </div>
 
-<!-- ── SALVA CONFIGURAZIONE FRIGO ── -->
+<!-- SALVA FRIGO -->
 <div class="modal" id="saveFridgeModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -325,10 +481,8 @@
     <div class="modal-body">
       <div class="form-group">
         <label>Nome configurazione</label>
-        <input type="text"
-               id="fridgeName"
-               class="form-input"
-               placeholder="es. Spesa settimanale, Dopo vacanze..."
+        <input type="text" id="fridgeName" class="form-input"
+               placeholder="es. Spesa settimanale..."
                onkeypress="if(event.key==='Enter')saveFridge()">
       </div>
     </div>
@@ -339,25 +493,23 @@
   </div>
 </div>
 
-<!-- ── AGGIUNGI INGREDIENTE PERSONALIZZATO ── -->
-<div class="modal" id="addIngModal">
+<!-- AGGIUNGI INGREDIENTE CUSTOM -->
+<div class="modal" id="customIngModal">
   <div class="modal-content">
     <div class="modal-header">
       <h3>➕ Aggiungi ingrediente</h3>
-      <button class="modal-close" onclick="closeAddIngModal()">✕</button>
+      <button class="modal-close" onclick="closeCustomIngModal()">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label>Nome ingrediente <span style="color:var(--danger)">*</span></label>
-        <input type="text"
-               id="customIngName"
-               class="form-input"
-               placeholder="es. Tofu, Avena, Lenticchie rosse..."
+        <label>Nome <span style="color:var(--danger,#e05252)">*</span></label>
+        <input type="text" id="customIngName" class="form-input"
+               placeholder="es. Tofu, Avena..."
                list="ingredientiDatalist"
                onkeypress="if(event.key==='Enter')addCustomIngredient()">
       </div>
       <div class="form-group">
-        <label>Categoria <span style="color:var(--danger)">*</span></label>
+        <label>Categoria <span style="color:var(--danger,#e05252)">*</span></label>
         <select id="customIngCategory" class="form-input">
           <option value="">-- Seleziona categoria --</option>
           <option value="🥩 Carne e Pesce">🥩 Carne e Pesce</option>
@@ -382,28 +534,24 @@
           <option value="porzione">porzione</option>
         </select>
       </div>
-      <div id="addIngError"
-           style="color:var(--danger);font-size:.82em;display:none;margin-top:-8px;margin-bottom:8px">
-        ⚠ Compila tutti i campi obbligatori.
-      </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeAddIngModal()">Annulla</button>
+      <button class="btn btn-secondary" onclick="closeCustomIngModal()">Annulla</button>
       <button class="btn btn-primary"   onclick="addCustomIngredient()">➕ Aggiungi</button>
     </div>
   </div>
 </div>
 
-<!-- ── NUOVA RICETTA PERSONALIZZATA ── -->
-<div class="modal" id="customRicettaModal">
+<!-- NUOVA RICETTA -->
+<div class="modal" id="ricettaFormModal">
   <div class="modal-content modal-content-large">
     <div class="modal-header">
-      <h3>⭐ Nuova ricetta</h3>
-      <button class="modal-close" onclick="closeCustomRicettaModal()">✕</button>
+      <h3 id="ricettaFormTitle">⭐ Nuova ricetta</h3>
+      <button class="modal-close" onclick="closeRicettaForm()">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label>Nome ricetta <span style="color:var(--danger)">*</span></label>
+        <label>Nome <span style="color:var(--danger,#e05252)">*</span></label>
         <input type="text" id="rfNome" class="form-input" placeholder="es. Pasta al pesto...">
       </div>
       <div class="form-group">
@@ -424,17 +572,18 @@
       <div class="form-group">
         <label>Preparazione</label>
         <textarea id="rfPrep" class="form-input form-textarea"
-                  placeholder="Descrivi i passaggi di preparazione..."></textarea>
+                  placeholder="Descrivi i passaggi..."></textarea>
       </div>
+      <input type="hidden" id="rfEditIdx" value="">
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeCustomRicettaModal()">Annulla</button>
+      <button class="btn btn-secondary" onclick="closeRicettaForm()">Annulla</button>
       <button class="btn btn-primary"   onclick="saveCustomRicetta()">💾 Salva ricetta</button>
     </div>
   </div>
 </div>
 
-<!-- ── SPESA: QUANTITÀ ACQUISTATA ── -->
+<!-- SPESA: QUANTITÀ ACQUISTATA -->
 <div class="modal" id="spesaItemModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -443,20 +592,13 @@
     </div>
     <div class="modal-body">
       <p style="color:var(--text-mid);font-size:.88em;margin-bottom:16px;line-height:1.6">
-        Inserisci la quantità acquistata per aggiornare automaticamente la dispensa e il frigo.
+        Inserisci la quantità acquistata per aggiornare automaticamente dispensa e frigo.
       </p>
       <div style="display:flex;gap:8px;align-items:center">
-        <input  type="number"
-                id="spesaItemQty"
-                class="form-input"
-                placeholder="Quantità"
-                min="0"
-                step="any"
-                style="flex:1"
-                onkeypress="if(event.key==='Enter')confirmSpesaQuantity()">
-        <select id="spesaItemUnit"
-                class="form-input"
-                style="width:90px;flex:none">
+        <input type="number" id="spesaItemQty" class="form-input"
+               placeholder="Quantità" min="0" step="any" style="flex:1"
+               onkeypress="if(event.key==='Enter')confirmSpesaQuantity()">
+        <select id="spesaItemUnit" class="form-input" style="width:90px;flex:none">
           <option value="g">g</option>
           <option value="ml">ml</option>
           <option value="pz">pz</option>
@@ -476,395 +618,270 @@
   </div>
 </div>
 
-<!-- ── DATALIST INGREDIENTI (autocomplete) ── -->
-<datalist id="ingredientiDatalist"></datalist>
-
-<!-- ── PWA INSTALL BANNER ── -->
-<div id="installBanner" class="install-banner" style="display:none">
-  <span>📲 Installa NutriPlan come app</span>
-  <button class="btn btn-primary btn-small" onclick="installPWA()">Installa</button>
-  <button class="install-banner-close" onclick="dismissInstallBanner()">✕</button>
+<!-- iOS BANNER -->
+<div class="ios-banner" id="iosBanner">
+  <span>📲 Installa NutriPlan</span>
+  <span style="flex:1;font-size:.8em;color:var(--text-light)">Tocca ⬆️ poi "Aggiungi a schermata Home"</span>
+  <button class="btn btn-secondary btn-small" onclick="closeIosBanner()">✕</button>
 </div>
+
+<!-- INSTALL BANNER (PWA Android/Chrome) -->
+<div class="install-banner" id="installBanner">
+  <span>📲 Installa NutriPlan come app</span>
+  <button class="btn btn-primary btn-small" id="installBtn">Installa</button>
+  <button class="btn btn-secondary btn-small" id="dismissBtn">✕</button>
+</div>
+
+<!-- DATALIST AUTOCOMPLETE -->
+<datalist id="ingredientiDatalist"></datalist>
 
 
 <!-- ============================================================
-     SCRIPT
+     SCRIPTS — ordine fondamentale
      ============================================================ -->
 
-<!-- Firebase SDK -->
-<script type="module">
-  import { initializeApp }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth,
-           GoogleAuthProvider,
-           signInWithPopup,
-           onAuthStateChanged,
-           signOut as fbSignOut }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore,
-           doc, setDoc, getDoc,
-           onSnapshot }             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+<!-- Firebase Compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-  const firebaseConfig = {
-    apiKey:            "AIzaSyDFCOiEOefMEHmjcmCxEiCE37YTZE21uKw",
-    authDomain:        "nutriplan-a09ab.firebaseapp.com",
-    projectId:         "nutriplan-a09ab",
-    storageBucket:     "nutriplan-a09ab.appspot.com",
-    messagingSenderId: "591234568",
-    appId:             "1:591234568:web:abc123def456"
-  };
-
-  const app      = initializeApp(firebaseConfig);
-  const auth     = getAuth(app);
-  const db       = getFirestore(app);
-  const provider = new GoogleAuthProvider();
-
-  /* Espone all'esterno */
-  window._firebaseAuth     = auth;
-  window._firebaseDb       = db;
-  window._firebaseProvider = provider;
-  window._firebaseFbSignOut = fbSignOut;
-  window._firebaseDoc      = doc;
-  window._firebaseSetDoc   = setDoc;
-  window._firebaseGetDoc   = getDoc;
-  window._firebaseOnSnapshot = onSnapshot;
-
-  /* AUTH STATE */
-  onAuthStateChanged(auth, function(user) {
-    window.currentUser = user;
-    updateAuthUI(user);
-    if (user) {
-      window.cloudSaveEnabled = true;
-      loadDataFromCloud(user.uid);
-    } else {
-      window.cloudSaveEnabled = false;
-      setCloudStatus('local');
-    }
-  });
-</script>
-
-<!-- App JS -->
+<!-- App scripts in ordine corretto -->
 <script src="data.js"></script>
+<script src="storage.js"></script>
 <script src="app.js"></script>
 <script src="piano.js"></script>
 <script src="dispensa.js"></script>
 <script src="ricette.js"></script>
 <script src="spesa.js"></script>
 <script src="storico.js"></script>
-<script src="stats.js"></script>
 <script src="profilo.js"></script>
+<script src="firebase-config.js"></script>
 
-<!-- Inline bootstrap -->
+<!-- ============================================================
+     PATCH E STUB INLINE
+     (caricati DOPO tutti gli altri — possono sovrascrivere)
+     ============================================================ -->
 <script>
-/* ---- updateAuthUI ---- */
-function updateAuthUI(user) {
-  var loginBtn    = document.getElementById('loginBtn');
-  var logoutBtn   = document.getElementById('logoutBtn');
-  var authPill    = document.getElementById('authUserPill');
-  var authAvatar  = document.getElementById('authAvatar');
-  var authName    = document.getElementById('authName');
 
-  if (user) {
-    /* Loggato */
-    if (loginBtn)  loginBtn.style.display  = 'none';
-    if (logoutBtn) logoutBtn.style.display = 'flex';
-    if (authPill)  authPill.style.display  = 'flex';
-    if (authAvatar && user.photoURL)  authAvatar.src = user.photoURL;
-    if (authName   && user.displayName) {
-      authName.textContent = user.displayName.split(' ')[0];
-      authName.style.display = 'block';
-    }
-  } else {
-    /* Non loggato */
-    if (loginBtn)  loginBtn.style.display  = 'flex';
-    if (logoutBtn) logoutBtn.style.display = 'none';
-    if (authPill)  authPill.style.display  = 'none';
-    if (authAvatar) authAvatar.src = '';
-    if (authName)   authName.textContent = '';
-  }
-}
-
-/* ---- signInWithGoogle ---- */
-function signInWithGoogle() {
-  if (!window._firebaseAuth || !window._firebaseProvider) {
-    alert('Firebase non ancora inizializzato. Riprova tra un secondo.');
-    return;
-  }
-  signInWithPopup(window._firebaseAuth, window._firebaseProvider)
-    .catch(function(err) { console.error('Login error:', err); });
-}
-
-/* Import signInWithPopup dall'SDK */
-async function signInWithPopup(auth, provider) {
-  const { signInWithPopup: _siwp } =
-    await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-  return _siwp(auth, provider).catch(function(e){ console.error(e); });
-}
-
-/* ---- signOut ---- */
-function signOut() {
-  if (!window._firebaseAuth || !window._firebaseFbSignOut) return;
-  if (!confirm('Vuoi disconnetterti?')) return;
-  window._firebaseFbSignOut(window._firebaseAuth)
-    .then(function() { updateAuthUI(null); setCloudStatus('local'); })
-    .catch(function(e){ console.error(e); });
-}
-
-/* ---- showPage ---- */
-function showPage(name) {
-  var pageMap = {
-    piano:    'pianoPianoPage',
-    dispensa: 'dispensaPage',
-    ricette:  'ricettePage',
-    storico:  'storicoPage',
-    spesa:    'spesaPage',
-    stats:    'statsPage',
-    profilo:  'profiloPage'
-  };
-  var navMap = {
-    piano:    'navPiano',
-    dispensa: 'navDispensa',
-    ricette:  'navRicette',
-    storico:  'navStorico',
-    spesa:    'navSpesa',
-    stats:    'navStats',
-    profilo:  'navProfilo'
-  };
-  /* Nascondi tutte le pagine */
-  Object.values(pageMap).forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.classList.remove('active');
+/* ---- 1. Stats stub (stats.js non esiste) ---- */
+function renderStatistiche() {
+  var el = document.getElementById('statsContent');
+  if (!el) return;
+  var totalDays  = Object.keys(appHistory || {}).filter(function(dk) {
+    var hd = appHistory[dk]; if (!hd || !hd.usedItems) return false;
+    return Object.keys(hd.usedItems).some(function(mk) { return Object.keys(hd.usedItems[mk]||{}).length > 0; });
+  }).length;
+  var allMeals = ['colazione','spuntino','pranzo','merenda','cena'];
+  var totalUsed = 0;
+  Object.keys(appHistory || {}).forEach(function(dk) {
+    var ui = (appHistory[dk]||{}).usedItems || {};
+    allMeals.forEach(function(mk) { totalUsed += Object.keys(ui[mk]||{}).length; });
   });
-  /* Deseleziona tutti i nav tab */
-  Object.values(navMap).forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.classList.remove('active');
-  });
-  /* Attiva pagina corrente */
-  var pageEl = document.getElementById(pageMap[name]);
-  if (pageEl) pageEl.classList.add('active');
-  var navEl  = document.getElementById(navMap[name]);
-  if (navEl)  navEl.classList.add('active');
-
-  /* Render pagina */
-  switch(name) {
-    case 'piano':    renderMealPlan(); initCalendar(); break;
-    case 'dispensa': renderPantry();   renderFridge(); break;
-    case 'ricette':  renderRicettePage(); break;
-    case 'storico':  renderStorico(); break;
-    case 'spesa':    renderSpesa(); break;
-    case 'stats':    if (typeof renderStats === 'function') renderStats(); break;
-    case 'profilo':  renderProfilo(); break;
-  }
-  window.scrollTo(0, 0);
+  var pantryCount = Object.keys(pantryItems || {}).filter(function(k) {
+    return k && k !== 'undefined' && (pantryItems[k].quantity||0) > 0;
+  }).length;
+  el.innerHTML =
+    '<div class="stats-grid">' +
+      '<div class="stat-card"><div class="stat-card-icon">📅</div><div class="stat-card-value">' + totalDays + '</div><div class="stat-card-label">Giorni tracciati</div></div>' +
+      '<div class="stat-card"><div class="stat-card-icon">✅</div><div class="stat-card-value">' + totalUsed + '</div><div class="stat-card-label">Alimenti consumati</div></div>' +
+      '<div class="stat-card"><div class="stat-card-icon">🧺</div><div class="stat-card-value">' + pantryCount + '</div><div class="stat-card-label">In dispensa ora</div></div>' +
+      '<div class="stat-card"><div class="stat-card-icon">📖</div><div class="stat-card-value">' + ((customRecipes||[]).length) + '</div><div class="stat-card-label">Ricette personali</div></div>' +
+    '</div>';
 }
 
-/* ---- showPianoTab ---- */
-function showPianoTab(tab, btn) {
-  ['pasto','frigo','giorno','limiti'].forEach(function(t) {
-    var el = document.getElementById('pianoTab' + t.charAt(0).toUpperCase() + t.slice(1));
-    if (el) el.classList.remove('active');
-  });
-  document.querySelectorAll('#pianoPianoPage .page-tab').forEach(function(b) { b.classList.remove('active'); });
-  var mapId = { pasto: 'Pasto', frigo: 'Frigo', giorno: 'Giorno', limiti: 'Limiti' };
-  var el = document.getElementById('pianoTab' + mapId[tab]);
-  if (el) el.classList.add('active');
-  if (btn) btn.classList.add('active');
-  if (tab === 'frigo')  { updateFridgeSuggestions(); updateSavedFridges(); }
-  if (tab === 'giorno') { if (typeof initDayIngGrid === 'function') initDayIngGrid(); }
-  if (tab === 'limiti') { if (typeof renderWeeklyLimits === 'function') renderWeeklyLimits(); }
+/* ---- 2. checkOnlineStatus stub ---- */
+function checkOnlineStatus() {
+  var s = navigator.onLine ? 'local' : 'local';
+  showCloudStatus(s);
 }
 
-/* ---- showDispensaTab ---- */
-function showDispensaTab(tab, btn) {
-  ['dispensa','frigo'].forEach(function(t) {
-    var el = document.getElementById('dispensaTab' + t.charAt(0).toUpperCase() + t.slice(1));
-    if (el) el.classList.remove('active');
-  });
-  document.querySelectorAll('#dispensaPage .page-tab').forEach(function(b) { b.classList.remove('active'); });
-  var el = document.getElementById('dispensaTab' + tab.charAt(0).toUpperCase() + tab.slice(1));
-  if (el) el.classList.add('active');
-  if (btn) btn.classList.add('active');
-  if (tab === 'frigo') {
-    renderFridge();
-    if (typeof updateSavedFridges === 'function') {
-      /* aggiorna saved fridge nel secondo contenitore */
-      var el2 = document.getElementById('savedFridgesContent2');
-      if (el2) {
-        var keys = Object.keys(savedFridges || {});
-        if (!keys.length) { el2.innerHTML = '<p style="color:var(--text-light);font-size:.84em">Nessuna configurazione salvata.</p>'; }
-        else {
-          el2.innerHTML = keys.map(function(k) {
-            var f = savedFridges[k];
-            var n = Object.keys(f.items || {}).length;
-            return '<div class="saved-fridge-item">' +
-              '<div class="saved-fridge-name">📁 ' + k + '</div>' +
-              '<div class="saved-fridge-date">🕐 ' + (f.date||'') + ' · ' + n + ' ingredienti</div>' +
-              '<div class="saved-fridge-actions">' +
-                '<button class="btn btn-secondary btn-small" onclick="loadFridge(\'' + k.replace(/'/g,"\\'") + '\')">📂 Carica</button>' +
-                '<button class="btn btn-warning btn-small"   onclick="deleteFridge(\'' + k.replace(/'/g,"\\'") + '\')">🗑</button>' +
-              '</div></div>';
-          }).join('');
-        }
-      }
-    }
-  }
-}
-
-/* ---- setCloudStatus ---- */
-function setCloudStatus(status) {
+/* ---- 3. Override showCloudStatus per allinearsi alle classi CSS ---- */
+function showCloudStatus(status) {
   var el = document.getElementById('cloudStatus');
   if (!el) return;
   var map = {
-    synced:  { cls: 'synced', text: '☁️ Sincronizzato' },
-    saving:  { cls: 'saving', text: '⏳ Salvataggio...' },
-    local:   { cls: 'local',  text: '💾 Locale'         },
-    error:   { cls: 'error',  text: '⚠ Errore sync'    }
+    local:  { cls: 'local',  text: '💾 Locale'         },
+    saving: { cls: 'saving', text: '⏳ Salvataggio...' },
+    synced: { cls: 'synced', text: '☁️ Sincronizzato'  },
+    error:  { cls: 'error',  text: '⚠️ Errore sync'    }
   };
   var s = map[status] || map.local;
   el.className = 'cloud-status ' + s.cls;
   el.textContent = s.text;
 }
 
-/* ---- toggleTheme ---- */
-function toggleTheme() {
-  var html = document.documentElement;
-  var btn  = document.getElementById('themeBtn');
-  if (html.getAttribute('data-theme') === 'dark') {
-    html.setAttribute('data-theme', 'light');
-    if (btn) btn.textContent = '🌙';
-    localStorage.setItem('nutriplan_theme', 'light');
-  } else {
-    html.setAttribute('data-theme', 'dark');
-    if (btn) btn.textContent = '☀️';
-    localStorage.setItem('nutriplan_theme', 'dark');
-  }
-}
-
-/* ---- Ripristina tema ---- */
+/* ---- 4. Patch adjustQty → aggiorna anche il frigo ---- */
 (function() {
-  var t = localStorage.getItem('nutriplan_theme');
-  if (t) {
-    document.documentElement.setAttribute('data-theme', t);
-    window.addEventListener('DOMContentLoaded', function() {
-      var btn = document.getElementById('themeBtn');
-      if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
-    });
-  }
+  var _orig = window.adjustQty;
+  if (typeof _orig !== 'function') return;
+  window.adjustQty = function(name, delta) {
+    _orig(name, delta);
+    /* Aggiorna il frigo se è visibile */
+    var fc = document.getElementById('fridgeContent');
+    if (fc && typeof renderFridge === 'function') renderFridge();
+  };
 })();
 
-/* ---- openAddIngModal / closeAddIngModal ---- */
-function openAddIngModal() {
-  var m = document.getElementById('addIngModal');
-  if (!m) return;
-  document.getElementById('customIngName').value = '';
-  document.getElementById('customIngCategory').value = '';
-  document.getElementById('customIngUnit').value = 'g';
-  var errEl = document.getElementById('addIngError');
-  if (errEl) errEl.style.display = 'none';
-  m.classList.add('active');
-  setTimeout(function(){ document.getElementById('customIngName').focus(); }, 100);
-}
-function closeAddIngModal() {
-  var m = document.getElementById('addIngModal'); if (m) m.classList.remove('active');
-}
+/* ---- 5. Ricetta form: alias e CRUD ---- */
+var _rfEditIdx = null;
 
-/* ---- openCustomRicettaModal ---- */
-function openCustomRicettaModal(idx) {
-  var m = document.getElementById('customRicettaModal');
-  if (!m) return;
-  if (idx !== undefined && typeof editCustomRicetta === 'function') { editCustomRicetta(idx); return; }
-  document.getElementById('rfNome').value  = '';
-  document.getElementById('rfPasto').value = 'pranzo';
-  document.getElementById('rfPrep').value  = '';
+function openRicettaForm(idx) {
+  _rfEditIdx = (idx !== undefined) ? idx : null;
+  var titleEl = document.getElementById('ricettaFormTitle');
+  var nomeEl  = document.getElementById('rfNome');
+  var pastoEl = document.getElementById('rfPasto');
+  var prepEl  = document.getElementById('rfPrep');
   var ingList = document.getElementById('rfIngList');
-  if (ingList) ingList.innerHTML = '';
-  if (typeof addRfIngRow === 'function') addRfIngRow();
-  m.classList.add('active');
-}
-function closeCustomRicettaModal() {
-  var m = document.getElementById('customRicettaModal'); if (m) m.classList.remove('active');
-}
-
-/* ---- startApp ---- */
-function startApp() {
-  var land = document.getElementById('landingPage');
-  var main = document.getElementById('mainApp');
-  if (land) land.style.display = 'none';
-  if (main) main.classList.add('active');
-  if (typeof initApp === 'function') initApp();
-  showPage('piano');
-}
-
-/* ---- buildIngDatalist ---- */
-function buildIngDatalist() {
-  var dl = document.getElementById('ingredientiDatalist');
-  if (!dl) return;
-  var all = [];
-  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
-    defaultIngredients.forEach(function(i){ if(i&&i.name) all.push(i.name); });
+  if (!nomeEl) return;
+  if (_rfEditIdx !== null && customRecipes[_rfEditIdx]) {
+    var r = customRecipes[_rfEditIdx];
+    if (titleEl)  titleEl.textContent = '✏️ Modifica ricetta';
+    nomeEl.value  = r.name || '';
+    pastoEl.value = Array.isArray(r.pasto) ? r.pasto[0] : (r.pasto || 'pranzo');
+    prepEl.value  = r.preparazione || '';
+    ingList.innerHTML = '';
+    (r.ingredienti || []).forEach(function(ing) { addRfIngRow(ing); });
+  } else {
+    if (titleEl)  titleEl.textContent = '⭐ Nuova ricetta';
+    nomeEl.value  = '';
+    pastoEl.value = 'pranzo';
+    prepEl.value  = '';
+    ingList.innerHTML = '';
+    addRfIngRow();
   }
-  (window.customIngredients || []).forEach(function(i){ if(i&&i.name) all.push(i.name); });
-  dl.innerHTML = all.map(function(n){ return '<option value="' + n.replace(/"/g,'&quot;') + '">'; }).join('');
+  var m = document.getElementById('ricettaFormModal');
+  if (m) m.classList.add('active');
 }
 
-/* ---- clearPantrySearch ---- */
-function clearPantrySearch() {
-  var inp = document.getElementById('pantrySearch');
-  if (inp) { inp.value = ''; if (typeof filterPantry === 'function') filterPantry(''); }
+function closeRicettaForm() {
+  var m = document.getElementById('ricettaFormModal');
+  if (m) m.classList.remove('active');
+  _rfEditIdx = null;
 }
 
-/* ---- resetWeeklyLimits ---- */
-function resetWeeklyLimits() {
-  if (!confirm('Resettare i contatori settimanali?')) return;
-  if (typeof weeklyLimits !== 'undefined') {
-    Object.keys(weeklyLimits).forEach(function(k){ weeklyLimits[k].current = 0; });
+function addRfIngRow(ing) {
+  ing = ing || {};
+  var list = document.getElementById('rfIngList');
+  if (!list) return;
+  var units = ['g','ml','pz','fette','cucchiai','cucchiaini','porzione','kg','l'];
+  var unitOpts = units.map(function(u) {
+    return '<option value="' + u + '"' + ((ing.unit||'g') === u ? ' selected' : '') + '>' + u + '</option>';
+  }).join('');
+  var row = document.createElement('div');
+  row.className = 'rf-ing-row';
+  row.innerHTML =
+    '<input type="text" class="form-input rf-ing-name" value="' + (ing.name||'') + '" placeholder="Ingrediente..." list="ingredientiDatalist">' +
+    '<input type="number" class="form-input rf-ing-qty" value="' + (ing.quantity||'') + '" placeholder="Qtà" min="0" step="any">' +
+    '<select class="form-input rf-ing-unit">' + unitOpts + '</select>' +
+    '<button class="btn-icon-only" style="width:32px;height:32px;background:var(--bg-light);border:1.5px solid var(--border);color:var(--danger,#e05252)" onclick="this.closest(\'.rf-ing-row\').remove()">✕</button>';
+  list.appendChild(row);
+}
+
+function saveCustomRicetta() {
+  var nome = (document.getElementById('rfNome').value || '').trim();
+  if (!nome) { alert('Inserisci il nome della ricetta.'); return; }
+  var pasto = document.getElementById('rfPasto').value;
+  var prep  = (document.getElementById('rfPrep').value || '').trim();
+  var ings  = [];
+  document.querySelectorAll('#rfIngList .rf-ing-row').forEach(function(row) {
+    var n = (row.querySelector('.rf-ing-name').value || '').trim();
+    var q = parseFloat(row.querySelector('.rf-ing-qty').value) || null;
+    var u = row.querySelector('.rf-ing-unit').value || 'g';
+    if (n) ings.push({ name: n, quantity: q, unit: u });
+  });
+  var ricetta = { name: nome, icon: '🍽', pasto: pasto, ingredienti: ings, preparazione: prep, isCustom: true };
+  if (!Array.isArray(customRecipes)) customRecipes = [];
+  if (_rfEditIdx !== null && customRecipes[_rfEditIdx]) {
+    customRecipes[_rfEditIdx] = ricetta;
+  } else {
+    customRecipes.push(ricetta);
   }
-  if (typeof saveData === 'function') saveData();
-  if (typeof renderWeeklyLimits === 'function') renderWeeklyLimits();
+  saveData();
+  closeRicettaForm();
+  if (typeof renderCustomRicette === 'function') renderCustomRicette();
 }
 
-/* ---- PWA install ---- */
-var _deferredInstall = null;
-window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault(); _deferredInstall = e;
-  var banner = document.getElementById('installBanner');
-  if (banner && !localStorage.getItem('pwa_dismissed')) banner.style.display = 'flex';
+function editCustomRicetta(idx) { openRicettaForm(idx); }
+
+function deleteCustomRicetta(idx) {
+  if (!confirm('Eliminare questa ricetta?')) return;
+  customRecipes.splice(idx, 1);
+  saveData();
+  if (typeof renderCustomRicette === 'function') renderCustomRicette();
+}
+
+/* ---- 6. updateSavedFridges: aggiorna entrambi i contenitori ---- */
+function updateSavedFridges() {
+  ['savedFridgesContent','savedFridgesContent2'].forEach(function(elId) {
+    var el = document.getElementById(elId);
+    if (!el) return;
+    var keys = Object.keys(savedFridges || {});
+    if (!keys.length) {
+      el.innerHTML = '<p style="color:var(--text-light);font-size:.84em">Nessuna configurazione salvata.</p>';
+      return;
+    }
+    el.innerHTML = keys.map(function(k) {
+      var f  = savedFridges[k];
+      var n  = Object.keys(f.items || {}).length;
+      var sk = k.replace(/'/g,"\\'");
+      return '<div class="saved-fridge-item">' +
+        '<div class="saved-fridge-name">📁 ' + k + '</div>' +
+        '<div class="saved-fridge-date">🕐 ' + (f.date||'') + ' · ' + n + ' ingredienti</div>' +
+        '<div class="saved-fridge-actions">' +
+          '<button class="btn btn-secondary btn-small" onclick="loadFridge(\'' + sk + '\')">📂 Carica</button>' +
+          '<button class="btn btn-warning btn-small" onclick="deleteFridge(\'' + sk + '\')">🗑</button>' +
+        '</div></div>';
+    }).join('');
+  });
+}
+
+/* ---- 7. initCalendar alias (usato da alcune versioni di piano.js) ---- */
+function initCalendar() {
+  if (typeof buildCalendarBar === 'function') buildCalendarBar();
+}
+
+/* ---- 8. renderWeeklyLimits alias (usato da alcune versioni) ---- */
+function renderWeeklyLimits() {
+  if (typeof updateLimits === 'function') updateLimits();
+}
+
+/* ---- 9. initDayIngGrid: mostra gli ingredienti del giorno ---- */
+function initDayIngGrid() {
+  var el = document.getElementById('dayIngredientsGrid');
+  if (!el) return;
+  var allItems = (typeof getAllPantryItems === 'function') ? getAllPantryItems() : [];
+  var active = allItems.filter(function(i) { return (i.quantity||0) > 0; });
+  if (!active.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🛒</div><h3>Nessun ingrediente</h3><p>Aggiungi quantità in dispensa o segna acquisti dalla spesa.</p></div>';
+    return;
+  }
+  var html = '<div class="pantry-grid" style="margin-top:8px">';
+  active.forEach(function(item) {
+    html += '<div class="pantry-item active">' +
+      '<div class="pantry-item-top">' +
+        '<div class="pantry-item-name-row">' +
+          '<span class="pantry-icon">' + item.icon + '</span>' +
+          '<span class="pantry-name">' + item.name + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div style="font-size:.82em;color:var(--primary);font-weight:800;margin-top:4px">' + item.quantity + ' ' + item.unit + '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+/* ---- 10. Chiusura modale cliccando fuori ---- */
+document.addEventListener('click', function(e) {
+  var modalIds = ['recipeModal','saveFridgeModal','customIngModal','ricettaFormModal','spesaItemModal'];
+  modalIds.forEach(function(id) {
+    var m = document.getElementById(id);
+    if (m && m.classList.contains('active') && e.target === m) {
+      m.classList.remove('active');
+    }
+  });
 });
-function installPWA() {
-  if (!_deferredInstall) return;
-  _deferredInstall.prompt();
-  _deferredInstall.userChoice.then(function(){ _deferredInstall = null; dismissInstallBanner(); });
-}
-function dismissInstallBanner() {
-  var b = document.getElementById('installBanner');
-  if (b) b.style.display = 'none';
-  localStorage.setItem('pwa_dismissed','1');
-}
 
-function drawLogo(canvasId, size) {
-  var c = document.getElementById(canvasId);
-  if (!c) return;
-  c.width = size; c.height = size;
-  var ctx = c.getContext('2d');
-  var r   = size / 2;
-  var g   = ctx.createLinearGradient(0,0,size,size);
-  g.addColorStop(0, '#4caf85');
-  g.addColorStop(1, '#2a6350');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(r,r,r,0,Math.PI*2);
-  ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold ' + Math.round(size*0.45) + 'px Poppins,sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('N', r, r);
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  drawLogo('landingCanvas', 96);
-  drawLogo('headerCanvas', 32);
-  if (typeof buildIngDatalist === 'function') buildIngDatalist();
-});
 </script>
 
 </body>
