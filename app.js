@@ -688,3 +688,132 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+/* ============================================================
+   BRIDGE SHIM — collega index.html v2 con app.js esistente
+   Da aggiungere IN FONDO ad app.js
+============================================================ */
+
+/* ── enterApp() ── chiamata dal bottone "Inizia" ──────── */
+function enterApp() {
+  var landing = document.getElementById('landingPage');
+  var header  = document.getElementById('appHeader');
+  var sidebar = document.getElementById('sidebarNav');
+  var bottom  = document.getElementById('bottomNav');
+  var main    = document.getElementById('appMain');
+
+  if (landing) landing.style.display = 'none';
+  if (header)  header.style.display  = '';
+  if (sidebar) sidebar.style.display = '';
+  if (bottom)  bottom.style.display  = '';
+  if (main)    main.style.display    = '';
+
+  initDarkMode();
+  initIcons();
+  initIosBanner();
+
+  if (typeof initFirebase === 'function') initFirebase();
+  if (typeof loadData === 'function')     loadData();
+
+  if (!window.selectedDateKey && typeof getCurrentDateKey === 'function') {
+    window.selectedDateKey = getCurrentDateKey();
+  }
+
+  buildCalendarBar();
+  updateDateLabel();
+  goToPage('piano');
+}
+
+/* ── goToPage() ── navigazione con i nuovi ID ─────────── */
+function goToPage(key) {
+  currentPage = key;
+
+  /* Nasconde tutte le pagine */
+  document.querySelectorAll('.page').forEach(function(p) {
+    p.classList.remove('active');
+  });
+
+  /* Mostra pagina target */
+  var target = document.getElementById('page-' + key);
+  if (target) target.classList.add('active');
+
+  /* Aggiorna sidebar */
+  document.querySelectorAll('.sidebar-nav .nav-tab').forEach(function(t) {
+    t.classList.toggle('active', t.id === 'st-' + key);
+  });
+
+  /* Aggiorna bottom nav */
+  document.querySelectorAll('.bottom-nav .nav-tab').forEach(function(t) {
+    t.classList.toggle('active', t.id === 'bn-' + key);
+  });
+
+  /* Render specifico per pagina */
+  var renders = {
+    'piano':       function() { if (typeof renderPiano   === 'function') renderPiano(); },
+    'frigo':       function() { if (typeof renderFridge  === 'function') renderFridge(); },
+    'ricette':     function() { if (typeof renderRicette === 'function') renderRicette(); },
+    'storico':     function() { if (typeof renderStorico === 'function') renderStorico(); },
+    'spesa':       function() { if (typeof renderSpesa   === 'function') renderSpesa(); },
+    'statistiche': function() { if (typeof renderStats   === 'function') renderStats(); },
+    'profilo':     function() { if (typeof renderProfilo === 'function') renderProfilo(); }
+  };
+  if (renders[key]) renders[key]();
+}
+
+/* ── switchPianoTab / switchRicetteTab ────────────────── */
+/* Sovrascrivi le versioni esistenti perché ora prendono
+   anche l'elemento cliccato come secondo parametro        */
+function switchPianoTab(tabKey, el) {
+  currentPianoTab = tabKey;
+
+  document.querySelectorAll('#page-piano .page-tabs .page-tab').forEach(function(t) {
+    t.classList.remove('active');
+  });
+  if (el) el.classList.add('active');
+
+  document.querySelectorAll('#page-piano .page-tab-content').forEach(function(c) {
+    c.classList.toggle('active', c.id === 'tab-' + tabKey);
+  });
+
+  if (tabKey === 'frigo-piano'  && typeof renderFridgeRecipes === 'function') renderFridgeRecipes();
+  if (tabKey === 'ingredienti'  && typeof renderIngredienti   === 'function') renderIngredienti();
+  if (tabKey === 'limiti')                                                      renderLimiti();
+}
+
+function switchRicetteTab(tabKey, el) {
+  currentRicetteTab = tabKey;
+
+  document.querySelectorAll('#page-ricette .page-tabs .page-tab').forEach(function(t) {
+    t.classList.remove('active');
+  });
+  if (el) el.classList.add('active');
+
+  document.querySelectorAll('#page-ricette .page-tab-content').forEach(function(c) {
+    c.classList.toggle('active', c.id === 'tab-' + tabKey);
+  });
+
+  if (tabKey === 'catalogo' && typeof renderRicette       === 'function') renderRicette();
+  if (tabKey === 'mie'      && typeof renderCustomRicette === 'function') renderCustomRicette();
+}
+
+/* ── Alias funzioni modal (nomi usati nel nuovo HTML) ──── */
+function openSavedFridges()    { openSavedFridgeModal(); }
+function openAddFridge()       { openAddFridgeModal();   }
+function closeAddFridge()      { closeAddFridgeModal();  }
+function openNewRicetta()      { openNewRicettaModal();  }
+function closeNewRicetta()     { closeNewRicettaModal(); }
+function resetPiano()          { resetDay();             }
+function saveNewRicetta()      { if (typeof saveCustomRicetta === 'function') saveCustomRicetta(); }
+function addIngToNewRicetta()  { if (typeof addIngredientToNew === 'function') addIngredientToNew(); }
+
+/* ── signOut → usa quella in firebase-config.js ─────── */
+if (typeof signOut === 'undefined') {
+  function signOut() {
+    if (typeof signOutUser === 'function') signOutUser();
+  }
+}
+
+/* ── Aggiorna cloud status (alias per firebase-config) ── */
+function updateCloudStatus(state, text) {
+  if (typeof showCloudStatus === 'function') showCloudStatus(state);
+}
+
