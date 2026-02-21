@@ -571,7 +571,23 @@ function confirmAddFridge() {
   closeAddFridgeModal();
   renderFridge();
   renderFridge('pianoFridgeContent');
-  showToast('✅ ' + name + ' aggiunto al frigo', 'success');
+  showToast('✅ ' + name + ' aggiunto alla dispensa', 'success');
+}
+
+/* Aggiunge un ingrediente acquistato alla dispensa (chiamato da spesa.js) */
+function addFromSpesa(name, qty, unit) {
+  if (!name || isNaN(qty) || qty <= 0) return;
+  if (!pantryItems) pantryItems = {};
+  var existing = pantryItems[name] || {};
+  pantryItems[name] = Object.assign({}, existing, {
+    quantity: (existing.quantity || 0) + qty,
+    unit:     unit || existing.unit || 'g',
+    category: existing.category || '🧂 Altro',
+    icon:     existing.icon || (typeof getCategoryIcon === 'function' ? getCategoryIcon(existing.category || '🧂 Altro') : '🧂')
+  });
+  if (typeof saveData === 'function') saveData();
+  if (typeof renderFridge === 'function') renderFridge();
+  if (typeof showToast === 'function') showToast('🛒 ' + name + ': ' + qty + ' ' + (unit || 'g') + ' → dispensa', 'success');
 }
 
 function saveFridgeConfig() {
@@ -596,7 +612,7 @@ function confirmSaveFridge() {
   });
   localStorage.setItem('nutriplanFridgeConfigs', JSON.stringify(configs));
   closeSaveFridgeModal();
-  showToast('💾 Frigo "' + name + '" salvato', 'success');
+  showToast('💾 Dispensa "' + name + '" salvata', 'success');
 }
 
 function renderSavedFridgeList(container) {
@@ -629,7 +645,7 @@ function loadFridgeConfig(id) {
   if (typeof saveData === 'function') saveData();
   closeSavedFridgeModal();
   renderFridge();
-  showToast('📁 Frigo "' + cfg.name + '" caricato', 'success');
+  showToast('📁 Dispensa "' + cfg.name + '" caricata', 'success');
 }
 
 function deleteFridgeConfig(id) {
@@ -647,7 +663,7 @@ function deleteFridgeConfig(id) {
 ══════════════════════════════════════════════════ */
 function updateAllUI() {
   if (typeof renderPiano   === 'function') renderPiano();
-  if (typeof renderFridge  === 'function' && currentPage === 'pantry') renderFridge();
+  if (typeof renderFridge  === 'function' && currentPage === 'dispensa') renderFridge();
   if (typeof renderRicette === 'function' && currentPage === 'ricette') renderRicette();
   if (typeof renderSpesa   === 'function' && currentPage === 'spesa') renderSpesa();
   if (typeof renderStats   === 'function' && currentPage === 'stats') renderStats();
@@ -789,9 +805,8 @@ function goToPage(key) {
   /* Render specifico per pagina */
   var renders = {
     'piano':       function() { if (typeof renderPiano   === 'function') renderPiano(); },
-    'frigo':       function() { if (typeof renderFridge  === 'function') renderFridge(); },
+    'dispensa':    function() { if (typeof renderFridge  === 'function') renderFridge(); },
     'ricette':     function() { if (typeof renderRicette === 'function') renderRicette(); },
-    'storico':     function() { if (typeof renderStorico === 'function') renderStorico(); },
     'spesa':       function() { if (typeof renderSpesa   === 'function') renderSpesa(); },
     'statistiche': function() { if (typeof renderStats   === 'function') renderStats(); },
     'profilo':     function() { if (typeof renderProfilo === 'function') renderProfilo(); }
@@ -817,9 +832,6 @@ function switchPianoTab(tabKey, el) {
   if (tabKey === 'piano') {
     if (typeof renderMealItems    === 'function') renderMealItems();
     if (typeof renderPianoRicette === 'function') renderPianoRicette();
-  }
-  if (tabKey === 'frigo') {
-    if (typeof renderFridge === 'function') renderFridge('pianoFridgeContent');
   }
 }
 
