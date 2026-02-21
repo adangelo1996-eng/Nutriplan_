@@ -24,10 +24,12 @@ function initMealSelector() {
 
 function selectMeal(meal, btn) {
   selectedMeal = meal;
-  document.querySelectorAll('#mealSelector .rf-pill').forEach(function(b){ b.classList.remove('active'); });
+  /* Aggiorna sia rf-pill che meal-btn */
+  document.querySelectorAll('#mealSelector .rf-pill, #mealSelector .meal-btn').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   renderMealItems();
   renderMealProgress();
+  renderPianoRicette();
 }
 
 /* ── ENTRY POINT ── */
@@ -36,6 +38,7 @@ function renderMealPlan() {
   initMealSelector();
   renderMealProgress();
   renderMealItems();
+  renderPianoRicette();
 }
 
 function ensureDefaultPlan() {
@@ -313,4 +316,148 @@ function getCategoryIcon(cat) {
     '🍫 Dolci e Snack':'🍫','🧂 Cucina':'🧂','🧂 Altro':'🧂'
   };
   return (cat && map[cat]) ? map[cat] : '🧂';
+}
+
+/* Controlla se un pasto rientra nel filtro */
+function _mealContains(pasto, meal) {
+  if (!pasto) return false;
+  return Array.isArray(pasto) ? pasto.indexOf(meal) !== -1 : pasto === meal;
+}
+
+/* Chiavi frigo con quantità > 0 */
+function _getFridgeKeys() {
+  if (typeof pantryItems === 'undefined' || !pantryItems) return [];
+  return Object.keys(pantryItems).filter(function(k){
+    return k && k !== 'undefined' && pantryItems[k] && (pantryItems[k].quantity||0) > 0;
+  });
+}
+
+/* ── RICETTE PER PASTO SELEZIONATO (tab Piano) ── */
+function renderPianoRicette() {
+  var el = document.getElementById('pianoRicetteWrap');
+  if (!el) return;
+  if (typeof getAllRicette !== 'function') {
+    el.innerHTML = '<p style="color:var(--text-3);font-size:.9em;">Modulo ricette non caricato.</p>';
+    return;
+  }
+  var all = getAllRicette().filter(function(r) {
+    return _mealContains(r.pasto, selectedMeal);
+  });
+  if (!all.length) {
+    el.innerHTML = '<div style="padding:12px 0;color:var(--text-light);font-size:.88em;">Nessuna ricetta disponibile per questo pasto.</div>';
+    return;
+  }
+  var fridgeKeys = _getFridgeKeys();
+  el.innerHTML = all.map(function(r) {
+    return _buildPianoRicettaCard(r, fridgeKeys);
+  }).join('');
+}
+
+function _buildPianoRicettaCard(r, fridgeKeys) {
+  var rawName = r.name || r.nome || 'Ricetta';
+  var safeName = escQ(rawName);
+  var icon  = r.icon || r.icona || '🍽';
+  var ings  = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+  var avail = ings.filter(function(ing){
+    var n = (ing.name||ing.nome||'').toLowerCase().trim();
+    return fridgeKeys.some(function(k){ var kl=k.toLowerCase(); return kl===n||kl.includes(n)||n.includes(kl); });
+  }).length;
+  var pct = ings.length ? Math.round((avail/ings.length)*100) : 0;
+  var stateCls = pct>=80?'badge-ok':pct>=40?'badge-warn':'badge-grey';
+
+  var ingHtml = ings.map(function(ing){
+    var n  = ing.name || ing.nome || '';
+    var nl = n.toLowerCase().trim();
+    var ok = fridgeKeys.some(function(k){ var kl=k.toLowerCase(); return kl===nl||kl.includes(nl)||nl.includes(kl); });
+    var qty = ing.quantity
+      ? '<span class="rc-acc-qty">'+ing.quantity+'\u00a0'+(ing.unit||'g')+'</span>'
+      : '';
+    return '<li class="rc-acc-item'+(ok?' ok':'')+'">'+
+             '<span class="rc-acc-dot"></span>'+
+             '<span class="rc-acc-name">'+n+'</span>'+
+             qty+
+           '</li>';
+  }).join('');
+
+  return (
+    '<div class="rc-card" style="margin-bottom:10px;" onclick="togglePianoRicettaCard(this)">'+
+      '<div class="rc-card-head">'+
+        '<div class="rc-icon-wrap">'+icon+'</div>'+
+        '<div class="rc-info">'+
+          '<div class="rc-name">'+rawName+'</div>'+
+          '<div class="rc-meta">'+
+            '<span class="rc-badge '+stateCls+'">'+avail+'/'+ings.length+' nel frigo</span>'+
+          '</div>'+
+        '</div>'+
+        '<span class="rc-chevron">'+
+          '<svg width="14" height="14" viewBox="0 0 14 14" fill="none">'+
+            '<path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'+
+          '</svg>'+
+        '</span>'+
+      '</div>'+
+      '<div class="rc-accordion">'+
+        '<div class="rc-accordion-inner">'+
+          (ings.length ? '<ul class="rc-acc-list">'+ingHtml+'</ul>' : '')+
+          '<div style="display:flex;gap:8px;margin-top:8px;">'+
+            '<button class="rc-detail-btn" style="flex:1;" '+
+              'onclick="event.stopPropagation();openRecipeModal(\''+safeName+'\')">'+
+              'Dettagli →</button>'+
+            '<button class="rc-detail-btn btn-choose" style="flex:1;" '+
+              'onclick="event.stopPropagation();choosePianoRecipe(\''+safeName+'\')">'+
+              '✅ Scegli</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'
+  );
+}
+
+function togglePianoRicettaCard(el) {
+  var wasOpen = el.classList.contains('open');
+  var wrap = document.getElementById('pianoRicetteWrap');
+  if (wrap) wrap.querySelectorAll('.rc-card.open').forEach(function(c){ c.classList.remove('open'); });
+  if (!wasOpen) el.classList.add('open');
+}
+
+/* Segna ricetta come scelta → riduce quantità nel frigo */
+function choosePianoRecipe(name) {
+  var r = typeof findRicetta === 'function' ? findRicetta(name) : null;
+  if (!r) { if (typeof showToast==='function') showToast('Ricetta non trovata','warning'); return; }
+  var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+  var reduced = 0;
+  ings.forEach(function(ing){
+    var n = (ing.name||ing.nome||'').trim();
+    if (!n || typeof pantryItems==='undefined' || !pantryItems) return;
+    /* Trova la chiave nel frigo (match esatto o parziale) */
+    var key = null;
+    if (pantryItems[n] && (pantryItems[n].quantity||0) > 0) {
+      key = n;
+    } else {
+      var nl = n.toLowerCase();
+      key = Object.keys(pantryItems).find(function(k){
+        var kl = k.toLowerCase();
+        return (pantryItems[k]&&(pantryItems[k].quantity||0)>0) &&
+               (kl===nl||kl.includes(nl)||nl.includes(kl));
+      }) || null;
+    }
+    if (key) {
+      var qty = parseFloat(ing.quantity) || 0;
+      if (qty > 0) {
+        pantryItems[key].quantity = Math.max(0, (pantryItems[key].quantity||0) - qty);
+        reduced++;
+      }
+    }
+  });
+  if (typeof saveData==='function') saveData();
+  var msg = reduced > 0
+    ? '✅ Ricetta scelta — frigo aggiornato ('+reduced+' ingredienti)'
+    : '✅ Ricetta scelta';
+  if (typeof showToast==='function') showToast(msg, 'success');
+  renderPianoRicette();
+  /* Aggiorna frigo se visibile */
+  if (typeof renderFridge==='function') {
+    renderFridge();
+    renderFridge('pianoFridgeContent');
+  }
+  renderMealProgress();
 }

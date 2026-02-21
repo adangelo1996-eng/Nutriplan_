@@ -124,16 +124,14 @@
       </div>
     </div>
 
-    <!-- Tab selettore interno -->
+    <!-- Tab selettore interno — solo 2 tab -->
     <div class="page-tabs">
-      <button class="page-tab active" onclick="switchPianoTab('pasto',this)">🍽 Pasto</button>
-      <button class="page-tab" onclick="switchPianoTab('frigo-piano',this)">❄️ Frigo</button>
-      <button class="page-tab" onclick="switchPianoTab('ingredienti',this)">🌿 Ingredienti</button>
-      <button class="page-tab" onclick="switchPianoTab('limiti',this)">📊 Limiti</button>
+      <button class="page-tab active" onclick="switchPianoTab('piano',this)">🍽 Piano</button>
+      <button class="page-tab" onclick="switchPianoTab('frigo',this)">❄️ Frigo</button>
     </div>
 
-    <!-- Tab: Pasto -->
-    <div class="page-tab-content active" id="tab-pasto">
+    <!-- Tab: Piano (ingredienti nel piano + ricette per pasto selezionato) -->
+    <div class="page-tab-content active" id="tab-piano">
 
       <div class="meals-done-bar">
         <span class="meals-done-icon">🍽</span>
@@ -173,45 +171,27 @@
       </div>
 
       <div id="mealProgressWrap"></div>
+
+      <!-- Ingredienti del piano per il pasto selezionato -->
+      <div class="piano-section-label">🌿 Ingredienti nel piano</div>
       <div id="mealItemsWrap" class="meal-items-list"></div>
+
+      <!-- Ricette per il pasto selezionato -->
+      <div class="piano-section-label">📖 Ricette</div>
+      <div id="pianoRicetteWrap"></div>
+
     </div>
 
-    <!-- Tab: Frigo nel piano -->
-    <div class="page-tab-content" id="tab-frigo-piano">
-      <div class="section-header">
-        <div>
-          <div class="section-title">❄️ Ricette con quel che hai</div>
-          <div class="section-subtitle">In base agli ingredienti nel frigo</div>
-        </div>
+    <!-- Tab: Frigo (contenuto del frigo) -->
+    <div class="page-tab-content" id="tab-frigo">
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px;">
+        <button class="btn btn-secondary btn-small" onclick="saveFridgeConfig()">💾 Salva</button>
+        <button class="btn btn-secondary btn-small" onclick="openSavedFridges()">📁 Salvati</button>
+        <button class="btn btn-primary btn-small" onclick="openAddFridge()">➕ Aggiungi</button>
       </div>
-      <div id="fridgePianoContent"></div>
+      <div id="pianoFridgeContent"></div>
     </div>
 
-    <!-- Tab: Ingredienti -->
-    <div class="page-tab-content" id="tab-ingredienti">
-      <div class="section-header">
-        <div>
-          <div class="section-title">🌿 Ingredienti del giorno</div>
-          <div class="section-subtitle">Tutti gli ingredienti nel piano odierno</div>
-        </div>
-      </div>
-      <div id="ingredientiContent" class="ing-list"></div>
-    </div>
-
-    <!-- Tab: Limiti -->
-    <div class="page-tab-content" id="tab-limiti">
-      <div class="section-header">
-        <div>
-          <div class="section-title">📊 Limiti settimanali</div>
-          <div class="section-subtitle">Monitoraggio consumi</div>
-        </div>
-        <div class="page-header-actions">
-          <button class="btn btn-secondary btn-small" onclick="saveFridgeConfig()">💾 Salva</button>
-          <button class="btn btn-secondary btn-small" onclick="openSavedFridges()">📁 Frigo salvati</button>
-        </div>
-      </div>
-      <div id="limitiContent" class="limiti-grid"></div>
-    </div>
   </div>
 
   <!-- ── FRIGO ────────────────────────────────────── -->
@@ -429,6 +409,7 @@
                placeholder="Es. Pollo, Latte…"
                list="ingredientiAutocomplete"
                autocomplete="off"
+               oninput="populateIngAutocomplete();autoFillFridgeCategory(this.value)"
                onkeydown="if(event.key==='Enter') confirmAddFridge()">
       </div>
       <div class="form-group">
@@ -620,7 +601,9 @@
       <div class="form-group">
         <label>Articolo</label>
         <input type="text" id="spesaItemName" placeholder="Es. Latte, Pane…"
-               onkeydown="if(event.key==='Enter') confirmSpesaItem()">
+               list="ingredientiAutocomplete" autocomplete="off"
+               onkeydown="if(event.key==='Enter') confirmSpesaItem()"
+               oninput="populateIngAutocomplete()">
       </div>
       <div class="row gap-8">
         <div class="form-group flex1">

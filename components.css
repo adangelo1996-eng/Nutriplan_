@@ -405,6 +405,71 @@
 }
 .rc-card.open .rc-card-body { display: block; }
 
+/* ── rc-accordion: collapse/expand per ricette cards ── */
+.rc-accordion {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.2s ease;
+  opacity: 0;
+}
+.rc-card.open .rc-accordion {
+  max-height: 2000px;
+  opacity: 1;
+}
+.rc-accordion-inner {
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* Lista ingredienti nell'accordion */
+.rc-acc-list {
+  list-style: none; padding: 0;
+  margin: 10px 0 6px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.rc-acc-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px; border-radius: var(--r-sm);
+  background: var(--bg-subtle); font-size: .8rem;
+}
+.rc-acc-item.ok {
+  background: color-mix(in srgb, #22c55e 8%, var(--bg-subtle));
+}
+.rc-acc-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--border-mid); flex-shrink: 0;
+}
+.rc-acc-item.ok .rc-acc-dot { background: var(--success); }
+.rc-acc-name { flex: 1; font-weight: 600; }
+.rc-acc-qty  { font-size: .72rem; color: var(--text-light); font-weight: 700; }
+
+/* Bottone dettaglio / azione dentro accordion */
+.rc-detail-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 7px 12px;
+  background: var(--primary-xl);
+  border: 1.5px solid var(--primary-mid);
+  border-radius: var(--r-lg);
+  color: var(--primary); font-weight: 700; font-size: .8rem;
+  cursor: pointer; transition: all var(--t); white-space: nowrap;
+}
+.rc-detail-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+.rc-detail-btn.btn-choose {
+  background: var(--primary); color: #fff; border-color: var(--primary-dark);
+}
+.rc-detail-btn.btn-choose:hover { background: var(--primary-dark); }
+
+/* Etichette sezione nella tab Piano */
+.piano-section-label {
+  font-size: .7rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .08em;
+  color: var(--text-light);
+  padding: 16px 0 8px;
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+}
+.piano-section-label:first-child { border-top: none; margin-top: 0; }
+
 .rc-ing-list   { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; }
 .rc-ing-row    {
   display: flex; align-items: center; gap: 8px;
