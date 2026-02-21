@@ -13,7 +13,8 @@ function renderProfilo() {
     buildProfiloUserSection() +
     buildProfiloPianoSection() +
     buildProfiloLimitiSection() +
-    buildProfiloStoricoSection();
+    buildProfiloStoricoSection() +
+    buildProfiloSettingsSection();
   /* Render storico nell'apposito contenitore */
   if (typeof renderStorico === 'function') renderStorico('profiloStoricoContent');
 }
@@ -317,6 +318,75 @@ function buildProfiloStoricoSection() {
       '</div>' +
     '</div>'
   );
+}
+
+/* ══════════════════════════════════════════════
+   SEZIONE IMPOSTAZIONI
+══════════════════════════════════════════════ */
+function buildProfiloSettingsSection() {
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var rows = [
+    {
+      icon: isDark ? '☀️' : '🌙',
+      label: isDark ? 'Tema: Scuro' : 'Tema: Chiaro',
+      sub: 'Cambia tra tema chiaro e scuro',
+      action: 'toggleDarkMode()',
+      right: '<span class="settings-toggle '+(isDark?'on':'')+'"></span>'
+    },
+    {
+      icon: '📚',
+      label: 'Guida introduttiva',
+      sub: 'Rivedi il tutorial passo-passo',
+      action: 'if(typeof resetTutorial===\'function\')resetTutorial()',
+      right: '<span class="settings-row-arrow">›</span>'
+    },
+    {
+      icon: '📄',
+      label: 'Esporta PDF',
+      sub: 'Stampa piano, dispensa e storico',
+      action: 'if(typeof exportPDF===\'function\')exportPDF()',
+      right: '<span class="settings-row-arrow">›</span>'
+    },
+    {
+      icon: '🗑️',
+      label: 'Cancella tutti i dati',
+      sub: 'Rimuove permanentemente tutti i dati',
+      action: 'confirmClearAllData()',
+      right: '<span class="settings-row-arrow" style="color:var(--danger);">›</span>',
+      danger: true
+    }
+  ];
+
+  var html = rows.map(function(r){
+    return '<div class="settings-row" onclick="'+r.action+'"'+(r.danger?' style="color:var(--danger);"':'')+'>'+
+      '<div class="settings-row-icon"'+(r.danger?' style="background:color-mix(in srgb,var(--danger) 12%,var(--bg-subtle));"':'')+'>'+r.icon+'</div>'+
+      '<div class="settings-row-info">'+
+        '<div class="settings-row-label">'+r.label+'</div>'+
+        '<div class="settings-row-sub">'+r.sub+'</div>'+
+      '</div>'+
+      r.right+
+    '</div>';
+  }).join('');
+
+  return (
+    '<div class="rc-card settings-section" style="margin-bottom:16px;">'+
+      '<div class="settings-section-title">⚙️ Impostazioni</div>'+
+      html+
+    '</div>'
+  );
+}
+
+function confirmClearAllData() {
+  if (!confirm('Cancellare TUTTI i dati di NutriPlan?\nQuesta operazione è irreversibile.')) return;
+  if (!confirm('Sei sicuro? Dispensa, piano, storico e spesa verranno eliminati.')) return;
+  if (typeof pantryItems  !== 'undefined') pantryItems  = {};
+  if (typeof mealPlan     !== 'undefined') mealPlan     = {};
+  if (typeof appHistory   !== 'undefined') appHistory   = {};
+  if (typeof spesaItems   !== 'undefined') spesaItems   = [];
+  if (typeof weeklyLimits !== 'undefined') weeklyLimits = {};
+  if (typeof saveData === 'function') saveData();
+  renderProfilo();
+  if (typeof showToast === 'function') showToast('🗑️ Tutti i dati eliminati', 'info');
 }
 
 /* ── UTILITY ── */

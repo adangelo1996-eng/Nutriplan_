@@ -110,7 +110,26 @@ function renderMealItems() {
     return;
   }
 
-  el.innerHTML = items.map(function(item){
+  /* ── Sezione "già consumati" compatta ── */
+  var dayData2  = getDayData(selectedDateKey);
+  var ricetteMap = (dayData2 && dayData2.ricette && dayData2.ricette[selectedMeal]) ? dayData2.ricette[selectedMeal] : {};
+  var consumedNames = Object.keys(usedMap).filter(function(k){ return usedMap[k]; });
+  var ricetteNames  = Object.keys(ricetteMap).filter(function(k){ return ricetteMap[k]; });
+  var consumedHtml = '';
+  if (consumedNames.length || ricetteNames.length) {
+    var chips = consumedNames.map(function(n){
+      return '<span class="consumed-chip">✅ ' + n + '</span>';
+    }).join('') + ricetteNames.map(function(n){
+      return '<span class="consumed-chip consumed-chip-recipe">🍽 ' + n + '</span>';
+    }).join('');
+    consumedHtml =
+      '<div class="consumed-bar">' +
+        '<span class="consumed-bar-label">Già consumati:</span>' +
+        chips +
+      '</div>';
+  }
+
+  el.innerHTML = consumedHtml + items.map(function(item){
     var used    = usedMap[item.name] ? true : false;
     var subName = subsMap[item.name] || null;
     var display = subName || item.name;
@@ -119,15 +138,15 @@ function renderMealItems() {
     var dot     = inFridge
       ? '<span style="color:var(--success);font-size:.9em;">✔</span>'
       : '<span style="color:var(--text-3);font-size:.9em;">○</span>';
-    var usedCls = used ? ' style="opacity:.5;text-decoration:line-through;"' : '';
-    return '<div class="rc-card" style="margin-bottom:10px;">' +
-      '<div style="display:flex;align-items:center;gap:10px;padding:14px 16px;">' +
+    var usedCls = used ? ' style="opacity:.45;text-decoration:line-through;"' : '';
+    return '<div class="rc-card" style="margin-bottom:8px;">' +
+      '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;">' +
         dot +
-        '<span'+usedCls+' style="flex:1;font-weight:500;">'+display+'</span>' +
-        (qty ? '<span class="rc-badge">'+qty+'</span>' : '') +
-        (subName ? '<span class="rc-badge" style="background:#fff3cd;color:#856404;">↔ sub</span>' : '') +
-        '<div style="display:flex;gap:6px;">' +
-          '<button class="rc-btn-icon" title="Segna usato" onclick="toggleUsedItem(\''+escQ(item.name)+'\')">'+
+        '<span'+usedCls+' style="flex:1;font-weight:500;font-size:.93em;">'+display+'</span>' +
+        (qty ? '<span class="rc-badge" style="font-size:.72em;">'+qty+'</span>' : '') +
+        (subName ? '<span class="rc-badge" style="background:#fff3cd;color:#856404;font-size:.7em;">↔</span>' : '') +
+        '<div style="display:flex;gap:4px;">' +
+          '<button class="rc-btn-icon" title="'+(used?'Annulla':'Segna consumato')+'" onclick="toggleUsedItem(\''+escQ(item.name)+'\')">'+
             (used ? '↩' : '✅') +
           '</button>' +
           '<button class="rc-btn-icon" title="Sostituisci" onclick="openSubstituteModal(\''+escQ(item.name)+'\')">↔</button>' +
@@ -140,6 +159,7 @@ function renderMealItems() {
 /* ── USED / SUBSTITUTE ── */
 function toggleUsedItem(name) {
   if (!selectedDateKey) return;
+  if (typeof pushUndo === 'function') pushUndo('Segna ' + name);
   if (!appHistory[selectedDateKey]) appHistory[selectedDateKey] = { usedItems:{}, substitutions:{} };
   var day = appHistory[selectedDateKey];
   if (!day.usedItems) day.usedItems = {};
@@ -488,16 +508,16 @@ function togglePianoRicettaCard(el) {
   if (!wasOpen) el.classList.add('open');
 }
 
-/* Segna ricetta come scelta → riduce quantità in dispensa + registra nello storico */
+/* Segna ricetta come scelta → riduce dispensa + registra storico + usedItems */
 function choosePianoRecipe(name) {
   var r = typeof findRicetta === 'function' ? findRicetta(name) : null;
   if (!r) { if (typeof showToast==='function') showToast('Ricetta non trovata','warning'); return; }
+  if (typeof pushUndo === 'function') pushUndo('Scegli ricetta ' + name);
   var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
   var reduced = 0;
   ings.forEach(function(ing){
     var n = (ing.name||ing.nome||'').trim();
     if (!n || typeof pantryItems==='undefined' || !pantryItems) return;
-    /* Trova la chiave in dispensa (match esatto o parziale) */
     var key = null;
     if (pantryItems[n] && (pantryItems[n].quantity||0) > 0) {
       key = n;
@@ -518,7 +538,7 @@ function choosePianoRecipe(name) {
     }
   });
 
-  /* Registra nello storico */
+  /* Registra nello storico (ricette + usedItems per il pasto corrente) */
   if (selectedDateKey) {
     if (typeof appHistory === 'undefined') appHistory = {};
     if (!appHistory[selectedDateKey]) appHistory[selectedDateKey] = { usedItems:{}, substitutions:{}, ricette:{} };
@@ -526,13 +546,19 @@ function choosePianoRecipe(name) {
     if (!day.ricette) day.ricette = {};
     if (!day.ricette[selectedMeal]) day.ricette[selectedMeal] = {};
     day.ricette[selectedMeal][name] = true;
+    /* Marca anche gli ingredienti del piano come usati (se presenti nel piano) */
+    var planItems = typeof getMealItems === 'function' ? getMealItems(selectedMeal) : [];
+    if (!day.usedItems) day.usedItems = {};
+    if (!day.usedItems[selectedMeal]) day.usedItems[selectedMeal] = {};
+    planItems.forEach(function(pi){ day.usedItems[selectedMeal][pi.name] = true; });
   }
 
   if (typeof saveData==='function') saveData();
   var msg = reduced > 0
-    ? '✅ Ricetta scelta — dispensa aggiornata ('+reduced+' ingredienti)'
-    : '✅ Ricetta scelta';
+    ? '✅ ' + name + ' — dispensa aggiornata (' + reduced + ' ingredienti)'
+    : '✅ ' + name + ' scelta';
   if (typeof showToast==='function') showToast(msg, 'success');
+  renderMealItems();
   renderPianoRicette();
   if (typeof renderFridge==='function') renderFridge();
   renderMealProgress();

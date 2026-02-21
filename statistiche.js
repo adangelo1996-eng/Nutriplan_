@@ -86,6 +86,13 @@ function renderStatistiche() {
   );
 
   /* ══════════════════════════════════════════
+     GRAFICI
+  ══════════════════════════════════════════ */
+  html += buildActivityChart();
+  html += buildMealDistributionChart(stats.mealCounts);
+  html += buildPantryCategoryChart();
+
+  /* ══════════════════════════════════════════
      LIMITI SETTIMANALI — STATO
   ══════════════════════════════════════════ */
   var limiti = (typeof weeklyLimits !== 'undefined') ? weeklyLimits : {};
@@ -247,4 +254,146 @@ function computeWeekUsage() {
     });
   });
   return usage;
+}
+
+/* ══════════════════════════════════════════════════════
+   GRAFICO ATTIVITÀ — ultimi 14 giorni
+══════════════════════════════════════════════════════ */
+function buildActivityChart() {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var days = [];
+  for (var i = 13; i >= 0; i--) {
+    var d = new Date(today);
+    d.setDate(today.getDate() - i);
+    var dk = d.getFullYear() + '-' +
+      String(d.getMonth()+1).padStart(2,'0') + '-' +
+      String(d.getDate()).padStart(2,'0');
+    var hd = (typeof appHistory !== 'undefined' && appHistory[dk]) ? appHistory[dk] : {};
+    var count = 0;
+    Object.keys(hd.usedItems || {}).forEach(function(mk){
+      count += Object.keys((hd.usedItems[mk]||{})).length;
+    });
+    Object.keys(hd.ricette || {}).forEach(function(mk){
+      count += Object.keys((hd.ricette[mk]||{})).length;
+    });
+    days.push({ d:d, dk:dk, count:count, isToday: i===0 });
+  }
+  var maxCount = Math.max.apply(null, days.map(function(d){ return d.count; })) || 1;
+  var dayNames = ['D','L','M','M','G','V','S'];
+  var bars = days.map(function(day){
+    var pct = Math.max(5, Math.round((day.count / maxCount) * 100));
+    var cls = 'stats-day-bar' + (day.isToday ? ' today' : '');
+    var fillCls = 'stats-bar-fill';
+    return (
+      '<div class="'+cls+'">' +
+        '<div class="stats-bar-wrap">' +
+          '<div class="'+fillCls+'" style="height:'+pct+'%;"></div>' +
+        '</div>' +
+        '<span class="stats-day-label">' + dayNames[day.d.getDay()] + '</span>' +
+        '<span class="stats-day-val">' + (day.count || '·') + '</span>' +
+      '</div>'
+    );
+  }).join('');
+
+  return (
+    '<div class="rc-card" style="margin-bottom:16px;">' +
+      '<div style="padding:18px 20px;">' +
+        '<div style="font-weight:700;font-size:.95em;margin-bottom:14px;">📅 Attività ultimi 14 giorni</div>' +
+        '<div class="stats-week-grid" style="grid-template-columns:repeat(14,1fr);">' +
+          bars +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+/* ══════════════════════════════════════════════════════
+   GRAFICO DISTRIBUZIONE PASTI
+══════════════════════════════════════════════════════ */
+function buildMealDistributionChart(mealCounts) {
+  var mealLabels = {
+    colazione: { label:'Colazione', emoji:'☀️' },
+    spuntino:  { label:'Spuntino',  emoji:'🍎' },
+    pranzo:    { label:'Pranzo',    emoji:'🍽' },
+    merenda:   { label:'Merenda',   emoji:'🥪' },
+    cena:      { label:'Cena',      emoji:'🌙' }
+  };
+  var total = Object.values(mealCounts||{}).reduce(function(a,b){ return a+b; }, 0);
+  if (!total) {
+    return (
+      '<div class="rc-card" style="margin-bottom:16px;">' +
+        '<div style="padding:18px 20px;">' +
+          '<div style="font-weight:700;font-size:.95em;margin-bottom:8px;">🍽 Distribuzione pasti</div>' +
+          '<p style="color:var(--text-3);font-size:.88em;">Nessun pasto registrato ancora.</p>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+  var rows = Object.keys(mealLabels).map(function(mk){
+    var count = (mealCounts && mealCounts[mk]) || 0;
+    var pct   = total > 0 ? Math.round((count/total)*100) : 0;
+    var info  = mealLabels[mk];
+    return (
+      '<div style="margin-bottom:10px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">' +
+          '<span>' + info.emoji + '</span>' +
+          '<span style="flex:1;font-weight:500;font-size:.88em;">' + info.label + '</span>' +
+          '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">' + count + '</span>' +
+          '<span style="font-size:.72em;color:var(--text-3);min-width:32px;text-align:right;">' + pct + '%</span>' +
+        '</div>' +
+        '<div class="rc-progress-track">' +
+          '<div class="rc-progress-fill" style="width:' + pct + '%;"></div>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  return (
+    '<div class="rc-card" style="margin-bottom:16px;">' +
+      '<div style="padding:18px 20px;">' +
+        '<div style="font-weight:700;font-size:.95em;margin-bottom:14px;">🍽 Distribuzione pasti</div>' +
+        rows +
+      '</div>' +
+    '</div>'
+  );
+}
+
+/* ══════════════════════════════════════════════════════
+   GRAFICO DISPENSA PER CATEGORIA
+══════════════════════════════════════════════════════ */
+function buildPantryCategoryChart() {
+  var items = (typeof pantryItems !== 'undefined' && pantryItems) ? pantryItems : {};
+  var catCount = {};
+  Object.keys(items).forEach(function(k){
+    var cat = (items[k] && items[k].category) ? items[k].category : '🧂 Altro';
+    catCount[cat] = (catCount[cat]||0) + 1;
+  });
+  var cats = Object.keys(catCount).sort(function(a,b){ return catCount[b]-catCount[a]; });
+  if (!cats.length) return '';
+  var maxVal = catCount[cats[0]] || 1;
+
+  var rows = cats.map(function(cat){
+    var count = catCount[cat];
+    var pct   = Math.round((count/maxVal)*100);
+    return (
+      '<div style="margin-bottom:9px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+          '<span style="flex:1;font-size:.85em;font-weight:500;">' + cat + '</span>' +
+          '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">' + count + ' voci</span>' +
+        '</div>' +
+        '<div class="rc-progress-track">' +
+          '<div class="rc-progress-fill" style="width:' + pct + '%;"></div>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  return (
+    '<div class="rc-card" style="margin-bottom:16px;">' +
+      '<div style="padding:18px 20px;">' +
+        '<div style="font-weight:700;font-size:.95em;margin-bottom:14px;">🗄️ Dispensa per categoria</div>' +
+        rows +
+      '</div>' +
+    '</div>'
+  );
 }
