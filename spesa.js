@@ -14,17 +14,45 @@ function buildSpesaGeneratePanel() {
   var allRicette = (typeof getAllRicette === 'function') ? getAllRicette() : [];
   var selCount   = Object.keys(selectedSpesaRecipes).filter(function(k){ return selectedSpesaRecipes[k]; }).length;
 
-  var recipeRows = allRicette.map(function(r){
-    var name    = r.name || r.nome || '';
-    var icon    = r.icon || r.icona || '🍽';
-    var checked = selectedSpesaRecipes[name] ? true : false;
-    return '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;background:'+(checked?'var(--primary-xl)':'var(--bg-subtle)')+';border:1.5px solid '+(checked?'var(--primary-mid)':'transparent')+';">' +
-      '<input type="checkbox" '+(checked?'checked':'')+' onchange="toggleSpesaRecipe(\''+_escSpesa(name)+'\')" style="width:16px;height:16px;accent-color:var(--primary);">' +
-      '<span style="font-size:1.1em;">'+icon+'</span>' +
-      '<span style="flex:1;font-size:.88em;font-weight:500;">'+name+'</span>' +
-      '<span style="font-size:.75em;color:var(--text-light);">'+(r.pasto||'')+'</span>' +
-    '</label>';
-  }).join('');
+  /* Raggruppa per pasto */
+  var PASTO_LABELS = { colazione:'☀️ Colazione', spuntino:'🍎 Spuntino', pranzo:'🍽 Pranzo', merenda:'🥪 Merenda', cena:'🌙 Cena' };
+  var PASTO_ORDER  = ['colazione','spuntino','pranzo','merenda','cena'];
+  var byPasto = {};
+  allRicette.forEach(function(r){
+    var p = Array.isArray(r.pasto) ? r.pasto[0] : (r.pasto || 'altro');
+    if (!byPasto[p]) byPasto[p] = [];
+    byPasto[p].push(r);
+  });
+  var recipeRows = '';
+  PASTO_ORDER.forEach(function(pk){
+    if (!byPasto[pk] || !byPasto[pk].length) return;
+    recipeRows += '<div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--text-light);padding:8px 0 4px;">'+(PASTO_LABELS[pk]||pk)+'</div>';
+    recipeRows += byPasto[pk].map(function(r){
+      var name    = r.name || r.nome || '';
+      var icon    = r.icon || r.icona || '🍽';
+      var checked = selectedSpesaRecipes[name] ? true : false;
+      return '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;margin-bottom:3px;background:'+(checked?'var(--primary-xl)':'var(--bg-subtle)')+';border:1.5px solid '+(checked?'var(--primary-mid)':'transparent')+';">' +
+        '<input type="checkbox" '+(checked?'checked':'')+' onchange="toggleSpesaRecipe(\''+_escSpesa(name)+'\')" style="width:16px;height:16px;accent-color:var(--primary);">' +
+        '<span style="font-size:1em;">'+icon+'</span>' +
+        '<span style="flex:1;font-size:.86em;font-weight:500;">'+name+'</span>' +
+      '</label>';
+    }).join('');
+  });
+  /* Pasti non nell'ordine standard */
+  Object.keys(byPasto).forEach(function(pk){
+    if (PASTO_ORDER.indexOf(pk) !== -1) return;
+    recipeRows += '<div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--text-light);padding:8px 0 4px;">'+pk+'</div>';
+    recipeRows += byPasto[pk].map(function(r){
+      var name    = r.name || r.nome || '';
+      var icon    = r.icon || r.icona || '🍽';
+      var checked = selectedSpesaRecipes[name] ? true : false;
+      return '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;margin-bottom:3px;background:'+(checked?'var(--primary-xl)':'var(--bg-subtle)')+';border:1.5px solid '+(checked?'var(--primary-mid)':'transparent')+';">' +
+        '<input type="checkbox" '+(checked?'checked':'')+' onchange="toggleSpesaRecipe(\''+_escSpesa(name)+'\')" style="width:16px;height:16px;accent-color:var(--primary);">' +
+        '<span style="font-size:1em;">'+icon+'</span>' +
+        '<span style="flex:1;font-size:.86em;font-weight:500;">'+name+'</span>' +
+      '</label>';
+    }).join('');
+  });
 
   var selectorHtml = spesaRecipeSelectorOpen
     ? '<div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:var(--r-md);padding:12px;margin-bottom:10px;">' +

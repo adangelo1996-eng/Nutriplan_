@@ -579,11 +579,23 @@ function addFromSpesa(name, qty, unit) {
   if (!name || isNaN(qty) || qty <= 0) return;
   if (!pantryItems) pantryItems = {};
   var existing = pantryItems[name] || {};
+
+  /* Cerca la categoria dal database defaultIngredients */
+  var lookupCat = existing.category || null;
+  if (!lookupCat) {
+    var nl = name.toLowerCase();
+    if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
+      var def = defaultIngredients.find(function(d){ return d && d.name && d.name.toLowerCase() === nl; });
+      if (def && def.category) lookupCat = def.category;
+    }
+  }
+  var cat = lookupCat || '🧂 Cucina';
+
   pantryItems[name] = Object.assign({}, existing, {
     quantity: (existing.quantity || 0) + qty,
     unit:     unit || existing.unit || 'g',
-    category: existing.category || '🧂 Altro',
-    icon:     existing.icon || (typeof getCategoryIcon === 'function' ? getCategoryIcon(existing.category || '🧂 Altro') : '🧂')
+    category: cat,
+    icon:     typeof getCategoryIcon === 'function' ? getCategoryIcon(cat) : '🧂'
   });
   if (typeof saveData === 'function') saveData();
   if (typeof renderFridge === 'function') renderFridge();

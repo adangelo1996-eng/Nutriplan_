@@ -283,7 +283,7 @@ function openRecipeModal(name) {
   if (tot) {
     html += '<div class="rm-avail">'+
               '<div class="rm-avail-track"><div class="rm-avail-fill" style="width:'+pct+'%;background:'+barClr+'"></div></div>'+
-              '<span style="color:'+barClr+';font-size:.75rem;font-weight:800">'+avail+'/'+tot+' nel frigo</span>'+
+              '<span style="color:'+barClr+';font-size:.75rem;font-weight:800">'+avail+'/'+tot+' in dispensa</span>'+
             '</div>';
   }
 
@@ -321,6 +321,30 @@ function closeRecipeModal() {
   var m = document.getElementById('recipeModal');
   if (m) m.classList.remove('active');
   currentRecipeName = null;
+}
+
+/* ── Aggiungi ingredienti ricetta alla spesa ── */
+function addRecipeIngredientsToSpesa() {
+  if (!currentRecipeName) return;
+  var r = findRicetta(currentRecipeName);
+  if (!r) return;
+  var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+  if (!ings.length) { if (typeof showToast==='function') showToast('Nessun ingrediente da aggiungere','warning'); return; }
+  if (typeof spesaItems === 'undefined') spesaItems = [];
+  var added = 0;
+  ings.forEach(function(ing){
+    var name = safeStr(ing.name||ing.nome).trim();
+    if (!name) return;
+    var exists = spesaItems.some(function(s){ return safeStr(s.name).toLowerCase() === name.toLowerCase(); });
+    if (!exists) {
+      spesaItems.push({ name:name, quantity:parseFloat(ing.quantity)||null, unit:ing.unit||'g', manual:false, bought:false });
+      added++;
+    }
+  });
+  if (typeof saveData === 'function') saveData();
+  closeRecipeModal();
+  if (typeof goToPage === 'function') goToPage('spesa');
+  if (typeof showToast === 'function') showToast('🛒 '+added+' ingredient'+(added===1?'e':'i')+' aggiunti alla spesa','success');
 }
 
 /* ── Applica al piano ── */
