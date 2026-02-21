@@ -50,10 +50,14 @@
 
 @media (min-width: 768px) {
   .app-main { margin-left: var(--sidebar-w); margin-bottom: 0; }
-  .page     { padding: 28px 28px; }
+  .page     { padding: 28px 32px; max-width: none; margin: 0; }
 }
-@media (min-width: 1024px) {
-  .page { padding: 32px 36px; }
+@media (min-width: 1200px) {
+  :root     { --sidebar-w: 270px; }
+  .page     { padding: 32px 48px; }
+}
+@media (min-width: 1600px) {
+  .page     { padding: 36px 64px; }
 }
 
 /* ══════════════════════════════════════════════════

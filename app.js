@@ -762,6 +762,15 @@ function startApp() {
 
 /* Auto-start se non c'è landing page */
 document.addEventListener('DOMContentLoaded', function() {
+  /* Cookie consent — prima di tutto */
+  initCookieConsent();
+
+  /* Avvia Firebase subito per rilevare sessione già attiva
+     (aggiorna i bottoni landing prima che l'utente clicchi) */
+  if (typeof initFirebase === 'function') {
+    try { initFirebase(); } catch(e) {}
+  }
+
   initDarkMode();
 
   /* Aggiorna icona tema nell'header (data-theme-toggle) */
@@ -789,7 +798,48 @@ document.addEventListener('DOMContentLoaded', function() {
    Da aggiungere IN FONDO ad app.js
 ============================================================ */
 
-/* ── enterApp() ── chiamata dal bottone "Inizia" ──────── */
+/* ══════════════════════════════════════════════════
+   COOKIE CONSENT
+══════════════════════════════════════════════════ */
+var COOKIE_KEY = 'nutriplan_cookie_consent';
+
+function initCookieConsent() {
+  if (localStorage.getItem(COOKIE_KEY)) return;
+  var banner = document.getElementById('cookieBanner');
+  if (banner) banner.classList.add('visible');
+}
+
+function acceptAllCookies() {
+  localStorage.setItem(COOKIE_KEY, 'all');
+  _hideCookieBanner();
+}
+
+function acceptEssentialCookies() {
+  localStorage.setItem(COOKIE_KEY, 'essential');
+  _hideCookieBanner();
+}
+
+function _hideCookieBanner() {
+  var banner = document.getElementById('cookieBanner');
+  if (banner) banner.classList.remove('visible');
+}
+
+/* ══════════════════════════════════════════════════
+   LANDING — login gate helpers
+══════════════════════════════════════════════════ */
+function landingSignIn() {
+  if (typeof initFirebase === 'function') initFirebase();
+  setTimeout(function() {
+    if (typeof signInWithGoogle === 'function') signInWithGoogle();
+  }, 100);
+}
+
+function landingOffline() {
+  if (!confirm('Senza accesso i dati non vengono sincronizzati tra dispositivi.\nContinuare in modalità offline?')) return;
+  enterApp();
+}
+
+/* ── enterApp() ── chiamata dopo login o scelta offline ── */
 function enterApp() {
   var landing = document.getElementById('landingPage');
   var header  = document.getElementById('appHeader');
