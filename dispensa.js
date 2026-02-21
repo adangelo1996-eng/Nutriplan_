@@ -177,8 +177,8 @@ function getAllPantryItems() {
 ══════════════════════════════════════════════════ */
 function renderPantry() { renderFridge(); }
 
-function renderFridge() {
-  var el = document.getElementById('pantryContent');
+function renderFridge(targetId) {
+  var el = document.getElementById(targetId || 'pantryContent');
   if (!el) return;
 
   /* Solo elementi con qty > 0 */
@@ -329,6 +329,7 @@ function fridgeRemove(name) {
   pantryItems[name].quantity = 0;
   saveData();
   renderFridge();
+  renderFridge('pianoFridgeContent');
   if (typeof updateAllUI === 'function') updateAllUI();
   if (typeof showToast === 'function') showToast('🗑 ' + name + ' rimosso dal frigo', 'info');
 }
@@ -378,6 +379,7 @@ function confirmQtyModal() {
   saveData();
   closeQtyModal();
   renderFridge();
+  renderFridge('pianoFridgeContent');
   if (typeof updateAllUI === 'function') updateAllUI();
   if (typeof showToast === 'function') showToast('✅ ' + name + ': ' + val + ' ' + (pd.unit || 'g'), 'success');
 }

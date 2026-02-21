@@ -125,6 +125,8 @@ function appendRfIngRow(name, qty, unit) {
     div.id = 'rfrow_' + idx;
     div.innerHTML =
         '<input type="text" class="form-input rf-ing-name" placeholder="Ingrediente"'
+        + ' list="ingredientiAutocomplete" autocomplete="off"'
+        + ' oninput="if(typeof populateIngAutocomplete===\'function\')populateIngAutocomplete()"'
         + ' value="' + escHTML(name) + '" id="rfname_' + idx + '">'
         + '<input type="number" class="form-input rf-ing-qty" placeholder="Qtà" min="0" step="any"'
         + ' value="' + (qty || '') + '" id="rfqty_' + idx + '">'

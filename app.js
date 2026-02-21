@@ -496,12 +496,55 @@ function clearPantrySearch() {
   filterPantry('');
 }
 
+/* Auto-compila la categoria quando si seleziona un ingrediente dal database */
+function autoFillFridgeCategory(name) {
+  if (!name) return;
+  var catSel = document.getElementById('newFridgeCategory');
+  if (!catSel) return;
+  var nl = name.trim().toLowerCase();
+  var found = null;
+  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
+    found = defaultIngredients.find(function(i) {
+      return i && i.name && i.name.toLowerCase() === nl;
+    });
+  }
+  if (!found && typeof customIngredients !== 'undefined' && Array.isArray(customIngredients)) {
+    found = customIngredients.find(function(i) {
+      return i && i.name && i.name.toLowerCase() === nl;
+    });
+  }
+  if (!found && typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) {
+    found = { category: pantryItems[name].category };
+  }
+  if (found && found.category) catSel.value = found.category;
+}
+
 function populateIngAutocomplete() {
   var dl = document.getElementById('ingredientiAutocomplete');
   if (!dl) return;
-  var items = typeof getAllPantryItems === 'function' ? getAllPantryItems() : [];
-  dl.innerHTML = items.map(function(i) {
-    return '<option value="' + i.name.replace(/"/g, '&quot;') + '">';
+  var seen = {};
+  var options = [];
+  /* 1. Dal database default */
+  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
+    defaultIngredients.forEach(function(i) {
+      if (i && i.name && !seen[i.name]) { seen[i.name] = true; options.push(i.name); }
+    });
+  }
+  /* 2. Ingredienti custom */
+  if (typeof customIngredients !== 'undefined' && Array.isArray(customIngredients)) {
+    customIngredients.forEach(function(i) {
+      if (i && i.name && !seen[i.name]) { seen[i.name] = true; options.push(i.name); }
+    });
+  }
+  /* 3. Frigo attuale */
+  if (typeof pantryItems !== 'undefined' && pantryItems) {
+    Object.keys(pantryItems).forEach(function(k) {
+      if (k && !seen[k]) { seen[k] = true; options.push(k); }
+    });
+  }
+  options.sort(function(a,b){ return a.localeCompare(b,'it'); });
+  dl.innerHTML = options.map(function(name) {
+    return '<option value="' + name.replace(/"/g, '&quot;') + '">';
   }).join('');
 }
 
@@ -527,6 +570,7 @@ function confirmAddFridge() {
   if (typeof saveData === 'function') saveData();
   closeAddFridgeModal();
   renderFridge();
+  renderFridge('pianoFridgeContent');
   showToast('✅ ' + name + ' aggiunto al frigo', 'success');
 }
 
@@ -770,9 +814,13 @@ function switchPianoTab(tabKey, el) {
     c.classList.toggle('active', c.id === 'tab-' + tabKey);
   });
 
-  if (tabKey === 'frigo-piano'  && typeof renderFridgeRecipes === 'function') renderFridgeRecipes();
-  if (tabKey === 'ingredienti'  && typeof renderIngredienti   === 'function') renderIngredienti();
-  if (tabKey === 'limiti')                                                      renderLimiti();
+  if (tabKey === 'piano') {
+    if (typeof renderMealItems    === 'function') renderMealItems();
+    if (typeof renderPianoRicette === 'function') renderPianoRicette();
+  }
+  if (tabKey === 'frigo') {
+    if (typeof renderFridge === 'function') renderFridge('pianoFridgeContent');
+  }
 }
 
 function switchRicetteTab(tabKey, el) {
@@ -800,6 +848,7 @@ function closeNewRicetta()     { closeNewRicettaModal(); }
 function resetPiano()          { resetDay();             }
 function saveNewRicetta()      { if (typeof saveCustomRicetta === 'function') saveCustomRicetta(); }
 function addIngToNewRicetta()  { if (typeof addIngredientToNew === 'function') addIngredientToNew(); }
+function addRecipeToPlan()     { if (typeof applyRecipeToMeal === 'function') applyRecipeToMeal(); }
 
 /* ── Alias renderPiano / renderRicette / renderStats / renderIngredienti ─── */
 function renderPiano() {
