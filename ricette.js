@@ -323,7 +323,7 @@ function closeRecipeModal() {
   currentRecipeName = null;
 }
 
-/* ── Aggiungi ingredienti ricetta alla spesa ── */
+/* ── Aggiungi alla spesa solo gli ingredienti MANCANTI dalla dispensa ── */
 function addRecipeIngredientsToSpesa() {
   if (!currentRecipeName) return;
   var r = findRicetta(currentRecipeName);
@@ -331,20 +331,53 @@ function addRecipeIngredientsToSpesa() {
   var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
   if (!ings.length) { if (typeof showToast==='function') showToast('Nessun ingrediente da aggiungere','warning'); return; }
   if (typeof spesaItems === 'undefined') spesaItems = [];
-  var added = 0;
+  if (typeof pushUndo === 'function') pushUndo('Aggiungi ' + currentRecipeName + ' alla spesa');
+  var added = 0, updated = 0, skipped = 0;
+
   ings.forEach(function(ing){
-    var name = safeStr(ing.name||ing.nome).trim();
+    var name   = safeStr(ing.name || ing.nome).trim();
     if (!name) return;
-    var exists = spesaItems.some(function(s){ return safeStr(s.name).toLowerCase() === name.toLowerCase(); });
-    if (!exists) {
-      spesaItems.push({ name:name, quantity:parseFloat(ing.quantity)||null, unit:ing.unit||'g', manual:false, bought:false });
+    var needed = parseFloat(ing.quantity) || 0;
+    var unit   = ing.unit || 'g';
+
+    /* Disponibile in dispensa */
+    var inPantry = 0;
+    if (typeof pantryItems !== 'undefined' && pantryItems) {
+      var nl = name.toLowerCase();
+      var pKey = pantryItems[name] ? name :
+        Object.keys(pantryItems).find(function(k){ var kl=k.toLowerCase(); return kl===nl||kl.includes(nl)||nl.includes(kl); }) || null;
+      if (pKey) inPantry = pantryItems[pKey].quantity || 0;
+    }
+
+    /* Già in lista spesa (non acquistato) */
+    var inSpesa = 0, existing = null;
+    spesaItems.forEach(function(s){
+      if (!s.bought && safeStr(s.name).toLowerCase() === name.toLowerCase()) {
+        inSpesa += parseFloat(s.quantity) || 0;
+        existing = s;
+      }
+    });
+
+    var missing = needed > 0 ? Math.max(0, needed - inPantry - inSpesa) : (inPantry > 0 ? 0 : needed);
+    if (missing <= 0 && needed > 0) { skipped++; return; }
+
+    if (existing) {
+      existing.quantity = Math.round(((existing.quantity || 0) + missing) * 100) / 100;
+      updated++;
+    } else {
+      spesaItems.push({ name:name, quantity:missing||null, unit:unit, manual:false, bought:false });
       added++;
     }
   });
+
   if (typeof saveData === 'function') saveData();
   closeRecipeModal();
   if (typeof goToPage === 'function') goToPage('spesa');
-  if (typeof showToast === 'function') showToast('🛒 '+added+' ingredient'+(added===1?'e':'i')+' aggiunti alla spesa','success');
+  var msg = [];
+  if (added)   msg.push(added + ' nuov' + (added===1?'o':'i'));
+  if (updated) msg.push(updated + ' aggiornati');
+  if (skipped) msg.push(skipped + ' già in dispensa');
+  if (typeof showToast === 'function') showToast('🛒 ' + (msg.join(', ') || 'Tutto già in dispensa'), 'success');
 }
 
 /* ── Applica al piano ── */

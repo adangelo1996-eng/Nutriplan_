@@ -267,13 +267,17 @@ function parseDateKey(dk) {
 var DAYS_IT   = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
 var MONTHS_IT = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
+var _calOffset = 0; /* offset in giorni dal centro (oggi) */
+
 function buildCalendarBar() {
   var bar = document.getElementById('calendarBar');
   if (!bar) return;
   var today = new Date();
   today.setHours(0, 0, 0, 0);
   var html = '';
-  for (var i = -30; i <= 30; i++) {
+  var start = -20 + _calOffset;
+  var end   =  10 + _calOffset;
+  for (var i = start; i <= end; i++) {
     var d = new Date(today);
     d.setDate(today.getDate() + i);
     var dk = formatDateKey(d);
@@ -282,6 +286,8 @@ function buildCalendarBar() {
     var hd = (typeof appHistory !== 'undefined' && appHistory[dk]) ? appHistory[dk] : {};
     var hasData = Object.keys(hd.usedItems || {}).some(function(mk) {
       return Object.keys((hd.usedItems || {})[mk] || {}).length > 0;
+    }) || Object.keys(hd.ricette || {}).some(function(mk){
+      return Object.keys((hd.ricette || {})[mk] || {}).length > 0;
     });
     var isPast = d < today && !isToday;
     var cls = 'cal-day' +
@@ -304,6 +310,17 @@ function buildCalendarBar() {
     var active = bar.querySelector('.cal-day.active');
     if (active) active.scrollIntoView({ inline: 'center', behavior: 'smooth' });
   }, 80);
+
+  /* Aggiorna bottoni navigazione */
+  var prevBtn = document.getElementById('calPrevBtn');
+  var nextBtn = document.getElementById('calNextBtn');
+  if (prevBtn) prevBtn.disabled = _calOffset <= -710; /* max 2 anni indietro */
+  if (nextBtn) nextBtn.disabled = _calOffset >= 20;
+}
+
+function shiftCalendar(delta) {
+  _calOffset = Math.max(-710, Math.min(20, _calOffset + delta));
+  buildCalendarBar();
 }
 
 function updateDateLabel() {
@@ -318,6 +335,17 @@ function updateDateLabel() {
 }
 
 function selectDate(dk) {
+  var todayDk = typeof getCurrentDateKey === 'function' ? getCurrentDateKey() : '';
+  if (dk !== todayDk) {
+    /* Solo per giorni PASSATI con dati già presenti, chiedi conferma */
+    var d = typeof parseDateKey === 'function' ? parseDateKey(dk) : new Date(dk + 'T00:00:00');
+    var todayD = new Date(); todayD.setHours(0,0,0,0);
+    if (d < todayD) {
+      var hd = (typeof appHistory !== 'undefined' && appHistory && appHistory[dk]) ? appHistory[dk] : {};
+      var hasData = Object.keys(hd.usedItems||{}).some(function(m){ return Object.keys((hd.usedItems||{})[m]||{}).length>0; });
+      if (hasData && !confirm('Vuoi modificare i dati di ' + dk + '?\nLe modifiche aggiornano i dati storici.')) return;
+    }
+  }
   selectedDateKey = dk;
   buildCalendarBar();
   updateDateLabel();
@@ -789,6 +817,9 @@ function enterApp() {
   buildCalendarBar();
   updateDateLabel();
   goToPage('piano');
+
+  /* Avvia tutorial al primo accesso */
+  if (typeof checkTutorial === 'function') checkTutorial();
 }
 
 /* ── goToPage() ── navigazione con i nuovi ID ─────────── */
@@ -878,6 +909,65 @@ function addRecipeToPlan()     { if (typeof applyRecipeToMeal === 'function') ap
 function renderPiano() {
   if (typeof renderMealPlan === 'function') renderMealPlan();
 }
+
+/* ══════════════════════════════════════════════════
+   UNDO SYSTEM — annulla ultima azione
+══════════════════════════════════════════════════ */
+var _undoStack   = [];
+var _undoMax     = 8;
+var _undoTimeout = null;
+
+function pushUndo(description) {
+  _undoStack.push({
+    desc:        description,
+    pantryItems: JSON.parse(JSON.stringify(typeof pantryItems !== 'undefined' ? pantryItems : {})),
+    mealPlan:    JSON.parse(JSON.stringify(typeof mealPlan    !== 'undefined' ? mealPlan    : {})),
+    appHistory:  JSON.parse(JSON.stringify(typeof appHistory  !== 'undefined' ? appHistory  : {})),
+    spesaItems:  JSON.parse(JSON.stringify(typeof spesaItems  !== 'undefined' ? spesaItems  : []))
+  });
+  if (_undoStack.length > _undoMax) _undoStack.shift();
+  _showUndoBar(description);
+}
+
+function performUndo() {
+  var s = _undoStack.pop();
+  if (!s) { showToast('Nessuna azione da annullare', 'info'); return; }
+  pantryItems = s.pantryItems;
+  mealPlan    = s.mealPlan;
+  appHistory  = s.appHistory;
+  spesaItems  = s.spesaItems;
+  if (typeof saveData === 'function') saveData();
+  /* Re-render pagina corrente */
+  var rmap = {
+    'piano':       function() { if (typeof renderPiano       === 'function') renderPiano(); },
+    'dispensa':    function() { if (typeof renderFridge      === 'function') renderFridge(); },
+    'ricette':     function() { if (typeof renderRicette     === 'function') renderRicette(); },
+    'spesa':       function() { if (typeof renderSpesa       === 'function') renderSpesa(); },
+    'statistiche': function() { if (typeof renderStatistiche === 'function') renderStatistiche(); },
+    'profilo':     function() { if (typeof renderProfilo     === 'function') renderProfilo(); }
+  };
+  if (typeof currentPage !== 'undefined' && rmap[currentPage]) rmap[currentPage]();
+  showToast('↩ ' + s.desc + ' annullato', 'info');
+  if (_undoStack.length > 0) _showUndoBar(_undoStack[_undoStack.length - 1].desc);
+  else _hideUndoBar();
+}
+
+function _showUndoBar(desc) {
+  var bar = document.getElementById('undoBar');
+  if (!bar) return;
+  var lbl = bar.querySelector('.undo-label');
+  if (lbl) lbl.textContent = desc;
+  bar.classList.add('visible');
+  if (_undoTimeout) clearTimeout(_undoTimeout);
+  _undoTimeout = setTimeout(_hideUndoBar, 6000);
+}
+
+function _hideUndoBar() {
+  var bar = document.getElementById('undoBar');
+  if (bar) bar.classList.remove('visible');
+}
+
+/* ── Alias renderPiano / renderRicette / renderStats / renderIngredienti ─── */
 function renderRicette() {
   if (typeof renderRicettePage === 'function') renderRicettePage();
 }

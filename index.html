@@ -120,6 +120,13 @@
       </div>
     </div>
 
+    <!-- Calendario timeline -->
+    <div class="calendar-bar-row">
+      <button class="cal-nav-btn" id="calPrevBtn" onclick="shiftCalendar(-30)" title="Indietro">‹</button>
+      <div class="calendar-bar" id="calendarBar"></div>
+      <button class="cal-nav-btn" id="calNextBtn" onclick="shiftCalendar(30)" title="Avanti">›</button>
+    </div>
+
     <!-- Contenuto diretto (nessun sub-tab) -->
     <div class="meals-done-bar">
       <span class="meals-done-icon">🍽</span>
@@ -717,6 +724,37 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════
+     UNDO BAR
+════════════════════════════════════════════════════ -->
+<div class="undo-bar" id="undoBar">
+  <span class="undo-label"></span>
+  <button class="btn btn-primary btn-small" onclick="performUndo()">↩ Annulla</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     TUTORIAL MODAL
+════════════════════════════════════════════════════ -->
+<div class="modal" id="tutorialModal">
+  <div class="modal-box tut-box">
+    <div class="modal-handle"></div>
+    <div class="tut-icon" id="tutorialIcon">🌿</div>
+    <div class="tut-counter" id="tutorialCounter">1 / 7</div>
+    <h2 class="tut-title" id="tutorialTitle"></h2>
+    <p class="tut-text" id="tutorialText"></p>
+    <div class="tut-dots" id="tutorialDots"></div>
+    <div class="tut-actions">
+      <button class="btn btn-secondary tut-skip" id="tutorialSkipBtn" onclick="skipTutorial()">Salta</button>
+      <button class="btn btn-primary" id="tutorialNextBtn" onclick="nextTutorialStep()">Avanti →</button>
+    </div>
+    <div class="tut-no-show-wrap" id="tutorialNoShowWrap" style="display:none">
+      <label>
+        <input type="checkbox" id="tutorialNoShow"> Non mostrare più
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
      TOAST CONTAINER
 ════════════════════════════════════════════════════ -->
 <div class="toast-container" id="toastContainer"></div>
@@ -742,6 +780,7 @@
 <script src="statistiche.js"></script>
 <script src="profilo.js"></script>
 <script src="pdf.js"></script>
+<script src="tutorial.js"></script>
 <script src="app.js"></script>
 
 </body>
