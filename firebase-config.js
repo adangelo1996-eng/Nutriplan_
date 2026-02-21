@@ -95,12 +95,15 @@ function signInWithGoogle() {
   firebase.auth()
     .signInWithPopup(provider)
     .then(function(result) {
-      /* Chiude la modale auth se aperta */
       if (typeof closeAuthModal === 'function') closeAuthModal();
 
-      if (typeof showToast === 'function') {
-        var name = result.user.displayName || result.user.email || 'Utente';
-        showToast('👋 Benvenuto, ' + name + '!', 'success');
+      var name = result.user.displayName || result.user.email || 'Utente';
+      if (typeof showToast === 'function') showToast('👋 Benvenuto, ' + name + '!', 'success');
+
+      /* Se la landing è ancora visibile, entra nell'app */
+      var landing = document.getElementById('landingPage');
+      if (landing && landing.style.display !== 'none' && typeof enterApp === 'function') {
+        enterApp();
       }
     })
     .catch(function(e) {
@@ -184,38 +187,51 @@ function updateAuthUI(user) {
   var avatar     = document.getElementById('authAvatar');
   var nameEl     = document.getElementById('authName');
 
-  if (!loginBtn || !logoutBtn) return;
-
-  if (user) {
-    /* Mostra pill utente */
-    if (pill) {
-      pill.style.display = '';
-      if (avatar) {
-        if (user.photoURL) {
-          avatar.src     = user.photoURL;
-          avatar.style.display = '';
-        } else {
-          avatar.style.display = 'none';
+  if (loginBtn && logoutBtn) {
+    if (user) {
+      if (pill) {
+        pill.style.display = '';
+        if (avatar) {
+          if (user.photoURL) { avatar.src = user.photoURL; avatar.style.display = ''; }
+          else { avatar.style.display = 'none'; }
+        }
+        if (nameEl) {
+          nameEl.textContent = user.displayName
+            ? user.displayName.split(' ')[0]
+            : (user.email || 'Utente');
         }
       }
-      if (nameEl) {
-        nameEl.textContent = user.displayName
-          ? user.displayName.split(' ')[0]   /* solo nome, più corto */
-          : (user.email || 'Utente');
-      }
+      loginBtn.style.display  = 'none';
+      logoutBtn.style.display = '';
+      logoutBtn.title = 'Disconnetti (' + (user.displayName || user.email || '') + ')';
+    } else {
+      if (pill) pill.style.display = 'none';
+      loginBtn.style.display  = '';
+      logoutBtn.style.display = 'none';
+      loginBtn.title = 'Accedi';
     }
+  }
 
-    loginBtn.style.display  = 'none';
-    logoutBtn.style.display = '';
-    logoutBtn.title = 'Disconnetti (' +
-      (user.displayName || user.email || '') + ')';
+  /* Aggiorna CTA della landing in base allo stato auth */
+  var landingLoading = document.getElementById('landingAuthLoading');
+  var landingGoogle  = document.getElementById('landingGoogleBtn');
+  var landingEnter   = document.getElementById('landingEnterBtn');
+  var landingOffline = document.getElementById('landingOfflineBtn');
 
+  if (landingLoading) landingLoading.style.display = 'none';
+
+  if (user) {
+    var displayName = user.displayName ? user.displayName.split(' ')[0] : 'di nuovo';
+    if (landingGoogle)  landingGoogle.style.display  = 'none';
+    if (landingEnter)  {
+      landingEnter.style.display = '';
+      landingEnter.textContent   = '▶ Bentornato, ' + displayName + '!';
+    }
+    if (landingOffline) landingOffline.style.display = 'none';
   } else {
-    /* Utente non loggato */
-    if (pill) pill.style.display = 'none';
-    loginBtn.style.display  = '';
-    logoutBtn.style.display = 'none';
-    loginBtn.title = 'Accedi';
+    if (landingGoogle)  landingGoogle.style.display  = '';
+    if (landingEnter)   landingEnter.style.display   = 'none';
+    if (landingOffline) landingOffline.style.display = '';
   }
 }
 

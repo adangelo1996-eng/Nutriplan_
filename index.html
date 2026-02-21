@@ -34,8 +34,44 @@
 <div id="landingPage">
   <div id="landingLogo">🌿</div>
   <h1 class="landing-title">NutriPlan</h1>
-  <p class="landing-sub">Il tuo piano alimentare personale</p>
-  <button class="btn btn-primary btn-large" onclick="enterApp()">▶ Inizia</button>
+  <p class="landing-sub">Il tuo piano alimentare personale.<br>Accedi per iniziare e sincronizzare i tuoi dati.</p>
+
+  <div class="landing-cta-wrap">
+    <!-- Stato caricamento mentre Firebase controlla la sessione -->
+    <div class="landing-auth-loading" id="landingAuthLoading">
+      <span class="landing-auth-spinner"></span> Verifica accesso…
+    </div>
+
+    <!-- Utente NON loggato: mostra Google sign-in -->
+    <button class="btn-landing-google" id="landingGoogleBtn"
+            onclick="landingSignIn()" style="display:none">
+      <svg width="20" height="20" viewBox="0 0 18 18">
+        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+        <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/>
+      </svg>
+      Accedi con Google
+    </button>
+
+    <!-- Utente GIÀ loggato: bottone entra -->
+    <button class="btn btn-primary btn-large" id="landingEnterBtn"
+            onclick="enterApp()" style="display:none">
+      ▶ Bentornato!
+    </button>
+
+    <!-- Continua senza account -->
+    <button class="landing-offline-btn" id="landingOfflineBtn"
+            onclick="landingOffline()" style="display:none">
+      Continua senza account →
+    </button>
+  </div>
+
+  <p class="landing-privacy-note">
+    Accedendo accetti la nostra
+    <a href="#" onclick="event.preventDefault()">Privacy Policy</a>.
+    I tuoi dati alimentari restano privati e sincronizzati solo sul tuo account.
+  </p>
 </div>
 
 <!-- ═══════════════════════════════════════════════════
@@ -732,25 +768,73 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════
-     TUTORIAL MODAL
+     COOKIE CONSENT BANNER
 ════════════════════════════════════════════════════ -->
-<div class="modal" id="tutorialModal">
-  <div class="modal-box tut-box">
+<div class="cookie-banner" id="cookieBanner">
+  <div class="cookie-banner-inner">
+    <div class="cookie-banner-text">
+      <span class="cookie-banner-icon">🍪</span>
+      <div>
+        <strong>Privacy & Cookie</strong>
+        <p>Usiamo cookie tecnici per il funzionamento dell'app e, con il tuo consenso, cookie analitici per migliorare l'esperienza. Nessun dato viene venduto a terzi.</p>
+      </div>
+    </div>
+    <div class="cookie-banner-actions">
+      <button class="btn btn-secondary btn-small" onclick="acceptEssentialCookies()">Solo essenziali</button>
+      <button class="btn btn-primary btn-small"   onclick="acceptAllCookies()">Accetta tutti ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ONBOARDING — Inserimento piano alimentare
+════════════════════════════════════════════════════ -->
+<div class="onboarding-overlay" id="onboardingOverlay">
+  <div class="onboarding-box">
+    <div class="onboarding-header">
+      <div>
+        <div class="onboarding-step-label">Passo 1 di 1</div>
+        <h2 class="onboarding-title">🍽 Inserimento piano alimentare</h2>
+        <p class="onboarding-sub">Indica cosa mangi tipicamente ad ogni pasto. Puoi modificarlo in qualsiasi momento dal Profilo.</p>
+      </div>
+    </div>
+
+    <!-- Tabs pasto -->
+    <div class="ob-tabs" id="obTabs"></div>
+
+    <!-- Contenuto dinamico -->
+    <div class="ob-content" id="obContent"></div>
+
+    <!-- Footer -->
+    <div class="onboarding-footer">
+      <div class="ob-warn-empty" id="obWarnEmpty" style="display:none">
+        ⚠️ Aggiungi almeno un alimento per continuare
+      </div>
+      <div class="onboarding-footer-actions">
+        <button class="btn btn-secondary" onclick="obSkip()">Salta per ora</button>
+        <button class="btn btn-primary"   id="obSaveBtn" onclick="saveOnboardingPlan()" disabled>
+          💾 Salva piano e inizia!
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     WELCOME MODAL — prossimi passaggi
+════════════════════════════════════════════════════ -->
+<div class="modal" id="welcomeModal">
+  <div class="modal-box welcome-box">
     <div class="modal-handle"></div>
-    <div class="tut-icon" id="tutorialIcon">🌿</div>
-    <div class="tut-counter" id="tutorialCounter">1 / 7</div>
-    <h2 class="tut-title" id="tutorialTitle"></h2>
-    <p class="tut-text" id="tutorialText"></p>
-    <div class="tut-dots" id="tutorialDots"></div>
-    <div class="tut-actions">
-      <button class="btn btn-secondary tut-skip" id="tutorialSkipBtn" onclick="skipTutorial()">Salta</button>
-      <button class="btn btn-primary" id="tutorialNextBtn" onclick="nextTutorialStep()">Avanti →</button>
+    <div class="welcome-header">
+      <div class="welcome-header-icon">🎉</div>
+      <h2 class="welcome-header-title">Piano salvato! Cosa vuoi fare ora?</h2>
+      <p class="welcome-header-sub">Esplora le sezioni dell'app per iniziare il tuo percorso alimentare.</p>
     </div>
-    <div class="tut-no-show-wrap" id="tutorialNoShowWrap" style="display:none">
-      <label>
-        <input type="checkbox" id="tutorialNoShow"> Non mostrare più
-      </label>
-    </div>
+    <div class="welcome-cards-grid" id="welcomeModalBody"></div>
+    <button class="btn btn-ghost" onclick="closeWelcomeModal()" style="margin-top:12px;width:100%;">
+      Esplora da solo →
+    </button>
   </div>
 </div>
 
@@ -781,6 +865,7 @@
 <script src="profilo.js"></script>
 <script src="pdf.js"></script>
 <script src="tutorial.js"></script>
+<script src="onboarding.js"></script>
 <script src="app.js"></script>
 
 </body>
