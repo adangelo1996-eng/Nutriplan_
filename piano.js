@@ -164,21 +164,63 @@ function toggleUsedItem(name) {
   if (typeof renderFridge === 'function') renderFridge();
 }
 
+/* Gruppi macro-compatibili per le sostituzioni */
+var MACRO_COMPATIBLE_GROUPS = [
+  ['🥩 Carne e Pesce'],
+  ['🥛 Latticini e Uova'],
+  ['🌾 Cereali e Legumi'],
+  ['🥦 Verdure'],
+  ['🍎 Frutta'],
+  ['🥑 Grassi e Condimenti'],
+  ['🍫 Dolci e Snack']
+];
+
+function _getSameGroup(cat) {
+  for (var i = 0; i < MACRO_COMPATIBLE_GROUPS.length; i++) {
+    if (MACRO_COMPATIBLE_GROUPS[i].indexOf(cat) !== -1) return MACRO_COMPATIBLE_GROUPS[i];
+  }
+  return null;
+}
+
 function openSubstituteModal(name) {
-  var items     = getMealItems(selectedMeal);
-  var item      = items.find(function(i){ return i.name === name; });
+  /* Trova la categoria dell'ingrediente da sostituire */
+  var origCat = null;
+  if (typeof defaultIngredients !== 'undefined') {
+    var def = defaultIngredients.find(function(d){ return d.name === name; });
+    if (def) origCat = def.category || null;
+  }
+  if (!origCat && typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) {
+    origCat = pantryItems[name].category || null;
+  }
+  var compatGroup = origCat ? _getSameGroup(origCat) : null;
+
   var available = (typeof pantryItems !== 'undefined' && pantryItems)
-    ? Object.keys(pantryItems).filter(function(k){ return k && pantryItems[k] && (pantryItems[k].quantity||0)>0 && k !== name; })
+    ? Object.keys(pantryItems).filter(function(k){
+        if (!k || !pantryItems[k] || (pantryItems[k].quantity||0) <= 0 || k === name) return false;
+        /* Se abbiamo un gruppo compatibile, filtra per categoria */
+        if (compatGroup) {
+          var kCat = pantryItems[k].category || null;
+          /* Cerca anche nei defaultIngredients per la categoria */
+          if (!kCat && typeof defaultIngredients !== 'undefined') {
+            var kDef = defaultIngredients.find(function(d){ return d.name === k; });
+            if (kDef) kCat = kDef.category || null;
+          }
+          return compatGroup.indexOf(kCat) !== -1;
+        }
+        return true;
+      })
     : [];
+
   var html =
     '<div style="margin-bottom:12px;font-weight:600;">Sostituisci: '+name+'</div>' +
+    (origCat ? '<div style="font-size:.8em;color:var(--text-light);margin-bottom:10px;">Categoria: '+origCat+'</div>' : '') +
     (available.length
       ? available.map(function(k){
           return '<button class="rc-card" style="display:block;width:100%;text-align:left;padding:10px 14px;margin-bottom:8px;cursor:pointer;" '+
                  'onclick="applySubstitute(\''+escQ(name)+'\',\''+escQ(k)+'\')">'+k+
-                 ' <span class="rc-badge">in frigo</span></button>';
+                 ' <span class="rc-badge">in dispensa</span></button>';
         }).join('')
-      : '<p style="color:var(--text-3);">Nessun ingrediente disponibile nel frigo.</p>'
+      : '<p style="color:var(--text-3);">Nessun ingrediente compatibile disponibile in dispensa.</p>'
     );
   var body = document.getElementById('substituteModalBody');
   var modal = document.getElementById('substituteModal');
@@ -348,6 +390,19 @@ function renderPianoRicette() {
     return;
   }
   var fridgeKeys = _getFridgeKeys();
+  /* Ordina per disponibilità ingredienti (% decrescente) */
+  all.sort(function(a, b) {
+    function avail(r) {
+      var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+      if (!ings.length) return 0;
+      var cnt = ings.filter(function(ing){
+        var n = (ing.name||ing.nome||'').toLowerCase().trim();
+        return fridgeKeys.some(function(k){ var kl=k.toLowerCase(); return kl===n||kl.includes(n)||n.includes(kl); });
+      }).length;
+      return cnt / ings.length;
+    }
+    return avail(b) - avail(a);
+  });
   el.innerHTML = all.map(function(r) {
     return _buildPianoRicettaCard(r, fridgeKeys);
   }).join('');
@@ -362,6 +417,7 @@ function _buildPianoRicettaCard(r, fridgeKeys) {
     var n = (ing.name||ing.nome||'').toLowerCase().trim();
     return fridgeKeys.some(function(k){ var kl=k.toLowerCase(); return kl===n||kl.includes(n)||n.includes(kl); });
   }).length;
+  var allAvailable = ings.length > 0 && avail === ings.length;
   var pct = ings.length ? Math.round((avail/ings.length)*100) : 0;
   var stateCls = pct>=80?'badge-ok':pct>=40?'badge-warn':'badge-grey';
 
@@ -379,6 +435,14 @@ function _buildPianoRicettaCard(r, fridgeKeys) {
            '</li>';
   }).join('');
 
+  var chooseBtn = allAvailable
+    ? '<button class="rc-detail-btn btn-choose" style="flex:1;" '+
+        'onclick="event.stopPropagation();choosePianoRecipe(\''+safeName+'\')">'+
+        '✅ Scegli</button>'
+    : '<button class="rc-detail-btn" style="flex:1;opacity:.45;cursor:not-allowed;" disabled '+
+        'title="Ingredienti mancanti in dispensa">'+
+        '🔒 Mancano '+(ings.length-avail)+' ing.</button>';
+
   return (
     '<div class="rc-card" style="margin-bottom:10px;" onclick="togglePianoRicettaCard(this)">'+
       '<div class="rc-card-head">'+
@@ -386,7 +450,7 @@ function _buildPianoRicettaCard(r, fridgeKeys) {
         '<div class="rc-info">'+
           '<div class="rc-name">'+rawName+'</div>'+
           '<div class="rc-meta">'+
-            '<span class="rc-badge '+stateCls+'">'+avail+'/'+ings.length+' nel frigo</span>'+
+            '<span class="rc-badge '+stateCls+'">'+avail+'/'+ings.length+' in dispensa</span>'+
           '</div>'+
         '</div>'+
         '<span class="rc-chevron">'+
@@ -402,9 +466,7 @@ function _buildPianoRicettaCard(r, fridgeKeys) {
             '<button class="rc-detail-btn" style="flex:1;" '+
               'onclick="event.stopPropagation();openRecipeModal(\''+safeName+'\')">'+
               'Dettagli →</button>'+
-            '<button class="rc-detail-btn btn-choose" style="flex:1;" '+
-              'onclick="event.stopPropagation();choosePianoRecipe(\''+safeName+'\')">'+
-              '✅ Scegli</button>'+
+            chooseBtn+
           '</div>'+
         '</div>'+
       '</div>'+
@@ -419,7 +481,7 @@ function togglePianoRicettaCard(el) {
   if (!wasOpen) el.classList.add('open');
 }
 
-/* Segna ricetta come scelta → riduce quantità nel frigo */
+/* Segna ricetta come scelta → riduce quantità in dispensa + registra nello storico */
 function choosePianoRecipe(name) {
   var r = typeof findRicetta === 'function' ? findRicetta(name) : null;
   if (!r) { if (typeof showToast==='function') showToast('Ricetta non trovata','warning'); return; }
@@ -428,7 +490,7 @@ function choosePianoRecipe(name) {
   ings.forEach(function(ing){
     var n = (ing.name||ing.nome||'').trim();
     if (!n || typeof pantryItems==='undefined' || !pantryItems) return;
-    /* Trova la chiave nel frigo (match esatto o parziale) */
+    /* Trova la chiave in dispensa (match esatto o parziale) */
     var key = null;
     if (pantryItems[n] && (pantryItems[n].quantity||0) > 0) {
       key = n;
@@ -448,16 +510,23 @@ function choosePianoRecipe(name) {
       }
     }
   });
+
+  /* Registra nello storico */
+  if (selectedDateKey) {
+    if (typeof appHistory === 'undefined') appHistory = {};
+    if (!appHistory[selectedDateKey]) appHistory[selectedDateKey] = { usedItems:{}, substitutions:{}, ricette:{} };
+    var day = appHistory[selectedDateKey];
+    if (!day.ricette) day.ricette = {};
+    if (!day.ricette[selectedMeal]) day.ricette[selectedMeal] = {};
+    day.ricette[selectedMeal][name] = true;
+  }
+
   if (typeof saveData==='function') saveData();
   var msg = reduced > 0
-    ? '✅ Ricetta scelta — frigo aggiornato ('+reduced+' ingredienti)'
+    ? '✅ Ricetta scelta — dispensa aggiornata ('+reduced+' ingredienti)'
     : '✅ Ricetta scelta';
   if (typeof showToast==='function') showToast(msg, 'success');
   renderPianoRicette();
-  /* Aggiorna frigo se visibile */
-  if (typeof renderFridge==='function') {
-    renderFridge();
-    renderFridge('pianoFridgeContent');
-  }
+  if (typeof renderFridge==='function') renderFridge();
   renderMealProgress();
 }

@@ -77,9 +77,9 @@
     <span class="nav-icon">🏠</span>
     <span class="nav-label">Piano</span>
   </button>
-  <button class="nav-tab" id="st-frigo" onclick="goToPage('frigo')">
-    <span class="nav-icon">❄️</span>
-    <span class="nav-label">Frigo</span>
+  <button class="nav-tab" id="st-dispensa" onclick="goToPage('dispensa')">
+    <span class="nav-icon">🗄️</span>
+    <span class="nav-label">Dispensa</span>
   </button>
   <button class="nav-tab" id="st-ricette" onclick="goToPage('ricette')">
     <span class="nav-icon">📖</span>
@@ -88,10 +88,6 @@
 
   <span class="sidebar-section-label">Gestione</span>
 
-  <button class="nav-tab" id="st-storico" onclick="goToPage('storico')">
-    <span class="nav-icon">📅</span>
-    <span class="nav-label">Storico</span>
-  </button>
   <button class="nav-tab" id="st-spesa" onclick="goToPage('spesa')">
     <span class="nav-icon">🛒</span>
     <span class="nav-label">Spesa</span>
@@ -124,81 +120,61 @@
       </div>
     </div>
 
-    <!-- Tab selettore interno — solo 2 tab -->
-    <div class="page-tabs">
-      <button class="page-tab active" onclick="switchPianoTab('piano',this)">🍽 Piano</button>
-      <button class="page-tab" onclick="switchPianoTab('frigo',this)">❄️ Frigo</button>
+    <!-- Contenuto diretto (nessun sub-tab) -->
+    <div class="meals-done-bar">
+      <span class="meals-done-icon">🍽</span>
+      <div class="meals-done-info">
+        <div class="meals-done-label">Pasti completati oggi</div>
+        <div class="meals-done-dots" id="mealsDoneDots"></div>
+      </div>
+      <span class="meals-done-count" id="mealsDoneCount">0 / 5</span>
     </div>
 
-    <!-- Tab: Piano (ingredienti nel piano + ricette per pasto selezionato) -->
-    <div class="page-tab-content active" id="tab-piano">
-
-      <div class="meals-done-bar">
-        <span class="meals-done-icon">🍽</span>
-        <div class="meals-done-info">
-          <div class="meals-done-label">Pasti completati oggi</div>
-          <div class="meals-done-dots" id="mealsDoneDots"></div>
-        </div>
-        <span class="meals-done-count" id="mealsDoneCount">0 / 5</span>
-      </div>
-
-      <div class="meal-selector" id="mealSelector">
-        <button class="meal-btn active" onclick="selectMeal('colazione',this)">
-          <span class="meal-btn-icon">☀️</span>
-          <span class="meal-btn-label">Colazione</span>
-          <span class="meal-btn-count" id="cnt-colazione">0</span>
-        </button>
-        <button class="meal-btn" onclick="selectMeal('spuntino',this)">
-          <span class="meal-btn-icon">🍎</span>
-          <span class="meal-btn-label">Spuntino</span>
-          <span class="meal-btn-count" id="cnt-spuntino">0</span>
-        </button>
-        <button class="meal-btn" onclick="selectMeal('pranzo',this)">
-          <span class="meal-btn-icon">🍽</span>
-          <span class="meal-btn-label">Pranzo</span>
-          <span class="meal-btn-count" id="cnt-pranzo">0</span>
-        </button>
-        <button class="meal-btn" onclick="selectMeal('merenda',this)">
-          <span class="meal-btn-icon">🥪</span>
-          <span class="meal-btn-label">Merenda</span>
-          <span class="meal-btn-count" id="cnt-merenda">0</span>
-        </button>
-        <button class="meal-btn" onclick="selectMeal('cena',this)">
-          <span class="meal-btn-icon">🌙</span>
-          <span class="meal-btn-label">Cena</span>
-          <span class="meal-btn-count" id="cnt-cena">0</span>
-        </button>
-      </div>
-
-      <div id="mealProgressWrap"></div>
-
-      <!-- Ingredienti del piano per il pasto selezionato -->
-      <div class="piano-section-label">🌿 Ingredienti nel piano</div>
-      <div id="mealItemsWrap" class="meal-items-list"></div>
-
-      <!-- Ricette per il pasto selezionato -->
-      <div class="piano-section-label">📖 Ricette</div>
-      <div id="pianoRicetteWrap"></div>
-
+    <div class="meal-selector" id="mealSelector">
+      <button class="meal-btn active" onclick="selectMeal('colazione',this)">
+        <span class="meal-btn-icon">☀️</span>
+        <span class="meal-btn-label">Colazione</span>
+        <span class="meal-btn-count" id="cnt-colazione">0</span>
+      </button>
+      <button class="meal-btn" onclick="selectMeal('spuntino',this)">
+        <span class="meal-btn-icon">🍎</span>
+        <span class="meal-btn-label">Spuntino</span>
+        <span class="meal-btn-count" id="cnt-spuntino">0</span>
+      </button>
+      <button class="meal-btn" onclick="selectMeal('pranzo',this)">
+        <span class="meal-btn-icon">🍽</span>
+        <span class="meal-btn-label">Pranzo</span>
+        <span class="meal-btn-count" id="cnt-pranzo">0</span>
+      </button>
+      <button class="meal-btn" onclick="selectMeal('merenda',this)">
+        <span class="meal-btn-icon">🥪</span>
+        <span class="meal-btn-label">Merenda</span>
+        <span class="meal-btn-count" id="cnt-merenda">0</span>
+      </button>
+      <button class="meal-btn" onclick="selectMeal('cena',this)">
+        <span class="meal-btn-icon">🌙</span>
+        <span class="meal-btn-label">Cena</span>
+        <span class="meal-btn-count" id="cnt-cena">0</span>
+      </button>
     </div>
 
-    <!-- Tab: Frigo (contenuto del frigo) -->
-    <div class="page-tab-content" id="tab-frigo">
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px;">
-        <button class="btn btn-secondary btn-small" onclick="saveFridgeConfig()">💾 Salva</button>
-        <button class="btn btn-secondary btn-small" onclick="openSavedFridges()">📁 Salvati</button>
-        <button class="btn btn-primary btn-small" onclick="openAddFridge()">➕ Aggiungi</button>
-      </div>
-      <div id="pianoFridgeContent"></div>
-    </div>
+    <div id="mealProgressWrap"></div>
+
+    <!-- Ingredienti del piano per il pasto selezionato -->
+    <div class="piano-section-label">🌿 Ingredienti nel piano</div>
+    <div id="mealItemsWrap" class="meal-items-list"></div>
+
+    <!-- Ricette per il pasto selezionato -->
+    <div class="piano-section-label">📖 Ricette</div>
+    <div id="pianoRicetteWrap"></div>
 
   </div>
 
-  <!-- ── FRIGO ────────────────────────────────────── -->
-  <div class="page" id="page-frigo">
+  <!-- ── DISPENSA ─────────────────────────────────── -->
+  <div class="page" id="page-dispensa">
     <div class="page-header">
       <div>
-        <div class="page-header-title">❄️ Frigo</div>
+        <div class="page-header-title">🗄️ Dispensa</div>
         <div class="page-header-sub">Ingredienti disponibili</div>
       </div>
       <div class="page-header-actions">
@@ -251,17 +227,6 @@
     </div>
   </div>
 
-  <!-- ── STORICO ──────────────────────────────────── -->
-  <div class="page" id="page-storico">
-    <div class="page-header">
-      <div>
-        <div class="page-header-title">📅 Storico pasti</div>
-        <div class="page-header-sub">Cronologia alimentare</div>
-      </div>
-    </div>
-    <div id="storicoContent"></div>
-  </div>
-
   <!-- ── SPESA ────────────────────────────────────── -->
   <div class="page" id="page-spesa">
     <div class="page-header">
@@ -295,6 +260,9 @@
         <div class="page-header-title">👤 Profilo</div>
         <div class="page-header-sub">Impostazioni e piano personale</div>
       </div>
+      <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="exportPDF()">📄 PDF</button>
+      </div>
     </div>
     <div id="profiloPage"></div>
   </div>
@@ -310,17 +278,13 @@
       <span class="nav-icon">🏠</span>
       <span class="nav-label">Piano</span>
     </button>
-    <button class="nav-tab" id="bn-frigo" onclick="goToPage('frigo')">
-      <span class="nav-icon">❄️</span>
-      <span class="nav-label">Frigo</span>
+    <button class="nav-tab" id="bn-dispensa" onclick="goToPage('dispensa')">
+      <span class="nav-icon">🗄️</span>
+      <span class="nav-label">Dispensa</span>
     </button>
     <button class="nav-tab" id="bn-ricette" onclick="goToPage('ricette')">
       <span class="nav-icon">📖</span>
       <span class="nav-label">Ricette</span>
-    </button>
-    <button class="nav-tab" id="bn-storico" onclick="goToPage('storico')">
-      <span class="nav-icon">📅</span>
-      <span class="nav-label">Storico</span>
     </button>
     <button class="nav-tab" id="bn-spesa" onclick="goToPage('spesa')">
       <span class="nav-icon">🛒</span>
@@ -357,12 +321,12 @@
   </div>
 </div>
 
-<!-- Modale: salva frigo -->
+<!-- Modale: salva dispensa -->
 <div class="modal" id="saveFridgeModal">
   <div class="modal-box">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <h2 class="modal-title">💾 Salva frigo</h2>
+      <h2 class="modal-title">💾 Salva dispensa</h2>
       <button class="modal-close" onclick="closeSaveFridgeModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -399,7 +363,7 @@
   <div class="modal-box">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <h2 class="modal-title">➕ Aggiungi al frigo</h2>
+      <h2 class="modal-title">➕ Aggiungi alla dispensa</h2>
       <button class="modal-close" onclick="closeAddFridge()">✕</button>
     </div>
     <div class="modal-body">
@@ -549,7 +513,7 @@
     </div>
     <div class="modal-body">
       <p class="text-light text-sm mb-12">
-        Inserisci la quantità acquistata per aggiornare il frigo automaticamente.
+        Inserisci la quantità acquistata per aggiornare la dispensa automaticamente.
       </p>
       <div class="qty-modal-wrap">
         <input type="number" id="purchasedQtyInput" min="0" step="any" placeholder="0"

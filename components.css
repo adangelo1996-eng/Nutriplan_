@@ -828,3 +828,90 @@
 .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 .auth-switch { text-align: center; font-size: .8rem; color: var(--text-light); margin-top: 18px; }
 .auth-switch a { font-weight: 700; }
+
+/* ══════════════════════════════════════════════════
+   27. RECIPE MODAL  (.rm-*)
+══════════════════════════════════════════════════ */
+.rm-hero {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 20px 16px;
+  border-bottom: 1.5px solid var(--border);
+  background: color-mix(in srgb, var(--mc, var(--primary)) 6%, var(--bg-card));
+}
+.rm-hero-icon {
+  width: 52px; height: 52px; flex-shrink: 0;
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--mc, var(--primary)) 14%, var(--bg-card));
+  border: 2px solid color-mix(in srgb, var(--mc, var(--primary)) 30%, transparent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem;
+}
+.rm-hero-name {
+  font-size: 1.08rem; font-weight: 800; line-height: 1.2;
+  color: var(--text-1);
+}
+.rm-hero-pasto {
+  font-size: .78rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; margin-top: 3px;
+}
+.rm-avail {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 20px;
+  font-size: .8rem; color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+}
+.rm-avail-track {
+  flex: 1; height: 6px; background: var(--bg-subtle);
+  border-radius: 99px; overflow: hidden;
+}
+.rm-avail-fill {
+  height: 100%; border-radius: 99px;
+  transition: width .4s ease;
+}
+.rm-section-label {
+  font-size: .68rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .09em; color: var(--text-light);
+  padding: 14px 20px 6px;
+}
+.rm-ing-list {
+  list-style: none; padding: 0 20px 4px; margin: 0;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.rm-ing {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 10px; border-radius: var(--r-sm);
+  background: var(--bg-subtle);
+  font-size: .85rem; font-weight: 500;
+}
+.rm-ing.ok {
+  background: color-mix(in srgb, #22c55e 8%, var(--bg-subtle));
+}
+.rm-check {
+  width: 18px; height: 18px; flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--border-mid);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .65rem; color: var(--bg-card);
+  font-weight: 900;
+}
+.rm-ing.ok .rm-check {
+  background: var(--success, #22c55e);
+}
+.rm-qty {
+  margin-left: auto; font-size: .72rem;
+  color: var(--text-light); font-weight: 700; white-space: nowrap;
+}
+.rm-steps {
+  padding: 0 20px 8px 36px; margin: 0;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.rm-steps li {
+  font-size: .87rem; line-height: 1.5; color: var(--text-2);
+  padding: 6px 0; border-bottom: 1px dashed var(--border);
+}
+.rm-steps li:last-child { border-bottom: none; }
+.rm-prep {
+  padding: 4px 20px 12px;
+  font-size: .87rem; line-height: 1.6; color: var(--text-2);
+  white-space: pre-wrap;
+}

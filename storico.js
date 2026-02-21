@@ -4,8 +4,8 @@
 
 var storicoOpenDays = {};
 
-function renderStorico() {
-  var el = document.getElementById('storicoContent');
+function renderStorico(targetId) {
+  var el = document.getElementById(targetId || 'storicoContent');
   if (!el) return;
 
   var keys = Object.keys(appHistory).sort(function(a,b){ return b.localeCompare(a); });
@@ -135,6 +135,7 @@ function deleteStoricoDay(dk) {
   delete appHistory[dk];
   saveData();
   renderStorico();
+  renderStorico('profiloStoricoContent');
 }
 
 /* ── FORMATTA DATA ── */
