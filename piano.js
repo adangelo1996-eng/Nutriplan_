@@ -382,14 +382,21 @@ function renderPianoRicette() {
     el.innerHTML = '<p style="color:var(--text-3);font-size:.9em;">Modulo ricette non caricato.</p>';
     return;
   }
+  var fridgeKeys = _getFridgeKeys();
   var all = getAllRicette().filter(function(r) {
-    return _mealContains(r.pasto, selectedMeal);
+    if (!_mealContains(r.pasto, selectedMeal)) return false;
+    /* mostra solo ricette con almeno 1 ingrediente disponibile */
+    var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+    if (!ings.length) return true; /* ricetta senza ingredienti listati: mostrala sempre */
+    return ings.some(function(ing){
+      var n = (ing.name||ing.nome||'').toLowerCase().trim();
+      return fridgeKeys.some(function(k){ var kl=k.toLowerCase(); return kl===n||kl.includes(n)||n.includes(kl); });
+    });
   });
   if (!all.length) {
-    el.innerHTML = '<div style="padding:12px 0;color:var(--text-light);font-size:.88em;">Nessuna ricetta disponibile per questo pasto.</div>';
+    el.innerHTML = '<div style="padding:12px 0;color:var(--text-light);font-size:.88em;">Nessuna ricetta con ingredienti disponibili per questo pasto.<br><span style="font-size:.82em;">Aggiungi ingredienti alla dispensa per vedere i suggerimenti.</span></div>';
     return;
   }
-  var fridgeKeys = _getFridgeKeys();
   /* Ordina per disponibilità ingredienti (% decrescente) */
   all.sort(function(a, b) {
     function avail(r) {

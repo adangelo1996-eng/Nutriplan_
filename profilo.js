@@ -116,26 +116,26 @@ function buildProfiloPianoSection() {
       });
 
       var ingHtml = items.length
-        ? items.map(function(i){
-            var qty = i.quantity ? ' <span class="rc-badge" style="font-size:.75em;">'+i.quantity+' '+(i.unit||'g')+'</span>' : '';
-            return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">'+
-                     '<span style="color:var(--text-3);font-size:.85em;">•</span>'+
-                     '<span style="flex:1;font-size:.92em;">'+i.name+'</span>'+
-                     qty+
-                   '</div>';
-          }).join('')
+        ? '<div style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 0 2px;">'+
+            items.map(function(i){
+              var qty = i.quantity ? '<span style="font-size:.72rem;color:var(--text-light);margin-left:4px;font-weight:700;">'+i.quantity+' '+(i.unit||'g')+'</span>' : '';
+              return '<div style="display:inline-flex;align-items:center;gap:4px;background:var(--bg-subtle);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:.88rem;font-weight:500;">'+
+                       i.name+qty+
+                     '</div>';
+            }).join('')+
+          '</div>'
         : '<p style="color:var(--text-3);font-size:.85em;padding:6px 0;">Nessun alimento impostato.</p>';
 
       return (
         '<div class="rc-card rc-accordion-card" style="margin-bottom:10px;">' +
-          '<div class="rc-accordion-header" onclick="toggleProfiloPasto(this)">' +
-            '<span style="font-size:1.1em;">'+m.emoji+'</span>' +
-            '<span style="flex:1;font-weight:600;margin-left:10px;">'+m.label+'</span>' +
-            '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);margin-right:8px;">'+items.length+' ing.</span>' +
-            '<span class="rc-accordion-arrow">▾</span>' +
+          '<div class="rc-accordion-header" onclick="toggleProfiloPasto(this)" style="padding:14px 18px;">' +
+            '<span style="font-size:1.3em;">'+m.emoji+'</span>' +
+            '<span style="flex:1;font-weight:700;font-size:1em;margin-left:12px;">'+m.label+'</span>' +
+            '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);margin-right:10px;font-size:.8em;">'+items.length+' ing.</span>' +
+            '<span class="rc-accordion-arrow" style="font-size:1em;">▾</span>' +
           '</div>' +
           '<div class="rc-accordion-body" style="max-height:0;overflow:hidden;transition:max-height .3s ease;">' +
-            '<div style="padding:0 18px 14px;">'+ingHtml+'</div>' +
+            '<div style="padding:6px 18px 16px;">'+ingHtml+'</div>' +
           '</div>' +
         '</div>'
       );
@@ -165,17 +165,19 @@ function buildProfiloPianoSection() {
 
     var rows = items.map(function(i, idx){
       var qty = i.quantity||'';
-      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;" data-meal="'+m.key+'" data-idx="'+idx+'" data-cat="'+i._cat+'">' +
-        '<input list="ingredientiDatalist" class="profilo-ing-name" value="'+escQP(i.name)+'" '+
-               'style="flex:2;padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:.9em;">' +
-        '<input type="number" class="profilo-ing-qty" value="'+qty+'" placeholder="qtà" '+
-               'style="width:64px;padding:7px 8px;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:.9em;text-align:center;">' +
-        '<select class="profilo-ing-unit" style="padding:7px 6px;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:.9em;">' +
+      return '<div class="profilo-ing-row" data-cat="'+i._cat+'" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+        '<input class="form-input profilo-ing-name" list="ingredientiAutocomplete" autocomplete="off" ' +
+               'oninput="populateIngAutocomplete&&populateIngAutocomplete()" ' +
+               'value="'+_escHtml(i.name)+'" placeholder="Ingrediente" ' +
+               'style="flex:2;min-width:0;">' +
+        '<input type="number" class="form-input profilo-ing-qty" value="'+qty+'" placeholder="qtà" ' +
+               'style="width:68px;text-align:center;">' +
+        '<select class="form-input profilo-ing-unit" style="width:80px;padding:8px 4px;">' +
           ['g','ml','pz','fette','cucchiai','cucchiaini','porzione','kg','l'].map(function(u){
             return '<option value="'+u+'"'+(i.unit===u?' selected':'')+'>'+u+'</option>';
           }).join('') +
         '</select>' +
-        '<button class="rc-btn-icon" onclick="removeEditRow(this)" title="Rimuovi">🗑️</button>' +
+        '<button class="rc-btn-icon" onclick="removeEditRow(this)" title="Rimuovi" style="flex-shrink:0;">🗑️</button>' +
       '</div>';
     }).join('');
 
@@ -186,7 +188,7 @@ function buildProfiloPianoSection() {
             '<span style="font-size:1.1em;">'+m.emoji+'</span>' +
             '<span style="font-weight:700;">'+m.label+'</span>' +
           '</div>' +
-          '<div class="edit-rows-wrap" data-meal="'+m.key+'">'+rows+'</div>' +
+          '<div class="profilo-ing-rows" id="profilo-rows-'+m.key+'">'+rows+'</div>' +
           '<button class="rc-btn rc-btn-outline rc-btn-sm" onclick="addEditRow(\''+m.key+'\')" style="margin-top:8px;">＋ Aggiungi</button>' +
         '</div>' +
       '</div>'
@@ -239,59 +241,65 @@ function cancelEditPiano() {
 }
 
 function addEditRow(mealKey) {
-  var wrap = document.querySelector('.edit-rows-wrap[data-meal="'+mealKey+'"]');
+  var wrap = document.getElementById('profilo-rows-'+mealKey);
   if (!wrap) return;
   var row = document.createElement('div');
+  row.className = 'profilo-ing-row';
+  row.setAttribute('data-cat', 'principale');
   row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
-  row.setAttribute('data-meal', mealKey);
-  row.setAttribute('data-cat',  'principale');
   row.innerHTML =
-    '<input list="ingredientiDatalist" class="profilo-ing-name" placeholder="Ingrediente" '+
-           'style="flex:2;padding:7px 10px;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:.9em;">' +
-    '<input type="number" class="profilo-ing-qty" placeholder="qtà" '+
-           'style="width:64px;padding:7px 8px;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:.9em;text-align:center;">' +
-    '<select class="profilo-ing-unit" style="padding:7px 6px;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:.9em;">' +
+    '<input class="form-input profilo-ing-name" list="ingredientiAutocomplete" autocomplete="off" ' +
+           'oninput="populateIngAutocomplete&&populateIngAutocomplete()" ' +
+           'placeholder="Ingrediente" style="flex:2;min-width:0;">' +
+    '<input type="number" class="form-input profilo-ing-qty" placeholder="qtà" style="width:68px;text-align:center;">' +
+    '<select class="form-input profilo-ing-unit" style="width:80px;padding:8px 4px;">' +
       ['g','ml','pz','fette','cucchiai','cucchiaini','porzione','kg','l'].map(function(u){
         return '<option value="'+u+'">'+u+'</option>';
       }).join('') +
     '</select>' +
-    '<button class="rc-btn-icon" onclick="removeEditRow(this)">🗑️</button>';
+    '<button class="rc-btn-icon" onclick="removeEditRow(this)" style="flex-shrink:0;">🗑️</button>';
   wrap.appendChild(row);
+  /* focus sul nuovo campo nome */
+  var inp = row.querySelector('.profilo-ing-name');
+  if (inp) setTimeout(function(){ inp.focus(); }, 50);
+  if (typeof populateIngAutocomplete === 'function') populateIngAutocomplete();
 }
 
 function removeEditRow(btn) {
-  var row = btn.closest('[data-meal]');
+  var row = btn.closest('.profilo-ing-row');
   if (row) row.remove();
 }
 
 function saveEditPiano() {
+  var meals = ['colazione','spuntino','pranzo','merenda','cena'];
   var newPlan = {};
-  ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk){
-    newPlan[mk] = { principale:[], contorno:[], frutta:[], extra:[] };
-  });
-  document.querySelectorAll('.edit-rows-wrap').forEach(function(wrap){
-    var mk = wrap.getAttribute('data-meal');
-    if (!mk || !newPlan[mk]) return;
-    wrap.querySelectorAll('[data-meal]').forEach(function(row){
+  meals.forEach(function(mk){ newPlan[mk] = { principale:[], contorno:[], frutta:[], extra:[] }; });
+
+  meals.forEach(function(mk){
+    var wrap = document.getElementById('profilo-rows-'+mk);
+    if (!wrap) return;
+    wrap.querySelectorAll('.profilo-ing-row').forEach(function(row){
       var nameEl = row.querySelector('.profilo-ing-name');
       var qtyEl  = row.querySelector('.profilo-ing-qty');
       var unitEl = row.querySelector('.profilo-ing-unit');
-      var cat    = row.getAttribute('data-cat') || 'principale';
       if (!nameEl) return;
-      var name   = nameEl.value.trim();
+      var name = nameEl.value.trim();
       if (!name) return;
-      var qty    = parseFloat(qtyEl ? qtyEl.value : '') || null;
-      var unit   = unitEl ? unitEl.value : 'g';
+      var cat  = row.getAttribute('data-cat') || 'principale';
+      var qty  = parseFloat(qtyEl ? qtyEl.value : '') || null;
+      var unit = unitEl ? unitEl.value : 'g';
       if (!Array.isArray(newPlan[mk][cat])) newPlan[mk][cat] = [];
       newPlan[mk][cat].push({ name:name, quantity:qty, unit:unit });
     });
   });
+
   mealPlan        = newPlan;
   profiloEditMode = false;
   editMealPlanData= null;
   saveData();
   renderProfilo();
   if (typeof renderMealPlan === 'function') renderMealPlan();
+  if (typeof showToast === 'function') showToast('✅ Piano alimentare salvato','success');
 }
 
 /* ══════════════════════════════════════════════
@@ -313,3 +321,4 @@ function buildProfiloStoricoSection() {
 
 /* ── UTILITY ── */
 function escQP(str) { return String(str||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+function _escHtml(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
