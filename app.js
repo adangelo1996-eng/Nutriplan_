@@ -86,12 +86,14 @@ function initDarkMode() {
 function applyDarkMode(isDark, save) {
   if (save === undefined) save = true;
   document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-  /* Aggiorna icona bottone tema — supporta sia id darkToggle che btn-icon-only nel header */
-  var btn = document.getElementById('darkToggle');
-  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
-  /* Aggiorna tutti i bottoni tema nell'header (classe btn-icon-only con 🌙/☀️) */
+  /* Aggiorna tutti i bottoni tema — supporta id darkToggle, themeToggle e data-theme-toggle */
+  var icon = isDark ? '☀️' : '🌙';
+  ['darkToggle', 'themeToggle'].forEach(function(id) {
+    var b = document.getElementById(id);
+    if (b) b.textContent = icon;
+  });
   document.querySelectorAll('[data-theme-toggle]').forEach(function(b) {
-    b.textContent = isDark ? '☀️' : '🌙';
+    b.textContent = icon;
   });
   var meta = document.getElementById('metaThemeColor');
   if (meta) meta.content = isDark ? '#152318' : '#4a9b7f';
@@ -866,7 +868,7 @@ function enterApp() {
 
   buildCalendarBar();
   updateDateLabel();
-  goToPage('piano');
+  goToPage('piano-alimentare');
 
   /* Prima mostra onboarding (piano alimentare), poi tutorial */
   if (typeof checkOnboarding === 'function') {

@@ -22,12 +22,21 @@ var TUTORIAL_STEPS = [
     hint:   ''
   },
   {
+    icon:   '🌿',
+    title:  'Piano Alimentare',
+    text:   'Qui imposti il tuo piano: per ogni pasto scegli le categorie di ingredienti e le alternative. In fondo puoi impostare i limiti settimanali.',
+    page:   'piano-alimentare',
+    target: '#bn-piano-alimentare,#st-piano-alimentare',
+    hint:   'Tocca "Piano" per aprire la sezione',
+    autoAdvance: true
+  },
+  {
     icon:   '🍽',
     title:  'Cosa mangio oggi',
     text:   'Qui vedi il tuo piano giornaliero. Tocca un pasto e spunta ✅ gli ingredienti man mano che li consumi.',
     page:   'piano',
-    target: '#mealSelector',
-    hint:   'Tocca un pasto per selezionarlo',
+    target: '#bn-piano,#st-piano',
+    hint:   'Tocca "Oggi" per aprire la sezione',
     autoAdvance: true
   },
   {
@@ -55,15 +64,6 @@ var TUTORIAL_STEPS = [
     page:   'spesa',
     target: '#bn-spesa,#st-spesa',
     hint:   'Tocca "Spesa" per aprire la sezione',
-    autoAdvance: true
-  },
-  {
-    icon:   '📊',
-    title:  'Statistiche & Storico',
-    text:   'Grafici del tuo percorso alimentare e calendario per navigare tra i giorni passati e futuri.',
-    page:   'statistiche',
-    target: '#bn-stats,#st-stats',
-    hint:   'Tocca "Stats" per aprire la sezione',
     autoAdvance: true
   },
   {
@@ -217,12 +217,22 @@ function _clearAutoAdvance() {
 }
 
 function _setupAutoAdvance(targetSelector) {
-  /* Trova il primo elemento target disponibile */
+  /* Trova il primo elemento target VISIBILE disponibile */
   var el   = null;
   var sels = targetSelector.split(',');
   for (var i = 0; i < sels.length; i++) {
     var found = document.querySelector(sels[i].trim());
-    if (found) { el = found; break; }
+    if (found) {
+      var r = found.getBoundingClientRect();
+      if (r.width > 0 || r.height > 0) { el = found; break; }
+    }
+  }
+  /* Fallback: qualsiasi elemento presente */
+  if (!el) {
+    for (var j = 0; j < sels.length; j++) {
+      var fb = document.querySelector(sels[j].trim());
+      if (fb) { el = fb; break; }
+    }
   }
   if (!el) return;
 
@@ -262,12 +272,23 @@ function _positionStep(step) {
     return;
   }
 
-  /* Find target element (try comma-separated selectors) */
+  /* Find first VISIBLE target element (try comma-separated selectors one by one) */
   var el   = null;
   var sels = step.target.split(',');
+  /* Pass 1: cerca il primo con dimensioni reali (visibile) */
   for (var i = 0; i < sels.length; i++) {
     var found = document.querySelector(sels[i].trim());
-    if (found) { el = found; break; }
+    if (found) {
+      var r = found.getBoundingClientRect();
+      if (r.width > 0 || r.height > 0) { el = found; break; }
+    }
+  }
+  /* Pass 2: fallback — qualsiasi elemento che esiste nel DOM */
+  if (!el) {
+    for (var j = 0; j < sels.length; j++) {
+      var fb = document.querySelector(sels[j].trim());
+      if (fb) { el = fb; break; }
+    }
   }
 
   if (!el) {

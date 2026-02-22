@@ -770,6 +770,44 @@
   </div>
 </div>
 
+<!-- Modale: quantità ingrediente (Piano Alimentare) -->
+<div class="modal" id="paQtyModal">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="paQtyTitle">＋ Aggiungi ingrediente</h2>
+      <button class="modal-close" onclick="closePAQtyModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.88rem;font-weight:700;margin-bottom:14px;" id="paQtyIngName"></p>
+      <div class="row gap-8">
+        <div class="form-group flex1">
+          <label>Quantità (opzionale)</label>
+          <input type="number" id="paQtyInput" min="0" step="any" placeholder="—">
+        </div>
+        <div class="form-group" style="width:110px">
+          <label>Unità</label>
+          <select id="paQtyUnit">
+            <option value="g">g</option>
+            <option value="ml">ml</option>
+            <option value="pz">pz</option>
+            <option value="fette">fette</option>
+            <option value="cucchiai">cucchiai</option>
+            <option value="cucchiaini">cucchiaini</option>
+            <option value="porzione">porzione</option>
+            <option value="kg">kg</option>
+            <option value="l">l</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePAQtyModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="confirmPAQty()">Aggiungi ✓</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modale: selezione ingrediente per Piano Alimentare -->
 <div class="modal" id="paIngModal">
   <div class="modal-box">
