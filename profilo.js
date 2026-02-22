@@ -11,8 +11,6 @@ function renderProfilo() {
   if (!el) return;
   el.innerHTML =
     buildProfiloUserSection() +
-    buildProfiloPianoSection() +
-    buildProfiloLimitiSection() +
     buildProfiloStoricoSection() +
     buildProfiloSettingsSection();
   /* Render storico nell'apposito contenitore */

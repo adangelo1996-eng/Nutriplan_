@@ -181,13 +181,18 @@ function renderFridge(targetId) {
   var el = document.getElementById(targetId || 'pantryContent');
   if (!el) return;
 
-  /* Solo elementi con qty > 0 */
-  var active = getAllPantryItems().filter(function(i) {
+  /* Tutti gli elementi per il conteggio */
+  var allItems = getAllPantryItems();
+
+  /* Solo elementi con qty > 0 per il display principale */
+  var active = allItems.filter(function(i) {
     return isValidItem(i) && (i.quantity || 0) > 0;
   });
 
   /* Filtro ricerca */
+  var searchActive = false;
   if (pantrySearchQuery) {
+    searchActive = true;
     var q = pantrySearchQuery.toLowerCase();
     active = active.filter(function(i) {
       return i.name.toLowerCase().includes(q) ||
@@ -195,20 +200,51 @@ function renderFridge(targetId) {
     });
   }
 
-  /* Stato vuoto */
-  if (!active.length) {
-    el.innerHTML =
-      '<div class="rc-empty">' +
-        '<div style="font-size:2.5rem;">❄️</div>' +
-        '<p>' + (pantrySearchQuery
-          ? 'Nessun ingrediente corrisponde a "<strong>' + pantrySearchQuery + '</strong>".'
-          : 'Il frigo è vuoto.<br>Aggiungi ingredienti con <strong>＋</strong> oppure segna acquisti nella <strong>Spesa</strong>.') +
-        '</p>' +
-      '</div>';
+  /* In modalità ricerca: mostra solo risultati */
+  if (searchActive) {
+    if (!active.length) {
+      el.innerHTML =
+        '<div class="rc-empty">' +
+          '<div style="font-size:2.5rem;">🔍</div>' +
+          '<p>Nessun ingrediente corrisponde a "<strong>' + pantrySearchQuery + '</strong>".</p>' +
+        '</div>';
+    } else {
+      /* Raggruppa per categoria solo i risultati */
+      var sGroups = {};
+      active.forEach(function(item) {
+        var cat = item.category || '🧂 Altro';
+        if (!sGroups[cat]) sGroups[cat] = [];
+        sGroups[cat].push(item);
+      });
+      var sOrdered = CATEGORY_ORDER.filter(function(c) { return sGroups[c]; });
+      Object.keys(sGroups).forEach(function(c) {
+        if (sOrdered.indexOf(c) === -1) sOrdered.push(c);
+      });
+      var sHtml = '';
+      sOrdered.forEach(function(cat) {
+        var items = sGroups[cat];
+        var color = getCategoryColor(cat);
+        var icon  = getCategoryIcon(cat);
+        sHtml +=
+          '<div class="fi-group" style="--gc:' + color + ';">' +
+            '<div class="fi-group-header">' +
+              '<span class="fi-group-icon">' + icon + '</span>' +
+              '<span class="fi-group-name">' + cat.replace(/^[^\s]+\s/, '') + '</span>' +
+              '<span class="fi-group-count">' + items.length + '</span>' +
+            '</div>' +
+            '<div class="fi-list">' +
+              items.map(function(item) { return buildFridgeRow(item); }).join('') +
+            '</div>' +
+          '</div>';
+      });
+      el.innerHTML = sHtml;
+    }
     return;
   }
 
-  /* Raggruppa per categoria */
+  /* Modalità normale: mostra TUTTE le categorie, anche vuote */
+
+  /* Raggruppa gli elementi attivi per categoria */
   var groups = {};
   active.forEach(function(item) {
     var cat = item.category || '🧂 Altro';
@@ -216,32 +252,201 @@ function renderFridge(targetId) {
     groups[cat].push(item);
   });
 
-  /* Ordine categorie */
-  var orderedCats = CATEGORY_ORDER.filter(function(c) { return groups[c]; });
+  /* Tutte le categorie definite + quelle extra dai dati */
+  var allCats = CATEGORY_ORDER.slice();
   Object.keys(groups).forEach(function(c) {
-    if (orderedCats.indexOf(c) === -1) orderedCats.push(c);
+    if (allCats.indexOf(c) === -1) allCats.push(c);
   });
 
   var html = '';
-  orderedCats.forEach(function(cat) {
-    var items = groups[cat];
+  allCats.forEach(function(cat) {
+    if (cat === '🧂 Altro') return; /* "Altro" mostrato solo se ha elementi */
+    var items = groups[cat] || [];
     var color = getCategoryColor(cat);
     var icon  = getCategoryIcon(cat);
+    var catName = cat.replace(/^[^\s]+\s/, '');
+    var catEsc  = cat.replace(/'/g, "\\'");
 
     html +=
       '<div class="fi-group" style="--gc:' + color + ';">' +
         '<div class="fi-group-header">' +
           '<span class="fi-group-icon">' + icon + '</span>' +
-          '<span class="fi-group-name">' + cat.replace(/^[^\s]+\s/, '') + '</span>' +
-          '<span class="fi-group-count">' + items.length + '</span>' +
+          '<span class="fi-group-name">' + catName + '</span>' +
+          '<span class="fi-group-count">' + (items.length || '') + '</span>' +
+          '<button class="fi-add-cat-btn" ' +
+                  'onclick="event.stopPropagation();openAddByCatModal(\'' + catEsc + '\')" ' +
+                  'title="Aggiungi ' + catName + '">＋</button>' +
         '</div>' +
         '<div class="fi-list">' +
-          items.map(function(item) { return buildFridgeRow(item); }).join('') +
+          (items.length
+            ? items.map(function(item) { return buildFridgeRow(item); }).join('')
+            : '<div class="fi-empty-cat">Nessun ingrediente in dispensa per questa categoria</div>'
+          ) +
         '</div>' +
       '</div>';
   });
 
+  /* "Altro" solo se ha elementi */
+  if (groups['🧂 Altro'] && groups['🧂 Altro'].length) {
+    var altroItems = groups['🧂 Altro'];
+    html +=
+      '<div class="fi-group" style="--gc:#64748b;">' +
+        '<div class="fi-group-header">' +
+          '<span class="fi-group-icon">🧂</span>' +
+          '<span class="fi-group-name">Altro</span>' +
+          '<span class="fi-group-count">' + altroItems.length + '</span>' +
+          '<button class="fi-add-cat-btn" ' +
+                  'onclick="event.stopPropagation();openAddByCatModal(\'🧂 Altro\')" ' +
+                  'title="Aggiungi">＋</button>' +
+        '</div>' +
+        '<div class="fi-list">' +
+          altroItems.map(function(item) { return buildFridgeRow(item); }).join('') +
+        '</div>' +
+      '</div>';
+  }
+
   el.innerHTML = html;
+}
+
+/* ══════════════════════════════════════════════════
+   MODAL: AGGIUNGI INGREDIENTE PER CATEGORIA
+══════════════════════════════════════════════════ */
+var _addByCatCurrent = '';
+var _addByCatQuery   = '';
+
+function openAddByCatModal(cat) {
+  _addByCatCurrent = cat;
+  _addByCatQuery   = '';
+
+  var modal = document.getElementById('addByCatModal');
+  if (!modal) return;
+
+  var titleEl = document.getElementById('addByCatTitle');
+  if (titleEl) titleEl.textContent = '➕ Aggiungi a ' + cat.replace(/^[^\s]+\s/, '');
+
+  var searchEl = document.getElementById('addByCatSearch');
+  if (searchEl) { searchEl.value = ''; }
+
+  _renderAddByCatList('');
+
+  modal.classList.add('active');
+  setTimeout(function() {
+    if (searchEl) searchEl.focus();
+  }, 120);
+}
+
+function closeAddByCatModal() {
+  var modal = document.getElementById('addByCatModal');
+  if (modal) modal.classList.remove('active');
+  _addByCatCurrent = '';
+  _addByCatQuery   = '';
+}
+
+function filterAddByCat(query) {
+  _addByCatQuery = (query || '').trim().toLowerCase();
+  _renderAddByCatList(_addByCatQuery);
+}
+
+function _renderAddByCatList(query) {
+  var listEl = document.getElementById('addByCatList');
+  if (!listEl) return;
+
+  var cat = _addByCatCurrent;
+
+  /* Raccoglie ingredienti della categoria dai default e custom */
+  var candidates = [];
+  var seen = {};
+
+  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
+    defaultIngredients.forEach(function(i) {
+      if (i && i.name && i.category === cat && !seen[i.name]) {
+        seen[i.name] = true;
+        candidates.push(i.name);
+      }
+    });
+  }
+  if (typeof customIngredients !== 'undefined' && Array.isArray(customIngredients)) {
+    customIngredients.forEach(function(i) {
+      if (i && i.name && i.category === cat && !seen[i.name]) {
+        seen[i.name] = true;
+        candidates.push(i.name);
+      }
+    });
+  }
+
+  /* Se la ricerca non ha trovato nulla nella categoria, mostra risultati liberi */
+  if (!candidates.length) {
+    /* Mostra tutti e filtra per query */
+    if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
+      defaultIngredients.forEach(function(i) {
+        if (i && i.name && !seen[i.name]) {
+          seen[i.name] = true;
+          candidates.push(i.name);
+        }
+      });
+    }
+  }
+
+  /* Filtra per query */
+  if (query) {
+    candidates = candidates.filter(function(n) {
+      return n.toLowerCase().includes(query);
+    });
+  }
+
+  /* Esclude già in dispensa con qty > 0 */
+  var alreadyIn = (typeof pantryItems !== 'undefined' && pantryItems)
+    ? Object.keys(pantryItems).filter(function(k) {
+        return pantryItems[k] && (pantryItems[k].quantity || 0) > 0;
+      })
+    : [];
+
+  candidates.sort(function(a, b) { return a.localeCompare(b, 'it'); });
+
+  if (!candidates.length) {
+    listEl.innerHTML = '<p style="color:var(--text-3);font-size:.9em;padding:12px 0;">Nessun ingrediente trovato.</p>';
+    return;
+  }
+
+  listEl.innerHTML = candidates.slice(0, 50).map(function(name) {
+    var inFridge = alreadyIn.indexOf(name) !== -1;
+    var escName  = name.replace(/'/g, "\\'");
+    return (
+      '<div class="add-by-cat-item' + (inFridge ? ' in-fridge' : '') + '" ' +
+           'onclick="selectAddByCatItem(\'' + escName + '\')">' +
+        '<span>' + name + '</span>' +
+        (inFridge ? '<span class="fi-in-fridge-badge">✔ in dispensa</span>' : '') +
+      '</div>'
+    );
+  }).join('');
+}
+
+function selectAddByCatItem(name) {
+  /* Pre-compila il modal aggiunta standard e aprilo */
+  closeAddByCatModal();
+
+  /* Usa il modal addFridgeModal con precompilazione */
+  var cat = _addByCatCurrent || '🧂 Altro';
+
+  /* Apri il modal generico precompilato */
+  var modal = document.getElementById('addFridgeModal');
+  if (!modal) { openAddFridgeModal(); return; }
+
+  var nameEl = document.getElementById('newFridgeItem');
+  var catEl  = document.getElementById('newFridgeCategory');
+  var qtyEl  = document.getElementById('newFridgeQty');
+
+  if (nameEl) nameEl.value = name;
+  if (catEl)  catEl.value  = cat;
+  if (qtyEl)  { qtyEl.value = ''; }
+
+  modal.classList.add('active');
+
+  if (typeof populateIngAutocomplete === 'function') populateIngAutocomplete();
+
+  setTimeout(function() {
+    if (qtyEl) { qtyEl.focus(); qtyEl.select(); }
+  }, 120);
 }
 
 /* ══════════════════════════════════════════════════

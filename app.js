@@ -868,8 +868,12 @@ function enterApp() {
   updateDateLabel();
   goToPage('piano');
 
-  /* Avvia tutorial al primo accesso */
-  if (typeof checkTutorial === 'function') checkTutorial();
+  /* Prima mostra onboarding (piano alimentare), poi tutorial */
+  if (typeof checkOnboarding === 'function') {
+    checkOnboarding();
+  } else if (typeof checkTutorial === 'function') {
+    checkTutorial();
+  }
 }
 
 /* ── goToPage() ── navigazione con i nuovi ID ─────────── */
@@ -942,6 +946,16 @@ function switchRicetteTab(tabKey, el) {
 
   if (tabKey === 'catalogo' && typeof renderRicette       === 'function') renderRicette();
   if (tabKey === 'mie'      && typeof renderCustomRicette === 'function') renderCustomRicette();
+}
+
+/* ── Privacy Policy Modal ─────────────────────────── */
+function openPrivacyModal() {
+  var m = document.getElementById('privacyModal');
+  if (m) m.classList.add('active');
+}
+function closePrivacyModal() {
+  var m = document.getElementById('privacyModal');
+  if (m) m.classList.remove('active');
 }
 
 /* ── Alias funzioni modal (nomi usati nel nuovo HTML) ──── */

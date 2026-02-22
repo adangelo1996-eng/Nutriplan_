@@ -202,7 +202,12 @@ function _getSameGroup(cat) {
   return null;
 }
 
+/* Nome ingrediente corrente per la modal sostituzione */
+var _subCurrentName = '';
+
 function openSubstituteModal(name) {
+  _subCurrentName = name;
+
   /* Trova la categoria dell'ingrediente da sostituire */
   var origCat = null;
   if (typeof defaultIngredients !== 'undefined') {
@@ -214,13 +219,12 @@ function openSubstituteModal(name) {
   }
   var compatGroup = origCat ? _getSameGroup(origCat) : null;
 
-  var available = (typeof pantryItems !== 'undefined' && pantryItems)
+  /* === 1. Ingredienti IN DISPENSA (qty > 0), stessa categoria === */
+  var inFridge = (typeof pantryItems !== 'undefined' && pantryItems)
     ? Object.keys(pantryItems).filter(function(k){
         if (!k || !pantryItems[k] || (pantryItems[k].quantity||0) <= 0 || k === name) return false;
-        /* Se abbiamo un gruppo compatibile, filtra per categoria */
         if (compatGroup) {
           var kCat = pantryItems[k].category || null;
-          /* Cerca anche nei defaultIngredients per la categoria */
           if (!kCat && typeof defaultIngredients !== 'undefined') {
             var kDef = defaultIngredients.find(function(d){ return d.name === k; });
             if (kDef) kCat = kDef.category || null;
@@ -231,21 +235,140 @@ function openSubstituteModal(name) {
       })
     : [];
 
-  var html =
-    '<div style="margin-bottom:12px;font-weight:600;">Sostituisci: '+name+'</div>' +
-    (origCat ? '<div style="font-size:.8em;color:var(--text-light);margin-bottom:10px;">Categoria: '+origCat+'</div>' : '') +
-    (available.length
-      ? available.map(function(k){
-          return '<button class="rc-card" style="display:block;width:100%;text-align:left;padding:10px 14px;margin-bottom:8px;cursor:pointer;" '+
-                 'onclick="applySubstitute(\''+escQ(name)+'\',\''+escQ(k)+'\')">'+k+
-                 ' <span class="rc-badge">in dispensa</span></button>';
-        }).join('')
-      : '<p style="color:var(--text-3);">Nessun ingrediente compatibile disponibile in dispensa.</p>'
-    );
-  var body = document.getElementById('substituteModalBody');
+  /* === 2. Suggerimenti dal piano alimentare dell'utente, stessa categoria === */
+  var planSuggestions = [];
+  var seenPlan = {};
+  seenPlan[name] = true;
+  inFridge.forEach(function(k){ seenPlan[k] = true; });
+
+  if (typeof mealPlan !== 'undefined' && mealPlan) {
+    ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk){
+      var mp = mealPlan[mk] || {};
+      ['principale','contorno','frutta','extra'].forEach(function(cat){
+        var arr = mp[cat];
+        if (!Array.isArray(arr)) return;
+        arr.forEach(function(item){
+          if (!item || !item.name || seenPlan[item.name]) return;
+          var iCat = null;
+          if (typeof defaultIngredients !== 'undefined') {
+            var iDef = defaultIngredients.find(function(d){ return d.name === item.name; });
+            if (iDef) iCat = iDef.category || null;
+          }
+          if (!iCat && typeof pantryItems !== 'undefined' && pantryItems && pantryItems[item.name]) {
+            iCat = pantryItems[item.name].category || null;
+          }
+          var ok = compatGroup ? (iCat && compatGroup.indexOf(iCat) !== -1) : true;
+          if (ok) {
+            seenPlan[item.name] = true;
+            planSuggestions.push(item.name);
+          }
+        });
+      });
+    });
+  }
+
+  /* === 3. Suggerimenti da defaultIngredients, stessa categoria === */
+  var dbSuggestions = [];
+  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients) && origCat) {
+    defaultIngredients.forEach(function(i){
+      if (!i || !i.name || seenPlan[i.name]) return;
+      var ok = compatGroup ? compatGroup.indexOf(i.category) !== -1 : i.category === origCat;
+      if (ok) {
+        seenPlan[i.name] = true;
+        dbSuggestions.push(i.name);
+      }
+    });
+  }
+
+  /* === Build HTML === */
+  var html = '<div style="margin-bottom:12px;font-weight:600;font-size:1em;">Sostituisci: <em>' + name + '</em></div>';
+  if (origCat) {
+    html += '<div style="font-size:.78em;color:var(--text-3);margin-bottom:14px;">Categoria: ' + origCat + '</div>';
+  }
+
+  /* Sezione 1: in dispensa */
+  if (inFridge.length) {
+    html += '<div style="font-size:.82em;font-weight:700;color:var(--primary);margin-bottom:8px;">✔ Disponibili in dispensa</div>';
+    html += inFridge.map(function(k){
+      return '<button class="sub-opt-btn sub-opt-available" onclick="applySubstitute(\'' + escQ(name) + '\',\'' + escQ(k) + '\')">' +
+               k + '<span class="rc-badge" style="margin-left:8px;background:var(--success-light,#dcfce7);color:var(--success,#16a34a);">in dispensa</span>' +
+             '</button>';
+    }).join('');
+  }
+
+  /* Sezione 2: suggerimenti dal piano */
+  var allSuggestions = planSuggestions.concat(dbSuggestions).slice(0, 8);
+  if (allSuggestions.length) {
+    html += '<div style="font-size:.82em;font-weight:700;color:var(--text-2);margin:14px 0 8px;">💡 Suggerimenti compatibili</div>';
+    html += allSuggestions.map(function(sName){
+      return '<div class="sub-opt-suggestion">' +
+               '<span class="sub-opt-name">' + sName + '</span>' +
+               '<div class="sub-opt-actions">' +
+                 '<button class="btn btn-secondary btn-small" title="Aggiungi alla spesa" ' +
+                         'onclick="subAddToSpesa(\'' + escQ(sName) + '\')">🛒 Spesa</button>' +
+                 '<button class="btn btn-secondary btn-small" title="Aggiungi in dispensa" ' +
+                         'onclick="subAddToDispensa(\'' + escQ(name) + '\',\'' + escQ(sName) + '\')">🗄️ Dispensa</button>' +
+               '</div>' +
+             '</div>';
+    }).join('');
+  }
+
+  if (!inFridge.length && !allSuggestions.length) {
+    html += '<p style="color:var(--text-3);font-size:.9em;padding:8px 0;">Nessun ingrediente compatibile trovato.</p>';
+  }
+
+  var body  = document.getElementById('substituteModalBody');
   var modal = document.getElementById('substituteModal');
-  if (body) body.innerHTML = html;
+  if (body)  body.innerHTML  = html;
   if (modal) modal.classList.add('active');
+}
+
+/* Aggiunge il suggerimento alla lista della spesa */
+function subAddToSpesa(suggName) {
+  if (typeof spesaItems !== 'undefined') {
+    if (!Array.isArray(spesaItems)) spesaItems = [];
+    var exists = spesaItems.find(function(i){ return i.name === suggName; });
+    if (!exists) {
+      spesaItems.push({ name: suggName, quantity: null, unit: 'g', checked: false });
+      if (typeof saveData === 'function') saveData();
+    }
+    if (typeof showToast === 'function') showToast('🛒 ' + suggName + ' aggiunto alla spesa', 'success');
+  }
+  closeSubstituteModal();
+}
+
+/* Apre una mini-modal per scegliere la quantità e aggiunge il suggerimento in dispensa,
+   poi lo applica come sostituto */
+function subAddToDispensa(originalName, suggName) {
+  closeSubstituteModal();
+  /* Usa il modal quantità per dispensa */
+  var qty = prompt('Quantità di ' + suggName + ' da aggiungere in dispensa? (numero, es. 200)');
+  if (qty === null) return;
+  var qtyNum = parseFloat(qty);
+  if (isNaN(qtyNum) || qtyNum <= 0) {
+    if (typeof showToast === 'function') showToast('⚠️ Quantità non valida', 'warning');
+    return;
+  }
+
+  /* Trova unità di default */
+  var unit = 'g';
+  if (typeof defaultIngredients !== 'undefined') {
+    var def = defaultIngredients.find(function(d){ return d.name === suggName; });
+    if (def && def.unit) unit = def.unit;
+  }
+
+  if (typeof addFromSpesa === 'function') {
+    addFromSpesa(suggName, qtyNum, unit);
+  } else {
+    if (!pantryItems) pantryItems = {};
+    var pd = pantryItems[suggName] || {};
+    pantryItems[suggName] = Object.assign({}, pd, { quantity: (pd.quantity||0) + qtyNum, unit: unit });
+    if (typeof saveData === 'function') saveData();
+  }
+
+  /* Applica subito come sostituto */
+  applySubstitute(originalName, suggName);
+  if (typeof showToast === 'function') showToast('🗄️ ' + suggName + ' aggiunto in dispensa e applicato come sostituto', 'success');
 }
 
 function applySubstitute(original, replacement) {
