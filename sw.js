@@ -3,7 +3,7 @@
    Cache-first per asset statici, network-first per dati.
 ============================================================ */
 
-var CACHE_NAME = 'nutriplan-v4';
+var CACHE_NAME = 'nutriplan-v5';
 
 /* Calcola il base path dinamicamente: funziona sia a root (/sw.js)
    che in sottocartella (/Nutriplan_/sw.js → base '/Nutriplan_') */
@@ -35,7 +35,6 @@ var STATIC_ASSETS = [
   BASE_PATH + '/pdf.js',
   BASE_PATH + '/tutorial.js',
   BASE_PATH + '/onboarding.js',
-  BASE_PATH + '/gemini.js',
   BASE_PATH + '/firebase-config.js'
   /* config.js escluso: generato a runtime da GitHub Actions, non sempre presente */
 ];
@@ -67,11 +66,11 @@ self.addEventListener('fetch', function(e) {
   if (e.request.method !== 'GET') return;
   var url = e.request.url;
 
-  /* Bypassa: Firebase, Gemini, Google Fonts, CDN, blob: */
+  /* Bypassa: Firebase, Gemini, Google Fonts, CDN, blob:, gemini.js (sempre rete) */
   if (url.includes('firebase') || url.includes('generativelanguage') ||
       url.includes('fonts.googleapis') || url.includes('fonts.gstatic') ||
       url.includes('unpkg.com') || url.startsWith('blob:') ||
-      url.includes('gstatic.com/firebasejs')) {
+      url.includes('gstatic.com/firebasejs') || url.includes('/gemini.js')) {
     return;
   }
 
