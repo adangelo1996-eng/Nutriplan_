@@ -4,9 +4,11 @@
 ============================================================ */
 
 /* ── Registra Service Worker (PWA) ── */
+/* Usa path relativo ('sw.js') invece di assoluto ('/sw.js')
+   così funziona sia in root che in sottocartella (es. GitHub Pages project page) */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/sw.js').catch(function(e) {
+    navigator.serviceWorker.register('sw.js').catch(function(e) {
       console.warn('[NutriPlan] SW registration failed:', e);
     });
   });

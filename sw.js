@@ -3,36 +3,41 @@
    Cache-first per asset statici, network-first per dati.
 ============================================================ */
 
-var CACHE_NAME = 'nutriplan-v2';
+var CACHE_NAME = 'nutriplan-v3';
+
+/* Calcola il base path dinamicamente: funziona sia a root (/sw.js)
+   che in sottocartella (/Nutriplan_/sw.js → base '/Nutriplan_') */
+var BASE_PATH = self.location.pathname.replace(/\/sw\.js$/, '');
+
 var STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon.svg',
-  '/base.css',
-  '/nav.css',
-  '/layout.css',
-  '/components.css',
-  '/utils.css',
-  '/style.css',
-  '/app.js',
-  '/data.js',
-  '/storage.js',
-  '/piano.js',
-  '/piano_alimentare.js',
-  '/dispensa.js',
-  '/ricette.js',
-  '/ricette_custom.js',
-  '/spesa.js',
-  '/storico.js',
-  '/statistiche.js',
-  '/profilo.js',
-  '/pdf.js',
-  '/tutorial.js',
-  '/onboarding.js',
-  '/gemini.js',
-  '/firebase-config.js',
-  '/config.js'
+  BASE_PATH + '/',
+  BASE_PATH + '/index.html',
+  BASE_PATH + '/manifest.json',
+  BASE_PATH + '/icon.svg',
+  BASE_PATH + '/base.css',
+  BASE_PATH + '/nav.css',
+  BASE_PATH + '/layout.css',
+  BASE_PATH + '/components.css',
+  BASE_PATH + '/utils.css',
+  BASE_PATH + '/style.css',
+  BASE_PATH + '/app.js',
+  BASE_PATH + '/data.js',
+  BASE_PATH + '/storage.js',
+  BASE_PATH + '/piano.js',
+  BASE_PATH + '/piano_alimentare.js',
+  BASE_PATH + '/dispensa.js',
+  BASE_PATH + '/ricette.js',
+  BASE_PATH + '/ricette_custom.js',
+  BASE_PATH + '/spesa.js',
+  BASE_PATH + '/storico.js',
+  BASE_PATH + '/statistiche.js',
+  BASE_PATH + '/profilo.js',
+  BASE_PATH + '/pdf.js',
+  BASE_PATH + '/tutorial.js',
+  BASE_PATH + '/onboarding.js',
+  BASE_PATH + '/gemini.js',
+  BASE_PATH + '/firebase-config.js'
+  /* config.js escluso: generato a runtime da GitHub Actions, non sempre presente */
 ];
 
 self.addEventListener('install', function(e) {
@@ -82,7 +87,7 @@ self.addEventListener('fetch', function(e) {
       }).catch(function() {
         /* Offline fallback: ritorna index.html per navigazione */
         if (e.request.headers.get('accept') && e.request.headers.get('accept').includes('text/html')) {
-          return caches.match('/index.html');
+          return caches.match(BASE_PATH + '/index.html');
         }
       });
     })
