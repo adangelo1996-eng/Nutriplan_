@@ -638,3 +638,294 @@ function filterPantry(query) {
   pantrySearchQuery = (query || '').toLowerCase().trim();
   renderFridge();
 }
+
+/* ══════════════════════════════════════════════════
+   BARCODE SCANNER — OpenFoodFacts API
+   Endpoint: https://world.openfoodfacts.org/api/v2/product/{barcode}.json
+   Libreria: html5-qrcode (CDN)
+══════════════════════════════════════════════════ */
+var _barcodeScanner  = null;
+var _barcodeResult   = null;
+var _barcodeScanLock = false; /* impedisce scansioni multiple */
+
+function openBarcodeScanner() {
+  if (typeof Html5Qrcode === 'undefined') {
+    if (typeof showToast === 'function')
+      showToast('Libreria scanner non disponibile. Ricarica la pagina.', 'error');
+    return;
+  }
+
+  var modal    = document.getElementById('barcodeScannerModal');
+  var statusEl = document.getElementById('barcodeScanStatus');
+  if (!modal) return;
+
+  _barcodeScanLock = false;
+  modal.classList.add('active');
+  if (statusEl) statusEl.textContent = 'Avvio fotocamera…';
+
+  /* Piccolo delay per permettere al modal di renderizzare */
+  setTimeout(function() {
+    /* Svuota il container prima di ricreare lo scanner */
+    var container = document.getElementById('barcode-reader-container');
+    if (container) container.innerHTML = '';
+
+    try {
+      _barcodeScanner = new Html5Qrcode('barcode-reader-container');
+      _barcodeScanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: { width: 260, height: 130 } },
+        function(decodedText) {
+          if (_barcodeScanLock) return;
+          _barcodeScanLock = true;
+          if (statusEl) statusEl.textContent = '✅ Codice: ' + decodedText;
+          _stopBarcodeScanner(function() {
+            modal.classList.remove('active');
+            _lookupBarcode(decodedText);
+          });
+        },
+        function() { /* errori di scansione frame: ignora */ }
+      ).then(function() {
+        if (statusEl) statusEl.textContent = 'Inquadra il codice a barre del prodotto…';
+      }).catch(function(err) {
+        if (statusEl) statusEl.textContent = '⚠️ ' + (err.message || err);
+        if (typeof showToast === 'function')
+          showToast('Impossibile accedere alla fotocamera. Controlla i permessi.', 'error');
+      });
+    } catch (e) {
+      if (typeof showToast === 'function')
+        showToast('Errore avvio scanner: ' + (e.message || e), 'error');
+    }
+  }, 250);
+}
+
+function closeBarcodeScanner() {
+  _stopBarcodeScanner(function() {
+    var modal = document.getElementById('barcodeScannerModal');
+    if (modal) modal.classList.remove('active');
+    _barcodeScanLock = false;
+  });
+}
+
+function _stopBarcodeScanner(callback) {
+  if (_barcodeScanner) {
+    _barcodeScanner.stop().then(function() {
+      _barcodeScanner = null;
+      if (callback) callback();
+    }).catch(function() {
+      _barcodeScanner = null;
+      if (callback) callback();
+    });
+  } else {
+    if (callback) callback();
+  }
+}
+
+/* ──────────────────────────────────────────────────
+   Lookup OpenFoodFacts
+────────────────────────────────────────────────── */
+function _lookupBarcode(barcode) {
+  if (typeof showToast === 'function') showToast('🔍 Ricerca prodotto…', 'info');
+
+  var url = 'https://world.openfoodfacts.org/api/v2/product/' +
+            encodeURIComponent(barcode) +
+            '.json?fields=product_name,product_name_it,brands,categories_tags,nutriments';
+
+  fetch(url)
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      if (data.status === 1 && data.product) {
+        _showBarcodeResult(data.product, barcode);
+      } else {
+        if (typeof showToast === 'function')
+          showToast('Prodotto non trovato nel database OpenFoodFacts.', 'warning');
+      }
+    })
+    .catch(function(err) {
+      console.warn('[NutriPlan] OpenFoodFacts error:', err);
+      if (typeof showToast === 'function')
+        showToast('Errore ricerca prodotto. Verifica la connessione.', 'error');
+    });
+}
+
+/* ──────────────────────────────────────────────────
+   Mappatura categorie OpenFoodFacts → categorie app
+────────────────────────────────────────────────── */
+function _mapOFFCategory(categories_tags) {
+  if (!Array.isArray(categories_tags) || !categories_tags.length) return '🧂 Altro';
+  var s = categories_tags.join(' ').toLowerCase();
+
+  if (/en:meats|en:poultry|en:beef|en:pork|en:lamb|en:chicken|en:turkey|en:veal|it:carni|it:salumi/.test(s))
+    return '🥩 Carne e Pesce';
+  if (/en:fish|en:seafood|en:tuna|en:salmon|en:anchovies|it:pesce|it:frutti-di-mare/.test(s))
+    return '🥩 Carne e Pesce';
+  if (/en:dairy|en:milk|en:cheeses|en:yogurts|en:cream|en:butter|en:eggs|it:latticini|it:uova|it:formaggi/.test(s))
+    return '🥛 Latticini e Uova';
+  if (/en:pastas|en:cereals|en:breads|en:rice|en:legumes|en:flours|en:oats|en:lentils|en:beans|en:chickpeas|en:grains|it:pasta|it:cereali|it:legumi|it:pane/.test(s))
+    return '🌾 Cereali e Legumi';
+  if (/en:vegetables|en:salads|en:leafy-vegetables|en:tomatoes|en:potatoes|en:carrots|en:onions|en:mushrooms|it:verdure|it:ortaggi/.test(s))
+    return '🥦 Verdure';
+  if (/en:fruits|en:berries|en:apples|en:bananas|en:citrus|en:oranges|it:frutta|it:frutta-fresca/.test(s))
+    return '🍎 Frutta';
+  if (/en:fats|en:oils|en:olive-oils|en:dressings|en:sauces|en:vinegars|it:condimenti|it:oli|it:sughi/.test(s))
+    return '🥑 Grassi e Condimenti';
+  if (/en:sweets|en:chocolates|en:biscuits|en:cookies|en:snacks|en:candies|en:ice-creams|en:pastries|en:cakes|en:chips|it:dolci|it:snack|it:biscotti/.test(s))
+    return '🍫 Dolci e Snack';
+  if (/en:spices|en:seasonings|en:condiments|en:broths|en:herbs|en:salt|en:sugars|it:spezie|it:aromi|it:brodi/.test(s))
+    return '🧂 Cucina';
+
+  return '🧂 Altro';
+}
+
+/* ──────────────────────────────────────────────────
+   Mostra modale risultato barcode
+────────────────────────────────────────────────── */
+function _showBarcodeResult(product, barcode) {
+  var name = (product.product_name_it || product.product_name || '').trim();
+  if (!name) name = 'Prodotto ' + barcode;
+
+  var category  = _mapOFFCategory(product.categories_tags);
+  var brand     = (product.brands || '').trim();
+  var n         = product.nutriments || {};
+
+  _barcodeResult = { name: name, category: category, brand: brand, barcode: barcode };
+
+  var kcal     = n['energy-kcal_100g']    != null ? Math.round(n['energy-kcal_100g'])            : null;
+  var proteins = n['proteins_100g']       != null ? parseFloat(n['proteins_100g']).toFixed(1)     : null;
+  var carbs    = n['carbohydrates_100g']  != null ? parseFloat(n['carbohydrates_100g']).toFixed(1): null;
+  var fat      = n['fat_100g']            != null ? parseFloat(n['fat_100g']).toFixed(1)          : null;
+  var fiber    = n['fiber_100g']          != null ? parseFloat(n['fiber_100g']).toFixed(1)        : null;
+
+  /* Sezione dettagli collassabili */
+  var hasDetails = brand || kcal !== null || proteins !== null || carbs !== null || fat !== null;
+  var detailsHtml = '';
+  if (hasDetails) {
+    var macroChips = '';
+    if (kcal     !== null) macroChips += '<div class="barcode-macro-chip"><span>Energia</span><strong>' + kcal + ' kcal</strong></div>';
+    if (proteins !== null) macroChips += '<div class="barcode-macro-chip"><span>Proteine</span><strong>' + proteins + 'g</strong></div>';
+    if (carbs    !== null) macroChips += '<div class="barcode-macro-chip"><span>Carboidrati</span><strong>' + carbs + 'g</strong></div>';
+    if (fat      !== null) macroChips += '<div class="barcode-macro-chip"><span>Grassi</span><strong>' + fat + 'g</strong></div>';
+    if (fiber    !== null) macroChips += '<div class="barcode-macro-chip"><span>Fibre</span><strong>' + fiber + 'g</strong></div>';
+
+    detailsHtml =
+      '<details class="barcode-details">' +
+        '<summary>↕ Dettagli (marca e valori nutrizionali per 100g)</summary>' +
+        '<div class="barcode-details-body">' +
+          (brand ? '<div class="barcode-brand"><strong>Marca:</strong> ' + brand + '</div>' : '') +
+          (macroChips ? '<div class="barcode-macro-label">Valori per 100g</div><div class="barcode-macro-grid">' + macroChips + '</div>' : '') +
+        '</div>' +
+      '</details>';
+  }
+
+  var catIcon = getCategoryIcon(category);
+  var catName = category.replace(/^[^\s]+\s/, '');
+
+  /* Opzioni select categoria */
+  var catOptions = [
+    '🥩 Carne e Pesce', '🥛 Latticini e Uova', '🌾 Cereali e Legumi',
+    '🥦 Verdure', '🍎 Frutta', '🥑 Grassi e Condimenti',
+    '🍫 Dolci e Snack', '🧂 Cucina', '🧂 Altro'
+  ].map(function(c) {
+    return '<option value="' + c + '"' + (c === category ? ' selected' : '') + '>' + c + '</option>';
+  }).join('');
+
+  var html =
+    '<div class="barcode-result-header">' +
+      '<div class="barcode-result-icon">' + catIcon + '</div>' +
+      '<div>' +
+        '<div class="barcode-result-name">' + name + '</div>' +
+        '<div class="barcode-result-cat">Categoria rilevata: ' + catName + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="form-group">' +
+      '<label>Nome ingrediente</label>' +
+      '<input type="text" id="barcodeIngName" value="' + escQ(name) + '">' +
+    '</div>' +
+    '<div class="form-group">' +
+      '<label>Categoria</label>' +
+      '<select id="barcodeIngCategory">' + catOptions + '</select>' +
+    '</div>' +
+    '<div class="row gap-8">' +
+      '<div class="form-group flex1">' +
+        '<label>Quantità</label>' +
+        '<input type="number" id="barcodeIngQty" min="0" step="any" placeholder="0">' +
+      '</div>' +
+      '<div class="form-group" style="width:110px;">' +
+        '<label>Unità</label>' +
+        '<select id="barcodeIngUnit">' +
+          '<option value="g" selected>g</option>' +
+          '<option value="ml">ml</option>' +
+          '<option value="pz">pz</option>' +
+          '<option value="fette">fette</option>' +
+          '<option value="cucchiai">cucchiai</option>' +
+          '<option value="cucchiaini">cucchiaini</option>' +
+          '<option value="porzione">porzione</option>' +
+          '<option value="kg">kg</option>' +
+          '<option value="l">l</option>' +
+        '</select>' +
+      '</div>' +
+    '</div>' +
+    detailsHtml;
+
+  var contentEl = document.getElementById('barcodeResultContent');
+  if (contentEl) contentEl.innerHTML = html;
+
+  var modal = document.getElementById('barcodeResultModal');
+  if (modal) modal.classList.add('active');
+}
+
+function closeBarcodeResult() {
+  var modal = document.getElementById('barcodeResultModal');
+  if (modal) modal.classList.remove('active');
+  _barcodeResult = null;
+}
+
+function confirmBarcodeAdd() {
+  var nameEl = document.getElementById('barcodeIngName');
+  var catEl  = document.getElementById('barcodeIngCategory');
+  var qtyEl  = document.getElementById('barcodeIngQty');
+  var unitEl = document.getElementById('barcodeIngUnit');
+
+  if (!nameEl || !catEl) return;
+
+  var name = (nameEl.value || '').trim();
+  if (!name) {
+    if (typeof showToast === 'function') showToast('⚠️ Inserisci un nome per l\'ingrediente', 'warning');
+    return;
+  }
+
+  var qty  = parseFloat(qtyEl ? qtyEl.value : 0) || 0;
+  var unit = unitEl ? unitEl.value : 'g';
+  var cat  = catEl.value || '🧂 Altro';
+  var icon = getCategoryIcon(cat);
+
+  if (!pantryItems) pantryItems = {};
+  var existing = pantryItems[name] || {};
+  pantryItems[name] = Object.assign({}, existing, {
+    name:     name,
+    quantity: qty,
+    unit:     unit,
+    category: cat,
+    icon:     icon,
+    isCustom: true
+  });
+
+  /* Aggiunge anche a customIngredients se non già presente */
+  if (!customIngredients) customIngredients = [];
+  var alreadyCustom = customIngredients.some(function(i) { return i && i.name === name; });
+  if (!alreadyCustom) {
+    customIngredients.push({ name: name, category: cat, unit: unit, icon: icon });
+  }
+
+  /* Rimuove il flag "cleared" se l'utente aggiunge ingredienti */
+  try { localStorage.removeItem('nutriplan_cleared'); } catch(e) {}
+
+  saveData();
+  closeBarcodeResult();
+  renderFridge();
+  if (typeof renderFridge     === 'function') renderFridge('pianoFridgeContent');
+  if (typeof updateAllUI      === 'function') updateAllUI();
+  if (typeof showToast        === 'function') showToast('✅ ' + name + ' aggiunto alla dispensa', 'success');
+}

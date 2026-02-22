@@ -23,8 +23,12 @@ var weeklyLimitsCustom = {};  /* limiti personalizzati nel piano alimentare */
    ============================================================ */
 function initStorage() {
   loadData();
-  if (!mealPlan || !Object.keys(mealPlan).length) {
-    mealPlan = JSON.parse(JSON.stringify(defaultMealPlan || {}));
+  /* Ripristina il piano di default solo se è il primo avvio assoluto
+     (nessun dato salvato E nessun clear esplicito da parte dell'utente) */
+  if (localStorage.getItem('nutriplan_cleared') !== '1') {
+    if (!mealPlan || !Object.keys(mealPlan).length) {
+      mealPlan = JSON.parse(JSON.stringify(defaultMealPlan || {}));
+    }
   }
   ensurePlanStructure();
   Object.keys(weeklyLimits || {}).forEach(function (k) {

@@ -375,8 +375,23 @@ function buildProfiloSettingsSection() {
 }
 
 function confirmClearAllData() {
-  if (!confirm('Cancellare TUTTI i dati di NutriPlan?\nQuesta operazione è irreversibile.')) return;
-  if (!confirm('Sei sicuro? Dispensa, piano alimentare, storico e spesa verranno eliminati.')) return;
+  var modal = document.getElementById('confirmDeleteModal');
+  if (modal) {
+    modal.classList.add('active');
+  } else {
+    /* Fallback per sicurezza */
+    if (!confirm('Cancellare TUTTI i dati di NutriPlan?\nQuesta operazione è irreversibile.')) return;
+    executeDeleteAllData();
+  }
+}
+
+function closeConfirmDeleteModal() {
+  var modal = document.getElementById('confirmDeleteModal');
+  if (modal) modal.classList.remove('active');
+}
+
+function executeDeleteAllData() {
+  closeConfirmDeleteModal();
 
   /* Azzeramento locale */
   if (typeof pantryItems          !== 'undefined') pantryItems          = {};
@@ -389,13 +404,16 @@ function confirmClearAllData() {
   if (typeof customIngredients    !== 'undefined') customIngredients    = [];
   if (typeof savedFridges         !== 'undefined') savedFridges         = {};
   if (typeof weeklyLimits         !== 'undefined') {
-    /* Resetta solo i current, mantieni la struttura */
     Object.keys(weeklyLimits).forEach(function(k) {
       if (weeklyLimits[k]) weeklyLimits[k].current = 0;
     });
   }
 
-  /* Elimina localStorage completamente e ri-salva vuoto */
+  /* Marca come "cancellato esplicitamente" per impedire il ripristino
+     automatico del piano di default (ensureDefaultPlan / initStorage) */
+  try { localStorage.setItem('nutriplan_cleared', '1'); } catch(e) {}
+
+  /* Elimina localStorage principale e ri-salva vuoto */
   try { localStorage.removeItem('nutriplan_v2'); } catch(e) {}
   if (typeof saveData === 'function') saveData();
 
@@ -410,8 +428,11 @@ function confirmClearAllData() {
     } catch(e) {}
   }
 
+  /* Aggiorna tutte le viste */
   renderProfilo();
-  if (typeof showToast === 'function') showToast('🗑️ Tutti i dati eliminati', 'info');
+  if (typeof renderMealPlan === 'function') renderMealPlan();
+  if (typeof renderFridge   === 'function') renderFridge();
+  if (typeof showToast      === 'function') showToast('🗑️ Tutti i dati eliminati', 'info');
 }
 
 /* ── UTILITY ── */

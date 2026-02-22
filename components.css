@@ -567,6 +567,57 @@
 }
 .qty-modal-unit { font-size: .9rem; font-weight: 700; color: var(--text-light); white-space: nowrap; }
 
+/* Barcode result modal */
+.barcode-result-header {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 18px; padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.barcode-result-icon  { font-size: 2.4rem; flex-shrink: 0; }
+.barcode-result-name  { font-size: 1rem; font-weight: 800; margin-bottom: 4px; }
+.barcode-result-cat   { font-size: .78rem; color: var(--text-3); }
+
+/* Sezione dettagli collassabili */
+.barcode-details {
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.barcode-details summary {
+  cursor: pointer; padding: 10px 14px;
+  font-size: .82rem; font-weight: 700; color: var(--text-2);
+  background: var(--bg-subtle);
+  user-select: none; list-style: none;
+  display: flex; align-items: center; gap: 6px;
+  transition: background var(--t);
+}
+.barcode-details summary::-webkit-details-marker { display: none; }
+.barcode-details summary:hover { background: var(--bg-card); }
+.barcode-details[open] summary { border-bottom: 1px solid var(--border); }
+
+.barcode-details-body { padding: 12px 14px; }
+.barcode-brand {
+  font-size: .85rem; margin-bottom: 12px;
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+.barcode-macro-label {
+  font-size: .7rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--text-3); margin-bottom: 8px;
+}
+.barcode-macro-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.barcode-macro-chip {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px 10px; border-radius: var(--r-md);
+  background: var(--bg-subtle); border: 1px solid var(--border);
+  font-size: .78rem;
+}
+.barcode-macro-chip span { color: var(--text-3); font-size: .7rem; }
+.barcode-macro-chip strong { font-weight: 800; color: var(--text); }
+
 /* ══════════════════════════════════════════════════
    22. STORICO
 ══════════════════════════════════════════════════ */
