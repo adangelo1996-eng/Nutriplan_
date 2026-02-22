@@ -784,13 +784,8 @@ document.addEventListener('DOMContentLoaded', function() {
     startApp();
   }
 
-  /* Firebase auth listener */
-  if (typeof firebase !== 'undefined' && firebase.auth) {
-    firebase.auth().onAuthStateChanged(function(user) {
-      window.currentUser = user || null;
-      updateAuthUI(user);
-    });
-  }
+  /* FIX: listener rimosso — gestito esclusivamente in firebase-config.js
+     per evitare registrazioni duplicate che causavano il loop "Verifica accesso" */
 });
 /* ============================================================
    BRIDGE SHIM — collega index.html v2 con app.js esistente
@@ -827,10 +822,9 @@ function _hideCookieBanner() {
    LANDING — login gate helpers
 ══════════════════════════════════════════════════ */
 function landingSignIn() {
-  if (typeof initFirebase === 'function') initFirebase();
-  setTimeout(function() {
-    if (typeof signInWithGoogle === 'function') signInWithGoogle();
-  }, 100);
+  /* FIX: initFirebase() rimossa — già inizializzato in DOMContentLoaded;
+     ri-chiamarla registrava listener duplicati */
+  if (typeof signInWithGoogle === 'function') signInWithGoogle();
 }
 
 function landingOffline() {
@@ -856,8 +850,10 @@ function enterApp() {
   initIcons();
   initIosBanner();
 
-  if (typeof initFirebase === 'function') initFirebase();
-  if (typeof loadData === 'function')     loadData();
+  /* FIX: initFirebase() rimossa da qui — era già chiamata in DOMContentLoaded e
+     registrava un nuovo onAuthStateChanged ad ogni enterApp(), creando listener
+     duplicati e il loop "Verifica accesso" */
+  if (typeof loadData === 'function') loadData();
 
   if (!window.selectedDateKey && typeof getCurrentDateKey === 'function') {
     window.selectedDateKey = getCurrentDateKey();

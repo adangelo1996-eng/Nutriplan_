@@ -16,6 +16,11 @@ var firebaseConfig = (window.APP_CONFIG && window.APP_CONFIG.firebase) || {};
 var firebaseReady = false;
 var currentUser   = null;
 
+/* Guard: evita registrazioni multiple di onAuthStateChanged */
+var _authListenerRegistered = false;
+/* Timer fallback: mostra i bottoni landing se Firebase non risponde */
+var _landingFallbackTimer   = null;
+
 /* ============================================================
    INIT
    Chiamata da enterApp() in app.js dopo che l'utente
@@ -29,6 +34,8 @@ function initFirebase() {
       'Verifica che gli <script> CDN siano nel <head>.');
     firebaseReady = false;
     showCloudStatus('local');
+    /* FIX: sblocca i bottoni landing invece di restare bloccato sullo spinner */
+    if (typeof updateAuthUI === 'function') updateAuthUI(null);
     return;
   }
 
@@ -40,8 +47,23 @@ function initFirebase() {
 
     firebaseReady = true;
 
+    /* FIX: registra il listener UNA SOLA VOLTA, evitando loop da chiamate multiple
+       (DOMContentLoaded + landingSignIn + enterApp registravano listener duplicati) */
+    if (_authListenerRegistered) return;
+    _authListenerRegistered = true;
+
+    /* Fallback: se onAuthStateChanged non risponde entro 8s, sblocca i bottoni */
+    _landingFallbackTimer = setTimeout(function() {
+      var landing = document.getElementById('landingPage');
+      if (landing && landing.style.display !== 'none') {
+        console.warn('[NutriPlan] Firebase timeout — mostro i bottoni landing.');
+        if (typeof updateAuthUI === 'function') updateAuthUI(null);
+      }
+    }, 8000);
+
     /* Listener auth state — si attiva ad ogni cambio utente */
     firebase.auth().onAuthStateChanged(function(user) {
+      clearTimeout(_landingFallbackTimer);
       currentUser = user || null;
 
       if (user) {
@@ -80,6 +102,8 @@ function initFirebase() {
     console.error('[NutriPlan] Firebase init error:', e);
     firebaseReady = false;
     showCloudStatus('local');
+    /* FIX: sblocca i bottoni landing in caso di errore */
+    if (typeof updateAuthUI === 'function') updateAuthUI(null);
   }
 }
 
