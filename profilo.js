@@ -376,13 +376,40 @@ function buildProfiloSettingsSection() {
 
 function confirmClearAllData() {
   if (!confirm('Cancellare TUTTI i dati di NutriPlan?\nQuesta operazione è irreversibile.')) return;
-  if (!confirm('Sei sicuro? Dispensa, piano, storico e spesa verranno eliminati.')) return;
-  if (typeof pantryItems  !== 'undefined') pantryItems  = {};
-  if (typeof mealPlan     !== 'undefined') mealPlan     = {};
-  if (typeof appHistory   !== 'undefined') appHistory   = {};
-  if (typeof spesaItems   !== 'undefined') spesaItems   = [];
-  if (typeof weeklyLimits !== 'undefined') weeklyLimits = {};
+  if (!confirm('Sei sicuro? Dispensa, piano alimentare, storico e spesa verranno eliminati.')) return;
+
+  /* Azzeramento locale */
+  if (typeof pantryItems          !== 'undefined') pantryItems          = {};
+  if (typeof mealPlan             !== 'undefined') mealPlan             = {};
+  if (typeof appHistory           !== 'undefined') appHistory           = {};
+  if (typeof spesaItems           !== 'undefined') spesaItems           = [];
+  if (typeof pianoAlimentare      !== 'undefined') pianoAlimentare      = {};
+  if (typeof weeklyLimitsCustom   !== 'undefined') weeklyLimitsCustom   = {};
+  if (typeof customRecipes        !== 'undefined') customRecipes        = [];
+  if (typeof customIngredients    !== 'undefined') customIngredients    = [];
+  if (typeof savedFridges         !== 'undefined') savedFridges         = {};
+  if (typeof weeklyLimits         !== 'undefined') {
+    /* Resetta solo i current, mantieni la struttura */
+    Object.keys(weeklyLimits).forEach(function(k) {
+      if (weeklyLimits[k]) weeklyLimits[k].current = 0;
+    });
+  }
+
+  /* Elimina localStorage completamente e ri-salva vuoto */
+  try { localStorage.removeItem('nutriplan_v2'); } catch(e) {}
   if (typeof saveData === 'function') saveData();
+
+  /* Elimina anche da Firebase se l'utente è loggato */
+  var user = (typeof currentUser !== 'undefined') ? currentUser : null;
+  if (user && typeof firebase !== 'undefined' && firebase.database) {
+    try {
+      firebase.database()
+        .ref('users/' + user.uid + '/nutriplan')
+        .remove()
+        .catch(function(e) { console.warn('Firebase remove error:', e); });
+    } catch(e) {}
+  }
+
   renderProfilo();
   if (typeof showToast === 'function') showToast('🗑️ Tutti i dati eliminati', 'info');
 }
