@@ -3,7 +3,7 @@
    Cache-first per asset statici, network-first per dati.
 ============================================================ */
 
-var CACHE_NAME = 'nutriplan-v3';
+var CACHE_NAME = 'nutriplan-v4';
 
 /* Calcola il base path dinamicamente: funziona sia a root (/sw.js)
    che in sottocartella (/Nutriplan_/sw.js → base '/Nutriplan_') */
