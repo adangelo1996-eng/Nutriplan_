@@ -67,8 +67,8 @@ function buildStoricoDay(dk) {
     var pills = names.map(function(name){
       var sub = mSubs[name];
       return sub
-        ? '<span class="rc-badge" style="background:#fff3cd;color:#856404;" title="Sostituito con '+sub+'">'+name+' → '+sub+'</span>'
-        : '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">'+name+'</span>';
+        ? '<span class="storico-pill storico-pill-sub" title="Sostituito con '+sub+'">'+name+' → '+sub+'</span>'
+        : '<span class="storico-pill">'+name+'</span>';
     }).join('');
 
     return (
@@ -78,7 +78,7 @@ function buildStoricoDay(dk) {
           '<span style="font-weight:600;font-size:.88em;color:var(--text-2);">'+m.label+'</span>' +
           '<span class="rc-badge" style="background:var(--bg2);color:var(--text-3);">'+names.length+'</span>' +
         '</div>' +
-        '<div style="display:flex;flex-wrap:wrap;gap:6px;">'+pills+'</div>' +
+        '<div class="storico-pills-wrap">'+pills+'</div>' +
       '</div>'
     );
   }).filter(Boolean).join('');

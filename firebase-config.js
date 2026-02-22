@@ -256,6 +256,43 @@ function updateAuthUI(user) {
     if (landingEnter)   landingEnter.style.display   = 'none';
     if (landingOffline) landingOffline.style.display = '';
   }
+
+  /* Aggiorna icona profilo nel nav (bottom + sidebar) quando loggato */
+  _updateNavProfiloIcon(user);
+}
+
+function _updateNavProfiloIcon(user) {
+  /* Aggiorna sia il tab del bottom nav che il sidebar */
+  ['bn-profilo', 'st-profilo'].forEach(function(id) {
+    var tab = document.getElementById(id);
+    if (!tab) return;
+    var iconEl = tab.querySelector('.nav-icon, .nav-tab-icon, [data-nav-icon]');
+    if (!iconEl) {
+      /* cerca il primo element figlio che contiene testo emoji */
+      var spans = tab.querySelectorAll('span');
+      for (var i = 0; i < spans.length; i++) {
+        if (/👤/.test(spans[i].textContent)) { iconEl = spans[i]; break; }
+      }
+    }
+    if (user && user.photoURL) {
+      /* Sostituisce icona con foto */
+      var img = tab.querySelector('.nav-avatar');
+      if (!img) {
+        img = document.createElement('img');
+        img.className = 'nav-avatar';
+        img.alt = 'Profilo';
+        if (iconEl) iconEl.innerHTML = '';
+        if (iconEl) iconEl.appendChild(img);
+      }
+      img.src = user.photoURL;
+      img.onerror = function() { img.style.display = 'none'; };
+    } else {
+      /* Ripristina icona emoji */
+      var existingImg = tab.querySelector('.nav-avatar');
+      if (existingImg) existingImg.remove();
+      if (iconEl && !iconEl.querySelector('.nav-avatar')) iconEl.textContent = '👤';
+    }
+  });
 }
 
 /* ============================================================

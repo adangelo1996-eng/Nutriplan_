@@ -22,11 +22,16 @@ function renderProfilo() {
 ══════════════════════════════════════════════ */
 function buildProfiloUserSection() {
   var user = (typeof currentUser !== 'undefined') ? currentUser : null;
+  var avatarHtml = user && user.photoURL
+    ? '<img src="' + user.photoURL + '" class="profilo-avatar" alt="Foto profilo" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+      '<div class="profilo-avatar-placeholder" style="display:none;">👤</div>'
+    : '<div class="profilo-avatar-placeholder">👤</div>';
+
   return (
     '<div class="rc-card" style="margin-bottom:16px;">' +
       '<div style="padding:20px 20px 16px;">' +
         '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">' +
-          '<div style="width:52px;height:52px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:1.6rem;">👤</div>' +
+          '<div style="flex-shrink:0;">' + avatarHtml + '</div>' +
           '<div>' +
             '<div style="font-weight:700;font-size:1.05em;">' + (user ? (user.displayName||user.email||'Utente') : 'Ospite') + '</div>' +
             '<div style="font-size:.82em;color:var(--text-3);">' + (user ? (user.email||'') : 'Non connesso') + '</div>' +

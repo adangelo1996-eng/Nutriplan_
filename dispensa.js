@@ -12,8 +12,9 @@ var pantrySearchQuery = '';
    UTILITY
 ══════════════════════════════════════════════════ */
 var CATEGORY_ORDER = [
-  '🥩 Carne e Pesce',
+  '🥩 Carne',
   '🐟 Pesce',
+  '🥩 Carne e Pesce', /* compatibilità dati precedenti */
   '🥛 Latticini e Uova',
   '🌾 Cereali e Legumi',
   '🥦 Verdure',
@@ -25,7 +26,9 @@ var CATEGORY_ORDER = [
 ];
 
 var CATEGORY_COLORS = {
-  '🥩 Carne e Pesce':        '#ef4444',
+  '🥩 Carne':                '#ef4444',
+  '🐟 Pesce':                '#0ea5e9',
+  '🥩 Carne e Pesce':        '#ef4444', /* compat */
   '🥛 Latticini e Uova':     '#f59e0b',
   '🌾 Cereali e Legumi':     '#a16207',
   '🥦 Verdure':              '#22c55e',
@@ -38,6 +41,8 @@ var CATEGORY_COLORS = {
 
 function getCategoryIcon(cat) {
   var map = {
+    '🥩 Carne':               '🥩',
+    '🐟 Pesce':               '🐟',
     '🥩 Carne e Pesce':       '🥩',
     '🥛 Latticini e Uova':    '🥛',
     '🌾 Cereali e Legumi':    '🌾',
@@ -49,6 +54,24 @@ function getCategoryIcon(cat) {
     '🧂 Altro':               '🧂'
   };
   return (cat && map[cat]) ? map[cat] : '🧂';
+}
+
+/* Rimappa la vecchia categoria "Carne e Pesce" basandosi su defaultIngredients */
+function resolveDisplayCategory(item) {
+  var cat = item.category || '🧂 Altro';
+  if (cat !== '🥩 Carne e Pesce') return cat;
+  /* cerca nel database default */
+  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
+    var defIng = defaultIngredients.find(function(d) {
+      return d && d.name && d.name.toLowerCase() === (item.name || '').toLowerCase();
+    });
+    if (defIng && defIng.category && defIng.category !== '🥩 Carne e Pesce') {
+      return defIng.category;
+    }
+  }
+  /* fallback: usa l'icona */
+  if (['🐟','🦑','🐙'].indexOf(item.icon || '') !== -1) return '🐟 Pesce';
+  return '🥩 Carne';
 }
 
 function getCategoryColor(cat) {
@@ -244,10 +267,10 @@ function renderFridge(targetId) {
 
   /* Modalità normale: mostra TUTTE le categorie, anche vuote */
 
-  /* Raggruppa gli elementi attivi per categoria */
+  /* Raggruppa gli elementi attivi per categoria (con rimappatura carne/pesce) */
   var groups = {};
   active.forEach(function(item) {
-    var cat = item.category || '🧂 Altro';
+    var cat = resolveDisplayCategory(item);
     if (!groups[cat]) groups[cat] = [];
     groups[cat].push(item);
   });
@@ -261,6 +284,8 @@ function renderFridge(targetId) {
   var html = '';
   allCats.forEach(function(cat) {
     if (cat === '🧂 Altro') return; /* "Altro" mostrato solo se ha elementi */
+    /* Nasconde la categoria legacy "Carne e Pesce" se ora abbiamo Carne e Pesce separate */
+    if (cat === '🥩 Carne e Pesce' && (groups['🥩 Carne'] || groups['🐟 Pesce'] || !groups[cat])) return;
     var items = groups[cat] || [];
     var color = getCategoryColor(cat);
     var icon  = getCategoryIcon(cat);
@@ -276,13 +301,19 @@ function renderFridge(targetId) {
         '</div>' +
         '<div class="fi-list">' +
           (items.length
-            ? items.map(function(item) { return buildFridgeRow(item); }).join('')
-            : '<div class="fi-empty-cat">Nessun ingrediente in dispensa per questa categoria</div>'
+            ? items.map(function(item) { return buildFridgeRow(item); }).join('') +
+              '<button class="fi-add-inline-btn fi-add-existing" ' +
+                      'onclick="openAddByCatModal(\'' + catEsc + '\')">' +
+                '＋ Aggiungi ' + catName +
+              '</button>'
+            : '<div class="fi-empty-cat">' +
+                '<span class="fi-empty-cat-text">Nessun ingrediente in dispensa per questa categoria</span>' +
+                '<button class="fi-add-inline-btn" ' +
+                        'onclick="openAddByCatModal(\'' + catEsc + '\')">' +
+                  '＋ Aggiungi ' + catName +
+                '</button>' +
+              '</div>'
           ) +
-          '<button class="fi-add-inline-btn" ' +
-                  'onclick="openAddByCatModal(\'' + catEsc + '\')">' +
-            '＋ Aggiungi ' + catName +
-          '</button>' +
         '</div>' +
       '</div>';
   });
@@ -353,21 +384,35 @@ function _renderAddByCatList(query) {
 
   var cat = _addByCatCurrent;
 
-  /* Raccoglie ingredienti della categoria dai default e custom */
+  /* Raccoglie ingredienti della categoria dai default e custom.
+     Gestisce anche la compatibilità: '🥩 Carne e Pesce' copre sia '🥩 Carne' che '🐟 Pesce' */
   var candidates = [];
   var seen = {};
+  var catCompat = (cat === '🥩 Carne' || cat === '🐟 Pesce')
+    ? [cat, '🥩 Carne e Pesce']
+    : [cat];
 
   if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
     defaultIngredients.forEach(function(i) {
-      if (i && i.name && i.category === cat && !seen[i.name]) {
-        seen[i.name] = true;
-        candidates.push(i.name);
+      if (i && i.name && !seen[i.name]) {
+        var matchCat = catCompat.indexOf(i.category) !== -1;
+        /* Se la categoria è 🥩 Carne e Pesce ma stiamo mostrando Carne o Pesce,
+           filtra ulteriormente per icona pesce */
+        if (matchCat && i.category === '🥩 Carne e Pesce') {
+          var isFish = ['🐟','🦑','🐙'].indexOf(i.icon || '') !== -1;
+          if (cat === '🐟 Pesce' && !isFish) matchCat = false;
+          if (cat === '🥩 Carne' && isFish) matchCat = false;
+        }
+        if (matchCat) {
+          seen[i.name] = true;
+          candidates.push(i.name);
+        }
       }
     });
   }
   if (typeof customIngredients !== 'undefined' && Array.isArray(customIngredients)) {
     customIngredients.forEach(function(i) {
-      if (i && i.name && i.category === cat && !seen[i.name]) {
+      if (i && i.name && catCompat.indexOf(i.category) !== -1 && !seen[i.name]) {
         seen[i.name] = true;
         candidates.push(i.name);
       }
@@ -758,9 +803,9 @@ function _mapOFFCategory(categories_tags) {
   var s = categories_tags.join(' ').toLowerCase();
 
   if (/en:meats|en:poultry|en:beef|en:pork|en:lamb|en:chicken|en:turkey|en:veal|it:carni|it:salumi/.test(s))
-    return '🥩 Carne e Pesce';
+    return '🥩 Carne';
   if (/en:fish|en:seafood|en:tuna|en:salmon|en:anchovies|it:pesce|it:frutti-di-mare/.test(s))
-    return '🥩 Carne e Pesce';
+    return '🐟 Pesce';
   if (/en:dairy|en:milk|en:cheeses|en:yogurts|en:cream|en:butter|en:eggs|it:latticini|it:uova|it:formaggi/.test(s))
     return '🥛 Latticini e Uova';
   if (/en:pastas|en:cereals|en:breads|en:rice|en:legumes|en:flours|en:oats|en:lentils|en:beans|en:chickpeas|en:grains|it:pasta|it:cereali|it:legumi|it:pane/.test(s))
@@ -824,7 +869,7 @@ function _showBarcodeResult(product, barcode) {
 
   /* Opzioni select categoria */
   var catOptions = [
-    '🥩 Carne e Pesce', '🥛 Latticini e Uova', '🌾 Cereali e Legumi',
+    '🥩 Carne', '🐟 Pesce', '🥛 Latticini e Uova', '🌾 Cereali e Legumi',
     '🥦 Verdure', '🍎 Frutta', '🥑 Grassi e Condimenti',
     '🍫 Dolci e Snack', '🧂 Cucina', '🧂 Altro'
   ].map(function(c) {
