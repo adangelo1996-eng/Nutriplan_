@@ -9,8 +9,12 @@
              signInWithGoogle, signOut, showCloudStatus
 ============================================================ */
 
-/* ── CONFIGURAZIONE — caricata da config.js (gitignored) ── */
-var firebaseConfig = (window.APP_CONFIG && window.APP_CONFIG.firebase) || {};
+/* ── CONFIGURAZIONE ────────────────────────────────────────
+   In produzione (Firebase Hosting) la config viene iniettata
+   automaticamente da /__/firebase/init.js — non serve config.js.
+   In sviluppo locale, config.js può fornire un fallback.
+────────────────────────────────────────────────────────── */
+var firebaseConfig = (window.APP_CONFIG && window.APP_CONFIG.firebase) || null;
 
 /* ── VARIABILI GLOBALI (usate da storage.js e app.js) ───── */
 var firebaseReady = false;
@@ -40,8 +44,20 @@ function initFirebase() {
   }
 
   try {
-    /* Evita doppia inizializzazione */
+    /* Evita doppia inizializzazione.
+       /__/firebase/init.js (caricato in <head>) inizializza già l'app in produzione:
+       firebase.apps.length > 0 → saltiamo initializeApp.
+       In sviluppo locale con config.js presente, inizializziamo qui. */
     if (!firebase.apps || firebase.apps.length === 0) {
+      if (!firebaseConfig) {
+        /* Né /__/firebase/init.js né config.js hanno fornito la config */
+        console.warn('[NutriPlan] Nessuna configurazione Firebase trovata. ' +
+          'In produzione usa Firebase Hosting; in sviluppo crea config.js da config.example.js.');
+        firebaseReady = false;
+        showCloudStatus('local');
+        if (typeof updateAuthUI === 'function') updateAuthUI(null);
+        return;
+      }
       firebase.initializeApp(firebaseConfig);
     }
 
