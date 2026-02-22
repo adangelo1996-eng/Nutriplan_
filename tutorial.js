@@ -1,10 +1,16 @@
 /*
-   TUTORIAL.JS — v3  Spotlight interattivo + card posizionata dinamicamente
+   TUTORIAL.JS — v4  Spotlight interattivo + card posizionata dinamicamente
+   - checkbox "Non mostrare più" visibile su tutti i passi
+   - auto-avanzamento quando l'utente compie l'azione indicata
 */
 
 var TUTORIAL_KEY  = 'nutriplan_tutorial_done';
 var _tutStep      = 0;
 var _tutActive    = false;
+
+/* Handler auto-avanzamento corrente */
+var _tutAutoEl      = null;
+var _tutAutoHandler = null;
 
 var TUTORIAL_STEPS = [
   {
@@ -17,11 +23,12 @@ var TUTORIAL_STEPS = [
   },
   {
     icon:   '🍽',
-    title:  'Piano alimentare',
-    text:   'Tocca un pasto, poi spunta ✅ gli ingredienti consumati. Le quantità si scalano dalla dispensa in automatico.',
+    title:  'Cosa mangio oggi',
+    text:   'Qui vedi il tuo piano giornaliero. Tocca un pasto e spunta ✅ gli ingredienti man mano che li consumi.',
     page:   'piano',
     target: '#mealSelector',
-    hint:   'Tocca un pasto per iniziare'
+    hint:   'Tocca un pasto per selezionarlo',
+    autoAdvance: true
   },
   {
     icon:   '📖',
@@ -29,7 +36,8 @@ var TUTORIAL_STEPS = [
     text:   'Sfoglia le ricette ordinate per ingredienti disponibili. Il tasto 🛒 aggiunge alla spesa solo ciò che manca.',
     page:   'ricette',
     target: '#bn-ricette,#st-ricette',
-    hint:   'Tocca per aprire le Ricette'
+    hint:   'Tocca "Ricette" per aprire la sezione',
+    autoAdvance: true
   },
   {
     icon:   '🗄️',
@@ -37,15 +45,17 @@ var TUTORIAL_STEPS = [
     text:   'Tieni traccia di tutto ciò che hai in casa. Le quantità si aggiornano automaticamente quando consumi.',
     page:   'dispensa',
     target: '#bn-dispensa,#st-dispensa',
-    hint:   'Tocca per aprire la Dispensa'
+    hint:   'Tocca "Dispensa" per aprire la sezione',
+    autoAdvance: true
   },
   {
     icon:   '🛒',
     title:  'Lista della Spesa',
-    text:   'Genera la spesa dal piano × N giorni o dalle ricette. Spunta gli acquisti per aggiornarela dispensa.',
+    text:   'Genera la spesa dal piano × N giorni o dalle ricette. Spunta gli acquisti per aggiornare la dispensa.',
     page:   'spesa',
     target: '#bn-spesa,#st-spesa',
-    hint:   'Tocca per aprire la Spesa'
+    hint:   'Tocca "Spesa" per aprire la sezione',
+    autoAdvance: true
   },
   {
     icon:   '📊',
@@ -53,12 +63,13 @@ var TUTORIAL_STEPS = [
     text:   'Grafici del tuo percorso alimentare e calendario per navigare tra i giorni passati e futuri.',
     page:   'statistiche',
     target: '#bn-stats,#st-stats',
-    hint:   'Tocca per aprire le Statistiche'
+    hint:   'Tocca "Stats" per aprire la sezione',
+    autoAdvance: true
   },
   {
     icon:   '🎉',
     title:  'Tutto pronto!',
-    text:   'Ora imposta il tuo piano alimentare. Puoi riaprire questa guida in qualsiasi momento dal Profilo → Impostazioni.',
+    text:   'Ora sei pronto per usare NutriPlan. Puoi riaprire questa guida in qualsiasi momento dal Profilo → Impostazioni.',
     page:   null,
     target: null,
     hint:   ''
@@ -84,6 +95,7 @@ function resetTutorial() {
   localStorage.removeItem(TUTORIAL_KEY);
   _tutStep   = 0;
   _tutActive = true;
+  _clearAutoAdvance();
   _createTutElements();
   var card = document.getElementById('tutCard');
   var spot = document.getElementById('tutSpotlight');
@@ -131,7 +143,7 @@ function _createTutElements() {
     '<p  id="tutCardText"  class="tut-card-text"></p>' +
     '<div id="tutCardHint" class="tut-card-hint"></div>' +
     '<div class="tut-card-footer">' +
-      '<label id="tutNoShowWrap" class="tut-no-show-wrap" style="display:none">' +
+      '<label id="tutNoShowWrap" class="tut-no-show-wrap">' +
         '<input type="checkbox" id="tutNoShow"> Non mostrare più' +
       '</label>' +
       '<button id="tutNextBtn" class="btn btn-primary btn-small" onclick="nextTutorialStep()">Avanti →</button>' +
@@ -146,6 +158,9 @@ function _renderTutStep() {
   var step = TUTORIAL_STEPS[_tutStep];
   if (!step) { _endTutorial(); return; }
 
+  /* Rimuovi listener auto-avanzamento precedente */
+  _clearAutoAdvance();
+
   /* Navigate to page */
   if (step.page && typeof goToPage === 'function') goToPage(step.page);
 
@@ -156,7 +171,6 @@ function _renderTutStep() {
   var textEl  = document.getElementById('tutCardText');
   var hintEl  = document.getElementById('tutCardHint');
   var nextBtn = document.getElementById('tutNextBtn');
-  var noShow  = document.getElementById('tutNoShowWrap');
   var dotsEl  = document.getElementById('tutDotsRow');
 
   if (card) card.style.display = 'block';
@@ -173,7 +187,6 @@ function _renderTutStep() {
 
   var isLast = _tutStep === TUTORIAL_STEPS.length - 1;
   if (nextBtn) nextBtn.textContent = isLast ? '🎉 Inizia!' : 'Avanti →';
-  if (noShow)  noShow.style.display = isLast ? '' : 'none';
 
   if (dotsEl) {
     dotsEl.innerHTML = TUTORIAL_STEPS.map(function(_, i) {
@@ -183,7 +196,52 @@ function _renderTutStep() {
 
   /* Position after page renders */
   var delay = step.page ? 240 : 60;
-  setTimeout(function() { _positionStep(step); }, delay);
+  setTimeout(function() {
+    _positionStep(step);
+    /* Configura auto-avanzamento dopo posizionamento */
+    if (step.autoAdvance && step.target) {
+      _setupAutoAdvance(step.target);
+    }
+  }, delay);
+}
+
+/* ══════════════════════════════════════════════════
+   AUTO-ADVANCE
+══════════════════════════════════════════════════ */
+function _clearAutoAdvance() {
+  if (_tutAutoEl && _tutAutoHandler) {
+    _tutAutoEl.removeEventListener('click', _tutAutoHandler);
+    _tutAutoEl      = null;
+    _tutAutoHandler = null;
+  }
+}
+
+function _setupAutoAdvance(targetSelector) {
+  /* Trova il primo elemento target disponibile */
+  var el   = null;
+  var sels = targetSelector.split(',');
+  for (var i = 0; i < sels.length; i++) {
+    var found = document.querySelector(sels[i].trim());
+    if (found) { el = found; break; }
+  }
+  if (!el) return;
+
+  _tutAutoEl = el;
+  _tutAutoHandler = function() {
+    _clearAutoAdvance();
+    /* Piccolo ritardo per permettere alla pagina di cambiare prima di avanzare */
+    setTimeout(function() {
+      if (!_tutActive) return;
+      _tutStep++;
+      if (_tutStep >= TUTORIAL_STEPS.length) {
+        _maybeSuppressTutorial();
+        _endTutorial();
+      } else {
+        _renderTutStep();
+      }
+    }, 500);
+  };
+  el.addEventListener('click', _tutAutoHandler);
 }
 
 /* ══════════════════════════════════════════════════
@@ -283,24 +341,20 @@ function _positionStep(step) {
    NAVIGATION
 ══════════════════════════════════════════════════ */
 function nextTutorialStep() {
+  _clearAutoAdvance();
   _tutStep++;
   if (_tutStep >= TUTORIAL_STEPS.length) {
     _maybeSuppressTutorial();
     _endTutorial();
-    setTimeout(function() {
-      if (typeof checkOnboarding === 'function') checkOnboarding();
-    }, 400);
   } else {
     _renderTutStep();
   }
 }
 
 function skipTutorial() {
+  _clearAutoAdvance();
   _maybeSuppressTutorial();
   _endTutorial();
-  setTimeout(function() {
-    if (typeof checkOnboarding === 'function') checkOnboarding();
-  }, 400);
 }
 
 function _maybeSuppressTutorial() {
@@ -310,6 +364,7 @@ function _maybeSuppressTutorial() {
 
 function _endTutorial() {
   _tutActive = false;
+  _clearAutoAdvance();
   var spot = document.getElementById('tutSpotlight');
   var card = document.getElementById('tutCard');
   var ptr  = document.getElementById('tutPointer');

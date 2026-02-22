@@ -1505,3 +1505,84 @@
   font-size: .74rem; font-weight: 700; color: var(--primary);
   margin-top: 6px;
 }
+
+/* ══════════════════════════════════════════════════
+   40. DISPENSA — pulsante aggiungi per categoria + modal lista
+══════════════════════════════════════════════════ */
+.fi-group-header {
+  position: relative;
+}
+.fi-add-cat-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--primary-light, #dcfce7);
+  color: var(--primary);
+  border: none; cursor: pointer; font-size: 1rem;
+  font-weight: 700; flex-shrink: 0;
+  transition: background var(--t), transform var(--t);
+  margin-left: auto;
+}
+.fi-add-cat-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.fi-empty-cat {
+  padding: 8px 0 4px;
+  font-size: .8em;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+.fi-in-fridge-badge {
+  font-size: .72em;
+  color: var(--success, #16a34a);
+  font-weight: 600;
+}
+
+/* Lista ingredienti per categoria (addByCatModal) */
+.add-by-cat-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border-bottom: 1px solid var(--border);
+  cursor: pointer; border-radius: var(--r-md); transition: background var(--t);
+  font-size: .92em;
+}
+.add-by-cat-item:hover { background: var(--primary-xl); }
+.add-by-cat-item.in-fridge { color: var(--text-3); }
+
+/* ══════════════════════════════════════════════════
+   41. PIANO — sostituzione ingrediente migliorata
+══════════════════════════════════════════════════ */
+.sub-opt-btn {
+  display: flex; align-items: center;
+  width: 100%; text-align: left;
+  padding: 10px 14px; margin-bottom: 8px;
+  background: var(--bg-subtle); border: 1.5px solid var(--border);
+  border-radius: var(--r-md); cursor: pointer; font-size: .9em; font-weight: 500;
+  transition: border-color var(--t), background var(--t);
+}
+.sub-opt-available:hover {
+  border-color: var(--primary);
+  background: var(--primary-xl);
+}
+
+.sub-opt-suggestion {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 4px; border-bottom: 1px solid var(--border);
+  gap: 10px;
+}
+.sub-opt-name { font-size: .9em; font-weight: 500; flex: 1; }
+.sub-opt-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.sub-opt-actions .btn { font-size: .72em; padding: 4px 8px; }
+
+/* ══════════════════════════════════════════════════
+   42. ONBOARDING — sezione limiti
+══════════════════════════════════════════════════ */
+.ob-limiti-wrap {
+  background: var(--bg-subtle);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px 18px;
+  margin-top: 4px;
+}

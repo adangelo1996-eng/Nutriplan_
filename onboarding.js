@@ -1,6 +1,7 @@
 /*
-   ONBOARDING.JS — Inserimento piano alimentare + welcome modal
+   ONBOARDING.JS — Inserimento piano alimentare + limiti facoltativi + welcome modal
    Flusso: checkOnboarding() → showOnboarding() → saveOnboardingPlan() → showWelcomeModal()
+   Dopo l'onboarding → checkTutorial()
 */
 
 var ONBOARDING_KEY = 'nutriplan_onboarding_done';
@@ -24,6 +25,18 @@ var OB_MEAL_INFO = {
 
 var OB_MEAL_ORDER = ['colazione','spuntino','pranzo','merenda','cena'];
 
+/* Voci limiti settimanali */
+var OB_LIMITI = [
+  { key:'carne',    label:'Carne',    emoji:'🥩', unit:'volte/sett.' },
+  { key:'pesce',    label:'Pesce',    emoji:'🐟', unit:'volte/sett.' },
+  { key:'uova',     label:'Uova',     emoji:'🥚', unit:'volte/sett.' },
+  { key:'latticini',label:'Latticini',emoji:'🥛', unit:'volte/sett.' },
+  { key:'legumi',   label:'Legumi',   emoji:'🌱', unit:'volte/sett.' },
+  { key:'cereali',  label:'Cereali',  emoji:'🌾', unit:'porzioni/g'  },
+  { key:'frutta',   label:'Frutta',   emoji:'🍎', unit:'pz/gg'       },
+  { key:'verdura',  label:'Verdura',  emoji:'🥦', unit:'porzioni/gg' }
+];
+
 var _obMeal = 'colazione';
 var _obData = {};   /* { colazione: ['Latte', 'Uova', ...], ... } */
 
@@ -31,7 +44,13 @@ var _obData = {};   /* { colazione: ['Latte', 'Uova', ...], ... } */
    CHECK
 ══════════════════════════════════════════════════ */
 function checkOnboarding() {
-  if (localStorage.getItem(ONBOARDING_KEY)) return;
+  if (localStorage.getItem(ONBOARDING_KEY)) {
+    /* Onboarding già fatto → avvia tutorial */
+    setTimeout(function() {
+      if (typeof checkTutorial === 'function') checkTutorial();
+    }, 300);
+    return;
+  }
 
   /* Se il piano ha già qualcosa → skip onboarding */
   var hasPlan = false;
@@ -43,7 +62,13 @@ function checkOnboarding() {
       });
     });
   }
-  if (hasPlan) { localStorage.setItem(ONBOARDING_KEY, '1'); return; }
+  if (hasPlan) {
+    localStorage.setItem(ONBOARDING_KEY, '1');
+    setTimeout(function() {
+      if (typeof checkTutorial === 'function') checkTutorial();
+    }, 300);
+    return;
+  }
 
   showOnboarding();
 }
@@ -58,10 +83,11 @@ function showOnboarding() {
   if (!overlay) return;
   overlay.classList.add('active');
   _renderObContent();
+  _renderObLimiti();
 }
 
 /* ══════════════════════════════════════════════════
-   RENDER
+   RENDER — sezione pasti
 ══════════════════════════════════════════════════ */
 function _renderObContent() {
   /* Tabs */
@@ -131,6 +157,56 @@ function _renderObContent() {
 }
 
 /* ══════════════════════════════════════════════════
+   RENDER — sezione limiti (facoltativa)
+══════════════════════════════════════════════════ */
+function _renderObLimiti() {
+  var el = document.getElementById('obLimitiSection');
+  if (!el) return;
+
+  var currentLimits = (typeof weeklyLimits !== 'undefined') ? (weeklyLimits || {}) : {};
+
+  var rows = OB_LIMITI.map(function(it) {
+    var val = (currentLimits[it.key] !== undefined && currentLimits[it.key] !== '') ? currentLimits[it.key] : '';
+    return (
+      '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">' +
+        '<span style="font-size:1.1em;width:24px;text-align:center;">' + it.emoji + '</span>' +
+        '<span style="flex:1;font-size:.9em;">' + it.label + '</span>' +
+        '<span style="font-size:.75em;color:var(--text-3);margin-right:6px;">' + it.unit + '</span>' +
+        '<input type="number" min="0" step="1" value="' + val + '" ' +
+               'placeholder="—" ' +
+               'onchange="obSaveLimit(\'' + it.key + '\',this.value)" ' +
+               'style="width:56px;text-align:center;padding:4px 6px;border:1.5px solid var(--border);' +
+                      'border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:.9em;">' +
+      '</div>'
+    );
+  }).join('');
+
+  el.innerHTML =
+    '<div class="ob-limiti-wrap">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+        '<span style="font-size:1.1em;">📊</span>' +
+        '<span style="font-weight:700;font-size:.95em;">Limiti settimanali</span>' +
+        '<span style="font-size:.78em;color:var(--text-3);background:var(--bg-subtle);' +
+               'border:1px solid var(--border);border-radius:99px;padding:2px 10px;margin-left:4px;">facoltativi</span>' +
+      '</div>' +
+      '<p style="font-size:.82em;color:var(--text-3);margin-bottom:10px;">' +
+        'Imposta quante volte a settimana vuoi consumare certi alimenti. Puoi saltare e impostare in seguito.' +
+      '</p>' +
+      rows +
+    '</div>';
+}
+
+function obSaveLimit(key, val) {
+  if (typeof weeklyLimits === 'undefined') window.weeklyLimits = {};
+  var num = parseFloat(val);
+  if (!isNaN(num) && num >= 0) {
+    weeklyLimits[key] = num;
+  } else {
+    delete weeklyLimits[key];
+  }
+}
+
+/* ══════════════════════════════════════════════════
    ACTIONS
 ══════════════════════════════════════════════════ */
 function obSelectMeal(mk) {
@@ -191,7 +267,7 @@ function saveOnboardingPlan() {
   /* Non-blocking warning per piani minimi */
   if (total < 3) {
     if (typeof showToast === 'function')
-      showToast('💡 Piano salvato con pochi alimenti — puoi aggiungerne altri dal Profilo', 'info');
+      showToast('💡 Piano salvato con pochi alimenti — puoi aggiungerne altri in seguito', 'info');
   }
 
   /* Build mealPlan */
@@ -219,7 +295,10 @@ function saveOnboardingPlan() {
   if (typeof goToPage   === 'function') goToPage('piano');
   if (typeof renderPiano === 'function') renderPiano();
 
-  setTimeout(showWelcomeModal, 500);
+  setTimeout(function() {
+    showWelcomeModal();
+    /* Avvia tutorial dopo la welcome modal (viene chiusa → tutorial parte) */
+  }, 500);
 }
 
 function obSkip() {
@@ -229,13 +308,15 @@ function obSkip() {
   /* If they added something, save it */
   if (total > 0) { saveOnboardingPlan(); return; }
 
-  if (!confirm('Puoi configurare il piano in qualsiasi momento dal Profilo.\nContinuare senza piano alimentare?')) return;
+  if (!confirm('Puoi configurare il piano in qualsiasi momento.\nContinuare senza piano alimentare?')) return;
 
   localStorage.setItem(ONBOARDING_KEY, '1');
   var overlay = document.getElementById('onboardingOverlay');
   if (overlay) overlay.classList.remove('active');
   if (typeof goToPage === 'function') goToPage('piano');
-  setTimeout(showWelcomeModal, 400);
+  setTimeout(function() {
+    showWelcomeModal();
+  }, 400);
 }
 
 /* ══════════════════════════════════════════════════
@@ -244,10 +325,10 @@ function obSkip() {
 var WELCOME_AREAS = [
   {
     icon:  '🍽',
-    title: 'Piano alimentare',
+    title: 'Cosa mangio oggi',
     desc:  'Il tuo piano è pronto! Seleziona il pasto di oggi e segna gli ingredienti man mano che li consumi.',
     page:  'piano',
-    cta:   'Vai al Piano →'
+    cta:   'Vai al piano di oggi →'
   },
   {
     icon:  '🗄️',
@@ -296,9 +377,17 @@ function showWelcomeModal() {
 function closeWelcomeAndGo(page) {
   closeWelcomeModal();
   if (page && typeof goToPage === 'function') goToPage(page);
+  /* Avvia tutorial dopo aver chiuso la welcome modal */
+  setTimeout(function() {
+    if (typeof checkTutorial === 'function') checkTutorial();
+  }, 600);
 }
 
 function closeWelcomeModal() {
   var modal = document.getElementById('welcomeModal');
   if (modal) modal.classList.remove('active');
+  /* Avvia tutorial quando si chiude la welcome modal */
+  setTimeout(function() {
+    if (typeof checkTutorial === 'function') checkTutorial();
+  }, 600);
 }

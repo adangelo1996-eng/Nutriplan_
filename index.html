@@ -69,7 +69,7 @@
 
   <p class="landing-privacy-note">
     Accedendo accetti la nostra
-    <a href="#" onclick="event.preventDefault()">Privacy Policy</a>.
+    <a href="#" onclick="event.preventDefault();openPrivacyModal()">Privacy Policy</a>.
     I tuoi dati alimentari restano privati e sincronizzati solo sul tuo account.
   </p>
 </div>
@@ -107,11 +107,11 @@
 ════════════════════════════════════════════════════ -->
 <nav class="sidebar-nav" id="sidebarNav" style="display:none">
 
-  <span class="sidebar-section-label">Piano</span>
+  <span class="sidebar-section-label">Oggi</span>
 
   <button class="nav-tab active" id="st-piano" onclick="goToPage('piano')">
-    <span class="nav-icon">🏠</span>
-    <span class="nav-label">Piano</span>
+    <span class="nav-icon">🍽</span>
+    <span class="nav-label">Oggi</span>
   </button>
   <button class="nav-tab" id="st-dispensa" onclick="goToPage('dispensa')">
     <span class="nav-icon">🗄️</span>
@@ -148,7 +148,7 @@
   <div class="page active" id="page-piano">
     <div class="page-header">
       <div>
-        <div class="page-header-title">Il tuo piano 🍽</div>
+        <div class="page-header-title">🍽 Cosa mangio oggi</div>
         <div class="page-header-sub" id="selectedDateLabel">Oggi</div>
       </div>
       <div class="page-header-actions">
@@ -318,8 +318,8 @@
 <nav class="bottom-nav" id="bottomNav" style="display:none">
   <div class="app-inner">
     <button class="nav-tab active" id="bn-piano" onclick="goToPage('piano')">
-      <span class="nav-icon">🏠</span>
-      <span class="nav-label">Piano</span>
+      <span class="nav-icon">🍽</span>
+      <span class="nav-label">Oggi</span>
     </button>
     <button class="nav-tab" id="bn-dispensa" onclick="goToPage('dispensa')">
       <span class="nav-icon">🗄️</span>
@@ -715,6 +715,71 @@
   </div>
 </div>
 
+<!-- Modale: Privacy Policy -->
+<div class="modal" id="privacyModal">
+  <div class="modal-box" style="max-height:85vh;overflow-y:auto;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">📄 Privacy Policy</h2>
+      <button class="modal-close" onclick="closePrivacyModal()">✕</button>
+    </div>
+    <div class="modal-body" style="font-size:.9em;line-height:1.6;">
+      <p><strong>NutriPlan</strong> — Informativa sulla privacy</p>
+      <p><em>Ultimo aggiornamento: febbraio 2025</em></p>
+
+      <h3 style="margin-top:16px;">1. Dati raccolti</h3>
+      <p>NutriPlan raccoglie esclusivamente i dati che inserisci tu stesso: piano alimentare, ingredienti in dispensa, lista della spesa, storico dei pasti e limiti settimanali.</p>
+      <p>Se scegli di accedere con Google, raccogliamo il nome visualizzato, l'indirizzo email e la foto del profilo forniti da Google.</p>
+
+      <h3 style="margin-top:16px;">2. Come usiamo i dati</h3>
+      <p>I dati vengono utilizzati esclusivamente per il funzionamento dell'app: sincronizzazione tra dispositivi, visualizzazione del piano e delle statistiche. Non vengono mai condivisi con terze parti né utilizzati per pubblicità.</p>
+
+      <h3 style="margin-top:16px;">3. Dove vengono salvati</h3>
+      <p>I dati sono salvati localmente nel tuo browser (localStorage) e, se hai effettuato l'accesso con Google, sincronizzati sul tuo account personale tramite Firebase Realtime Database di Google (server in Europa).</p>
+
+      <h3 style="margin-top:16px;">4. Sicurezza</h3>
+      <p>Ogni utente ha accesso esclusivamente ai propri dati. La sicurezza è gestita tramite le regole di Firebase Authentication.</p>
+
+      <h3 style="margin-top:16px;">5. Cancellazione dei dati</h3>
+      <p>Puoi cancellare tutti i tuoi dati in qualsiasi momento dalla sezione Profilo → Impostazioni → Cancella tutti i dati. Per eliminare il tuo account Firebase, contattaci.</p>
+
+      <h3 style="margin-top:16px;">6. Cookie</h3>
+      <p>NutriPlan utilizza cookie tecnici essenziali per il funzionamento e, con il tuo consenso, cookie analitici anonimi per migliorare l'esperienza.</p>
+
+      <h3 style="margin-top:16px;">7. Contatti</h3>
+      <p>Per qualsiasi domanda sulla privacy scrivici tramite la pagina del progetto su GitHub.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closePrivacyModal()">Ho capito ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: aggiungi ingrediente per categoria (dispensa) -->
+<div class="modal" id="addByCatModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="addByCatTitle">➕ Aggiungi ingrediente</h2>
+      <button class="modal-close" onclick="closeAddByCatModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="search-input-wrap" style="margin-bottom:12px;">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="addByCatSearch"
+               placeholder="Cerca ingrediente…"
+               oninput="filterAddByCat(this.value)"
+               onsearch="filterAddByCat(this.value)"
+               autocomplete="off">
+      </div>
+      <div id="addByCatList" style="max-height:50vh;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeAddByCatModal()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modale: auth / accedi -->
 <div class="modal" id="authModal">
   <div class="modal-box">
@@ -804,6 +869,9 @@
 
     <!-- Contenuto dinamico -->
     <div class="ob-content" id="obContent"></div>
+
+    <!-- Sezione limiti settimanali (facoltativa) -->
+    <div id="obLimitiSection" style="margin-top:16px;"></div>
 
     <!-- Footer -->
     <div class="onboarding-footer">

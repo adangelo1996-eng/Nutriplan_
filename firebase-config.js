@@ -58,6 +58,23 @@ function initFirebase() {
         updateAuthUI(user);
         if (typeof renderProfilo === 'function')  renderProfilo();
         if (typeof loadFromCloud === 'function')  loadFromCloud(user.uid);
+
+        /* Auto-redirect: se la landing è visibile, entra nell'app dopo breve pausa */
+        var landing = document.getElementById('landingPage');
+        if (landing && landing.style.display !== 'none') {
+          /* Mostra spinner di caricamento e poi entra automaticamente */
+          var loadEl = document.getElementById('landingAuthLoading');
+          if (loadEl) {
+            loadEl.style.display = 'flex';
+            loadEl.innerHTML = '<span class="landing-auth-spinner"></span> Accesso rilevato, entro…';
+          }
+          setTimeout(function() {
+            var stillOnLanding = document.getElementById('landingPage');
+            if (stillOnLanding && stillOnLanding.style.display !== 'none') {
+              if (typeof enterApp === 'function') enterApp();
+            }
+          }, 1500);
+        }
       } else {
         currentUser = null;
         showCloudStatus('local');
@@ -218,17 +235,17 @@ function updateAuthUI(user) {
   var landingEnter   = document.getElementById('landingEnterBtn');
   var landingOffline = document.getElementById('landingOfflineBtn');
 
-  if (landingLoading) landingLoading.style.display = 'none';
-
   if (user) {
-    var displayName = user.displayName ? user.displayName.split(' ')[0] : 'di nuovo';
-    if (landingGoogle)  landingGoogle.style.display  = 'none';
-    if (landingEnter)  {
-      landingEnter.style.display = '';
-      landingEnter.textContent   = '▶ Bentornato, ' + displayName + '!';
+    /* Con auto-redirect, nasconde tutti i bottoni e mostra solo lo spinner */
+    if (landingLoading) {
+      landingLoading.style.display = 'flex';
+      /* Il testo verrà aggiornato dal listener onAuthStateChanged */
     }
+    if (landingGoogle)  landingGoogle.style.display  = 'none';
+    if (landingEnter)   landingEnter.style.display   = 'none';
     if (landingOffline) landingOffline.style.display = 'none';
   } else {
+    if (landingLoading) landingLoading.style.display = 'none';
     if (landingGoogle)  landingGoogle.style.display  = '';
     if (landingEnter)   landingEnter.style.display   = 'none';
     if (landingOffline) landingOffline.style.display = '';
