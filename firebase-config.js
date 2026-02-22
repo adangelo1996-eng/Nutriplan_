@@ -145,31 +145,37 @@ function signInWithGoogle() {
 ============================================================ */
 function signOut() {
   if (!firebaseReady) return;
-
-  /* Usa confirm nativo solo su desktop; su mobile usa toast + callback */
-  var doSignOut = function() {
-    firebase.auth().signOut()
-      .then(function() {
-        currentUser = null;
-        showCloudStatus('local');
-        updateAuthUI(null);
-        if (typeof closeAuthModal === 'function') closeAuthModal();
-        if (typeof renderProfilo  === 'function') renderProfilo();
-        if (typeof showToast      === 'function') showToast('👋 Disconnesso', 'info');
-      })
-      .catch(function(e) {
-        console.warn('[NutriPlan] Errore logout:', e);
-        if (typeof showToast === 'function') showToast('✗ Errore disconnessione', 'error');
-      });
-  };
-
-  if (window.innerWidth >= 768) {
-    /* Desktop: confirm nativo */
-    if (confirm('Disconnettersi? I dati locali rimarranno salvati.')) doSignOut();
+  /* Apre modal di conferma disconnessione invece del confirm nativo */
+  var modal = document.getElementById('confirmLogoutModal');
+  if (modal) {
+    modal.classList.add('active');
   } else {
-    /* Mobile: disconnetti direttamente (l'utente ha già premuto il bottone dedicato) */
-    doSignOut();
+    /* Fallback se il modal non è in pagina */
+    executeSignOut();
   }
+}
+
+function closeConfirmLogoutModal() {
+  var modal = document.getElementById('confirmLogoutModal');
+  if (modal) modal.classList.remove('active');
+}
+
+function executeSignOut() {
+  closeConfirmLogoutModal();
+  if (!firebaseReady) return;
+  firebase.auth().signOut()
+    .then(function() {
+      currentUser = null;
+      showCloudStatus('local');
+      updateAuthUI(null);
+      if (typeof closeAuthModal === 'function') closeAuthModal();
+      if (typeof renderProfilo  === 'function') renderProfilo();
+      if (typeof showToast      === 'function') showToast('👋 Disconnesso', 'info');
+    })
+    .catch(function(e) {
+      console.warn('[NutriPlan] Errore logout:', e);
+      if (typeof showToast === 'function') showToast('✗ Errore disconnessione', 'error');
+    });
 }
 
 /* ============================================================

@@ -43,6 +43,9 @@ function renderMealPlan() {
 
 function ensureDefaultPlan() {
   if (typeof defaultMealPlan === 'undefined') return;
+  /* Non ripristinare i default se l'utente ha esplicitamente cancellato
+     tutti i dati — il piano deve restare vuoto */
+  if (localStorage.getItem('nutriplan_cleared') === '1') return;
   var isEmpty = !mealPlan || !Object.keys(mealPlan).some(function(mk){
     var m = mealPlan[mk] || {};
     return ['principale','contorno','frutta','extra'].some(function(cat){

@@ -81,7 +81,7 @@
   <div class="app-inner">
 
     <div class="header-left">
-      <img id="headerIcon" src="" alt="" width="32" height="32" style="display:none">
+      <canvas id="headerIcon" width="32" height="32" style="border-radius:8px;vertical-align:middle;"></canvas>
       <span class="header-title">NutriPlan</span>
     </div>
 
@@ -237,6 +237,7 @@
       </div>
       <div class="page-header-actions">
         <button class="btn btn-secondary btn-small" onclick="openSavedFridges()">📁 Salvati</button>
+        <button class="btn btn-secondary btn-small" onclick="openBarcodeScanner()" title="Scansiona barcode prodotto">📷 Barcode</button>
         <button class="btn btn-primary btn-small" onclick="openAddFridge()">➕ Aggiungi</button>
       </div>
     </div>
@@ -922,6 +923,95 @@
   </div>
 </div>
 
+<!-- Modale: conferma disconnessione -->
+<div class="modal" id="confirmLogoutModal">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">🚪 Disconnessione</h2>
+      <button class="modal-close" onclick="closeConfirmLogoutModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:10px;">Vuoi disconnetterti da NutriPlan?</p>
+      <p style="font-size:.85rem;color:var(--text-3);">I dati locali rimarranno salvati sul dispositivo.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeConfirmLogoutModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="executeSignOut()">🚪 Disconnetti</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: conferma cancellazione dati -->
+<div class="modal" id="confirmDeleteModal">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" style="color:var(--danger);">🗑️ Cancella tutti i dati</h2>
+      <button class="modal-close" onclick="closeConfirmDeleteModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:12px;">Sei sicuro di voler eliminare <strong>tutti i dati</strong> di NutriPlan?</p>
+      <div style="background:color-mix(in srgb,var(--danger) 8%,var(--bg-subtle));border:1px solid color-mix(in srgb,var(--danger) 20%,var(--border));border-radius:var(--r-lg);padding:12px 14px;">
+        <ul style="margin:0;padding-left:18px;font-size:.85rem;line-height:1.7;color:var(--text-2);">
+          <li>Piano alimentare e pasti di oggi</li>
+          <li>Dispensa e quantità ingredienti</li>
+          <li>Storico, ricette personalizzate, lista spesa</li>
+          <li>Tutti i dati su Firebase (cloud)</li>
+        </ul>
+      </div>
+      <p style="font-size:.82rem;color:var(--danger);margin-top:12px;font-weight:700;">⚠️ Questa operazione è irreversibile.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeConfirmDeleteModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="executeDeleteAllData()"
+              style="background:var(--danger);border-color:var(--danger);">🗑️ Elimina tutto</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: scanner barcode -->
+<div class="modal" id="barcodeScannerModal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">📷 Scansiona barcode</h2>
+      <button class="modal-close" onclick="closeBarcodeScanner()">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center;">
+      <p style="font-size:.85rem;color:var(--text-3);margin-bottom:14px;">
+        Inquadra il codice a barre del prodotto con la fotocamera.<br>
+        <span style="font-size:.8rem;">La scansione avviene automaticamente.</span>
+      </p>
+      <div id="barcode-reader-container"
+           style="width:100%;border-radius:var(--r-lg);overflow:hidden;background:#000;min-height:240px;display:flex;align-items:center;justify-content:center;">
+        <span style="color:#fff;font-size:.85rem;">Avvio fotocamera…</span>
+      </div>
+      <div id="barcodeScanStatus"
+           style="margin-top:12px;font-size:.82rem;color:var(--text-3);min-height:1.4em;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeBarcodeScanner()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: risultato barcode -->
+<div class="modal" id="barcodeResultModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">📦 Prodotto trovato</h2>
+      <button class="modal-close" onclick="closeBarcodeResult()">✕</button>
+    </div>
+    <div class="modal-body" id="barcodeResultContent"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeBarcodeResult()">Annulla</button>
+      <button class="btn btn-primary" onclick="confirmBarcodeAdd()">➕ Aggiungi alla dispensa</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════════════════════
      PWA BANNERS
 ════════════════════════════════════════════════════ -->
@@ -1042,6 +1132,8 @@
 <!-- ═══════════════════════════════════════════════════
      SCRIPTS — ordine obbligatorio
 ════════════════════════════════════════════════════ -->
+<!-- Libreria scanner barcode (html5-qrcode) -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="firebase-config.js"></script>
 <script src="data.js"></script>
 <script src="storage.js"></script>
