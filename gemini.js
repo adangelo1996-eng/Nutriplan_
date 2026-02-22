@@ -16,7 +16,7 @@ function _geminiCall(prompt, callback) {
     return;
   }
 
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(apiKey);
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + encodeURIComponent(apiKey);
 
   var body = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
