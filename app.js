@@ -3,10 +3,12 @@
    Navigazione, icone, dark mode, calendario, limiti, init
 ============================================================ */
 
-/* ── Cleanup Service Worker ── */
+/* ── Registra Service Worker (PWA) ── */
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(regs) {
-    regs.forEach(function(r) { r.unregister(); });
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').catch(function(e) {
+      console.warn('[NutriPlan] SW registration failed:', e);
+    });
   });
 }
 
@@ -47,6 +49,7 @@ function drawAppIcon(canvas, size) {
 }
 
 function initIcons() {
+  /* Icona canvas per header e landing (decorativa) */
   var hc = document.getElementById('headerIcon');
   if (hc && hc.tagName === 'CANVAS') drawAppIcon(hc, 32);
 
@@ -55,23 +58,8 @@ function initIcons() {
   var ldiv = document.getElementById('landingLogo');
   if (ldiv) { ldiv.innerHTML = ''; ldiv.appendChild(lc); }
 
-  var bigCanvas = document.createElement('canvas');
-  drawAppIcon(bigCanvas, 512);
-  var iconUrl = bigCanvas.toDataURL('image/png');
-
-  var ati = document.getElementById('appleTouchIcon');
-  if (ati) ati.href = iconUrl;
-
-  var mf = {
-    name: 'NutriPlan', short_name: 'NutriPlan',
-    start_url: '/', display: 'standalone',
-    background_color: '#4a9b7f', theme_color: '#4a9b7f',
-    icons: [{ src: iconUrl, sizes: '512x512', type: 'image/png' }]
-  };
-  var mp = document.getElementById('manifest-placeholder');
-  if (mp) mp.href = URL.createObjectURL(
-    new Blob([JSON.stringify(mf)], { type: 'application/json' })
-  );
+  /* L'icona PWA e il manifest usano file statici (icon.svg, manifest.json)
+     già referenziati nel <head> di index.html — nessun blob URL necessario */
 }
 
 /* ══════════════════════════════════════════════════

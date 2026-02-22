@@ -2066,12 +2066,8 @@
 
 /* ══════════════════════════════════════════════════
    50. WIZARD PIANO ALIMENTARE
+   (z-index spostato in sezione 54 — deve stare sotto .modal)
 ══════════════════════════════════════════════════ */
-.wizard-overlay {
-  position: fixed; inset: 0; z-index: 900;
-  background: var(--bg); display: flex; flex-direction: column;
-  overflow: hidden;
-}
 .wizard-header {
   display: flex; align-items: center; gap: 12px;
   padding: 14px 18px; border-bottom: 1px solid var(--border);
@@ -2152,4 +2148,185 @@
 }
 [data-theme="dark"] .already-selected-badge {
   background: #2d1b00; color: #fcd34d;
+}
+
+/* ══════════════════════════════════════════════════
+   52. AI RECIPE BUTTON & MODAL
+══════════════════════════════════════════════════ */
+.ai-recipe-btn {
+  width: 100%; padding: 9px 14px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #fff; border: none; border-radius: var(--r-lg);
+  font-weight: 700; font-size: .82rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: opacity var(--t);
+}
+.ai-recipe-btn:hover { opacity: .88; }
+.ai-recipe-text { font-size: .88rem; line-height: 1.65; color: var(--text); }
+.ai-recipe-text .ai-h2 { font-size: 1.05rem; font-weight: 800; color: var(--primary); margin: 12px 0 6px; }
+.ai-recipe-text .ai-h3 { font-size: .95rem; font-weight: 700; color: var(--primary); margin: 10px 0 5px; }
+.ai-recipe-text .ai-h4 { font-size: .88rem; font-weight: 700; color: var(--text-2); margin: 8px 0 4px; }
+.ai-recipe-text .ai-li  { padding: 3px 0 3px 8px; }
+.ai-recipe-text .ai-li-num { padding: 3px 0 3px 8px; }
+.ai-loading {
+  display: flex; align-items: center; gap: 10px;
+  padding: 20px; color: var(--text-3); font-size: .9rem;
+}
+.ai-spinner {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--primary);
+  animation: ai-spin .7s linear infinite; flex-shrink: 0;
+}
+@keyframes ai-spin { to { transform: rotate(360deg); } }
+
+/* AI substitute suggestions */
+.sub-opt-ai {
+  background: linear-gradient(135deg,#ede9fe,#ddd6fe) !important;
+  color: #5b21b6 !important; border: 1.5px solid #c4b5fd !important;
+}
+[data-theme="dark"] .sub-opt-ai {
+  background: linear-gradient(135deg,#2d1d5e,#1e1640) !important;
+  color: #c4b5fd !important; border-color: #6d28d9 !important;
+}
+
+/* ══════════════════════════════════════════════════
+   53. PA WIZARD INVITE CARD (piano alimentare)
+══════════════════════════════════════════════════ */
+.pa-wizard-invite {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 22px;
+  background: linear-gradient(135deg, var(--primary-xl) 0%, var(--bg-card) 100%);
+  border: 2px solid var(--primary-mid);
+  border-radius: var(--r-xl); margin-bottom: 20px;
+  transition: box-shadow var(--t);
+}
+.pa-wizard-invite:hover { box-shadow: var(--shadow-lg); }
+.pa-wizard-invite-empty {
+  border-color: var(--primary); border-style: dashed;
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--bg-card) 100%);
+}
+.pa-wizard-invite-icon {
+  font-size: 2.4rem; flex-shrink: 0;
+  line-height: 1;
+}
+.pa-wizard-invite-body { flex: 1; min-width: 0; }
+.pa-wizard-invite-title {
+  font-weight: 800; font-size: 1rem; color: var(--text); margin-bottom: 4px;
+}
+.pa-wizard-invite-sub {
+  font-size: .8rem; color: var(--text-3); margin-bottom: 12px; line-height: 1.4;
+}
+.pa-wizard-invite-btn {
+  display: inline-block; padding: 9px 18px;
+  background: var(--primary); color: #fff;
+  border: none; border-radius: var(--r-full);
+  font-weight: 700; font-size: .85rem; cursor: pointer;
+  transition: background var(--t);
+}
+.pa-wizard-invite-btn:hover { background: var(--primary-dark, #2a7a5c); }
+
+@keyframes pa-wizard-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(74,155,127,.35); }
+  50%      { box-shadow: 0 0 0 12px rgba(74,155,127,0); }
+}
+.pa-wizard-invite-pulse {
+  animation: pa-wizard-pulse 1s ease 2;
+}
+
+/* ══════════════════════════════════════════════════
+   54. WIZARD — z-index, nuova struttura categorie
+══════════════════════════════════════════════════ */
+/* FIX CRITICO: wizard sotto ai modali (.modal z-index 500) */
+.wizard-overlay {
+  position: fixed; inset: 0; z-index: 450;
+  background: var(--bg); display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+/* Sezioni categoria nel wizard (simile al piano finale) */
+.wiz-cat-section {
+  border: 1.5px solid var(--border); border-radius: var(--r-lg);
+  margin-bottom: 10px; overflow: hidden;
+}
+.wiz-cat-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; cursor: pointer;
+  background: var(--bg-card);
+  border-left: 3px solid var(--pc, var(--primary));
+  user-select: none;
+}
+.wiz-cat-header:hover { background: var(--bg-hover, var(--bg-subtle)); }
+.wiz-cat-icon  { font-size: 1rem; flex-shrink: 0; }
+.wiz-cat-label { flex: 1; font-weight: 700; font-size: .88rem; color: var(--text); }
+.wiz-cat-count {
+  font-size: .72rem; font-weight: 800; padding: 2px 7px;
+  border-radius: var(--r-full); background: var(--pc, var(--primary));
+  color: #fff;
+}
+.wiz-cat-chev  { font-size: .75rem; color: var(--text-3); }
+.wiz-cat-body  { padding: 8px 12px 10px; background: var(--bg); }
+
+.wiz-ing-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 4px; border-bottom: 1px solid var(--border);
+}
+.wiz-ing-row:last-of-type { border-bottom: none; }
+.wiz-ing-name  { flex: 1; font-size: .88rem; font-weight: 500; color: var(--text); }
+.wiz-ing-qty   { font-size: .72rem; color: var(--text-3); margin-left: 5px; }
+.wiz-ing-del   {
+  background: none; border: none; cursor: pointer;
+  color: var(--danger); font-size: .8rem; padding: 2px 6px; flex-shrink: 0;
+}
+
+.wiz-add-cat-btn {
+  display: block; width: 100%; margin-top: 8px;
+  padding: 7px 12px; background: none;
+  border: 1.5px dashed var(--wc, var(--primary));
+  border-radius: var(--r-md); color: var(--wc, var(--primary));
+  font-weight: 700; font-size: .82rem; cursor: pointer;
+  transition: all var(--t);
+}
+.wiz-add-cat-btn:hover { background: color-mix(in srgb, var(--wc, var(--primary)) 10%, transparent); }
+
+/* Limiti nel wizard */
+.wiz-limit-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+}
+.wiz-limit-row:last-child { border-bottom: none; }
+.wiz-limit-icon  { font-size: 1.1rem; width: 24px; flex-shrink: 0; }
+.wiz-limit-label { flex: 1; font-weight: 600; font-size: .9rem; }
+.wiz-limit-unit  { font-size: .75rem; color: var(--text-3); }
+.wiz-limit-input {
+  width: 64px; text-align: center; padding: 5px;
+  border: 1.5px solid var(--border); border-radius: var(--r-md);
+  background: var(--bg); color: var(--text); font-size: .9rem;
+}
+
+/* Revisione */
+.wiz-review-intro {
+  font-size: .85rem; color: var(--text-3);
+  padding: 10px 0 14px; line-height: 1.5;
+}
+.wiz-review-meal {
+  border: 1.5px solid var(--border); border-radius: var(--r-lg);
+  margin-bottom: 10px; overflow: hidden;
+}
+.wiz-review-meal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: var(--bg-card);
+  font-weight: 700; font-size: .92rem;
+}
+.wiz-review-count {
+  font-size: .72rem; color: var(--text-3); font-weight: 500;
+}
+.wiz-review-ings {
+  padding: 8px 12px 10px; display: flex; flex-wrap: wrap; gap: 5px;
+}
+.wiz-review-ing-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; background: var(--bg-subtle);
+  border: 1px solid var(--border); border-radius: var(--r-full);
+  font-size: .78rem; color: var(--text);
 }

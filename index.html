@@ -10,6 +10,11 @@
   <meta name="apple-mobile-web-app-title" content="NutriPlan">
   <title>NutriPlan</title>
 
+  <!-- PWA manifest e icona -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" id="appleTouchIcon" href="icon.svg">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+
   <!-- CSS — ordine obbligatorio -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -608,8 +613,24 @@
       <button class="modal-close" onclick="closeSubstituteModal()">✕</button>
     </div>
     <div class="modal-body" id="substituteModalBody"></div>
+    <div id="aiSubstituteSection" style="padding:0 16px 12px;"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeSubstituteModal()">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: ricetta AI -->
+<div class="modal" id="aiRecipeModal">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">🤖 Ricetta generata da AI</h2>
+      <button class="modal-close" onclick="closeAIRecipeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="aiRecipeResult" style="max-height:65vh;overflow-y:auto;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeAIRecipeModal()">Chiudi</button>
     </div>
   </div>
 </div>
@@ -1135,6 +1156,7 @@
 ════════════════════════════════════════════════════ -->
 <!-- Libreria scanner barcode (html5-qrcode) -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="config.js"></script>
 <script src="firebase-config.js"></script>
 <script src="data.js"></script>
 <script src="storage.js"></script>
@@ -1150,6 +1172,7 @@
 <script src="pdf.js"></script>
 <script src="tutorial.js"></script>
 <script src="onboarding.js"></script>
+<script src="gemini.js"></script>
 <script src="app.js"></script>
 
 </body>

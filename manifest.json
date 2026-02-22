@@ -1,0 +1,20 @@
+{
+  "name": "NutriPlan",
+  "short_name": "NutriPlan",
+  "description": "Il tuo piano alimentare personale",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#4a9b7f",
+  "theme_color": "#1c4434",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "food", "lifestyle"],
+  "lang": "it"
+}

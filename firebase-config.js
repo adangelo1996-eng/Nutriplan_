@@ -9,17 +9,8 @@
              signInWithGoogle, signOut, showCloudStatus
 ============================================================ */
 
-/* ── CONFIGURAZIONE ─────────────────────────────────────── */
-var firebaseConfig = {
-  apiKey:            "AIzaSyBitbmjthQUvKyrHmADVLkvwENoVrXYxNY",
-  authDomain:        "nutriplan-100f9.firebaseapp.com",
-  databaseURL:       "https://nutriplan-100f9-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId:         "nutriplan-100f9",
-  storageBucket:     "nutriplan-100f9.firebasestorage.app",
-  messagingSenderId: "371119799995",
-  appId:             "1:371119799995:web:309e59696041f3bbc9739e",
-  measurementId:     "G-VELZ8ZZYQ3"
-};
+/* ── CONFIGURAZIONE — caricata da config.js (gitignored) ── */
+var firebaseConfig = (window.APP_CONFIG && window.APP_CONFIG.firebase) || {};
 
 /* ── VARIABILI GLOBALI (usate da storage.js e app.js) ───── */
 var firebaseReady = false;

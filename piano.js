@@ -134,7 +134,15 @@ function renderMealItems() {
       '</div>';
   }
 
-  el.innerHTML = consumedHtml + items.map(function(item){
+  /* ── Pulsante Genera Ricetta AI ── */
+  var aiBtn =
+    '<div style="margin-bottom:10px;">' +
+      '<button class="ai-recipe-btn" onclick="openAIRecipeModal(\'oggi\')">' +
+        '🤖 Genera ricetta AI con questi ingredienti' +
+      '</button>' +
+    '</div>';
+
+  el.innerHTML = consumedHtml + aiBtn + items.map(function(item){
     var used    = usedMap[item.name] ? true : false;
     var subName = subsMap[item.name] || null;
     var display = subName || item.name;
@@ -358,13 +366,41 @@ function openSubstituteModal(name) {
   }
 
   if (!inFridge.length && !allSuggestions.length) {
-    html += '<p style="color:var(--text-3);font-size:.9em;padding:8px 0;">Nessun ingrediente compatibile trovato.</p>';
+    html += '<p style="color:var(--text-3);font-size:.9em;padding:8px 0;">Nessun ingrediente compatibile trovato nel piano.</p>';
   }
 
   var body  = document.getElementById('substituteModalBody');
   var modal = document.getElementById('substituteModal');
   if (body)  body.innerHTML  = html;
   if (modal) modal.classList.add('active');
+
+  /* ── Suggerimenti AI ── */
+  var aiSection = document.getElementById('aiSubstituteSection');
+  if (aiSection && typeof getAISubstituteSuggestions === 'function') {
+    aiSection.innerHTML =
+      '<div style="border-top:1px solid var(--border);padding-top:12px;">' +
+        '<div style="font-size:.82em;font-weight:700;color:var(--primary);margin-bottom:8px;">🤖 Suggerimenti AI</div>' +
+        '<div id="aiSubstResults" class="ai-loading"><span class="ai-spinner"></span> Analisi in corso…</div>' +
+      '</div>';
+
+    getAISubstituteSuggestions(name, origCat, function(suggestions, err) {
+      var resultsEl = document.getElementById('aiSubstResults');
+      if (!resultsEl) return;
+      if (err || !suggestions.length) {
+        resultsEl.innerHTML = '<span style="color:var(--text-3);font-size:.85em;">' +
+          (err || 'Nessun suggerimento AI disponibile') + '</span>';
+        return;
+      }
+      resultsEl.innerHTML = suggestions.map(function(sName) {
+        return '<button class="sub-opt-btn sub-opt-ai" ' +
+                       'onclick="applySubstitute(\'' + escQ(name) + '\',\'' + escQ(sName) + '\')">' +
+                 '🤖 ' + sName +
+               '</button>';
+      }).join('');
+    });
+  } else if (aiSection) {
+    aiSection.innerHTML = '';
+  }
 }
 
 /* Aggiunge il suggerimento alla lista della spesa */
