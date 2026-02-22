@@ -35,6 +35,74 @@ function getFridgeKeys() {
     return k && k !== 'undefined' && pantryItems[k] && (pantryItems[k].quantity||0) > 0;
   });
 }
+
+/* Restituisce tutti i nomi di ingredienti presenti nel pianoAlimentare */
+function getPianoAlimentareIngNames() {
+  if (typeof pianoAlimentare === 'undefined' || !pianoAlimentare) return [];
+  var names = [];
+  var seen  = {};
+  Object.keys(pianoAlimentare).forEach(function(mealKey) {
+    var meal = pianoAlimentare[mealKey];
+    if (!meal || typeof meal !== 'object') return;
+    Object.keys(meal).forEach(function(catKey) {
+      var arr = meal[catKey];
+      if (!Array.isArray(arr)) return;
+      arr.forEach(function(item) {
+        if (item && item.name && !seen[item.name]) {
+          seen[item.name] = true;
+          names.push(item.name.toLowerCase().trim());
+        }
+        /* Anche le alternative */
+        if (Array.isArray(item.alternatives)) {
+          item.alternatives.forEach(function(alt) {
+            if (alt && alt.name && !seen[alt.name]) {
+              seen[alt.name] = true;
+              names.push(alt.name.toLowerCase().trim());
+            }
+          });
+        }
+      });
+    });
+  });
+  /* Fallback: usa anche mealPlan se pianoAlimentare è vuoto */
+  if (!names.length && typeof mealPlan !== 'undefined' && mealPlan) {
+    Object.keys(mealPlan).forEach(function(mk) {
+      var m = mealPlan[mk];
+      if (!m) return;
+      ['principale','contorno','frutta','extra'].forEach(function(cat) {
+        if (!Array.isArray(m[cat])) return;
+        m[cat].forEach(function(it) {
+          if (it && it.name && !seen[it.name]) {
+            seen[it.name] = true;
+            names.push(it.name.toLowerCase().trim());
+          }
+        });
+      });
+    });
+  }
+  return names;
+}
+
+/* Controlla se un ingrediente è fuori dal piano alimentare */
+function isIngExtraPiano(ingName) {
+  if (!ingName) return false;
+  var pianoNames = getPianoAlimentareIngNames();
+  if (!pianoNames.length) return false; /* piano vuoto → non segniamo nulla */
+  var nl = ingName.toLowerCase().trim();
+  return !pianoNames.some(function(pn) {
+    return pn === nl || pn.includes(nl) || nl.includes(pn);
+  });
+}
+
+/* Conta ingredienti extra piano per una lista di ingredienti ricetta */
+function countExtraPiano(ings) {
+  if (!Array.isArray(ings)) return 0;
+  var pianoNames = getPianoAlimentareIngNames();
+  if (!pianoNames.length) return 0;
+  return ings.filter(function(ing) {
+    return isIngExtraPiano(safeStr(ing.name || ing.nome));
+  }).length;
+}
 function countAvailable(ings) {
   var keys = getFridgeKeys();
   if (!keys.length || !Array.isArray(ings)) return 0;
@@ -167,40 +235,53 @@ function buildGroupedGrid(list) {
    ══════════════════════════════════════════════════ */
 function buildCard(r) {
   if (!r) return '';
-  var name     = safeStr(r.name||r.nome||'Ricetta');
-  var icon     = safeStr(r.icon||r.icona||'🍽');
-  var ings     = Array.isArray(r.ingredienti)?r.ingredienti:[];
-  var isCustom = Boolean(r.isCustom);
-  var tot      = ings.length;
-  var avail    = countAvailable(ings);
-  var pct      = tot?Math.round((avail/tot)*100):0;
-  var color    = pastoColor(r.pasto);
-  var pLabel   = pastoLabel(r.pasto);
+  var name       = safeStr(r.name||r.nome||'Ricetta');
+  var icon       = safeStr(r.icon||r.icona||'🍽');
+  var ings       = Array.isArray(r.ingredienti)?r.ingredienti:[];
+  var isCustom   = Boolean(r.isCustom);
+  var tot        = ings.length;
+  var avail      = countAvailable(ings);
+  var extraCount = countExtraPiano(ings);
+  var pct        = tot?Math.round((avail/tot)*100):0;
+  var color      = pastoColor(r.pasto);
+  var pLabel     = pastoLabel(r.pasto);
   var fridgeKeys = getFridgeKeys();
+  var pianoNames = getPianoAlimentareIngNames();
+  var hasExtraCheck = pianoNames.length > 0;
 
   /* stato badge */
   var stateCls = pct>=80?'badge-ok':pct>=40?'badge-warn':'badge-grey';
   var stateTxt = pct>=80?'✔ Disponibile':pct>=40?'◑ Parziale':'○ Da acquistare';
+
+  /* badge extra piano */
+  var extraBadge = '';
+  if (hasExtraCheck && extraCount > 0) {
+    extraBadge = '<span class="rc-badge badge-extra">⚠ ' + extraCount + ' extra piano</span>';
+  } else if (hasExtraCheck && extraCount === 0 && tot > 0) {
+    extraBadge = '<span class="rc-badge badge-inpiano">✓ Nel piano</span>';
+  }
 
   /* accordion ingredienti */
   var accHtml = '';
   if (ings.length) {
     accHtml += '<ul class="rc-acc-list">';
     ings.forEach(function(ing){
-      var n  = safeStr(ing.name||ing.nome);
-      var nl = n.toLowerCase().trim();
-      var ok = fridgeKeys.some(function(k){
+      var n       = safeStr(ing.name||ing.nome);
+      var nl      = n.toLowerCase().trim();
+      var ok      = fridgeKeys.some(function(k){
         var kl=k.toLowerCase().trim();
         return kl===nl||kl.includes(nl)||nl.includes(kl);
       });
+      var extra   = hasExtraCheck && isIngExtraPiano(n);
       var qty = (ing.quantity||ing.quantita)
         ? '<span class="rc-acc-qty">'+safeStr(ing.quantity||ing.quantita)+
           '\u00a0'+safeStr(ing.unit||ing.unita)+'</span>'
         : '';
-      accHtml += '<li class="rc-acc-item'+(ok?' ok':'')+'">'+
+      accHtml += '<li class="rc-acc-item'+(ok?' ok':'')+(extra?' extra-piano':'')+'">'+
                    '<span class="rc-acc-dot"></span>'+
                    '<span class="rc-acc-name">'+n+'</span>'+
                    qty+
+                   (extra?'<span class="rc-acc-extra-tag">extra</span>':'')+
                  '</li>';
     });
     accHtml += '</ul>';
@@ -224,6 +305,7 @@ function buildCard(r) {
             (pLabel?'<span class="rc-pasto" style="color:'+color+'">'+pLabel+'</span>':'') +
             (isCustom?'<span class="rc-badge">⭐ Mia</span>':'')+
             '<span class="rc-badge '+stateCls+'">'+stateTxt+'</span>'+
+            extraBadge+
           '</div>'+
         '</div>'+
         '<span class="rc-chevron">'+
@@ -287,7 +369,17 @@ function openRecipeModal(name) {
             '</div>';
   }
 
+  var pianoNames = getPianoAlimentareIngNames();
+  var hasExtraCheck = pianoNames.length > 0;
+
   if (ings.length) {
+    var extraCount = countExtraPiano(ings);
+    if (hasExtraCheck && extraCount > 0) {
+      html += '<div class="rm-extra-notice">⚠ ' + extraCount + ' ingredient' +
+              (extraCount === 1 ? 'e' : 'i') +
+              ' non present' + (extraCount === 1 ? 'e' : 'i') +
+              ' nel tuo piano alimentare</div>';
+    }
     html += '<p class="rm-section-label">Ingredienti</p><ul class="rm-ing-list">';
     ings.forEach(function(ing){
       var n  = safeStr(ing.name||ing.nome);
@@ -295,11 +387,14 @@ function openRecipeModal(name) {
       var ok = fridgeKeys.some(function(k){
         var kl=k.toLowerCase().trim(); return kl===nl||kl.includes(nl)||nl.includes(kl);
       });
+      var extra = hasExtraCheck && isIngExtraPiano(n);
       var qty= (ing.quantity||ing.quantita)
         ?'<span class="rm-qty">'+safeStr(ing.quantity||ing.quantita)+'\u00a0'+safeStr(ing.unit||ing.unita)+'</span>':'';
-      html += '<li class="rm-ing'+(ok?' ok':'')+'">'+
+      html += '<li class="rm-ing'+(ok?' ok':'')+(extra?' rm-extra':'')+'">'+
                 '<span class="rm-check">'+(ok?'✔':'○')+'</span>'+
-                '<span>'+n+'</span>'+qty+'</li>';
+                '<span class="rm-ing-name">'+n+'</span>'+qty+
+                (extra?'<span class="rm-extra-tag">extra piano</span>':'')+
+              '</li>';
     });
     html += '</ul>';
   }

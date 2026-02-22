@@ -897,8 +897,9 @@
 .rm-ing.ok .rm-check {
   background: var(--success, #22c55e);
 }
+.rm-ing-name { flex: 1; min-width: 0; }
 .rm-qty {
-  margin-left: auto; font-size: .72rem;
+  font-size: .72rem;
   color: var(--text-light); font-weight: 700; white-space: nowrap;
 }
 .rm-steps {
@@ -1529,7 +1530,7 @@
 }
 
 .fi-empty-cat {
-  padding: 8px 0 4px;
+  padding: 8px 16px 4px;
   font-size: .8em;
   color: var(--text-3);
   font-style: italic;
@@ -1585,4 +1586,311 @@
   border-radius: var(--r-lg);
   padding: 16px 18px;
   margin-top: 4px;
+}
+
+/* ══════════════════════════════════════════════════
+   43. DISPENSA — tasto aggiungi inline nella categoria
+══════════════════════════════════════════════════ */
+.fi-add-inline-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 9px 16px;
+  background: color-mix(in srgb, var(--gc, var(--primary)) 5%, var(--bg-card));
+  border: none; border-top: 1px dashed color-mix(in srgb, var(--gc, var(--primary)) 25%, var(--border));
+  color: var(--gc, var(--primary));
+  font-size: .8rem; font-weight: 700;
+  cursor: pointer; transition: background var(--t), opacity var(--t);
+  letter-spacing: .02em;
+}
+.fi-add-inline-btn:hover {
+  background: color-mix(in srgb, var(--gc, var(--primary)) 12%, var(--bg-card));
+}
+
+/* "Aggiungi ingrediente personalizzato" dentro addByCatModal / paIngModal */
+.add-by-cat-new-btn {
+  display: flex; align-items: center; gap: 7px;
+  width: 100%; padding: 10px 12px;
+  background: var(--primary-xl);
+  border: 1.5px dashed var(--primary-mid);
+  border-radius: var(--r-md);
+  color: var(--primary); font-size: .85rem; font-weight: 700;
+  cursor: pointer; transition: all var(--t);
+  margin-bottom: 8px;
+}
+.add-by-cat-new-btn:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+
+/* ══════════════════════════════════════════════════
+   44. PIANO ALIMENTARE — pagina dedicata
+══════════════════════════════════════════════════ */
+
+/* Blocco pasto */
+.pa-meal-block {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.pa-meal-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  cursor: pointer; transition: background var(--t);
+  background: var(--bg-card);
+  user-select: none;
+}
+.pa-meal-header:hover { background: var(--bg-hover); }
+
+.pa-meal-emoji  { font-size: 1.4rem; flex-shrink: 0; }
+.pa-meal-label  { flex: 1; font-size: .95rem; font-weight: 800; }
+.pa-meal-count  {
+  font-size: .72rem; font-weight: 700;
+  color: var(--text-light);
+  background: var(--bg-subtle);
+  padding: 2px 10px; border-radius: var(--r-full);
+  border: 1px solid var(--border);
+}
+.pa-meal-chevron {
+  font-size: .9rem; color: var(--text-light);
+  transition: transform var(--t); flex-shrink: 0;
+}
+
+.pa-meal-body {
+  display: none;
+  border-top: 1px solid var(--border);
+}
+.pa-meal-body.open { display: block; }
+
+/* Sezione categoria dentro pasto */
+.pa-cat-section {
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+}
+.pa-cat-section:last-child { border-bottom: none; }
+
+.pa-cat-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--pc, var(--primary)) 5%, var(--bg-card));
+}
+.pa-cat-icon  { font-size: 1.1rem; flex-shrink: 0; }
+.pa-cat-label {
+  flex: 1; font-size: .72rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .07em;
+  color: var(--pc, var(--primary));
+}
+.pa-cat-count {
+  font-size: .68rem; font-weight: 800;
+  background: color-mix(in srgb, var(--pc, var(--primary)) 14%, transparent);
+  color: var(--pc, var(--primary));
+  border: 1px solid color-mix(in srgb, var(--pc, var(--primary)) 25%, transparent);
+  padding: 1px 8px; border-radius: var(--r-full);
+}
+
+/* Tasto + Aggiungi nella categoria */
+.pa-cat-add-btn {
+  padding: 5px 12px;
+  background: color-mix(in srgb, var(--pc, var(--primary)) 10%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--pc, var(--primary)) 30%, transparent);
+  border-radius: var(--r-full);
+  color: var(--pc, var(--primary));
+  font-size: .76rem; font-weight: 800;
+  cursor: pointer; transition: all var(--t);
+  flex-shrink: 0;
+}
+.pa-cat-add-btn:hover {
+  background: color-mix(in srgb, var(--pc, var(--primary)) 20%, transparent);
+}
+
+/* Items */
+.pa-cat-items { display: flex; flex-direction: column; }
+
+/* Riga ingrediente */
+.pa-ing-row {
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+}
+.pa-ing-row:last-child { border-bottom: none; }
+
+.pa-ing-main {
+  display: flex; align-items: center;
+  padding: 10px 16px; gap: 10px;
+}
+.pa-ing-info  { flex: 1; min-width: 0; }
+.pa-ing-name  { font-size: .88rem; font-weight: 700; display: block; }
+.pa-ing-qty   { font-size: .72rem; color: var(--text-light); font-weight: 600; display: block; margin-top: 2px; }
+
+.pa-ing-actions { display: flex; gap: 5px; flex-shrink: 0; }
+
+/* Toggle alternative */
+.pa-alt-toggle {
+  padding: 5px 10px;
+  background: var(--bg-subtle); border: 1.5px solid var(--border);
+  border-radius: var(--r-full);
+  font-size: .72rem; font-weight: 700; color: var(--text-mid);
+  cursor: pointer; transition: all var(--t);
+}
+.pa-alt-toggle:hover,
+.pa-alt-toggle.active {
+  background: var(--primary-light); color: var(--primary);
+  border-color: var(--primary-mid);
+}
+
+/* Tasto rimuovi ingrediente */
+.pa-ing-del {
+  width: 26px; height: 26px;
+  background: none; border: none; cursor: pointer;
+  font-size: .72rem; color: var(--text-light);
+  border-radius: var(--r-xs);
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--t); flex-shrink: 0;
+}
+.pa-ing-del:hover { color: var(--danger); background: #fee2e2; }
+
+/* Sezione alternative (collassabile) */
+.pa-alt-section {
+  display: none;
+  padding: 4px 16px 10px 32px;
+  border-top: 1px dashed var(--border);
+  background: var(--bg-subtle);
+  flex-direction: column; gap: 4px;
+}
+.pa-alt-section.open { display: flex; }
+
+/* Riga alternativa */
+.pa-alt-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+.pa-alt-bullet { font-size: .9rem; color: var(--text-light); flex-shrink: 0; }
+.pa-alt-info   { flex: 1; min-width: 0; }
+.pa-alt-name   { font-size: .82rem; font-weight: 600; display: block; }
+.pa-alt-qty    { font-size: .7rem; color: var(--text-light); font-weight: 600; display: block; }
+.pa-alt-del {
+  width: 22px; height: 22px;
+  background: none; border: none; cursor: pointer;
+  font-size: .65rem; color: var(--text-light);
+  border-radius: var(--r-xs);
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--t); flex-shrink: 0;
+}
+.pa-alt-del:hover { color: var(--danger); background: #fee2e2; }
+
+/* Tasto aggiungi alternativa */
+.pa-add-alt-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 10px; margin-top: 4px;
+  background: none;
+  border: 1.5px dashed var(--primary-mid);
+  border-radius: var(--r-md);
+  color: var(--primary); font-size: .78rem; font-weight: 700;
+  cursor: pointer; transition: all var(--t);
+}
+.pa-add-alt-btn:hover {
+  background: var(--primary-xl);
+}
+
+/* Sezione limiti in fondo alla pagina */
+.pa-limiti-section {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  margin-top: 20px;
+}
+.pa-limiti-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--primary) 5%, var(--bg-card));
+}
+.pa-limiti-icon  { font-size: 1.3rem; }
+.pa-limiti-title { font-size: .88rem; font-weight: 800; }
+.pa-limiti-body  { padding: 8px 0; }
+
+.pa-limit-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.pa-limit-row:last-child { border-bottom: none; }
+
+.pa-limit-icon  { font-size: 1.2rem; flex-shrink: 0; width: 26px; text-align: center; }
+.pa-limit-label { flex: 1; font-size: .88rem; font-weight: 600; }
+.pa-limit-unit  { font-size: .72rem; color: var(--text-light); font-weight: 600; flex-shrink: 0; }
+.pa-limit-input {
+  width: 72px; text-align: center;
+  padding: 6px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg); color: var(--text);
+  font-size: .9rem; font-weight: 700;
+  flex-shrink: 0;
+}
+.pa-limit-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-xl);
+}
+
+/* ══════════════════════════════════════════════════
+   45. RICETTE — badge extra piano
+══════════════════════════════════════════════════ */
+.badge-extra {
+  background: #fef3c7; color: #92400e; border-color: #fde68a;
+}
+.badge-inpiano {
+  background: #dcfce7; color: #166534; border-color: #bbf7d0;
+}
+[data-theme="dark"] .badge-extra   { background: #2d1b00; color: #fcd34d; border-color: #78350f; }
+[data-theme="dark"] .badge-inpiano { background: #052e16; color: #4ade80; border-color: #14532d; }
+
+/* Ingredienti extra piano nella lista accordion */
+.rc-acc-item.extra-piano {
+  opacity: .6;
+}
+.rc-acc-item.extra-piano .rc-acc-name {
+  color: var(--text-light);
+  font-weight: 500;
+}
+.rc-acc-extra-tag {
+  font-size: .62rem; font-weight: 800;
+  padding: 1px 6px; border-radius: var(--r-full);
+  background: #fef3c7; color: #92400e;
+  border: 1px solid #fde68a; flex-shrink: 0;
+  margin-left: auto;
+}
+[data-theme="dark"] .rc-acc-extra-tag {
+  background: #2d1b00; color: #fcd34d; border-color: #78350f;
+}
+
+/* Modal ricetta — ingredienti extra piano */
+.rm-extra-notice {
+  background: #fef3c7; color: #92400e;
+  border: 1px solid #fde68a; border-radius: var(--r-md);
+  padding: 9px 14px; font-size: .82rem; font-weight: 700;
+  margin-bottom: 10px;
+}
+[data-theme="dark"] .rm-extra-notice {
+  background: #2d1b00; color: #fcd34d; border-color: #78350f;
+}
+
+.rm-ing.rm-extra {
+  opacity: .65;
+}
+.rm-ing.rm-extra .rm-ing-name {
+  color: var(--text-light);
+}
+.rm-extra-tag {
+  font-size: .65rem; font-weight: 800;
+  padding: 1px 7px; border-radius: var(--r-full);
+  background: #fef3c7; color: #92400e;
+  border: 1px solid #fde68a; flex-shrink: 0;
+  margin-left: auto;
+}
+[data-theme="dark"] .rm-extra-tag {
+  background: #2d1b00; color: #fcd34d; border-color: #78350f;
 }
