@@ -18,7 +18,8 @@ var PA_MEALS = [
 
 /* "🧂 Altro" NON è inclusa — viene aggiunta solo se ci sono ingredienti */
 var PA_CATEGORIES = [
-  '🥩 Carne e Pesce',
+  '🥩 Carne',
+  '🐟 Pesce',
   '🥛 Latticini e Uova',
   '🌾 Cereali e Legumi',
   '🥦 Verdure',
@@ -29,7 +30,9 @@ var PA_CATEGORIES = [
 ];
 
 var PA_CAT_COLORS = {
-  '🥩 Carne e Pesce':        '#ef4444',
+  '🥩 Carne':                '#ef4444',
+  '🐟 Pesce':                '#0ea5e9',
+  '🥩 Carne e Pesce':        '#ef4444', /* compat */
   '🥛 Latticini e Uova':     '#f59e0b',
   '🌾 Cereali e Legumi':     '#a16207',
   '🥦 Verdure':              '#22c55e',
@@ -64,6 +67,7 @@ function paCatColor(cat) {
 }
 function paCatIcon(cat) {
   var m = {
+    '🥩 Carne': '🥩', '🐟 Pesce': '🐟',
     '🥩 Carne e Pesce': '🥩', '🥛 Latticini e Uova': '🥛',
     '🌾 Cereali e Legumi': '🌾', '🥦 Verdure': '🥦',
     '🍎 Frutta': '🍎', '🥑 Grassi e Condimenti': '🥑',
@@ -137,7 +141,16 @@ function renderPianoAlimentare() {
 
   paEnsureStructure();
 
-  var html = '';
+  /* Pulsante wizard */
+  var wizardBtn =
+    '<div style="margin-bottom:16px;">' +
+      '<button class="rc-btn rc-btn-primary" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;" ' +
+              'onclick="openPAWizard()">' +
+        '🧙 Configura piano pasto per pasto' +
+      '</button>' +
+    '</div>';
+
+  var html = wizardBtn;
 
   PA_MEALS.forEach(function(meal) {
     html += buildPAMealSection(meal);
@@ -380,20 +393,28 @@ function _renderPAIngList(query) {
   var candidates = [];
   var seen = {};
 
-  /* Ingredienti della categoria dal database */
+  /* Ingredienti della categoria dal database (gestisce anche compat Carne/Pesce) */
+  var catCompat = (cat === '🥩 Carne' || cat === '🐟 Pesce')
+    ? [cat, '🥩 Carne e Pesce']
+    : [cat];
+
   if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
     defaultIngredients.forEach(function(i) {
-      if (i && i.name && i.category === cat && !seen[i.name]) {
-        seen[i.name] = true;
-        candidates.push(i.name);
+      if (i && i.name && !seen[i.name]) {
+        var matchCat = catCompat.indexOf(i.category) !== -1;
+        if (matchCat && i.category === '🥩 Carne e Pesce') {
+          var isFish = ['🐟','🦑','🐙'].indexOf(i.icon || '') !== -1;
+          if (cat === '🐟 Pesce' && !isFish) matchCat = false;
+          if (cat === '🥩 Carne' && isFish) matchCat = false;
+        }
+        if (matchCat) { seen[i.name] = true; candidates.push(i.name); }
       }
     });
   }
   if (typeof customIngredients !== 'undefined' && Array.isArray(customIngredients)) {
     customIngredients.forEach(function(i) {
-      if (i && i.name && i.category === cat && !seen[i.name]) {
-        seen[i.name] = true;
-        candidates.push(i.name);
+      if (i && i.name && catCompat.indexOf(i.category) !== -1 && !seen[i.name]) {
+        seen[i.name] = true; candidates.push(i.name);
       }
     });
   }
@@ -757,4 +778,207 @@ document.addEventListener('DOMContentLoaded', function() {
       if (e.key === 'Escape') closePACustomIngModal();
     });
   }
+});
+
+/* ══════════════════════════════════════════════════════════
+   WIZARD — configurazione guidata pasto per pasto
+══════════════════════════════════════════════════════════ */
+var _wizStep = 0; /* 0-4 = pasti, 5 = limiti */
+
+function openPAWizard() {
+  _wizStep = 0;
+  paEnsureStructure();
+  var overlay = document.getElementById('paWizardOverlay');
+  if (!overlay) { _createWizardOverlay(); }
+  _renderWizardStep();
+  var ov = document.getElementById('paWizardOverlay');
+  if (ov) ov.style.display = 'flex';
+}
+
+function closePAWizard() {
+  var ov = document.getElementById('paWizardOverlay');
+  if (ov) ov.style.display = 'none';
+  renderPianoAlimentare();
+  if (typeof saveData === 'function') saveData();
+  if (typeof showToast === 'function') showToast('✅ Piano salvato', 'success');
+}
+
+function _createWizardOverlay() {
+  var div = document.createElement('div');
+  div.id = 'paWizardOverlay';
+  div.className = 'wizard-overlay';
+  div.style.display = 'none';
+  document.body.appendChild(div);
+}
+
+function _renderWizardStep() {
+  var ov = document.getElementById('paWizardOverlay');
+  if (!ov) return;
+
+  var isLimits = (_wizStep >= PA_MEALS.length);
+  var meal     = !isLimits ? PA_MEALS[_wizStep] : null;
+
+  /* ── progress dots ── */
+  var dots = PA_MEALS.map(function(m, i) {
+    var cls = i < _wizStep ? 'done' : (i === _wizStep ? 'active' : '');
+    return '<div class="wizard-progress-dot ' + cls + '" title="' + m.label + '"></div>';
+  }).join('') + '<div class="wizard-progress-dot' + (isLimits ? ' active' : '') + '" title="Limiti">📊</div>';
+
+  /* ── header ── */
+  var headerTitle = isLimits
+    ? '📊 Limiti settimanali (facoltativo)'
+    : (meal.emoji + ' ' + meal.label);
+  var headerSub = isLimits
+    ? 'Imposta i valori massimi settimanali'
+    : ('Pasto ' + (_wizStep + 1) + ' di ' + PA_MEALS.length);
+
+  /* ── body ── */
+  var body = isLimits ? _buildWizardLimitsBody() : _buildWizardMealBody(meal);
+
+  /* ── footer ── */
+  var prevBtn = _wizStep > 0
+    ? '<button class="rc-btn rc-btn-outline" onclick="wizPrev()">← Indietro</button>'
+    : '<button class="rc-btn rc-btn-outline" onclick="closePAWizard()">Annulla</button>';
+
+  var nextBtn = isLimits
+    ? '<button class="rc-btn rc-btn-primary" onclick="closePAWizard()">💾 Salva piano</button>'
+    : '<button class="rc-btn rc-btn-primary" onclick="wizNext()">' +
+        (_wizStep < PA_MEALS.length - 1 ? 'Prossimo pasto →' : 'Imposta limiti →') +
+      '</button>';
+
+  ov.innerHTML =
+    '<div class="wizard-header">' +
+      '<button class="rc-btn-icon" onclick="closePAWizard()" title="Chiudi" style="flex-shrink:0;">✕</button>' +
+      '<div class="wizard-step-info">' +
+        '<div>' + headerTitle + '</div>' +
+        '<div class="wizard-step-sub">' + headerSub + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="wizard-progress">' + dots + '</div>' +
+    '<div class="wizard-body">' + body + '</div>' +
+    '<div class="wizard-footer">' + prevBtn + nextBtn + '</div>';
+}
+
+function _buildWizardMealBody(meal) {
+  var items = [];
+  var allCats = PA_CATEGORIES.concat(['🧂 Altro']);
+  allCats.forEach(function(cat) {
+    var arr = (pianoAlimentare[meal.key] && Array.isArray(pianoAlimentare[meal.key][cat]))
+      ? pianoAlimentare[meal.key][cat] : [];
+    arr.forEach(function(ing, idx) {
+      if (ing && ing.name) items.push({ cat: cat, idx: idx, ing: ing });
+    });
+  });
+
+  var ingChips = items.length
+    ? items.map(function(it) {
+        var qty = it.ing.quantity ? ' ' + it.ing.quantity + (it.ing.unit || 'g') : '';
+        var catE = paEscQ(it.cat);
+        return '<span class="wizard-ing-chip" onclick="wizRemoveIng(\'' + paEscQ(meal.key) + '\',\'' + catE + '\',' + it.idx + ')">' +
+          paCatIcon(it.cat) + ' ' + it.ing.name + (qty ? '<small>' + qty + '</small>' : '') +
+          '<span class="wizard-ing-chip-del">✕</span>' +
+        '</span>';
+      }).join('')
+    : '<span class="wizard-empty-ings">Nessun ingrediente aggiunto ancora.</span>';
+
+  /* Griglia categorie */
+  var catBtns = PA_CATEGORIES.map(function(cat) {
+    var catE = paEscQ(cat);
+    var mealE = paEscQ(meal.key);
+    return '<button class="wizard-cat-btn" onclick="wizOpenCat(\'' + mealE + '\',\'' + catE + '\')">' +
+      paCatIcon(cat) + ' ' + cat.replace(/^[^\s]+\s/, '') +
+    '</button>';
+  }).join('');
+
+  return (
+    '<div class="wizard-current-ings">' +
+      '<div class="wizard-ings-label">Ingredienti aggiunti</div>' +
+      '<div>' + ingChips + '</div>' +
+    '</div>' +
+    '<div class="wizard-ings-label" style="margin-bottom:8px;">Aggiungi ingrediente per categoria</div>' +
+    '<div class="wizard-cats-grid">' + catBtns + '</div>'
+  );
+}
+
+function _buildWizardLimitsBody() {
+  var wl = (typeof weeklyLimits !== 'undefined' && weeklyLimits) ? weeklyLimits : {};
+  var keys = Object.keys(wl);
+  if (!keys.length) return '<p style="color:var(--text-3);font-size:.9rem;padding:12px 0;">Nessun limite configurato nel sistema.</p>';
+
+  var rows = keys.map(function(key) {
+    var lim  = wl[key];
+    var max  = (lim.max !== undefined && lim.max !== null) ? lim.max : '';
+    var keyE = paEscQ(key);
+    return (
+      '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">' +
+        '<span style="font-size:1.1rem;width:24px;">' + (lim.icon || '📊') + '</span>' +
+        '<span style="flex:1;font-weight:600;font-size:.9rem;">' + key + '</span>' +
+        '<span style="font-size:.75rem;color:var(--text-3);margin-right:4px;">' + (lim.unit || '') + '</span>' +
+        '<label style="font-size:.72rem;font-weight:700;color:var(--text-3);">Max</label>' +
+        '<input type="number" min="0" step="1" value="' + max + '" placeholder="—" ' +
+               'onchange="savePALimit(\'' + keyE + '\',this.value)" ' +
+               'style="width:60px;text-align:center;padding:5px;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:.9rem;">' +
+      '</div>'
+    );
+  }).join('');
+
+  return '<div class="wizard-limits-form" style="padding:0 12px;">' + rows + '</div>';
+}
+
+function wizNext() {
+  _wizStep++;
+  _renderWizardStep();
+}
+function wizPrev() {
+  _wizStep = Math.max(0, _wizStep - 1);
+  _renderWizardStep();
+}
+
+function wizOpenCat(mealKey, catName) {
+  /* Salva stato wizard e apri il modal ingrediente (il wizard resta aperto sotto) */
+  _paIngModalMeal  = mealKey;
+  _paIngModalCat   = catName;
+  _paIngModalQuery = '';
+  _paAltIngIdx     = -1;
+
+  var modal = document.getElementById('paIngModal');
+  if (!modal) return;
+
+  var titleEl = document.getElementById('paIngModalTitle');
+  if (titleEl) titleEl.textContent = '＋ Aggiungi a ' + catName.replace(/^[^\s]+\s/, '');
+
+  var searchEl = document.getElementById('paIngSearch');
+  if (searchEl) searchEl.value = '';
+
+  _renderPAIngList('');
+  modal.classList.add('active');
+
+  /* Override: dopo aver aggiunto, aggiorna il wizard */
+  _wizardIngCallback = true;
+  setTimeout(function() { if (searchEl) searchEl.focus(); }, 120);
+}
+
+var _wizardIngCallback = false;
+
+function wizRemoveIng(mealKey, catName, idx) {
+  paEnsureStructure();
+  var arr = pianoAlimentare[mealKey] && pianoAlimentare[mealKey][catName];
+  if (!Array.isArray(arr)) return;
+  arr.splice(idx, 1);
+  if (typeof saveData === 'function') saveData();
+  _renderWizardStep();
+}
+
+/* Hook: dopo confirmPAQty, se siamo nel wizard, aggiorna la visualizzazione */
+var _origConfirmPAQty = null;
+document.addEventListener('DOMContentLoaded', function() {
+  /* Patch confirmPAQty per aggiornare il wizard */
+  var _origConfirm = window.confirmPAQty;
+  window.confirmPAQty = function() {
+    if (typeof _origConfirm === 'function') _origConfirm();
+    var ov = document.getElementById('paWizardOverlay');
+    if (ov && ov.style.display !== 'none') {
+      setTimeout(function() { _renderWizardStep(); }, 80);
+    }
+  };
 });

@@ -23,9 +23,12 @@ var weeklyLimitsCustom = {};  /* limiti personalizzati nel piano alimentare */
    ============================================================ */
 function initStorage() {
   loadData();
-  /* Ripristina il piano di default solo se è il primo avvio assoluto
-     (nessun dato salvato E nessun clear esplicito da parte dell'utente) */
-  if (localStorage.getItem('nutriplan_cleared') !== '1') {
+  /* Ripristina il piano di default solo se:
+     - l'utente non è loggato (loggato => dati da Firebase, non da default)
+     - non c'è un clear esplicito
+     - il piano è vuoto */
+  var isLoggedIn = (typeof currentUser !== 'undefined') && currentUser;
+  if (!isLoggedIn && localStorage.getItem('nutriplan_cleared') !== '1') {
     if (!mealPlan || !Object.keys(mealPlan).length) {
       mealPlan = JSON.parse(JSON.stringify(defaultMealPlan || {}));
     }
@@ -138,7 +141,11 @@ function buildSaveObject() {
 
 function saveData() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(buildSaveObject()));
+    /* Quando l'utente è loggato, i dati vivono SOLO su Firebase (non localStorage) */
+    var isLoggedIn = (typeof currentUser !== 'undefined') && currentUser;
+    if (!isLoggedIn) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(buildSaveObject()));
+    }
     syncToCloud();
   } catch (e) { console.warn('Errore salvataggio:', e); }
 }
@@ -171,9 +178,21 @@ function loadFromCloud(uid) {
       if (data) {
         applyLoadedData(data);
         ensurePlanStructure();
-        saveData();
-        refreshAllAppViews();
+      } else {
+        /* Nuovo utente: azzera qualsiasi default caricato dal localStorage */
+        mealPlan = {};
+        pantryItems = {};
+        appHistory = {};
+        spesaItems = [];
+        customRecipes = [];
+        customIngredients = [];
+        pianoAlimentare = {};
+        weeklyLimitsCustom = {};
+        ensurePlanStructure();
       }
+      /* Non salvare su localStorage: utente loggato, dati solo su Firebase */
+      syncToCloud();
+      refreshAllAppViews();
       showCloudStatus('synced');
     })
     .catch(function (e) {

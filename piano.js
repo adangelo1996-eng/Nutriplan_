@@ -43,6 +43,8 @@ function renderMealPlan() {
 
 function ensureDefaultPlan() {
   if (typeof defaultMealPlan === 'undefined') return;
+  /* Non ripristinare i default se l'utente è loggato (dati da Firebase) */
+  if (typeof currentUser !== 'undefined' && currentUser) return;
   /* Non ripristinare i default se l'utente ha esplicitamente cancellato
      tutti i dati — il piano deve restare vuoto */
   if (localStorage.getItem('nutriplan_cleared') === '1') return;
@@ -142,10 +144,49 @@ function renderMealItems() {
       ? '<span style="color:var(--success);font-size:.9em;">✔</span>'
       : '<span style="color:var(--text-3);font-size:.9em;">○</span>';
     var usedCls = used ? ' style="opacity:.45;text-decoration:line-through;"' : '';
+
+    /* Controlla se l'ingrediente o la sua alternativa è già stata consumata di recente */
+    var alreadyBadge = '';
+    var today = new Date();
+    var todayKey = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    if (typeof appHistory !== 'undefined' && appHistory) {
+      var checkNames = [item.name];
+      if (subName) checkNames.push(subName);
+      var recentDaysAgo = null;
+      var recentWhat = '';
+      Object.keys(appHistory).sort(function(a,b){ return b.localeCompare(a); }).slice(0, 14).forEach(function(dk){
+        if (recentDaysAgo !== null) return;
+        if (dk === todayKey) return;
+        var hd = appHistory[dk];
+        if (!hd) return;
+        var d1 = new Date(dk.replace(/-/g,'/')), d2 = new Date(todayKey.replace(/-/g,'/'));
+        var diffDays = Math.round((d2 - d1) / 86400000);
+        ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk){
+          if (recentDaysAgo !== null) return;
+          var dayUsed = (hd.usedItems && hd.usedItems[mk]) ? hd.usedItems[mk] : {};
+          var daySubs = (hd.substitutions && hd.substitutions[mk]) ? hd.substitutions[mk] : {};
+          checkNames.forEach(function(nm){
+            if (recentDaysAgo !== null) return;
+            if (dayUsed[nm]) { recentDaysAgo = diffDays; recentWhat = nm; }
+            Object.keys(daySubs).forEach(function(orig){
+              if (recentDaysAgo !== null) return;
+              if (daySubs[orig] === nm) { recentDaysAgo = diffDays; recentWhat = nm + ' (alt.)'; }
+            });
+          });
+        });
+      });
+      if (recentDaysAgo !== null) {
+        var label = recentDaysAgo === 1 ? 'ieri' : recentDaysAgo + ' gg fa';
+        alreadyBadge = '<span class="already-selected-badge" title="Selezionato: ' + recentWhat + '">' +
+          '⏱ ' + label + '</span>';
+      }
+    }
+
     return '<div class="rc-card" style="margin-bottom:8px;">' +
       '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;">' +
         dot +
         '<span'+usedCls+' style="flex:1;font-weight:500;font-size:.93em;">'+display+'</span>' +
+        alreadyBadge +
         (qty ? '<span class="rc-badge" style="font-size:.72em;">'+qty+'</span>' : '') +
         (subName ? '<span class="rc-badge" style="background:#fff3cd;color:#856404;font-size:.7em;">↔</span>' : '') +
         '<div style="display:flex;gap:4px;">' +
@@ -189,7 +230,7 @@ function toggleUsedItem(name) {
 
 /* Gruppi macro-compatibili per le sostituzioni */
 var MACRO_COMPATIBLE_GROUPS = [
-  ['🥩 Carne e Pesce'],
+  ['🥩 Carne', '🐟 Pesce', '🥩 Carne e Pesce'], /* compat */
   ['🥛 Latticini e Uova'],
   ['🌾 Cereali e Legumi'],
   ['🥦 Verdure'],
@@ -499,6 +540,7 @@ function escQ(str) { return String(str).replace(/'/g,"\\'").replace(/"/g,'&quot;
 function capitalizeFirst(str) { return str ? str.charAt(0).toUpperCase()+str.slice(1) : ''; }
 function getCategoryIcon(cat) {
   var map = {
+    '🥩 Carne':'🥩','🐟 Pesce':'🐟',
     '🥩 Carne e Pesce':'🥩','🥛 Latticini e Uova':'🥛','🌾 Cereali e Legumi':'🌾',
     '🥦 Verdure':'🥦','🍎 Frutta':'🍎','🥑 Grassi e Condimenti':'🥑',
     '🍫 Dolci e Snack':'🍫','🧂 Cucina':'🧂','🧂 Altro':'🧂'

@@ -4,9 +4,10 @@
 
 /* ── CATEGORIE ── */
 var CATEGORIES = [
-  '🥩 Carne e Pesce','🥛 Latticini e Uova','🌾 Cereali e Legumi',
+  '🥩 Carne','🐟 Pesce','🥛 Latticini e Uova','🌾 Cereali e Legumi',
   '🥦 Verdure','🍎 Frutta','🥑 Grassi e Condimenti',
-  '🍫 Dolci e Snack','🧂 Cucina'
+  '🍫 Dolci e Snack','🧂 Cucina',
+  '🥩 Carne e Pesce' /* compatibilità dati precedenti */
 ];
 
 /* ============================================================
@@ -38,32 +39,33 @@ var defaultIngredients = [
   { name:'Piselli in scatola',       category:'🌾 Cereali e Legumi', unit:'g',  icon:'🫛' },
   { name:'Hummus',                   category:'🌾 Cereali e Legumi', unit:'g',  icon:'🫘' },
   { name:'Farro perlato',            category:'🌾 Cereali e Legumi', unit:'g',  icon:'🌾' },
-  /* ── 🥩 CARNE E PESCE ── */
-  { name:'Straccetti di pollo', category:'🥩 Carne e Pesce', unit:'g', icon:'🍗' },
-  { name:'Petto di pollo',      category:'🥩 Carne e Pesce', unit:'g', icon:'🍗' },
-  { name:'Tacchino',            category:'🥩 Carne e Pesce', unit:'g', icon:'🍗' },
-  { name:'Coniglio',            category:'🥩 Carne e Pesce', unit:'g', icon:'🥩' },
-  { name:'Carne rossa magra',   category:'🥩 Carne e Pesce', unit:'g', icon:'🥩' },
-  { name:'Vitello',             category:'🥩 Carne e Pesce', unit:'g', icon:'🥩' },
-  { name:'Manzo magro',         category:'🥩 Carne e Pesce', unit:'g', icon:'🥩' },
-  { name:'Bresaola',            category:'🥩 Carne e Pesce', unit:'g', icon:'🥩' },
-  { name:'Fesa di tacchino',    category:'🥩 Carne e Pesce', unit:'g', icon:'🍗' },
-  { name:'Prosciutto cotto',    category:'🥩 Carne e Pesce', unit:'g', icon:'🥩' },
-  { name:'Prosciutto crudo',    category:'🥩 Carne e Pesce', unit:'g', icon:'🥩' },
-  { name:'Merluzzo',            category:'🥩 Carne e Pesce', unit:'g', icon:'🐟' },
-  { name:'Nasello',             category:'🥩 Carne e Pesce', unit:'g', icon:'🐟' },
-  { name:'Spigola',             category:'🥩 Carne e Pesce', unit:'g', icon:'🐟' },
-  { name:'Branzino',            category:'🥩 Carne e Pesce', unit:'g', icon:'🐟' },
-  { name:'Salmone',             category:'🥩 Carne e Pesce', unit:'g', icon:'🐟' },
-  { name:'Orata',               category:'🥩 Carne e Pesce', unit:'g', icon:'🐟' },
-  { name:'Tonno fresco',        category:'🥩 Carne e Pesce', unit:'g', icon:'🐟' },
-  { name:'Pesce spada',         category:'🥩 Carne e Pesce', unit:'g', icon:'🐟' },
-  { name:'Calamari',            category:'🥩 Carne e Pesce', unit:'g', icon:'🦑' },
-  { name:'Polpo',               category:'🥩 Carne e Pesce', unit:'g', icon:'🐙' },
-  { name:'Seppie',              category:'🥩 Carne e Pesce', unit:'g', icon:'🦑' },
-  { name:'Tonno al naturale',   category:'🥩 Carne e Pesce', unit:'g', icon:'🐟' },
-  { name:'Salmone affumicato',  category:'🥩 Carne e Pesce', unit:'g', icon:'🐟' },
-  { name:'Tofu',                category:'🥩 Carne e Pesce', unit:'g', icon:'🧊' },
+  /* ── 🥩 CARNE ── */
+  { name:'Straccetti di pollo', category:'🥩 Carne', unit:'g', icon:'🍗' },
+  { name:'Petto di pollo',      category:'🥩 Carne', unit:'g', icon:'🍗' },
+  { name:'Tacchino',            category:'🥩 Carne', unit:'g', icon:'🍗' },
+  { name:'Coniglio',            category:'🥩 Carne', unit:'g', icon:'🥩' },
+  { name:'Carne rossa magra',   category:'🥩 Carne', unit:'g', icon:'🥩' },
+  { name:'Vitello',             category:'🥩 Carne', unit:'g', icon:'🥩' },
+  { name:'Manzo magro',         category:'🥩 Carne', unit:'g', icon:'🥩' },
+  { name:'Bresaola',            category:'🥩 Carne', unit:'g', icon:'🥩' },
+  { name:'Fesa di tacchino',    category:'🥩 Carne', unit:'g', icon:'🍗' },
+  { name:'Prosciutto cotto',    category:'🥩 Carne', unit:'g', icon:'🥩' },
+  { name:'Prosciutto crudo',    category:'🥩 Carne', unit:'g', icon:'🥩' },
+  { name:'Tofu',                category:'🥩 Carne', unit:'g', icon:'🧊' },
+  /* ── 🐟 PESCE ── */
+  { name:'Merluzzo',            category:'🐟 Pesce', unit:'g', icon:'🐟' },
+  { name:'Nasello',             category:'🐟 Pesce', unit:'g', icon:'🐟' },
+  { name:'Spigola',             category:'🐟 Pesce', unit:'g', icon:'🐟' },
+  { name:'Branzino',            category:'🐟 Pesce', unit:'g', icon:'🐟' },
+  { name:'Salmone',             category:'🐟 Pesce', unit:'g', icon:'🐟' },
+  { name:'Orata',               category:'🐟 Pesce', unit:'g', icon:'🐟' },
+  { name:'Tonno fresco',        category:'🐟 Pesce', unit:'g', icon:'🐟' },
+  { name:'Pesce spada',         category:'🐟 Pesce', unit:'g', icon:'🐟' },
+  { name:'Calamari',            category:'🐟 Pesce', unit:'g', icon:'🦑' },
+  { name:'Polpo',               category:'🐟 Pesce', unit:'g', icon:'🐙' },
+  { name:'Seppie',              category:'🐟 Pesce', unit:'g', icon:'🦑' },
+  { name:'Tonno al naturale',   category:'🐟 Pesce', unit:'g', icon:'🐟' },
+  { name:'Salmone affumicato',  category:'🐟 Pesce', unit:'g', icon:'🐟' },
   /* ── 🥛 LATTICINI E UOVA ── */
   { name:'Latte parzialmente scremato', category:'🥛 Latticini e Uova', unit:'ml', icon:'🥛' },
   { name:'Latte senza lattosio',        category:'🥛 Latticini e Uova', unit:'ml', icon:'🥛' },

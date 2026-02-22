@@ -291,12 +291,14 @@ function buildCalendarBar() {
     }) || Object.keys(hd.ricette || {}).some(function(mk){
       return Object.keys((hd.ricette || {})[mk] || {}).length > 0;
     });
-    var isPast = d < today && !isToday;
+    var isPast   = d < today && !isToday;
+    var isFuture = d > today && !isToday;
     var cls = 'cal-day' +
-      (isToday  ? ' today'    : '') +
-      (isActive ? ' active'   : '') +
-      (hasData  ? ' has-data' : '') +
-      (isPast   ? ' cal-past' : '');
+      (isToday  ? ' today'      : '') +
+      (isActive ? ' active'     : '') +
+      (hasData  ? ' has-data'   : '') +
+      (isPast   ? ' cal-past'   : '') +
+      (isFuture ? ' cal-future' : '');
     html +=
       '<div class="' + cls + '" onclick="selectDate(\'' + dk + '\')" data-dk="' + dk + '">' +
         '<span class="cal-day-name">' + DAYS_IT[d.getDay()] + '</span>' +
@@ -307,10 +309,17 @@ function buildCalendarBar() {
   }
   bar.innerHTML = html;
 
-  /* Scroll al giorno attivo */
+  /* Scroll centrato sul giorno attivo/oggi */
   setTimeout(function() {
-    var active = bar.querySelector('.cal-day.active');
-    if (active) active.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+    var active = bar.querySelector('.cal-day.active') || bar.querySelector('.cal-day.today');
+    if (active) {
+      /* Calcola scrollLeft per centrare il giorno */
+      var barWidth  = bar.offsetWidth;
+      var dayLeft   = active.offsetLeft;
+      var dayWidth  = active.offsetWidth;
+      var targetScroll = dayLeft - (barWidth / 2) + (dayWidth / 2);
+      bar.scrollLeft = Math.max(0, targetScroll);
+    }
   }, 80);
 
   /* Aggiorna bottoni navigazione */

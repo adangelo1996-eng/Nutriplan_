@@ -219,7 +219,8 @@ function computeWeekUsage() {
 
   /* mappa nome ingrediente → categoria limite */
   var catMap = {
-    '🥩 Carne e Pesce': 'carne',
+    '🥩 Carne': 'carne', '🐟 Pesce': 'pesce',
+    '🥩 Carne e Pesce': 'carne', /* compat */
     '🥛 Latticini e Uova': 'latticini',
     '🌾 Cereali e Legumi': 'cereali',
     '🥦 Verdure': 'verdura',
