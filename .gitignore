@@ -1,0 +1,17 @@
+# Chiavi API e configurazione sensibile — NON committare
+config.js
+
+# Dipendenze e build
+node_modules/
+dist/
+.cache/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

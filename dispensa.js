@@ -336,6 +336,17 @@ function renderFridge(targetId) {
       '</div>';
   }
 
+  /* Pulsante AI solo nella pagina principale dispensa (non nei modal incorporati) */
+  if (!targetId && typeof openAIRecipeModal === 'function') {
+    var aiHtml =
+      '<div style="margin-bottom:14px;">' +
+        '<button class="ai-recipe-btn" onclick="openAIRecipeModal(\'dispensa\')">' +
+          '🤖 Genera ricetta AI con gli ingredienti disponibili' +
+        '</button>' +
+      '</div>';
+    html = aiHtml + html;
+  }
+
   el.innerHTML = html;
 }
 

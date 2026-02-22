@@ -141,16 +141,36 @@ function renderPianoAlimentare() {
 
   paEnsureStructure();
 
-  /* Pulsante wizard */
-  var wizardBtn =
-    '<div style="margin-bottom:16px;">' +
-      '<button class="rc-btn rc-btn-primary" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;" ' +
-              'onclick="openPAWizard()">' +
-        '🧙 Configura piano pasto per pasto' +
-      '</button>' +
+  /* Verifica se il piano è vuoto */
+  var totalCount = 0;
+  PA_MEALS.forEach(function(m) { totalCount += paGetMealCount(m.key); });
+  var isEmpty = totalCount === 0;
+
+  /* Card invito wizard */
+  var wizardCard =
+    '<div class="pa-wizard-invite' + (isEmpty ? ' pa-wizard-invite-empty' : '') + '">' +
+      '<div class="pa-wizard-invite-icon">🧙</div>' +
+      '<div class="pa-wizard-invite-body">' +
+        '<div class="pa-wizard-invite-title">' +
+          (isEmpty ? 'Configura il tuo piano alimentare' : 'Modifica piano guidato') +
+        '</div>' +
+        '<div class="pa-wizard-invite-sub">' +
+          (isEmpty
+            ? 'Inserisci gli ingredienti pasto per pasto con la configurazione guidata'
+            : 'Rivedi e modifica gli ingredienti di ogni pasto') +
+        '</div>' +
+        '<button class="pa-wizard-invite-btn" onclick="openPAWizard()">' +
+          (isEmpty ? '✨ Inizia configurazione →' : '✏️ Modifica guidata →') +
+        '</button>' +
+      '</div>' +
     '</div>';
 
-  var html = wizardBtn;
+  /* Popup redirect se piano vuoto */
+  if (isEmpty) {
+    setTimeout(function() { _showPAEmptyPrompt(); }, 300);
+  }
+
+  var html = wizardCard;
 
   PA_MEALS.forEach(function(meal) {
     html += buildPAMealSection(meal);
@@ -159,6 +179,15 @@ function renderPianoAlimentare() {
   html += buildPALimitiSection();
 
   el.innerHTML = html;
+}
+
+function _showPAEmptyPrompt() {
+  /* Evidenzia la card wizard con animazione */
+  var card = document.querySelector('.pa-wizard-invite-empty');
+  if (card) {
+    card.classList.add('pa-wizard-invite-pulse');
+    setTimeout(function() { card.classList.remove('pa-wizard-invite-pulse'); }, 1200);
+  }
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -782,14 +811,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /* ══════════════════════════════════════════════════════════
    WIZARD — configurazione guidata pasto per pasto
+   Steps: 0-4 = pasti, 5 = limiti, 6 = revisione
 ══════════════════════════════════════════════════════════ */
-var _wizStep = 0; /* 0-4 = pasti, 5 = limiti */
+
+/* 0-4: pasti   5: limiti   6: revisione */
+var _wizStep = 0;
+var WIZ_STEP_LIMITS  = PA_MEALS.length;        /* 5 */
+var WIZ_STEP_REVIEW  = PA_MEALS.length + 1;   /* 6 */
 
 function openPAWizard() {
   _wizStep = 0;
   paEnsureStructure();
-  var overlay = document.getElementById('paWizardOverlay');
-  if (!overlay) { _createWizardOverlay(); }
+  if (!document.getElementById('paWizardOverlay')) { _createWizardOverlay(); }
   _renderWizardStep();
   var ov = document.getElementById('paWizardOverlay');
   if (ov) ov.style.display = 'flex';
@@ -805,46 +838,66 @@ function closePAWizard() {
 
 function _createWizardOverlay() {
   var div = document.createElement('div');
-  div.id = 'paWizardOverlay';
+  div.id        = 'paWizardOverlay';
   div.className = 'wizard-overlay';
   div.style.display = 'none';
   document.body.appendChild(div);
+}
+
+/* ── progress bar ── */
+function _wizProgressBar() {
+  var total = PA_MEALS.length + 2; /* pasti + limiti + revisione */
+  var dots  = PA_MEALS.map(function(m, i) {
+    var cls = i < _wizStep ? 'done' : (i === _wizStep ? 'active' : '');
+    return '<div class="wizard-progress-dot ' + cls + '" title="' + m.label + '"></div>';
+  }).join('');
+  dots += '<div class="wizard-progress-dot ' + (_wizStep === WIZ_STEP_LIMITS ? 'active' : (_wizStep > WIZ_STEP_LIMITS ? 'done' : '')) + '" title="Limiti"></div>';
+  dots += '<div class="wizard-progress-dot ' + (_wizStep === WIZ_STEP_REVIEW ? 'active' : '') + '" title="Revisione"></div>';
+  return '<div class="wizard-progress">' + dots + '</div>';
 }
 
 function _renderWizardStep() {
   var ov = document.getElementById('paWizardOverlay');
   if (!ov) return;
 
-  var isLimits = (_wizStep >= PA_MEALS.length);
-  var meal     = !isLimits ? PA_MEALS[_wizStep] : null;
+  var isLimits = _wizStep === WIZ_STEP_LIMITS;
+  var isReview = _wizStep === WIZ_STEP_REVIEW;
+  var meal     = (!isLimits && !isReview) ? PA_MEALS[_wizStep] : null;
 
-  /* ── progress dots ── */
-  var dots = PA_MEALS.map(function(m, i) {
-    var cls = i < _wizStep ? 'done' : (i === _wizStep ? 'active' : '');
-    return '<div class="wizard-progress-dot ' + cls + '" title="' + m.label + '"></div>';
-  }).join('') + '<div class="wizard-progress-dot' + (isLimits ? ' active' : '') + '" title="Limiti">📊</div>';
+  /* header */
+  var headerTitle, headerSub;
+  if (isReview) {
+    headerTitle = '👁 Revisione piano';
+    headerSub   = 'Controlla i tuoi pasti prima di salvare';
+  } else if (isLimits) {
+    headerTitle = '📊 Limiti settimanali';
+    headerSub   = 'Facoltativo — puoi saltare';
+  } else {
+    headerTitle = meal.emoji + ' ' + meal.label;
+    headerSub   = 'Pasto ' + (_wizStep + 1) + ' di ' + PA_MEALS.length;
+  }
 
-  /* ── header ── */
-  var headerTitle = isLimits
-    ? '📊 Limiti settimanali (facoltativo)'
-    : (meal.emoji + ' ' + meal.label);
-  var headerSub = isLimits
-    ? 'Imposta i valori massimi settimanali'
-    : ('Pasto ' + (_wizStep + 1) + ' di ' + PA_MEALS.length);
+  /* body */
+  var body;
+  if (isReview)      body = _buildWizardReviewBody();
+  else if (isLimits) body = _buildWizardLimitsBody();
+  else               body = _buildWizardMealBody(meal);
 
-  /* ── body ── */
-  var body = isLimits ? _buildWizardLimitsBody() : _buildWizardMealBody(meal);
-
-  /* ── footer ── */
+  /* footer */
   var prevBtn = _wizStep > 0
     ? '<button class="rc-btn rc-btn-outline" onclick="wizPrev()">← Indietro</button>'
-    : '<button class="rc-btn rc-btn-outline" onclick="closePAWizard()">Annulla</button>';
+    : '<button class="rc-btn rc-btn-outline" onclick="closePAWizard()">✕ Annulla</button>';
 
-  var nextBtn = isLimits
-    ? '<button class="rc-btn rc-btn-primary" onclick="closePAWizard()">💾 Salva piano</button>'
-    : '<button class="rc-btn rc-btn-primary" onclick="wizNext()">' +
-        (_wizStep < PA_MEALS.length - 1 ? 'Prossimo pasto →' : 'Imposta limiti →') +
-      '</button>';
+  var nextBtn;
+  if (isReview) {
+    nextBtn = '<button class="rc-btn rc-btn-primary" onclick="closePAWizard()">💾 Salva piano</button>';
+  } else if (isLimits) {
+    nextBtn = '<button class="rc-btn rc-btn-primary" onclick="wizNext()">👁 Revisione →</button>';
+  } else if (_wizStep < PA_MEALS.length - 1) {
+    nextBtn = '<button class="rc-btn rc-btn-primary" onclick="wizNext()">Prossimo pasto →</button>';
+  } else {
+    nextBtn = '<button class="rc-btn rc-btn-primary" onclick="wizNext()">📊 Limiti →</button>';
+  }
 
   ov.innerHTML =
     '<div class="wizard-header">' +
@@ -854,79 +907,162 @@ function _renderWizardStep() {
         '<div class="wizard-step-sub">' + headerSub + '</div>' +
       '</div>' +
     '</div>' +
-    '<div class="wizard-progress">' + dots + '</div>' +
+    _wizProgressBar() +
     '<div class="wizard-body">' + body + '</div>' +
     '<div class="wizard-footer">' + prevBtn + nextBtn + '</div>';
 }
 
+/* ── BODY: pasto ── */
 function _buildWizardMealBody(meal) {
-  var items = [];
+  var html = '';
+
+  /* Categorie come sezioni espandibili (simili alla visualizzazione finale) */
   var allCats = PA_CATEGORIES.concat(['🧂 Altro']);
   allCats.forEach(function(cat) {
     var arr = (pianoAlimentare[meal.key] && Array.isArray(pianoAlimentare[meal.key][cat]))
       ? pianoAlimentare[meal.key][cat] : [];
-    arr.forEach(function(ing, idx) {
-      if (ing && ing.name) items.push({ cat: cat, idx: idx, ing: ing });
-    });
+
+    /* "Altro" solo se ha elementi */
+    if (cat === '🧂 Altro' && !arr.length) return;
+
+    var color   = paCatColor(cat);
+    var icon    = paCatIcon(cat);
+    var label   = cat.replace(/^[^\s]+\s/, '');
+    var catE    = paEscQ(cat);
+    var mealE   = paEscQ(meal.key);
+    var safeId  = 'wiz-cat-' + meal.key + '-' + cat.replace(/[^a-z0-9]/gi, '_');
+
+    /* Ingredienti della categoria */
+    var ingsHtml = arr.length
+      ? arr.map(function(ing, idx) {
+          if (!ing || !ing.name) return '';
+          var qty = ing.quantity ? ' ' + ing.quantity + (ing.unit || 'g') : '';
+          return '<div class="wiz-ing-row">' +
+            '<span class="wiz-ing-name">' + icon + ' ' + ing.name +
+              (qty ? '<small class="wiz-ing-qty">' + qty + '</small>' : '') +
+            '</span>' +
+            '<button class="wiz-ing-del" title="Rimuovi" ' +
+                    'onclick="wizRemoveIng(\'' + mealE + '\',\'' + catE + '\',' + idx + ')">' +
+              '✕' +
+            '</button>' +
+          '</div>';
+        }).join('')
+      : '';
+
+    var addBtn =
+      '<button class="wiz-add-cat-btn" style="--wc:' + color + ';" ' +
+              'onclick="wizOpenCat(\'' + mealE + '\',\'' + catE + '\')">' +
+        '＋ Aggiungi ' + label +
+      '</button>';
+
+    var hasItems   = arr.length > 0;
+    var isOpen     = hasItems; /* aperta se ha elementi */
+    var bodyStyle  = isOpen ? '' : 'display:none;';
+
+    html +=
+      '<div class="wiz-cat-section" style="--pc:' + color + ';">' +
+        '<div class="wiz-cat-header" onclick="wizToggleCat(\'' + safeId + '\')">' +
+          '<span class="wiz-cat-icon">' + icon + '</span>' +
+          '<span class="wiz-cat-label">' + label + '</span>' +
+          (hasItems ? '<span class="wiz-cat-count">' + arr.length + '</span>' : '') +
+          '<span class="wiz-cat-chev" id="' + safeId + '-chev">' + (isOpen ? '▴' : '▾') + '</span>' +
+        '</div>' +
+        '<div class="wiz-cat-body" id="' + safeId + '-body" style="' + bodyStyle + '">' +
+          ingsHtml +
+          addBtn +
+        '</div>' +
+      '</div>';
   });
 
-  var ingChips = items.length
-    ? items.map(function(it) {
-        var qty = it.ing.quantity ? ' ' + it.ing.quantity + (it.ing.unit || 'g') : '';
-        var catE = paEscQ(it.cat);
-        return '<span class="wizard-ing-chip" onclick="wizRemoveIng(\'' + paEscQ(meal.key) + '\',\'' + catE + '\',' + it.idx + ')">' +
-          paCatIcon(it.cat) + ' ' + it.ing.name + (qty ? '<small>' + qty + '</small>' : '') +
-          '<span class="wizard-ing-chip-del">✕</span>' +
-        '</span>';
-      }).join('')
-    : '<span class="wizard-empty-ings">Nessun ingrediente aggiunto ancora.</span>';
+  if (!html) {
+    html = '<div class="wizard-empty-ings">Nessun ingrediente ancora. Aggiungi tramite le categorie qui sopra.</div>';
+  }
 
-  /* Griglia categorie */
-  var catBtns = PA_CATEGORIES.map(function(cat) {
-    var catE = paEscQ(cat);
-    var mealE = paEscQ(meal.key);
-    return '<button class="wizard-cat-btn" onclick="wizOpenCat(\'' + mealE + '\',\'' + catE + '\')">' +
-      paCatIcon(cat) + ' ' + cat.replace(/^[^\s]+\s/, '') +
-    '</button>';
-  }).join('');
-
-  return (
-    '<div class="wizard-current-ings">' +
-      '<div class="wizard-ings-label">Ingredienti aggiunti</div>' +
-      '<div>' + ingChips + '</div>' +
-    '</div>' +
-    '<div class="wizard-ings-label" style="margin-bottom:8px;">Aggiungi ingrediente per categoria</div>' +
-    '<div class="wizard-cats-grid">' + catBtns + '</div>'
-  );
+  return html;
 }
 
+function wizToggleCat(safeId) {
+  var body = document.getElementById(safeId + '-body');
+  var chev = document.getElementById(safeId + '-chev');
+  if (!body) return;
+  var hidden = body.style.display === 'none';
+  body.style.display = hidden ? '' : 'none';
+  if (chev) chev.textContent = hidden ? '▴' : '▾';
+}
+
+/* ── BODY: limiti ── */
 function _buildWizardLimitsBody() {
-  var wl = (typeof weeklyLimits !== 'undefined' && weeklyLimits) ? weeklyLimits : {};
+  var wl   = (typeof weeklyLimits !== 'undefined' && weeklyLimits) ? weeklyLimits : {};
   var keys = Object.keys(wl);
-  if (!keys.length) return '<p style="color:var(--text-3);font-size:.9rem;padding:12px 0;">Nessun limite configurato nel sistema.</p>';
+  if (!keys.length) {
+    return '<p style="color:var(--text-3);font-size:.9rem;padding:12px 0;">Nessun limite configurato nel sistema.</p>';
+  }
 
   var rows = keys.map(function(key) {
     var lim  = wl[key];
     var max  = (lim.max !== undefined && lim.max !== null) ? lim.max : '';
     var keyE = paEscQ(key);
     return (
-      '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">' +
-        '<span style="font-size:1.1rem;width:24px;">' + (lim.icon || '📊') + '</span>' +
-        '<span style="flex:1;font-weight:600;font-size:.9rem;">' + key + '</span>' +
-        '<span style="font-size:.75rem;color:var(--text-3);margin-right:4px;">' + (lim.unit || '') + '</span>' +
-        '<label style="font-size:.72rem;font-weight:700;color:var(--text-3);">Max</label>' +
+      '<div class="wiz-limit-row">' +
+        '<span class="wiz-limit-icon">' + (lim.icon || '📊') + '</span>' +
+        '<span class="wiz-limit-label">' + key + '</span>' +
+        '<span class="wiz-limit-unit">' + (lim.unit || '') + '</span>' +
         '<input type="number" min="0" step="1" value="' + max + '" placeholder="—" ' +
                'onchange="savePALimit(\'' + keyE + '\',this.value)" ' +
-               'style="width:60px;text-align:center;padding:5px;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:.9rem;">' +
+               'class="wiz-limit-input">' +
       '</div>'
     );
   }).join('');
 
-  return '<div class="wizard-limits-form" style="padding:0 12px;">' + rows + '</div>';
+  return '<div class="wizard-limits-form">' + rows + '</div>';
+}
+
+/* ── BODY: revisione ── */
+function _buildWizardReviewBody() {
+  var html = '<div class="wiz-review-intro">Ecco il riepilogo del tuo piano alimentare. Clicca "Salva piano" per confermare.</div>';
+
+  PA_MEALS.forEach(function(meal) {
+    var count = paGetMealCount(meal.key);
+    var mealItems = [];
+    var allCats = PA_CATEGORIES.concat(['🧂 Altro']);
+    allCats.forEach(function(cat) {
+      var arr = (pianoAlimentare[meal.key] && Array.isArray(pianoAlimentare[meal.key][cat]))
+        ? pianoAlimentare[meal.key][cat] : [];
+      arr.forEach(function(ing) {
+        if (ing && ing.name) mealItems.push({ cat: cat, ing: ing });
+      });
+    });
+
+    html +=
+      '<div class="wiz-review-meal">' +
+        '<div class="wiz-review-meal-header">' +
+          '<span>' + meal.emoji + ' ' + meal.label + '</span>' +
+          '<span class="wiz-review-count">' +
+            (count > 0 ? count + ' ingredienti' : 'Vuoto') +
+          '</span>' +
+        '</div>';
+
+    if (mealItems.length) {
+      html += '<div class="wiz-review-ings">' +
+        mealItems.map(function(it) {
+          var qty = it.ing.quantity ? ' · ' + it.ing.quantity + (it.ing.unit || 'g') : '';
+          return '<span class="wiz-review-ing-chip">' +
+            paCatIcon(it.cat) + ' ' + it.ing.name + qty +
+          '</span>';
+        }).join('') +
+      '</div>';
+    } else {
+      html += '<div style="color:var(--text-3);font-size:.83rem;padding:6px 0 4px;">Nessun ingrediente</div>';
+    }
+
+    html += '</div>';
+  });
+
+  return html;
 }
 
 function wizNext() {
-  _wizStep++;
+  _wizStep = Math.min(_wizStep + 1, WIZ_STEP_REVIEW);
   _renderWizardStep();
 }
 function wizPrev() {
@@ -935,7 +1071,8 @@ function wizPrev() {
 }
 
 function wizOpenCat(mealKey, catName) {
-  /* Salva stato wizard e apri il modal ingrediente (il wizard resta aperto sotto) */
+  /* Apre il modal ingredienti sovrapposto al wizard.
+     Il modal ha z-index > wizard overlay, quindi viene mostrato correttamente. */
   _paIngModalMeal  = mealKey;
   _paIngModalCat   = catName;
   _paIngModalQuery = '';
@@ -948,17 +1085,12 @@ function wizOpenCat(mealKey, catName) {
   if (titleEl) titleEl.textContent = '＋ Aggiungi a ' + catName.replace(/^[^\s]+\s/, '');
 
   var searchEl = document.getElementById('paIngSearch');
-  if (searchEl) searchEl.value = '';
+  if (searchEl) { searchEl.value = ''; }
 
   _renderPAIngList('');
   modal.classList.add('active');
-
-  /* Override: dopo aver aggiunto, aggiorna il wizard */
-  _wizardIngCallback = true;
   setTimeout(function() { if (searchEl) searchEl.focus(); }, 120);
 }
-
-var _wizardIngCallback = false;
 
 function wizRemoveIng(mealKey, catName, idx) {
   paEnsureStructure();
@@ -969,16 +1101,14 @@ function wizRemoveIng(mealKey, catName, idx) {
   _renderWizardStep();
 }
 
-/* Hook: dopo confirmPAQty, se siamo nel wizard, aggiorna la visualizzazione */
-var _origConfirmPAQty = null;
+/* Hook: dopo confirmPAQty, se il wizard è aperto aggiorna la visualizzazione */
 document.addEventListener('DOMContentLoaded', function() {
-  /* Patch confirmPAQty per aggiornare il wizard */
   var _origConfirm = window.confirmPAQty;
   window.confirmPAQty = function() {
     if (typeof _origConfirm === 'function') _origConfirm();
     var ov = document.getElementById('paWizardOverlay');
     if (ov && ov.style.display !== 'none') {
-      setTimeout(function() { _renderWizardStep(); }, 80);
+      setTimeout(function() { _renderWizardStep(); }, 100);
     }
   };
 });
