@@ -25,10 +25,15 @@
   <link rel="stylesheet" href="components.css">
   <link rel="stylesheet" href="utils.css">
 
-  <!-- Firebase SDK — devono stare PRIMA di firebase-config.js -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <!-- Firebase SDK via URL riservate Firebase Hosting.
+       /__/firebase/init.js inietta automaticamente la config del progetto
+       ed esegue firebase.initializeApp() — nessun config.js necessario in produzione.
+       Fallback: se config.js esiste localmente (sviluppo), firebase-config.js usa
+       la guard firebase.apps.length===0 per non inizializzare due volte. -->
+  <script src="/__/firebase/10.14.1/firebase-app-compat.js"></script>
+  <script src="/__/firebase/10.14.1/firebase-auth-compat.js"></script>
+  <script src="/__/firebase/10.14.1/firebase-database-compat.js"></script>
+  <script src="/__/firebase/init.js"></script>
 </head>
 
 <body>
