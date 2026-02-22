@@ -10,11 +10,17 @@
 ============================================================ */
 
 /* ── CONFIGURAZIONE ────────────────────────────────────────
-   In produzione (Firebase Hosting) la config viene iniettata
-   automaticamente da /__/firebase/init.js — non serve config.js.
-   In sviluppo locale, config.js può fornire un fallback.
+   La config viene iniettata da config.js:
+   - In produzione (GitHub Pages): generato da GitHub Actions via Secrets.
+   - In sviluppo locale: copia config.example.js → config.js con le tue chiavi.
+   Il SDK Firebase è caricato dal CDN pubblico gstatic.com (index.html).
 ────────────────────────────────────────────────────────── */
-var firebaseConfig = (window.APP_CONFIG && window.APP_CONFIG.firebase) || null;
+var _rawCfg = (window.APP_CONFIG && window.APP_CONFIG.firebase) || null;
+/* Valida: scarta la config se apiKey è vuota o contiene placeholder */
+var firebaseConfig = (_rawCfg && _rawCfg.apiKey &&
+                      _rawCfg.apiKey !== 'YOUR_FIREBASE_API_KEY' &&
+                      _rawCfg.apiKey.length > 10)
+                     ? _rawCfg : null;
 
 /* ── VARIABILI GLOBALI (usate da storage.js e app.js) ───── */
 var firebaseReady = false;
