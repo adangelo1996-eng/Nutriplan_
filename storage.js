@@ -15,6 +15,8 @@ var customIngredients = [];
 var spesaItems        = [];
 var spesaLastGenerated = null;
 var selectedDateKey   = null; /* inizializzato da enterApp() */
+var pianoAlimentare   = {};   /* piano strutturato per categoria ingrediente */
+var weeklyLimitsCustom = {};  /* limiti personalizzati nel piano alimentare */
 
 /* ============================================================
    INIT STORAGE (chiamata da enterApp prima di tutto)
@@ -104,6 +106,10 @@ function applyLoadedData(data) {
       }
     });
   }
+  if (data.pianoAlimentare && typeof data.pianoAlimentare === 'object')
+    pianoAlimentare = data.pianoAlimentare;
+  if (data.weeklyLimitsCustom && typeof data.weeklyLimitsCustom === 'object')
+    weeklyLimitsCustom = data.weeklyLimitsCustom;
 }
 
 function buildSaveObject() {
@@ -112,15 +118,17 @@ function buildSaveObject() {
     limitsToSave[k] = { current: weeklyLimits[k].current || 0 };
   });
   return {
-    mealPlan:          mealPlan,
-    pantryItems:       pantryItems,
-    savedFridges:      savedFridges,
-    appHistory:        appHistory,
-    customRecipes:     customRecipes,
-    customIngredients: customIngredients,
-    spesaItems:        spesaItems,
+    mealPlan:           mealPlan,
+    pantryItems:        pantryItems,
+    savedFridges:       savedFridges,
+    appHistory:         appHistory,
+    customRecipes:      customRecipes,
+    customIngredients:  customIngredients,
+    spesaItems:         spesaItems,
     spesaLastGenerated: spesaLastGenerated,
-    weeklyLimits:      limitsToSave
+    weeklyLimits:       limitsToSave,
+    pianoAlimentare:    pianoAlimentare,
+    weeklyLimitsCustom: weeklyLimitsCustom
   };
 }
 

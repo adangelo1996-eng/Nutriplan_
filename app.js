@@ -901,12 +901,13 @@ function goToPage(key) {
 
   /* Render specifico per pagina */
   var renders = {
-    'piano':       function() { if (typeof renderPiano   === 'function') renderPiano(); },
-    'dispensa':    function() { if (typeof renderFridge  === 'function') renderFridge(); },
-    'ricette':     function() { if (typeof renderRicette === 'function') renderRicette(); },
-    'spesa':       function() { if (typeof renderSpesa   === 'function') renderSpesa(); },
-    'statistiche': function() { if (typeof renderStats   === 'function') renderStats(); },
-    'profilo':     function() { if (typeof renderProfilo === 'function') renderProfilo(); }
+    'piano':            function() { if (typeof renderPiano            === 'function') renderPiano(); },
+    'piano-alimentare': function() { if (typeof renderPianoAlimentare  === 'function') renderPianoAlimentare(); },
+    'dispensa':         function() { if (typeof renderFridge           === 'function') renderFridge(); },
+    'ricette':          function() { if (typeof renderRicette          === 'function') renderRicette(); },
+    'spesa':            function() { if (typeof renderSpesa            === 'function') renderSpesa(); },
+    'statistiche':      function() { if (typeof renderStats            === 'function') renderStats(); },
+    'profilo':          function() { if (typeof renderProfilo          === 'function') renderProfilo(); }
   };
   if (renders[key]) renders[key]();
 }

@@ -273,15 +273,16 @@ function renderFridge(targetId) {
           '<span class="fi-group-icon">' + icon + '</span>' +
           '<span class="fi-group-name">' + catName + '</span>' +
           '<span class="fi-group-count">' + (items.length || '') + '</span>' +
-          '<button class="fi-add-cat-btn" ' +
-                  'onclick="event.stopPropagation();openAddByCatModal(\'' + catEsc + '\')" ' +
-                  'title="Aggiungi ' + catName + '">＋</button>' +
         '</div>' +
         '<div class="fi-list">' +
           (items.length
             ? items.map(function(item) { return buildFridgeRow(item); }).join('')
             : '<div class="fi-empty-cat">Nessun ingrediente in dispensa per questa categoria</div>'
           ) +
+          '<button class="fi-add-inline-btn" ' +
+                  'onclick="openAddByCatModal(\'' + catEsc + '\')">' +
+            '＋ Aggiungi ' + catName +
+          '</button>' +
         '</div>' +
       '</div>';
   });
@@ -295,12 +296,11 @@ function renderFridge(targetId) {
           '<span class="fi-group-icon">🧂</span>' +
           '<span class="fi-group-name">Altro</span>' +
           '<span class="fi-group-count">' + altroItems.length + '</span>' +
-          '<button class="fi-add-cat-btn" ' +
-                  'onclick="event.stopPropagation();openAddByCatModal(\'🧂 Altro\')" ' +
-                  'title="Aggiungi">＋</button>' +
         '</div>' +
         '<div class="fi-list">' +
           altroItems.map(function(item) { return buildFridgeRow(item); }).join('') +
+          '<button class="fi-add-inline-btn" ' +
+                  'onclick="openAddByCatModal(\'🧂 Altro\')">＋ Aggiungi</button>' +
         '</div>' +
       '</div>';
   }
@@ -408,7 +408,14 @@ function _renderAddByCatList(query) {
     return;
   }
 
-  listEl.innerHTML = candidates.slice(0, 50).map(function(name) {
+  var catEscModal = (_addByCatCurrent || '🧂 Altro').replace(/'/g, "\\'");
+  var addNewBtn =
+    '<button class="add-by-cat-new-btn" ' +
+            'onclick="openAddFridgeFromCat(\'' + catEscModal + '\')">' +
+      '＋ Aggiungi ingrediente personalizzato' +
+    '</button>';
+
+  listEl.innerHTML = addNewBtn + candidates.slice(0, 50).map(function(name) {
     var inFridge = alreadyIn.indexOf(name) !== -1;
     var escName  = name.replace(/'/g, "\\'");
     return (
@@ -419,6 +426,23 @@ function _renderAddByCatList(query) {
       '</div>'
     );
   }).join('');
+}
+
+function openAddFridgeFromCat(cat) {
+  closeAddByCatModal();
+  var modal = document.getElementById('addFridgeModal');
+  if (!modal) return;
+  var nameEl = document.getElementById('newFridgeItem');
+  var catEl  = document.getElementById('newFridgeCategory');
+  var qtyEl  = document.getElementById('newFridgeQty');
+  if (nameEl) nameEl.value = '';
+  if (catEl)  catEl.value  = cat || '🧂 Altro';
+  if (qtyEl)  qtyEl.value  = '';
+  modal.classList.add('active');
+  if (typeof populateIngAutocomplete === 'function') populateIngAutocomplete();
+  setTimeout(function() {
+    if (nameEl) { nameEl.focus(); }
+  }, 120);
 }
 
 function selectAddByCatItem(name) {

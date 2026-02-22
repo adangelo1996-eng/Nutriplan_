@@ -113,6 +113,10 @@
     <span class="nav-icon">🍽</span>
     <span class="nav-label">Oggi</span>
   </button>
+  <button class="nav-tab" id="st-piano-alimentare" onclick="goToPage('piano-alimentare')">
+    <span class="nav-icon">🌿</span>
+    <span class="nav-label">Piano</span>
+  </button>
   <button class="nav-tab" id="st-dispensa" onclick="goToPage('dispensa')">
     <span class="nav-icon">🗄️</span>
     <span class="nav-label">Dispensa</span>
@@ -143,6 +147,17 @@
      MAIN CONTENT
 ════════════════════════════════════════════════════ -->
 <main class="app-main" id="appMain" style="display:none">
+
+  <!-- ── PIANO ALIMENTARE ──────────────────────── -->
+  <div class="page" id="page-piano-alimentare">
+    <div class="page-header">
+      <div>
+        <div class="page-header-title">🌿 Piano Alimentare</div>
+        <div class="page-header-sub">Imposta i tuoi pasti e i limiti</div>
+      </div>
+    </div>
+    <div id="pianoAlimentarePage"></div>
+  </div>
 
   <!-- ── PIANO ───────────────────────────────────── -->
   <div class="page active" id="page-piano">
@@ -321,6 +336,10 @@
       <span class="nav-icon">🍽</span>
       <span class="nav-label">Oggi</span>
     </button>
+    <button class="nav-tab" id="bn-piano-alimentare" onclick="goToPage('piano-alimentare')">
+      <span class="nav-icon">🌿</span>
+      <span class="nav-label">Piano</span>
+    </button>
     <button class="nav-tab" id="bn-dispensa" onclick="goToPage('dispensa')">
       <span class="nav-icon">🗄️</span>
       <span class="nav-label">Dispensa</span>
@@ -332,10 +351,6 @@
     <button class="nav-tab" id="bn-spesa" onclick="goToPage('spesa')">
       <span class="nav-icon">🛒</span>
       <span class="nav-label">Spesa</span>
-    </button>
-    <button class="nav-tab" id="bn-stats" onclick="goToPage('statistiche')">
-      <span class="nav-icon">📊</span>
-      <span class="nav-label">Stats</span>
     </button>
     <button class="nav-tab" id="bn-profilo" onclick="goToPage('profilo')">
       <span class="nav-icon">👤</span>
@@ -755,6 +770,75 @@
   </div>
 </div>
 
+<!-- Modale: selezione ingrediente per Piano Alimentare -->
+<div class="modal" id="paIngModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="paIngModalTitle">＋ Aggiungi ingrediente</h2>
+      <button class="modal-close" onclick="closePAIngModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="search-input-wrap" style="margin-bottom:12px;">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="paIngSearch"
+               placeholder="Cerca ingrediente…"
+               oninput="filterPAIngList(this.value)"
+               onsearch="filterPAIngList(this.value)"
+               autocomplete="off">
+      </div>
+      <div id="paIngList" style="max-height:50vh;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePAIngModal()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: ingrediente personalizzato per Piano Alimentare -->
+<div class="modal" id="paCustomIngModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="paCustomIngTitle">＋ Nuovo ingrediente</h2>
+      <button class="modal-close" onclick="closePACustomIngModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nome ingrediente</label>
+        <input type="text" id="paCustomIngName"
+               placeholder="Es. Tempeh, Farro…"
+               list="ingredientiAutocomplete"
+               autocomplete="off">
+      </div>
+      <div class="row gap-8">
+        <div class="form-group flex1">
+          <label>Quantità (opzionale)</label>
+          <input type="number" id="paCustomIngQty" min="0" step="any" placeholder="—">
+        </div>
+        <div class="form-group" style="width:110px">
+          <label>Unità</label>
+          <select id="paCustomIngUnit">
+            <option value="g">g</option>
+            <option value="ml">ml</option>
+            <option value="pz">pz</option>
+            <option value="fette">fette</option>
+            <option value="cucchiai">cucchiai</option>
+            <option value="cucchiaini">cucchiaini</option>
+            <option value="porzione">porzione</option>
+            <option value="kg">kg</option>
+            <option value="l">l</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePACustomIngModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="confirmPACustomIng()">＋ Aggiungi</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modale: aggiungi ingrediente per categoria (dispensa) -->
 <div class="modal" id="addByCatModal">
   <div class="modal-box">
@@ -924,6 +1008,7 @@
 <script src="data.js"></script>
 <script src="storage.js"></script>
 <script src="piano.js"></script>
+<script src="piano_alimentare.js"></script>
 <script src="dispensa.js"></script>
 <script src="ricette.js"></script>
 <script src="ricette_custom.js"></script>
