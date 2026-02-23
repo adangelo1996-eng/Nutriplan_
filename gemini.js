@@ -302,8 +302,21 @@ function _runAIGeneration() {
     ? 'Usa PRINCIPALMENTE questi ingredienti: ' + ingredients.slice(0, 20).join(', ') + '.'
     : 'Scegli ingredienti comuni e sani adatti al pasto.';
 
+  /* Vincoli dieta */
+  var dietHints = [];
+  var dp = (typeof dietProfile !== 'undefined') ? dietProfile : {};
+  if (dp.vegetariano)   dietHints.push('vegetariana (niente carne né pesce)');
+  if (dp.vegano)        dietHints.push('vegana (niente carne, pesce, latticini né uova)');
+  if (dp.senzaLattosio) dietHints.push('senza lattosio (niente latte, formaggio, burro, panna)');
+  if (dp.senzaGlutine)  dietHints.push('senza glutine (niente pasta, pane, farina di grano)');
+  if (Array.isArray(dp.allergenici) && dp.allergenici.length)
+    dietHints.push('senza questi ingredienti: ' + dp.allergenici.join(', '));
+  var dietClause = dietHints.length
+    ? ' La ricetta deve essere ' + dietHints.join('; ') + '.'
+    : '';
+
   var prompt =
-    'Sei un nutrizionista e chef italiano. Crea UNA ricetta per il pasto "' + mealLabel + '". ' + ingHint + '\n\n' +
+    'Sei un nutrizionista e chef italiano. Crea UNA ricetta per il pasto "' + mealLabel + '". ' + ingHint + dietClause + '\n\n' +
     'Rispondi ESCLUSIVAMENTE con un oggetto JSON valido. Nessun testo prima o dopo il JSON, zero markdown, zero spiegazioni. Schema esatto:\n' +
     '{"name":"<nome ricetta in italiano>","icon":"<un singolo emoji>","pasto":"' + _aiRecipeMealKey + '",' +
     '"ingredienti":[{"name":"<nome ingrediente>","quantity":<numero intero o decimale>,"unit":"<g|ml|pz|cucchiai|cucchiaini|fette|porzione>"}],' +

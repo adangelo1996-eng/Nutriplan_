@@ -2373,3 +2373,95 @@ div > .ai-powered-label {
   border: 1px solid var(--border); border-radius: var(--r-full);
   font-size: .78rem; color: var(--text);
 }
+
+/* ══════════════════════════════════════════════════
+   PREFERITI — stella sulle card ricetta
+══════════════════════════════════════════════════ */
+.fav-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 1.1rem; line-height: 1; padding: 4px 6px;
+  color: var(--text-3); border-radius: var(--r-sm);
+  transition: color .15s, transform .15s; flex-shrink: 0;
+}
+.fav-btn:hover  { color: #f59e0b; transform: scale(1.2); }
+.fav-btn.fav-on { color: #f59e0b; }
+
+/* ══════════════════════════════════════════════════
+   BADGE DIETA e FILTRI EXTRA
+══════════════════════════════════════════════════ */
+.badge-diet    { background: #d1fae5; color: #065f46; }
+.badge-diet-no { background: #fee2e2; color: #991b1b; }
+
+.rf-pill-extra {
+  font-size: .78em; padding: 5px 11px;
+  background: var(--bg-subtle); border: 1.5px solid var(--border);
+  border-radius: 99px; cursor: pointer; color: var(--text-mid);
+  font-weight: 600; transition: all .15s;
+}
+.rf-pill-extra:hover { border-color: var(--primary-mid); color: var(--primary); }
+.rf-pill-extra.active { background: var(--primary); color: #fff; border-color: var(--primary-dark); }
+
+/* ══════════════════════════════════════════════════
+   VINCOLI DIETA — toggle nel profilo
+══════════════════════════════════════════════════ */
+.diet-toggle {
+  width: 40px; height: 22px; flex-shrink: 0;
+  background: var(--border); border-radius: 99px;
+  position: relative; transition: background .2s; cursor: pointer;
+}
+.diet-toggle-on { background: var(--primary); }
+.diet-toggle-knob {
+  position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; transition: left .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.diet-toggle-on .diet-toggle-knob { left: 21px; }
+
+.allergen-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; background: #fee2e2; color: #991b1b;
+  border-radius: 99px; font-size: .78em; font-weight: 600;
+}
+.allergen-tag button {
+  background: none; border: none; cursor: pointer;
+  color: #991b1b; font-size: .9em; padding: 0; line-height: 1;
+}
+
+/* ══════════════════════════════════════════════════
+   SCADENZE DISPENSA
+══════════════════════════════════════════════════ */
+.expiry-badge {
+  display: inline-block; font-size: .7em; font-weight: 700;
+  padding: 1px 6px; border-radius: 99px; white-space: nowrap;
+}
+.expiry-expired { background: #fee2e2; color: #991b1b; }
+.expiry-today   { background: #fee2e2; color: #dc2626; }
+.expiry-soon    { background: #fef3c7; color: #92400e; }
+.expiry-ok      { background: #d1fae5; color: #065f46; }
+
+.expiring-section {
+  background: #fffbeb; border: 1.5px solid #fde68a;
+  border-radius: var(--r-lg); padding: 12px 14px;
+  margin-bottom: 16px;
+}
+[data-theme="dark"] .expiring-section {
+  background: color-mix(in srgb,#92400e 12%,var(--bg-card));
+  border-color: #92400e;
+}
+.expiring-section-title {
+  font-size: .8em; font-weight: 800; color: #92400e;
+  text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px;
+}
+[data-theme="dark"] .expiring-section-title { color: #fbbf24; }
+.expiring-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0; border-bottom: 1px solid #fde68a; cursor: pointer;
+}
+.expiring-row:last-child { border-bottom: none; }
+.expiring-name { font-size: .88em; font-weight: 600; color: var(--text); }
+.expiring-recipe-hint {
+  font-size: .74em; font-weight: 700; color: var(--primary);
+  padding: 2px 7px; background: var(--primary-xl);
+  border-radius: 99px; cursor: pointer; white-space: nowrap;
+}
