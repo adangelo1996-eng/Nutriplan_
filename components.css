@@ -2003,12 +2003,18 @@
 .calendar-bar {
   -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 7%, #000 93%, transparent 100%);
   mask-image: linear-gradient(to right, transparent 0%, #000 7%, #000 93%, transparent 100%);
+  scroll-behavior: smooth;
 }
 .cal-day-num { color: var(--text) !important; }
 .cal-day.active .cal-day-num { color: #fff !important; }
 .cal-day.today:not(.active) .cal-day-num { color: var(--primary) !important; }
-.cal-day.cal-future { opacity: .65; }
-.cal-day.cal-past { opacity: .55; }
+/* Fade per distanza dal giorno selezionato */
+.cal-day.cal-d1   { opacity: .82; }
+.cal-day.cal-d2   { opacity: .60; }
+.cal-day.cal-d3   { opacity: .40; }
+.cal-day.cal-dfar { opacity: .22; }
+/* Il giorno oggi è sempre ben visibile anche quando non è quello attivo */
+.cal-day.today    { opacity: 1 !important; }
 
 /* ══════════════════════════════════════════════════
    46. DISPENSA — empty state con pulsante interno

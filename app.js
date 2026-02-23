@@ -266,6 +266,12 @@ function buildCalendarBar() {
   if (!bar) return;
   var today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  /* Pre-calcola la data attiva per il fade a distanza */
+  var activeDk = (typeof selectedDateKey !== 'undefined' && selectedDateKey) ? selectedDateKey : getCurrentDateKey();
+  var activeD = parseDateKey(activeDk);
+  activeD.setHours(0, 0, 0, 0);
+
   var html = '';
   var start = -20 + _calOffset;
   var end   =  10 + _calOffset;
@@ -283,12 +289,15 @@ function buildCalendarBar() {
     });
     var isPast   = d < today && !isToday;
     var isFuture = d > today && !isToday;
+    var dist = Math.abs(Math.round((d - activeD) / 86400000));
+    var distCls = dist === 0 ? '' : dist === 1 ? ' cal-d1' : dist === 2 ? ' cal-d2' : dist === 3 ? ' cal-d3' : ' cal-dfar';
     var cls = 'cal-day' +
       (isToday  ? ' today'      : '') +
       (isActive ? ' active'     : '') +
       (hasData  ? ' has-data'   : '') +
       (isPast   ? ' cal-past'   : '') +
-      (isFuture ? ' cal-future' : '');
+      (isFuture ? ' cal-future' : '') +
+      distCls;
     html +=
       '<div class="' + cls + '" onclick="selectDate(\'' + dk + '\')" data-dk="' + dk + '">' +
         '<span class="cal-day-name">' + DAYS_IT[d.getDay()] + '</span>' +
