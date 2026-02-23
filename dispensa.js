@@ -9,6 +9,48 @@
 var pantrySearchQuery = '';
 
 /* ══════════════════════════════════════════════════
+   SCADENZE SUGGERITE PER CATEGORIA (giorni da oggi)
+   Fonte: stime medie per prodotti freschi
+══════════════════════════════════════════════════ */
+var FRESH_EXPIRY_DAYS = {
+  '🥩 Carne':               3,   /* carne fresca */
+  '🥩 Carne e Pesce':        3,   /* compat legacy */
+  '🐟 Pesce':                2,   /* pesce fresco */
+  '🥛 Latticini e Uova':     7,   /* latte, yogurt, uova */
+  '🥦 Verdure':              5,   /* verdure fresche */
+  '🍎 Frutta':               7,   /* frutta fresca */
+  '🥑 Grassi e Condimenti':  30,  /* oli, condimenti */
+  '🌾 Cereali e Legumi':     180, /* secchi/confezionati */
+  '🍫 Dolci e Snack':        90,  /* dolci confezionati */
+  '🧂 Cucina':               365, /* spezie/brodi */
+  '🧂 Altro':                90
+};
+
+/* Giorni aggiuntivi in congelatore rispetto alla scadenza fresca */
+var FREEZER_EXTRA_DAYS = {
+  '🥩 Carne':               150, /* ~5 mesi */
+  '🥩 Carne e Pesce':        150,
+  '🐟 Pesce':                150, /* ~5 mesi */
+  '🥛 Latticini e Uova':     90,  /* ~3 mesi */
+  '🥦 Verdure':              300, /* ~10 mesi */
+  '🍎 Frutta':               300, /* ~10 mesi */
+  '🌾 Cereali e Legumi':     90,  /* pane/pasta cotta ~3 mesi */
+  '🍫 Dolci e Snack':        90
+};
+
+/* Calcola una data di scadenza suggerita (stringa ISO YYYY-MM-DD) */
+function _suggestExpiry(category, frozen) {
+  var freshDays = FRESH_EXPIRY_DAYS[category] || 30;
+  var extraDays = frozen ? (FREEZER_EXTRA_DAYS[category] || 90) : 0;
+  var totalDays = freshDays + extraDays;
+  var d = new Date();
+  d.setDate(d.getDate() + totalDays);
+  return d.getFullYear() + '-' +
+         String(d.getMonth()+1).padStart(2,'0') + '-' +
+         String(d.getDate()).padStart(2,'0');
+}
+
+/* ══════════════════════════════════════════════════
    UTILITY
 ══════════════════════════════════════════════════ */
 var CATEGORY_ORDER = [
@@ -365,6 +407,27 @@ function renderFridge(targetId) {
       '</div>';
   }
 
+  /* ── Sezione Congelatore ── (solo nella pagina principale) */
+  if (!targetId) {
+    var freezerItems = active.filter(function(i) { return i.freezer; });
+    if (freezerItems.length) {
+      var freezerHtml =
+        '<div class="fi-group" style="--gc:#3b82f6;margin-bottom:16px;">' +
+          '<div class="fi-group-header" style="background:rgba(59,130,246,.12);">' +
+            '<span class="fi-group-icon">❄️</span>' +
+            '<span class="fi-group-name" style="color:#3b82f6;">Congelatore</span>' +
+            '<span class="fi-group-count">' + freezerItems.length + '</span>' +
+          '</div>' +
+          '<div class="fi-list">' +
+            freezerItems.map(function(item) {
+              return buildFridgeRow(item);
+            }).join('') +
+          '</div>' +
+        '</div>';
+      html = freezerHtml + html;
+    }
+  }
+
   /* Pulsante AI + sezione in scadenza solo nella pagina principale dispensa */
   if (!targetId) {
     var expSection = buildExpiringSection();
@@ -613,10 +676,30 @@ function buildFridgeRow(item) {
   var qtyDisplay = (qty % 1 === 0) ? qty : parseFloat(qty.toFixed(2));
   var expiryBadge = buildExpiryBadge(item.scadenza);
 
+  /* Evidenziazione visiva per ingredienti in scadenza (entro 3 giorni) */
+  var daysToExp = getDaysToExpiry(item.scadenza);
+  var expiryRowStyle = '';
+  var expiryRowClass = '';
+  if (daysToExp !== null) {
+    if (daysToExp < 0) {
+      expiryRowStyle = 'border-left:3px solid #ef4444;background:rgba(239,68,68,.05);';
+    } else if (daysToExp <= 1) {
+      expiryRowStyle = 'border-left:3px solid #ef4444;background:rgba(239,68,68,.05);';
+    } else if (daysToExp <= 3) {
+      expiryRowStyle = 'border-left:3px solid #f97316;background:rgba(249,115,22,.04);';
+    } else if (daysToExp <= 7) {
+      expiryRowStyle = 'border-left:3px solid #eab308;background:rgba(234,179,8,.03);';
+    }
+  }
+  /* Indicatore congelatore */
+  if (item.freezer) {
+    expiryRowStyle += 'border-left:3px solid #3b82f6;';
+  }
+
   return (
     '<div class="fi-row" id="fi-row-' + sid + '" ' +
          'onclick="openQtyModal(\'' + escQ(name) + '\')" ' +
-         'style="--rc:' + color + ';">' +
+         'style="--rc:' + color + ';' + expiryRowStyle + '">' +
 
       /* Icona */
       '<div class="fi-row-icon">' + icon + '</div>' +
@@ -710,12 +793,44 @@ function openQtyModal(name) {
   document.getElementById('eqmInput').dataset.name = name;
   var scadEl = document.getElementById('eqmScadenza');
   if (scadEl) scadEl.value = pd.scadenza || '';
+  var suggLabel = document.getElementById('eqmSuggLabel');
+  if (suggLabel) {
+    if (!pd.scadenza && pd.category) {
+      var freshDays = FRESH_EXPIRY_DAYS[pd.category];
+      if (freshDays && freshDays < 30) {
+        suggLabel.textContent = '💡 Suggerita: ' + _suggestExpiry(pd.category, false) + ' (' + freshDays + 'gg)';
+      } else {
+        suggLabel.textContent = '';
+      }
+    } else {
+      suggLabel.textContent = '';
+    }
+  }
+  var freezerEl = document.getElementById('eqmFreezer');
+  if (freezerEl) freezerEl.checked = !!pd.freezer;
 
   modal.classList.add('active');
   setTimeout(function() {
     var inp = document.getElementById('eqmInput');
     if (inp) { inp.focus(); inp.select(); }
   }, 120);
+}
+
+/* Aggiorna la scadenza suggerita quando si spunta/rimuove congelatore in editQtyModal */
+function _updateEqmSuggestion() {
+  var inp       = document.getElementById('eqmInput');
+  var scadEl    = document.getElementById('eqmScadenza');
+  var freezerEl = document.getElementById('eqmFreezer');
+  var suggLabel = document.getElementById('eqmSuggLabel');
+  if (!inp) return;
+  var name = inp.dataset.name;
+  var pd   = (pantryItems && pantryItems[name]) ? pantryItems[name] : {};
+  var cat  = pd.category || '🧂 Altro';
+  var frozen = freezerEl ? freezerEl.checked : false;
+  if (scadEl) scadEl.value = _suggestExpiry(cat, frozen);
+  if (suggLabel) {
+    suggLabel.textContent = frozen ? '❄️ Scadenza estesa per congelatore' : '';
+  }
 }
 
 function closeQtyModal() {
@@ -734,10 +849,14 @@ function confirmQtyModal() {
   }
   if (!pantryItems) pantryItems = {};
   var pd = pantryItems[name] || {};
-  var scadEl = document.getElementById('eqmScadenza');
-  var scadenza = scadEl ? (scadEl.value || '') : (pd.scadenza || '');
-  pantryItems[name] = Object.assign({}, pd, { quantity: val, scadenza: scadenza || undefined });
-  if (!pantryItems[name].scadenza) delete pantryItems[name].scadenza;
+  var scadEl    = document.getElementById('eqmScadenza');
+  var freezerEl = document.getElementById('eqmFreezer');
+  var scadenza  = scadEl ? (scadEl.value || '') : (pd.scadenza || '');
+  var frozen    = freezerEl ? freezerEl.checked : (pd.freezer || false);
+  var updated   = Object.assign({}, pd, { quantity: val });
+  if (scadenza) { updated.scadenza = scadenza; } else { delete updated.scadenza; }
+  if (frozen)   { updated.freezer = true; }     else { delete updated.freezer; }
+  pantryItems[name] = updated;
   saveData();
   closeQtyModal();
   renderFridge();
@@ -964,6 +1083,12 @@ function _showBarcodeResult(product, barcode) {
     return '<option value="' + c + '"' + (c === category ? ' selected' : '') + '>' + c + '</option>';
   }).join('');
 
+  /* Scadenza suggerita per categoria */
+  var suggestedExpiry = _suggestExpiry(category, false);
+  var todayIso = new Date().toISOString().slice(0, 10);
+  var hasFreshSuggestion = FRESH_EXPIRY_DAYS[category] && FRESH_EXPIRY_DAYS[category] < 30;
+  var hasFreezerExtra = !!FREEZER_EXTRA_DAYS[category];
+
   var html =
     '<div class="barcode-result-header">' +
       '<div class="barcode-result-icon">' + catIcon + '</div>' +
@@ -974,11 +1099,12 @@ function _showBarcodeResult(product, barcode) {
     '</div>' +
     '<div class="form-group">' +
       '<label>Nome ingrediente</label>' +
-      '<input type="text" id="barcodeIngName" value="' + escQ(name) + '">' +
+      '<input type="text" id="barcodeIngName" value="' + escQ(name) + '" ' +
+             'onchange="_updateBarcodeSuggestion()">' +
     '</div>' +
     '<div class="form-group">' +
       '<label>Categoria</label>' +
-      '<select id="barcodeIngCategory">' + catOptions + '</select>' +
+      '<select id="barcodeIngCategory" onchange="_updateBarcodeSuggestion()">' + catOptions + '</select>' +
     '</div>' +
     '<div class="row gap-8">' +
       '<div class="form-group flex1">' +
@@ -1000,6 +1126,24 @@ function _showBarcodeResult(product, barcode) {
         '</select>' +
       '</div>' +
     '</div>' +
+    /* Data di scadenza con calendario popup */
+    '<div class="form-group">' +
+      '<label>📅 Data di scadenza <span style="font-size:.78em;color:var(--text-3);">(opzionale)</span></label>' +
+      '<input type="date" id="barcodeIngScadenza" min="' + todayIso + '" ' +
+             'value="' + (hasFreshSuggestion ? suggestedExpiry : '') + '" ' +
+             'style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--bg-card);color:var(--text-1);font-size:.9em;">' +
+      (hasFreshSuggestion
+        ? '<small id="barcodeSuggLabel" style="color:var(--text-3);font-size:.76em;">💡 Suggerita in base alla categoria (modifica se necessario)</small>'
+        : '<small id="barcodeSuggLabel" style="color:var(--text-3);font-size:.76em;">Lascia vuoto se non applicabile</small>') +
+    '</div>' +
+    /* Checkbox congelatore */
+    (hasFreezerExtra
+      ? '<label style="display:flex;align-items:center;gap:9px;padding:8px 0;cursor:pointer;font-size:.88em;">' +
+          '<input type="checkbox" id="barcodeIngFreezer" style="width:16px;height:16px;accent-color:#3b82f6;" ' +
+                 'onchange="_updateBarcodeSuggestion()">' +
+          '<span>❄️ <strong>In congelatore</strong> — scadenza estesa automaticamente</span>' +
+        '</label>'
+      : '') +
     detailsHtml;
 
   var contentEl = document.getElementById('barcodeResultContent');
@@ -1009,6 +1153,31 @@ function _showBarcodeResult(product, barcode) {
   if (modal) modal.classList.add('active');
 }
 
+/* Aggiorna la data di scadenza suggerita quando cambia la categoria o il checkbox congelatore */
+function _updateBarcodeSuggestion() {
+  var catEl      = document.getElementById('barcodeIngCategory');
+  var scadEl     = document.getElementById('barcodeIngScadenza');
+  var freezerEl  = document.getElementById('barcodeIngFreezer');
+  var suggLabel  = document.getElementById('barcodeSuggLabel');
+  if (!catEl || !scadEl) return;
+  var cat    = catEl.value || '🧂 Altro';
+  var frozen = freezerEl ? freezerEl.checked : false;
+  var suggested = _suggestExpiry(cat, frozen);
+  scadEl.value = suggested;
+  if (suggLabel) {
+    if (frozen) {
+      suggLabel.textContent = '❄️ Scadenza estesa per congelatore (modifica se necessario)';
+    } else {
+      var freshDays = FRESH_EXPIRY_DAYS[cat];
+      if (freshDays && freshDays < 30) {
+        suggLabel.textContent = '💡 Suggerita per prodotti freschi (' + freshDays + ' giorni) — modifica se necessario';
+      } else {
+        suggLabel.textContent = 'Lascia vuoto se non applicabile';
+      }
+    }
+  }
+}
+
 function closeBarcodeResult() {
   var modal = document.getElementById('barcodeResultModal');
   if (modal) modal.classList.remove('active');
@@ -1016,10 +1185,12 @@ function closeBarcodeResult() {
 }
 
 function confirmBarcodeAdd() {
-  var nameEl = document.getElementById('barcodeIngName');
-  var catEl  = document.getElementById('barcodeIngCategory');
-  var qtyEl  = document.getElementById('barcodeIngQty');
-  var unitEl = document.getElementById('barcodeIngUnit');
+  var nameEl     = document.getElementById('barcodeIngName');
+  var catEl      = document.getElementById('barcodeIngCategory');
+  var qtyEl      = document.getElementById('barcodeIngQty');
+  var unitEl     = document.getElementById('barcodeIngUnit');
+  var scadEl     = document.getElementById('barcodeIngScadenza');
+  var freezerEl  = document.getElementById('barcodeIngFreezer');
 
   if (!nameEl || !catEl) return;
 
@@ -1029,14 +1200,16 @@ function confirmBarcodeAdd() {
     return;
   }
 
-  var qty  = parseFloat(qtyEl ? qtyEl.value : 0) || 0;
-  var unit = unitEl ? unitEl.value : 'g';
-  var cat  = catEl.value || '🧂 Altro';
-  var icon = getCategoryIcon(cat);
+  var qty      = parseFloat(qtyEl ? qtyEl.value : 0) || 0;
+  var unit     = unitEl ? unitEl.value : 'g';
+  var cat      = catEl.value || '🧂 Altro';
+  var icon     = getCategoryIcon(cat);
+  var scadenza = scadEl ? scadEl.value : '';
+  var frozen   = freezerEl ? freezerEl.checked : false;
 
   if (!pantryItems) pantryItems = {};
   var existing = pantryItems[name] || {};
-  pantryItems[name] = Object.assign({}, existing, {
+  var entry = Object.assign({}, existing, {
     name:     name,
     quantity: qty,
     unit:     unit,
@@ -1044,6 +1217,10 @@ function confirmBarcodeAdd() {
     icon:     icon,
     isCustom: true
   });
+  if (scadenza) entry.scadenza = scadenza;
+  if (frozen)   entry.freezer  = true;
+
+  pantryItems[name] = entry;
 
   /* Aggiunge anche a customIngredients se non già presente */
   if (!customIngredients) customIngredients = [];
@@ -1058,7 +1235,8 @@ function confirmBarcodeAdd() {
   saveData();
   closeBarcodeResult();
   renderFridge();
-  if (typeof renderFridge     === 'function') renderFridge('pianoFridgeContent');
-  if (typeof updateAllUI      === 'function') updateAllUI();
-  if (typeof showToast        === 'function') showToast('✅ ' + name + ' aggiunto alla dispensa', 'success');
+  if (typeof renderFridge === 'function') renderFridge('pianoFridgeContent');
+  if (typeof updateAllUI  === 'function') updateAllUI();
+  var msg = '✅ ' + name + ' aggiunto' + (frozen ? ' ❄️ al congelatore' : ' alla dispensa');
+  if (typeof showToast === 'function') showToast(msg, 'success');
 }
