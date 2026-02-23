@@ -11,6 +11,7 @@ var pantryItems       = {};
 var savedFridges      = {};
 var appHistory        = {};
 var customRecipes     = [];
+var aiRecipes         = [];   /* ricette generate dall'AI e accettate dall'utente */
 var customIngredients = [];
 var spesaItems        = [];
 var spesaLastGenerated = null;
@@ -102,6 +103,7 @@ function applyLoadedData(data) {
     if (data.appHistory) appHistory = data.appHistory;
   }
   if (Array.isArray(data.customRecipes))     customRecipes     = data.customRecipes;
+  if (Array.isArray(data.aiRecipes))         aiRecipes         = data.aiRecipes;
   if (Array.isArray(data.customIngredients)) customIngredients = data.customIngredients;
   if (Array.isArray(data.spesaItems))        spesaItems        = data.spesaItems;
   if (data.spesaLastGenerated)               spesaLastGenerated = data.spesaLastGenerated;
@@ -130,6 +132,7 @@ function buildSaveObject() {
     savedFridges:       savedFridges,
     appHistory:         appHistory,
     customRecipes:      customRecipes,
+    aiRecipes:          aiRecipes,
     customIngredients:  customIngredients,
     spesaItems:         spesaItems,
     spesaLastGenerated: spesaLastGenerated,

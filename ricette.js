@@ -122,7 +122,74 @@ function getAllRicette() {
     customRecipes.forEach(function(r){
       if(r&&(r.name||r.nome)) out.push(Object.assign({},r,{isCustom:true}));
     });
+  /* Le ricette AI sono incluse nel catalogo con badge dedicato */
+  if (typeof aiRecipes!=='undefined' && Array.isArray(aiRecipes))
+    aiRecipes.forEach(function(r){
+      if(r&&(r.name||r.nome)) out.push(Object.assign({},r,{isAI:true}));
+    });
   return out;
+}
+
+/* ── Render tab AI Ricette ── */
+function renderAIRicetteTab() {
+  var el = document.getElementById('aiRicetteList');
+  if (!el) return;
+  var list = (typeof aiRecipes !== 'undefined' && Array.isArray(aiRecipes)) ? aiRecipes : [];
+  if (!list.length) {
+    el.innerHTML =
+      '<div class="empty-state">' +
+        '<div class="empty-state-icon">🤖</div>' +
+        '<h3>Nessuna ricetta AI</h3>' +
+        '<p>Genera la tua prima ricetta con il tasto <b>✨ Genera</b>.</p>' +
+      '</div>';
+    return;
+  }
+  el.innerHTML = list.map(function(r, idx) {
+    return buildAIRicettaItem(r, idx);
+  }).join('');
+}
+
+function buildAIRicettaItem(r, idx) {
+  var name  = r.name || r.nome || 'Ricetta AI';
+  var icon  = r.icon || '🤖';
+  var pasto = r.pasto || '';
+  var ings  = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+  var prep  = r.preparazione || '';
+  var color = pastoColor(pasto);
+  var pl    = pastoLabel(pasto);
+
+  var ingList = ings.map(function(i) {
+    var qty = i.quantity ? i.quantity + ' ' + (i.unit || '') : '';
+    return (i.name || '') + (qty ? ' (' + qty + ')' : '');
+  }).filter(Boolean).join(', ');
+
+  return (
+    '<div class="cri-card" style="--cc:' + color + '">' +
+      '<div class="cri-top">' +
+        '<div class="cri-icon" onclick="openRecipeModal(\'' + esc(name) + '\')">' + icon + '</div>' +
+        '<div class="cri-body" onclick="openRecipeModal(\'' + esc(name) + '\')">' +
+          '<div class="cri-name">' + name + '</div>' +
+          (pl ? '<div class="cri-pasto" style="color:' + color + '">' + pl + '</div>' : '') +
+          '<span class="rc-badge" style="background:#e8f4fd;color:#1a73e8;font-size:.7em;margin-top:4px;">🤖 AI</span>' +
+        '</div>' +
+        '<div class="cri-actions">' +
+          '<button class="btn btn-warning btn-small" onclick="event.stopPropagation();deleteAIRicetta(' + idx + ')">🗑</button>' +
+        '</div>' +
+      '</div>' +
+      (ingList ? '<div class="cri-ings">🥗 ' + ingList + '</div>' : '') +
+      (prep ? '<div class="cri-prep">' + truncate(prep, 120) + '</div>' : '') +
+    '</div>'
+  );
+}
+
+function deleteAIRicetta(idx) {
+  if (!Array.isArray(aiRecipes) || !aiRecipes[idx]) return;
+  var name = aiRecipes[idx].name || 'questa ricetta';
+  if (!confirm('Eliminare la ricetta AI "' + name + '"?')) return;
+  aiRecipes.splice(idx, 1);
+  if (typeof saveData === 'function') saveData();
+  renderAIRicetteTab();
+  renderRicetteGrid();
 }
 function findRicetta(name) {
   return getAllRicette().find(function(r){ return (r.name||r.nome||'')===name; })||null;

@@ -139,6 +139,7 @@ function renderMealItems() {
     '<div style="margin-bottom:10px;">' +
       '<button class="ai-recipe-btn" onclick="openAIRecipeModal(\'oggi\')">' +
         '🤖 Genera ricetta AI con questi ingredienti' +
+        '<span class="ai-powered-label">Powered by Gemini</span>' +
       '</button>' +
     '</div>';
 

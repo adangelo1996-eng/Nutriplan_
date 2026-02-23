@@ -942,8 +942,9 @@ function switchRicetteTab(tabKey, el) {
     c.classList.toggle('active', c.id === 'tab-' + tabKey);
   });
 
-  if (tabKey === 'catalogo' && typeof renderRicette       === 'function') renderRicette();
-  if (tabKey === 'mie'      && typeof renderCustomRicette === 'function') renderCustomRicette();
+  if (tabKey === 'catalogo' && typeof renderRicette        === 'function') renderRicette();
+  if (tabKey === 'mie'      && typeof renderCustomRicette  === 'function') renderCustomRicette();
+  if (tabKey === 'ai'       && typeof renderAIRicetteTab   === 'function') renderAIRicetteTab();
 }
 
 /* ── Privacy Policy Modal ─────────────────────────── */

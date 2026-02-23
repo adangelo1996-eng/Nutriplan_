@@ -140,6 +140,21 @@ function renderStatistiche() {
       '</div>';
   }
 
+  /* ══════════════════════════════════════════
+     ANALISI AI
+  ══════════════════════════════════════════ */
+  html +=
+    '<div class="rc-card" style="margin-bottom:16px;">' +
+      '<div style="padding:18px 20px;">' +
+        '<div style="font-weight:700;font-size:.95em;margin-bottom:6px;">🤖 Analisi AI delle tue abitudini</div>' +
+        '<p style="font-size:.82em;color:var(--text-3);margin-bottom:14px;">Gemini analizzerà le tue statistiche e ti darà suggerimenti personalizzati (i dati del piano alimentare non vengono condivisi).</p>' +
+        '<button id="aiStatsBtn" class="btn btn-primary btn-small" onclick="generateAIStatsAnalysis()">' +
+          '🤖 Analisi AI <span class="ai-powered-label">Powered by Gemini</span>' +
+        '</button>' +
+        '<div id="aiStatsResult" style="display:none;margin-top:14px;"></div>' +
+      '</div>' +
+    '</div>';
+
   el.innerHTML = html;
 }
 

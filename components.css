@@ -2154,11 +2154,11 @@
    52. AI RECIPE BUTTON & MODAL
 ══════════════════════════════════════════════════ */
 .ai-recipe-btn {
-  width: 100%; padding: 9px 14px;
+  width: 100%; padding: 10px 14px;
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
   color: #fff; border: none; border-radius: var(--r-lg);
   font-weight: 700; font-size: .82rem; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   transition: opacity var(--t);
 }
 .ai-recipe-btn:hover { opacity: .88; }
@@ -2179,6 +2179,30 @@
   animation: ai-spin .7s linear infinite; flex-shrink: 0;
 }
 @keyframes ai-spin { to { transform: rotate(360deg); } }
+
+/* "Powered by Gemini" label — usato dentro pulsanti e header modal */
+.ai-powered-label {
+  display: block;
+  font-size: .65rem; font-weight: 500;
+  color: rgba(255,255,255,.75);
+  letter-spacing: .03em;
+  margin-top: 2px;
+  line-height: 1;
+}
+/* Versione standalone (fuori da pulsanti colorati) */
+.section-title + .ai-powered-label,
+.modal-title + .ai-powered-label,
+div > .ai-powered-label {
+  color: var(--text-3);
+  font-size: .7rem;
+}
+/* Pulsante stats: label non blocco ma inline */
+#aiStatsBtn .ai-powered-label {
+  display: inline;
+  font-size: .68rem;
+  margin-left: 6px;
+  opacity: .8;
+}
 
 /* AI substitute suggestions */
 .sub-opt-ai {
