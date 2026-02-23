@@ -342,6 +342,7 @@ function renderFridge(targetId) {
       '<div style="margin-bottom:14px;">' +
         '<button class="ai-recipe-btn" onclick="openAIRecipeModal(\'dispensa\')">' +
           '🤖 Genera ricetta AI con gli ingredienti disponibili' +
+          '<span class="ai-powered-label">Powered by Gemini</span>' +
         '</button>' +
       '</div>';
     html = aiHtml + html;

@@ -275,6 +275,7 @@
     <div class="page-tabs">
       <button class="page-tab active" onclick="switchRicetteTab('catalogo',this)">📖 Catalogo</button>
       <button class="page-tab" onclick="switchRicetteTab('mie',this)">⭐ Le mie</button>
+      <button class="page-tab" onclick="switchRicetteTab('ai',this)">🤖 AI</button>
     </div>
 
     <!-- Tab: Catalogo -->
@@ -290,6 +291,18 @@
         <button class="btn btn-primary btn-small" onclick="openRicettaForm()">＋ Nuova</button>
       </div>
       <div id="customRicetteList"></div>
+    </div>
+
+    <!-- Tab: Ricette generate da AI -->
+    <div class="page-tab-content" id="tab-ai">
+      <div class="section-header">
+        <div>
+          <div class="section-title">🤖 Ricette generate da AI</div>
+          <div class="ai-powered-label" style="margin-top:2px;">Powered by Google Gemini</div>
+        </div>
+        <button class="btn btn-primary btn-small" onclick="openAIRecipeModal('ricette')">✨ Genera</button>
+      </div>
+      <div id="aiRicetteList"></div>
     </div>
   </div>
 
@@ -627,13 +640,14 @@
   <div class="modal-box" style="max-width:520px;">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <h2 class="modal-title">🤖 Ricetta generata da AI</h2>
+      <div>
+        <h2 class="modal-title">🤖 Genera Ricetta AI</h2>
+        <div class="ai-powered-label">Powered by Google Gemini</div>
+      </div>
       <button class="modal-close" onclick="closeAIRecipeModal()">✕</button>
     </div>
-    <div class="modal-body" id="aiRecipeResult" style="max-height:65vh;overflow-y:auto;"></div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeAIRecipeModal()">Chiudi</button>
-    </div>
+    <div class="modal-body" id="aiRecipeResult" style="max-height:60vh;overflow-y:auto;"></div>
+    <div class="modal-footer" id="aiRecipeFooter"></div>
   </div>
 </div>
 
