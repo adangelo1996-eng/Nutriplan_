@@ -706,6 +706,7 @@ function renderPianoRicette() {
   }
 
   var fridgeKeys = _getFridgeKeys();
+  var planItems  = typeof getMealItems === 'function' ? getMealItems(selectedMeal) : [];
 
   /* ── Tab AI ── */
   if (_pianoRicetteFilter === 'ai') {
@@ -714,7 +715,7 @@ function renderPianoRicette() {
       : [];
 
     var aiHtml = aiList.length
-      ? aiList.map(function(r) { return _buildPianoRicettaCard(r, fridgeKeys); }).join('')
+      ? aiList.map(function(r) { return _buildPianoRicettaCard(r, fridgeKeys, planItems); }).join('')
       : '<div style="padding:12px 0;color:var(--text-light);font-size:.88em;">Nessuna ricetta AI per questo pasto.<br>' +
         '<span style="font-size:.82em;">Genera ricette dalla sezione 🤖 Ricette &gt; AI.</span></div>';
 
@@ -796,11 +797,11 @@ function renderPianoRicette() {
   });
 
   el.innerHTML = filterHtml + all.map(function(r) {
-    return _buildPianoRicettaCard(r, fridgeKeys);
+    return _buildPianoRicettaCard(r, fridgeKeys, planItems);
   }).join('');
 }
 
-function _buildPianoRicettaCard(r, fridgeKeys) {
+function _buildPianoRicettaCard(r, fridgeKeys, planItems) {
   var rawName = r.name || r.nome || 'Ricetta';
   var safeName = escQ(rawName);
   var icon  = r.icon || r.icona || '🍽';
@@ -813,17 +814,45 @@ function _buildPianoRicettaCard(r, fridgeKeys) {
   var pct = ings.length ? Math.round((avail/ings.length)*100) : 0;
   var stateCls = pct>=80?'badge-ok':pct>=40?'badge-warn':'badge-grey';
 
+  /* Calcola fattore di scala rispetto al piano alimentare.
+     Cerca il primo ingrediente della ricetta che compare nel piano con una quantità
+     definita, e usa il rapporto pianQty/recipeQty come fattore per tutti gli ingredienti. */
+  var scaleFactor = 1;
+  if (Array.isArray(planItems) && planItems.length && ings.length) {
+    for (var si = 0; si < ings.length; si++) {
+      var ingName = (ings[si].name || ings[si].nome || '').toLowerCase().trim();
+      var recipeQty = parseFloat(ings[si].quantity) || 0;
+      if (!ingName || recipeQty <= 0) continue;
+      var planMatch = null;
+      for (var pi = 0; pi < planItems.length; pi++) {
+        var pn = (planItems[pi].name || '').toLowerCase().trim();
+        if (pn === ingName) { planMatch = planItems[pi]; break; }
+      }
+      if (planMatch && planMatch.quantity) {
+        var planQty = parseFloat(planMatch.quantity) || 0;
+        if (planQty > 0) { scaleFactor = planQty / recipeQty; break; }
+      }
+    }
+  }
+
+  /* Formatta la quantità scalata: rimuove decimali inutili */
+  function _fmtQty(qty, factor) {
+    var scaled = qty * factor;
+    return scaled === Math.round(scaled) ? String(Math.round(scaled)) : scaled.toFixed(1).replace(/\.0$/, '');
+  }
+
   var ingHtml = ings.map(function(ing){
     var n  = ing.name || ing.nome || '';
     var nl = n.toLowerCase().trim();
     var ok = fridgeKeys.some(function(k){ var kl=k.toLowerCase(); return kl===nl||kl.includes(nl)||nl.includes(kl); });
-    var qty = ing.quantity
-      ? '<span class="rc-acc-qty">'+ing.quantity+'\u00a0'+(ing.unit||'g')+'</span>'
-      : '';
+    var rawQty = parseFloat(ing.quantity) || 0;
+    var qtyHtml = rawQty > 0
+      ? '<span class="rc-acc-qty">'+_fmtQty(rawQty, scaleFactor)+'\u00a0'+(ing.unit||'g')+'</span>'
+      : (ing.quantity ? '<span class="rc-acc-qty">'+ing.quantity+'\u00a0'+(ing.unit||'g')+'</span>' : '');
     return '<li class="rc-acc-item'+(ok?' ok':'')+'">'+
              '<span class="rc-acc-dot"></span>'+
              '<span class="rc-acc-name">'+n+'</span>'+
-             qty+
+             qtyHtml+
            '</li>';
   }).join('');
 
@@ -835,6 +864,12 @@ function _buildPianoRicettaCard(r, fridgeKeys) {
         'title="Ingredienti mancanti in dispensa">'+
         '🔒 Mancano '+(ings.length-avail)+' ing.</button>';
 
+  /* Badge che indica se le quantità sono state scalate rispetto alla ricetta base */
+  var scaleBadge = (scaleFactor !== 1 && ings.length > 0)
+    ? '<span class="rc-badge badge-warn" title="Quantità adattate alle porzioni del piano alimentare" '+
+        'style="font-size:.72em;">📐 adattata al piano</span>'
+    : '';
+
   return (
     '<div class="rc-card" style="margin-bottom:10px;" onclick="togglePianoRicettaCard(this)">'+
       '<div class="rc-card-head">'+
@@ -843,6 +878,7 @@ function _buildPianoRicettaCard(r, fridgeKeys) {
           '<div class="rc-name">'+rawName+'</div>'+
           '<div class="rc-meta">'+
             '<span class="rc-badge '+stateCls+'">'+avail+'/'+ings.length+' in dispensa</span>'+
+            scaleBadge+
           '</div>'+
         '</div>'+
         '<span class="rc-chevron">'+
@@ -879,6 +915,26 @@ function choosePianoRecipe(name) {
   if (!r) { if (typeof showToast==='function') showToast('Ricetta non trovata','warning'); return; }
   if (typeof pushUndo === 'function') pushUndo('Scegli ricetta ' + name);
   var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+
+  /* Calcola lo stesso fattore di scala usato nella visualizzazione della card */
+  var scaleFactor = 1;
+  var planItemsForScale = typeof getMealItems === 'function' ? getMealItems(selectedMeal) : [];
+  if (Array.isArray(planItemsForScale) && planItemsForScale.length) {
+    for (var si = 0; si < ings.length; si++) {
+      var ingNameS = (ings[si].name || ings[si].nome || '').toLowerCase().trim();
+      var recipeQtyS = parseFloat(ings[si].quantity) || 0;
+      if (!ingNameS || recipeQtyS <= 0) continue;
+      for (var pi = 0; pi < planItemsForScale.length; pi++) {
+        var pn = (planItemsForScale[pi].name || '').toLowerCase().trim();
+        if (pn === ingNameS && planItemsForScale[pi].quantity) {
+          var planQtyS = parseFloat(planItemsForScale[pi].quantity) || 0;
+          if (planQtyS > 0) { scaleFactor = planQtyS / recipeQtyS; break; }
+        }
+      }
+      if (scaleFactor !== 1) break;
+    }
+  }
+
   var reduced = 0;
   ings.forEach(function(ing){
     var n = (ing.name||ing.nome||'').trim();
@@ -895,7 +951,7 @@ function choosePianoRecipe(name) {
       }) || null;
     }
     if (key) {
-      var qty = parseFloat(ing.quantity) || 0;
+      var qty = (parseFloat(ing.quantity) || 0) * scaleFactor;
       if (qty > 0) {
         pantryItems[key].quantity = Math.max(0, (pantryItems[key].quantity||0) - qty);
         reduced++;

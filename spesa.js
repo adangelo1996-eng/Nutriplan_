@@ -31,11 +31,21 @@ function buildSpesaGeneratePanel() {
   function _buildRecipeLabel(r) {
     var name    = r.name || r.nome || '';
     var icon    = r.icon || r.icona || '🍽';
-    var checked = selectedSpesaRecipes[name] ? true : false;
+    var count   = selectedSpesaRecipes[name] || 0;
+    var checked = count > 0;
+    var esc     = _escSpesa(name);
+    var counterHtml = checked
+      ? '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;" onclick="event.stopPropagation();event.preventDefault();">' +
+          '<button onclick="decrementSpesaRecipe(\''+esc+'\')" style="width:22px;height:22px;border:1.5px solid var(--primary-mid);border-radius:50%;background:var(--bg-card);color:var(--primary);font-size:.9em;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;">−</button>' +
+          '<span style="min-width:18px;text-align:center;font-size:.85em;font-weight:700;color:var(--primary);">'+count+'×</span>' +
+          '<button onclick="incrementSpesaRecipe(\''+esc+'\')" style="width:22px;height:22px;border:1.5px solid var(--primary-mid);border-radius:50%;background:var(--bg-card);color:var(--primary);font-size:.9em;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;">+</button>' +
+        '</div>'
+      : '';
     return '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;margin-bottom:3px;background:'+(checked?'var(--primary-xl)':'var(--bg-subtle)')+';border:1.5px solid '+(checked?'var(--primary-mid)':'transparent')+';">' +
-      '<input type="checkbox" '+(checked?'checked':'')+' onchange="toggleSpesaRecipe(\''+_escSpesa(name)+'\')" style="width:16px;height:16px;accent-color:var(--primary);">' +
+      '<input type="checkbox" '+(checked?'checked':'')+' onchange="toggleSpesaRecipe(\''+esc+'\')" style="width:16px;height:16px;accent-color:var(--primary);">' +
       '<span style="font-size:1em;">'+icon+'</span>' +
       '<span style="flex:1;font-size:.86em;font-weight:500;">'+name+'</span>' +
+      counterHtml +
     '</label>';
   }
 
@@ -128,7 +138,19 @@ function _escSpesa(str) {
 }
 
 function toggleSpesaRecipe(name) {
-  selectedSpesaRecipes[name] = !selectedSpesaRecipes[name];
+  /* selectedSpesaRecipes ora memorizza il numero di volte (0 = non selezionata, N≥1 = selezionata) */
+  selectedSpesaRecipes[name] = selectedSpesaRecipes[name] ? 0 : 1;
+  renderSpesa();
+}
+
+function incrementSpesaRecipe(name) {
+  selectedSpesaRecipes[name] = (selectedSpesaRecipes[name] || 0) + 1;
+  renderSpesa();
+}
+
+function decrementSpesaRecipe(name) {
+  var cur = selectedSpesaRecipes[name] || 0;
+  selectedSpesaRecipes[name] = Math.max(0, cur - 1);
   renderSpesa();
 }
 
@@ -137,7 +159,7 @@ function toggleAllSpesaRecipes() {
   var selCount = Object.keys(selectedSpesaRecipes).filter(function(k){ return selectedSpesaRecipes[k]; }).length;
   selectedSpesaRecipes = {};
   if (selCount < all.length) {
-    all.forEach(function(r){ selectedSpesaRecipes[r.name||r.nome||''] = true; });
+    all.forEach(function(r){ selectedSpesaRecipes[r.name||r.nome||''] = 1; });
   }
   renderSpesa();
 }
@@ -149,11 +171,12 @@ function generateFromSelectedRecipes() {
   selected.forEach(function(name){
     var r = (typeof findRicetta === 'function') ? findRicetta(name) : null;
     if (!r) return;
+    var times = selectedSpesaRecipes[name] || 1; /* numero di volte che si vuole preparare la ricetta */
     var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
     ings.forEach(function(ing){
       var iname = (ing.name||ing.nome||'').trim();
       if (!iname) return;
-      var qty   = parseFloat(ing.quantity) || 0;
+      var qty   = (parseFloat(ing.quantity) || 0) * times;
       var unit  = ing.unit || 'g';
       if (!needed[iname]) needed[iname] = { name:iname, quantity:0, unit:unit, manual:false, bought:false };
       needed[iname].quantity += qty;
@@ -306,11 +329,19 @@ function generateShoppingList() {
         var baseQty = parseFloat(item.quantity) || 0;
         var unit    = item.unit || 'g';
         var totalQty = baseQty * days;
+        var hasQty  = baseQty > 0;
+
+        /* Ricerca in dispensa case-insensitive (confronto esatto lowercase) */
+        var nameLower = name.toLowerCase().trim();
+        var matchedKey = (typeof pantryItems !== 'undefined' && pantryItems)
+          ? (Object.keys(pantryItems).find(function(k) {
+              return k.toLowerCase().trim() === nameLower;
+            }) || null)
+          : null;
+        var pd = matchedKey ? pantryItems[matchedKey] : null;
 
         /* Sottrae la quantità già disponibile in dispensa */
-        var pantryQty = 0;
-        if (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) {
-          var pd = pantryItems[name];
+        if (pd && hasQty) {
           var pQty = pd.quantity || 0;
           var pUnit = pd.unit || unit;
           /* Converti in unità base per confronto, solo se compatibili (peso o volume) */
@@ -325,17 +356,18 @@ function generateShoppingList() {
             totalQty = toShopBase / (_unitToBase[unit] || 1);
           } else {
             /* Unità incompatibili (es. g vs pz): comportamento conservativo */
-            pantryQty = pQty;
-            if (pantryQty > 0) return; /* se c'è qualcosa in dispensa, skip */
+            if ((pQty || 0) > 0) return; /* se c'è qualcosa in dispensa, skip */
           }
+        } else if (pd && !hasQty) {
+          /* Ingrediente senza quantità nel piano ma presente in dispensa: skip */
+          return;
         }
 
-        if (totalQty > 0) {
-          if (!needed[name]) {
-            needed[name] = { name:name, quantity: parseFloat(totalQty.toFixed(3)), unit:unit, manual:false, bought:false };
-          } else {
-            needed[name].quantity = parseFloat(((needed[name].quantity||0) + totalQty).toFixed(3));
-          }
+        /* Aggiunge all'elenco (anche se senza quantità, per non perderlo) */
+        if (!needed[name]) {
+          needed[name] = { name:name, quantity: totalQty > 0 ? parseFloat(totalQty.toFixed(3)) : null, unit:unit, manual:false, bought:false };
+        } else if (totalQty > 0) {
+          needed[name].quantity = parseFloat(((needed[name].quantity||0) + totalQty).toFixed(3));
         }
       });
     });
@@ -345,7 +377,7 @@ function generateShoppingList() {
   var manual = (typeof spesaItems !== 'undefined' ? spesaItems : []).filter(function(i){ return i.manual; });
   var autoItems = Object.values(needed);
   if (!autoItems.length) {
-    if (typeof showToast==='function') showToast('ℹ️ Tutti gli ingredienti del piano sono già in dispensa', 'info');
+    if (typeof showToast==='function') showToast('ℹ️ Nessun ingrediente da aggiungere: il piano è vuoto o tutto già coperto dalla dispensa', 'info');
     /* mantieni comunque i manuali */
     spesaItems = manual;
     saveData();
