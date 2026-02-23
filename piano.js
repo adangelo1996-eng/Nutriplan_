@@ -643,14 +643,6 @@ function renderPianoRicette() {
 
   /* ── Tab AI ── */
   if (_pianoRicetteFilter === 'ai') {
-    var aiBtn =
-      '<div style="margin-bottom:12px;">' +
-        '<button class="ai-recipe-btn" onclick="openAIRecipeModal(\'oggi_piano\')">' +
-          '✨ Genera ricetta AI con ingredienti del piano' +
-          '<span class="ai-powered-label">Powered by Gemini</span>' +
-        '</button>' +
-      '</div>';
-
     var aiList = (typeof aiRecipes !== 'undefined' && Array.isArray(aiRecipes))
       ? aiRecipes.filter(function(r) { return _mealContains(r.pasto, selectedMeal); })
       : [];
@@ -658,9 +650,9 @@ function renderPianoRicette() {
     var aiHtml = aiList.length
       ? aiList.map(function(r) { return _buildPianoRicettaCard(r, fridgeKeys); }).join('')
       : '<div style="padding:12px 0;color:var(--text-light);font-size:.88em;">Nessuna ricetta AI per questo pasto.<br>' +
-        '<span style="font-size:.82em;">Usa il tasto qui sopra per generarne una.</span></div>';
+        '<span style="font-size:.82em;">Genera ricette dalla sezione 🤖 Ricette &gt; AI.</span></div>';
 
-    el.innerHTML = filterHtml + aiBtn + aiHtml;
+    el.innerHTML = filterHtml + aiHtml;
     return;
   }
 
