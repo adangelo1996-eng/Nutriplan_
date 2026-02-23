@@ -57,9 +57,10 @@ function _geminiCall(prompt, callback, opts) {
 /* ══════════════════════════════════════════════════
    GENERA RICETTA — stato interno
 ══════════════════════════════════════════════════ */
-var _aiPendingRecipe = null;  /* ricetta JSON in attesa di conferma */
-var _aiRecipeMealKey = 'pranzo';
-var _aiRecipeContext = 'ricette';
+var _aiPendingRecipe       = null;   /* ricetta JSON in attesa di conferma */
+var _aiRecipeMealKey       = 'pranzo';
+var _aiRecipeContext       = 'ricette';
+var _aiSelectedIngredients = null;   /* ingredienti spuntati nel picker (solo context 'oggi') */
 
 var _mealIconMap = {
   colazione: '☕', spuntino: '🍎',
@@ -90,9 +91,9 @@ function openAIRecipeModal(context) {
   modal.classList.add('active');
 
   if (context === 'oggi') {
-    /* Dal piano giornaliero: inizia subito per il pasto corrente */
-    _renderAIStep('loading');
-    _runAIGeneration();
+    /* Dal piano giornaliero: mostra selettore pasto + ingredienti */
+    _aiSelectedIngredients = null;
+    _renderAIStep('select-oggi');
   } else if (context === 'oggi_piano') {
     /* Da sezione ricette nella pagina Oggi: usa ingredienti del piano */
     _renderAIStep('loading');
@@ -132,6 +133,55 @@ function _renderAIStep(step) {
                  m.emoji + ' ' + m.label + '</button>';
         }).join('') +
       '</div>';
+    footerEl.innerHTML =
+      '<button class="btn btn-secondary" onclick="closeAIRecipeModal()">Annulla</button>' +
+      '<button class="btn btn-primary" onclick="_runAIFromModal()">✨ Genera</button>';
+    return;
+  }
+
+  if (step === 'select-oggi') {
+    var meals = [
+      { key:'colazione', emoji:'☀️', label:'Colazione' },
+      { key:'spuntino',  emoji:'🍎', label:'Spuntino'  },
+      { key:'pranzo',    emoji:'🍽', label:'Pranzo'    },
+      { key:'merenda',   emoji:'🥪', label:'Merenda'   },
+      { key:'cena',      emoji:'🌙', label:'Cena'      }
+    ];
+    var mealPills =
+      '<p style="font-size:.85em;color:var(--text-2);margin-bottom:10px;font-weight:600;">Per quale pasto?</p>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px;">' +
+        meals.map(function(m) {
+          var active = m.key === _aiRecipeMealKey;
+          var s = active
+            ? 'background:var(--primary);color:#fff;border-color:var(--primary);'
+            : 'background:var(--bg-subtle);color:var(--text-1);border:1px solid var(--border);';
+          return '<button class="ai-meal-pill" style="padding:7px 13px;border-radius:99px;font-size:.86em;font-weight:600;cursor:pointer;transition:.15s;' + s + '"' +
+                 ' onclick="_aiSelectMealPill(\'' + m.key + '\')">' + m.emoji + ' ' + m.label + '</button>';
+        }).join('') +
+      '</div>';
+
+    var planItems = (typeof getMealItems === 'function') ? getMealItems(_aiRecipeMealKey) : [];
+    var ingSection = '';
+    if (planItems.length) {
+      ingSection =
+        '<p style="font-size:.85em;color:var(--text-2);margin-bottom:8px;font-weight:600;">Ingredienti del piano — seleziona quelli da usare:</p>' +
+        '<div style="display:flex;flex-direction:column;gap:5px;">' +
+          planItems.map(function(item) {
+            var qty = item.quantity ? ' <span style="color:var(--text-3);font-size:.76em;">(' + item.quantity + '\u202f' + (item.unit || 'g') + ')</span>' : '';
+            return '<label style="display:flex;align-items:center;gap:9px;padding:8px 11px;background:var(--bg-subtle);border-radius:var(--r-md);cursor:pointer;">' +
+              '<input type="checkbox" class="ai-ing-check" value="' + item.name.replace(/"/g,'&quot;') + '" checked ' +
+              'style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;flex-shrink:0;">' +
+              '<span style="font-size:.88em;font-weight:600;color:var(--text-1);">' + item.name + qty + '</span>' +
+            '</label>';
+          }).join('') +
+        '</div>';
+    } else {
+      ingSection =
+        '<p style="font-size:.84em;color:var(--text-3);font-style:italic;padding:10px 0;">' +
+        'Nessun ingrediente nel piano per questo pasto. La ricetta sarà generata liberamente.</p>';
+    }
+
+    resultEl.innerHTML = mealPills + ingSection;
     footerEl.innerHTML =
       '<button class="btn btn-secondary" onclick="closeAIRecipeModal()">Annulla</button>' +
       '<button class="btn btn-primary" onclick="_runAIFromModal()">✨ Genera</button>';
@@ -205,10 +255,20 @@ function _renderAIStep(step) {
 
 function _aiSelectMealPill(meal) {
   _aiRecipeMealKey = meal;
-  _renderAIStep('select');
+  _renderAIStep(_aiRecipeContext === 'oggi' ? 'select-oggi' : 'select');
+}
+
+function _getCheckedIngredients() {
+  var boxes = document.querySelectorAll('#aiRecipeResult .ai-ing-check:checked');
+  var names = [];
+  for (var i = 0; i < boxes.length; i++) { names.push(boxes[i].value); }
+  return names;
 }
 
 function _runAIFromModal() {
+  if (_aiRecipeContext === 'oggi') {
+    _aiSelectedIngredients = _getCheckedIngredients();
+  }
   _renderAIStep('loading');
   _runAIGeneration();
 }
@@ -217,7 +277,10 @@ function _runAIGeneration() {
   /* Raccogli ingredienti in base al contesto */
   var ingredients = [];
   if (_aiRecipeContext === 'oggi') {
-    if (typeof getMealItems === 'function') {
+    /* Usa gli ingredienti spuntati nel picker (o tutti se nessuno spuntato) */
+    if (_aiSelectedIngredients && _aiSelectedIngredients.length > 0) {
+      _aiSelectedIngredients.forEach(function(n) { ingredients.push(n); });
+    } else if (typeof getMealItems === 'function') {
       getMealItems(_aiRecipeMealKey).forEach(function(i) { ingredients.push(i.name); });
     }
   } else if (_aiRecipeContext === 'oggi_piano') {
@@ -297,8 +360,8 @@ function _acceptAIRecipe() {
   if (typeof aiRecipes === 'undefined') window.aiRecipes = [];
 
   /* Aggiungi sottocategoria se generata dalla pagina Oggi */
-  if (_aiRecipeContext === 'oggi_piano') {
-    _aiPendingRecipe.subcategory = 'Con ingredienti del piano';
+  if (_aiRecipeContext === 'oggi' || _aiRecipeContext === 'oggi_piano') {
+    _aiPendingRecipe.subcategory = 'Da piano giornaliero';
   }
 
   var name = _aiPendingRecipe.name || 'Ricetta AI';
@@ -322,8 +385,8 @@ function _acceptAIRecipe() {
   if (typeof renderRicetteGrid  === 'function') renderRicetteGrid();
   if (typeof renderAIRicetteTab === 'function') renderAIRicetteTab();
 
-  if (_aiRecipeContext === 'oggi_piano') {
-    /* Rimane sulla pagina Oggi, aggiorna la sezione ricette */
+  if (_aiRecipeContext === 'oggi' || _aiRecipeContext === 'oggi_piano') {
+    /* Rimane sulla pagina Oggi */
     if (typeof renderPianoRicette === 'function') renderPianoRicette();
   } else {
     /* Naviga alla pagina ricette → tab AI per mostrare il risultato */
