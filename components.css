@@ -2180,6 +2180,19 @@
 }
 @keyframes ai-spin { to { transform: rotate(360deg); } }
 
+/* Barra di caricamento AI indeterminata */
+.ai-progress-bar {
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 50%, #fff) 50%, var(--primary) 100%);
+  border-radius: 99px;
+  animation: ai-progress 1.4s ease-in-out infinite;
+}
+@keyframes ai-progress {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
 /* "Powered by Gemini" label — usato dentro pulsanti e header modal */
 .ai-powered-label {
   display: block;

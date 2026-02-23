@@ -10,6 +10,24 @@ function renderStatistiche() {
   var html  = '';
 
   /* ══════════════════════════════════════════
+     ANALISI AI — in cima per facile accesso
+  ══════════════════════════════════════════ */
+  html +=
+    '<div class="rc-card" style="margin-bottom:16px;">' +
+      '<div style="padding:18px 20px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">' +
+          '<span style="font-size:1.1rem;">🤖</span>' +
+          '<div style="font-weight:700;font-size:.95em;">Analisi AI delle tue abitudini</div>' +
+        '</div>' +
+        '<p style="font-size:.82em;color:var(--text-3);margin-bottom:14px;">Gemini analizzerà le tue statistiche e ti darà suggerimenti personalizzati (i dati del piano alimentare non vengono condivisi).</p>' +
+        '<button id="aiStatsBtn" class="btn btn-primary btn-small" onclick="generateAIStatsAnalysis()">' +
+          '🤖 Analisi AI <span class="ai-powered-label">Powered by Gemini</span>' +
+        '</button>' +
+        '<div id="aiStatsResult" style="display:none;margin-top:14px;"></div>' +
+      '</div>' +
+    '</div>';
+
+  /* ══════════════════════════════════════════
      STAT CARDS RIEPILOGO
   ══════════════════════════════════════════ */
   var statItems = [
@@ -139,21 +157,6 @@ function renderStatistiche() {
         '</div>' +
       '</div>';
   }
-
-  /* ══════════════════════════════════════════
-     ANALISI AI
-  ══════════════════════════════════════════ */
-  html +=
-    '<div class="rc-card" style="margin-bottom:16px;">' +
-      '<div style="padding:18px 20px;">' +
-        '<div style="font-weight:700;font-size:.95em;margin-bottom:6px;">🤖 Analisi AI delle tue abitudini</div>' +
-        '<p style="font-size:.82em;color:var(--text-3);margin-bottom:14px;">Gemini analizzerà le tue statistiche e ti darà suggerimenti personalizzati (i dati del piano alimentare non vengono condivisi).</p>' +
-        '<button id="aiStatsBtn" class="btn btn-primary btn-small" onclick="generateAIStatsAnalysis()">' +
-          '🤖 Analisi AI <span class="ai-powered-label">Powered by Gemini</span>' +
-        '</button>' +
-        '<div id="aiStatsResult" style="display:none;margin-top:14px;"></div>' +
-      '</div>' +
-    '</div>';
 
   el.innerHTML = html;
 }
@@ -380,8 +383,24 @@ function buildMealDistributionChart(mealCounts) {
 function buildPantryCategoryChart() {
   var items = (typeof pantryItems !== 'undefined' && pantryItems) ? pantryItems : {};
   var catCount = {};
+
+  /* Indice rapido da defaultIngredients per lookup categoria */
+  var defCatMap = {};
+  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
+    defaultIngredients.forEach(function(d) {
+      if (d && d.name && d.category) defCatMap[d.name.toLowerCase()] = d.category;
+    });
+  }
+
   Object.keys(items).forEach(function(k){
-    var cat = (items[k] && items[k].category) ? items[k].category : '🧂 Altro';
+    var item = items[k];
+    if (!item || (item.quantity || 0) <= 0) return;
+    var cat = item.category || defCatMap[k.toLowerCase()] || null;
+    /* Normalizza la categoria legacy */
+    if (cat === '🥩 Carne e Pesce') {
+      cat = (item.icon === '🐟' || item.icon === '🦑' || item.icon === '🐙') ? '🐟 Pesce' : '🥩 Carne';
+    }
+    cat = cat || '🧂 Altro';
     catCount[cat] = (catCount[cat]||0) + 1;
   });
   var cats = Object.keys(catCount).sort(function(a,b){ return catCount[b]-catCount[a]; });
