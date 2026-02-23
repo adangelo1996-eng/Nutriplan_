@@ -27,6 +27,7 @@ function selectMeal(meal, btn) {
   /* Aggiorna sia rf-pill che meal-btn */
   document.querySelectorAll('#mealSelector .rf-pill, #mealSelector .meal-btn').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
+  _pianoRicetteFilter = 'base';
   renderMealItems();
   renderMealProgress();
   renderPianoRicette();
@@ -94,6 +95,16 @@ function getMealItems(meal) {
       if (i && i.name) out.push(Object.assign({}, i, { _cat: cat }));
     });
   });
+  /* Fallback: leggi da pianoAlimentare se mealPlan per questo pasto è vuoto */
+  if (!out.length && typeof pianoAlimentare !== 'undefined' && pianoAlimentare && pianoAlimentare[meal]) {
+    Object.keys(pianoAlimentare[meal]).forEach(function(cat) {
+      var arr = pianoAlimentare[meal][cat];
+      if (!Array.isArray(arr)) return;
+      arr.forEach(function(i) {
+        if (i && i.name) out.push(Object.assign({}, i, { _cat: cat }));
+      });
+    });
+  }
   return out;
 }
 
@@ -600,29 +611,93 @@ function _getFridgeKeys() {
 }
 
 /* ── RICETTE PER PASTO SELEZIONATO (tab Piano) ── */
+var _pianoRicetteFilter = 'base'; /* 'base' | 'mie' | 'ai' */
+
+function setPianoRicetteFilter(filter, btn) {
+  _pianoRicetteFilter = filter || 'base';
+  document.querySelectorAll('.piano-ricette-pill').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  renderPianoRicette();
+}
+
 function renderPianoRicette() {
   var el = document.getElementById('pianoRicetteWrap');
   if (!el) return;
+
+  var filterHtml =
+    '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">' +
+      '<button class="piano-ricette-pill rf-pill' + (_pianoRicetteFilter === 'base' ? ' active' : '') + '" ' +
+        'onclick="setPianoRicetteFilter(\'base\',this)">🍴 Base</button>' +
+      '<button class="piano-ricette-pill rf-pill' + (_pianoRicetteFilter === 'mie' ? ' active' : '') + '" ' +
+        'onclick="setPianoRicetteFilter(\'mie\',this)">⭐ Mie</button>' +
+      '<button class="piano-ricette-pill rf-pill' + (_pianoRicetteFilter === 'ai' ? ' active' : '') + '" ' +
+        'onclick="setPianoRicetteFilter(\'ai\',this)">🤖 AI</button>' +
+    '</div>';
+
   if (typeof getAllRicette !== 'function') {
-    el.innerHTML = '<p style="color:var(--text-3);font-size:.9em;">Modulo ricette non caricato.</p>';
+    el.innerHTML = filterHtml + '<p style="color:var(--text-3);font-size:.9em;">Modulo ricette non caricato.</p>';
     return;
   }
+
   var fridgeKeys = _getFridgeKeys();
-  var all = getAllRicette().filter(function(r) {
+
+  /* ── Tab AI ── */
+  if (_pianoRicetteFilter === 'ai') {
+    var aiBtn =
+      '<div style="margin-bottom:12px;">' +
+        '<button class="ai-recipe-btn" onclick="openAIRecipeModal(\'oggi_piano\')">' +
+          '✨ Genera ricetta AI con ingredienti del piano' +
+          '<span class="ai-powered-label">Powered by Gemini</span>' +
+        '</button>' +
+      '</div>';
+
+    var aiList = (typeof aiRecipes !== 'undefined' && Array.isArray(aiRecipes))
+      ? aiRecipes.filter(function(r) { return _mealContains(r.pasto, selectedMeal); })
+      : [];
+
+    var aiHtml = aiList.length
+      ? aiList.map(function(r) { return _buildPianoRicettaCard(r, fridgeKeys); }).join('')
+      : '<div style="padding:12px 0;color:var(--text-light);font-size:.88em;">Nessuna ricetta AI per questo pasto.<br>' +
+        '<span style="font-size:.82em;">Usa il tasto qui sopra per generarne una.</span></div>';
+
+    el.innerHTML = filterHtml + aiBtn + aiHtml;
+    return;
+  }
+
+  /* ── Tab Base o Mie ── */
+  var sourceList;
+  if (_pianoRicetteFilter === 'mie') {
+    sourceList = (typeof customRecipes !== 'undefined' && Array.isArray(customRecipes))
+      ? customRecipes.map(function(r) { return Object.assign({}, r, { isCustom: true }); })
+      : [];
+  } else {
+    sourceList = (typeof defaultRecipes !== 'undefined' && Array.isArray(defaultRecipes))
+      ? defaultRecipes
+      : (typeof getAllRicette === 'function'
+          ? getAllRicette().filter(function(r) { return !r.isCustom && !r.isAI; })
+          : []);
+  }
+
+  var all = sourceList.filter(function(r) {
     if (!_mealContains(r.pasto, selectedMeal)) return false;
-    /* mostra solo ricette con almeno 1 ingrediente disponibile */
     var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
-    if (!ings.length) return true; /* ricetta senza ingredienti listati: mostrala sempre */
+    if (!ings.length) return true;
     return ings.some(function(ing){
       var n = (ing.name||ing.nome||'').toLowerCase().trim();
       return fridgeKeys.some(function(k){ var kl=k.toLowerCase(); return kl===n||kl.includes(n)||n.includes(kl); });
     });
   });
+
   if (!all.length) {
-    el.innerHTML = '<div style="padding:12px 0;color:var(--text-light);font-size:.88em;">Nessuna ricetta con ingredienti disponibili per questo pasto.<br><span style="font-size:.82em;">Aggiungi ingredienti alla dispensa per vedere i suggerimenti.</span></div>';
+    var emptyMsg = _pianoRicetteFilter === 'mie'
+      ? 'Nessuna tua ricetta per questo pasto con ingredienti disponibili.'
+      : 'Nessuna ricetta base con ingredienti disponibili per questo pasto.';
+    el.innerHTML = filterHtml +
+      '<div style="padding:12px 0;color:var(--text-light);font-size:.88em;">' + emptyMsg + '<br>' +
+      '<span style="font-size:.82em;">Aggiungi ingredienti alla dispensa per vedere i suggerimenti.</span></div>';
     return;
   }
-  /* Ordina per disponibilità ingredienti (% decrescente) */
+
   all.sort(function(a, b) {
     function avail(r) {
       var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
@@ -635,7 +710,8 @@ function renderPianoRicette() {
     }
     return avail(b) - avail(a);
   });
-  el.innerHTML = all.map(function(r) {
+
+  el.innerHTML = filterHtml + all.map(function(r) {
     return _buildPianoRicettaCard(r, fridgeKeys);
   }).join('');
 }

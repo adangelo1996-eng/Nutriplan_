@@ -144,46 +144,58 @@ function renderAIRicetteTab() {
       '</div>';
     return;
   }
-  el.innerHTML = list.map(function(r, idx) {
-    return buildAIRicettaItem(r, idx);
-  }).join('');
-}
 
-function buildAIRicettaItem(r, idx) {
-  var name  = r.name || r.nome || 'Ricetta AI';
-  var icon  = r.icon || '🤖';
-  var pasto = r.pasto || '';
-  var ings  = Array.isArray(r.ingredienti) ? r.ingredienti : [];
-  var prep  = r.preparazione || '';
-  var color = pastoColor(pasto);
-  var pl    = pastoLabel(pasto);
+  /* Raggruppa per sottocategoria */
+  var groups = {};
+  list.forEach(function(r) {
+    var key = r.subcategory || '__default__';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(r);
+  });
 
-  var ingList = ings.map(function(i) {
-    var qty = i.quantity ? i.quantity + ' ' + (i.unit || '') : '';
-    return (i.name || '') + (qty ? ' (' + qty + ')' : '');
-  }).filter(Boolean).join(', ');
-
-  return (
-    '<div class="cri-card" style="--cc:' + color + '">' +
-      '<div class="cri-top">' +
-        '<div class="cri-icon" onclick="openRecipeModal(\'' + esc(name) + '\')">' + icon + '</div>' +
-        '<div class="cri-body" onclick="openRecipeModal(\'' + esc(name) + '\')">' +
-          '<div class="cri-name">' + name + '</div>' +
-          (pl ? '<div class="cri-pasto" style="color:' + color + '">' + pl + '</div>' : '') +
-          '<span class="rc-badge" style="background:#e8f4fd;color:#1a73e8;font-size:.7em;margin-top:4px;">🤖 AI</span>' +
-        '</div>' +
-        '<div class="cri-actions">' +
-          '<button class="btn btn-warning btn-small" onclick="event.stopPropagation();deleteAIRicetta(' + idx + ')">🗑</button>' +
-        '</div>' +
+  var html = '';
+  /* Gruppo principale (senza sottocategoria) */
+  if (groups['__default__'] && groups['__default__'].length) {
+    html += '<div class="rc-group">' +
+      '<div class="rc-group-title" style="--gc:var(--primary);">' +
+        '🤖 Generate<span class="rc-group-count">' + groups['__default__'].length + '</span>' +
       '</div>' +
-      (ingList ? '<div class="cri-ings">🥗 ' + ingList + '</div>' : '') +
-      (prep ? '<div class="cri-prep">' + truncate(prep, 120) + '</div>' : '') +
-    '</div>'
-  );
+      '<div class="rc-grid">' +
+        groups['__default__'].map(function(r) { return buildCard(Object.assign({}, r, { isAI: true })); }).join('') +
+      '</div>' +
+    '</div>';
+  }
+  /* Gruppi con sottocategoria */
+  Object.keys(groups).forEach(function(key) {
+    if (key === '__default__') return;
+    var items = groups[key];
+    html += '<div class="rc-group">' +
+      '<div class="rc-group-title" style="--gc:#10b981;">' +
+        '⭐ ' + key + '<span class="rc-group-count">' + items.length + '</span>' +
+      '</div>' +
+      '<div class="rc-grid">' +
+        items.map(function(r) { return buildCard(Object.assign({}, r, { isAI: true })); }).join('') +
+      '</div>' +
+    '</div>';
+  });
+
+  el.innerHTML = html;
 }
 
 function deleteAIRicetta(idx) {
   if (!Array.isArray(aiRecipes) || !aiRecipes[idx]) return;
+  var name = aiRecipes[idx].name || 'questa ricetta';
+  if (!confirm('Eliminare la ricetta AI "' + name + '"?')) return;
+  aiRecipes.splice(idx, 1);
+  if (typeof saveData === 'function') saveData();
+  renderAIRicetteTab();
+  renderRicetteGrid();
+}
+
+function deleteAIRicettaById(id) {
+  if (!Array.isArray(aiRecipes)) return;
+  var idx = aiRecipes.findIndex(function(r) { return r.id === id; });
+  if (idx === -1) return;
   var name = aiRecipes[idx].name || 'questa ricetta';
   if (!confirm('Eliminare la ricetta AI "' + name + '"?')) return;
   aiRecipes.splice(idx, 1);
@@ -306,6 +318,7 @@ function buildCard(r) {
   var icon       = safeStr(r.icon||r.icona||'🍽');
   var ings       = Array.isArray(r.ingredienti)?r.ingredienti:[];
   var isCustom   = Boolean(r.isCustom);
+  var isAI       = Boolean(r.isAI);
   var tot        = ings.length;
   var avail      = countAvailable(ings);
   var extraCount = countExtraPiano(ings);
@@ -352,9 +365,15 @@ function buildCard(r) {
                  '</li>';
     });
     accHtml += '</ul>';
-    accHtml += '<button class="rc-detail-btn" '+
+    accHtml += '<div style="display:flex;gap:8px;margin-top:2px;">' +
+               '<button class="rc-detail-btn" style="flex:1;" '+
                'onclick="event.stopPropagation();openRecipeModal(\''+esc(name)+'\')">'+
-               'Preparazione →</button>';
+               'Preparazione →</button>'+
+               (isAI && r.id
+                 ? '<button class="rc-detail-btn" style="background:#fde8e8;color:#dc2626;white-space:nowrap;" '+
+                   'onclick="event.stopPropagation();deleteAIRicettaById(\''+esc(r.id)+'\')">🗑 Elimina</button>'
+                 : '')+
+               '</div>';
   }
 
   return (
@@ -371,6 +390,7 @@ function buildCard(r) {
           '<div class="rc-meta">'+
             (pLabel?'<span class="rc-pasto" style="color:'+color+'">'+pLabel+'</span>':'') +
             (isCustom?'<span class="rc-badge">⭐ Mia</span>':'')+
+            (isAI?'<span class="rc-badge" style="background:#e8f4fd;color:#1a73e8;">🤖 AI</span>':'')+
             '<span class="rc-badge '+stateCls+'">'+stateTxt+'</span>'+
             extraBadge+
           '</div>'+
