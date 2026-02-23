@@ -31,10 +31,12 @@ function renderStatistiche() {
      STAT CARDS RIEPILOGO
   ══════════════════════════════════════════ */
   var statItems = [
-    { emoji:'📅', label:'Giorni registrati', value: stats.totalDays },
-    { emoji:'✅', label:'Pasti completati',  value: stats.totalMeals },
-    { emoji:'🌿', label:'Ingredienti unici', value: stats.uniqueIngredients },
-    { emoji:'🔄', label:'Sostituzioni',      value: stats.totalSubs }
+    { emoji:'📅', label:'Giorni registrati',  value: stats.totalDays },
+    { emoji:'✅', label:'Pasti completati',   value: stats.totalMeals },
+    { emoji:'🌿', label:'Ingredienti unici',  value: stats.uniqueIngredients },
+    { emoji:'🔄', label:'Sostituzioni',       value: stats.totalSubs },
+    { emoji:'⏭', label:'Giorni saltati (14gg)', value: stats.skippedDays },
+    { emoji:'🎨', label:'Varietà media/giorno', value: stats.varietyScore }
   ];
 
   html +=
@@ -216,13 +218,34 @@ function computeStats() {
     .slice(0, 10)
     .map(function(item, i){ return Object.assign({}, item, { rank: i+1 }); });
 
+  /* Pasti saltati: giorni negli ultimi 14 senza registrazioni */
+  var skippedDays = 0;
+  var today14 = new Date(); today14.setHours(0,0,0,0);
+  for (var d = 1; d <= 14; d++) {
+    var check = new Date(today14);
+    check.setDate(today14.getDate() - d);
+    var dk2 = check.getFullYear() + '-' +
+              String(check.getMonth()+1).padStart(2,'0') + '-' +
+              String(check.getDate()).padStart(2,'0');
+    var hd2 = appHistory[dk2];
+    var hadMeal = hd2 && hd2.usedItems && Object.keys(hd2.usedItems).some(function(mk){
+      return Object.keys((hd2.usedItems[mk]||{})).length > 0;
+    });
+    if (!hadMeal) skippedDays++;
+  }
+
+  /* Varietà: ingredienti unici / giorni con almeno un pasto */
+  var varietyScore = totalDays > 0 ? Math.round(Object.keys(ingredientCounts).length / totalDays * 10) / 10 : 0;
+
   return {
     totalDays:         totalDays,
     totalMeals:        totalMeals,
     totalSubs:         totalSubs,
     uniqueIngredients: Object.keys(ingredientCounts).length,
     topIngredients:    topIngredients,
-    mealCounts:        mealCounts
+    mealCounts:        mealCounts,
+    skippedDays:       skippedDays,
+    varietyScore:      varietyScore
   };
 }
 

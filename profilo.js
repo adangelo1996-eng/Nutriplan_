@@ -11,10 +11,100 @@ function renderProfilo() {
   if (!el) return;
   el.innerHTML =
     buildProfiloUserSection() +
+    buildProfiloDietaSection() +
     buildProfiloStoricoSection() +
     buildProfiloSettingsSection();
   /* Render storico nell'apposito contenitore */
   if (typeof renderStorico === 'function') renderStorico('profiloStoricoContent');
+}
+
+/* ══════════════════════════════════════════════
+   SEZIONE VINCOLI DIETA
+══════════════════════════════════════════════ */
+function buildProfiloDietaSection() {
+  var dp = (typeof dietProfile !== 'undefined' && dietProfile) ? dietProfile : {};
+  var flags = [
+    { key:'vegetariano',  emoji:'🥦', label:'Vegetariano',    sub:'No carne, no pesce' },
+    { key:'vegano',       emoji:'🌱', label:'Vegano',          sub:'No prodotti animali' },
+    { key:'senzaLattosio',emoji:'🥛', label:'Senza Lattosio',  sub:'No latticini' },
+    { key:'senzaGlutine', emoji:'🌾', label:'Senza Glutine',   sub:'No grano, pasta, pane' }
+  ];
+  var allergenici = Array.isArray(dp.allergenici) ? dp.allergenici : [];
+
+  var togglesHtml = flags.map(function(f) {
+    var on = Boolean(dp[f.key]);
+    return '<div class="settings-row" onclick="toggleDietPref(\''+f.key+'\')" style="cursor:pointer;">' +
+      '<div class="settings-row-icon">'+f.emoji+'</div>' +
+      '<div class="settings-row-info">' +
+        '<div class="settings-row-label">'+f.label+'</div>' +
+        '<div class="settings-row-sub">'+f.sub+'</div>' +
+      '</div>' +
+      '<div class="diet-toggle'+(on?' diet-toggle-on':'')+'">'+
+        '<div class="diet-toggle-knob"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  var allergensHtml =
+    '<div style="padding:12px 16px 14px;">' +
+      '<div style="font-size:.82em;font-weight:700;color:var(--text-2);margin-bottom:8px;">🚫 Ingredienti da evitare (allergenici / intolleranze)</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;" id="allergenTagsWrap">' +
+        (allergenici.length
+          ? allergenici.map(function(a){
+              return '<span class="allergen-tag">'+a+
+                '<button onclick="removeAllergen(\''+a.replace(/'/g,"\\'")+'\')" aria-label="Rimuovi">✕</button></span>';
+            }).join('')
+          : '<span style="font-size:.8em;color:var(--text-3);font-style:italic;">Nessun ingrediente aggiunto</span>'
+        ) +
+      '</div>' +
+      '<div style="display:flex;gap:6px;">' +
+        '<input type="text" id="allergenInput" placeholder="Es. arachidi, soia…" ' +
+               'style="flex:1;padding:7px 10px;border-radius:var(--r-md);border:1.5px solid var(--border);' +
+               'background:var(--bg-subtle);font-size:.86em;color:var(--text-1);outline:none;" ' +
+               'onkeydown="if(event.key===\'Enter\')addAllergen()">' +
+        '<button class="rc-btn rc-btn-primary" style="padding:7px 14px;font-size:.86em;" onclick="addAllergen()">＋</button>' +
+      '</div>' +
+    '</div>';
+
+  return (
+    '<div class="rc-card settings-section" style="margin-bottom:16px;">' +
+      '<div class="settings-section-title">🌿 Vincoli Dieta</div>' +
+      togglesHtml +
+      allergensHtml +
+    '</div>'
+  );
+}
+
+function toggleDietPref(key) {
+  if (typeof dietProfile === 'undefined') dietProfile = {};
+  dietProfile[key] = !Boolean(dietProfile[key]);
+  /* Se vegano → implica anche vegetariano */
+  if (key === 'vegano' && dietProfile.vegano) dietProfile.vegetariano = true;
+  if (key === 'vegetariano' && !dietProfile.vegetariano) dietProfile.vegano = false;
+  if (typeof saveData === 'function') saveData();
+  renderProfilo();
+  if (typeof buildFilterRow === 'function') buildFilterRow();
+}
+
+function addAllergen() {
+  var inp = document.getElementById('allergenInput');
+  if (!inp) return;
+  var val = inp.value.trim();
+  if (!val) return;
+  if (typeof dietProfile === 'undefined') dietProfile = {};
+  if (!Array.isArray(dietProfile.allergenici)) dietProfile.allergenici = [];
+  if (dietProfile.allergenici.indexOf(val) === -1) {
+    dietProfile.allergenici.push(val);
+    if (typeof saveData === 'function') saveData();
+    renderProfilo();
+  }
+}
+
+function removeAllergen(name) {
+  if (typeof dietProfile === 'undefined' || !Array.isArray(dietProfile.allergenici)) return;
+  dietProfile.allergenici = dietProfile.allergenici.filter(function(a){ return a !== name; });
+  if (typeof saveData === 'function') saveData();
+  renderProfilo();
 }
 
 /* ══════════════════════════════════════════════

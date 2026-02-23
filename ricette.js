@@ -4,7 +4,80 @@
 
 var ricetteSearchQuery = '';
 var ricetteFilterPasto = 'all';
+var ricetteFilterExtra = '';   /* '' | 'preferiti' | 'disponibili' | 'dieta' */
 var currentRecipeName  = null;
+
+/* ══════════════════════════════════════════════════
+   PREFERITI
+══════════════════════════════════════════════════ */
+function isFavorito(name) {
+  return Array.isArray(preferiti) && preferiti.indexOf(name) !== -1;
+}
+function toggleFavorito(name, event) {
+  if (event) event.stopPropagation();
+  if (!Array.isArray(preferiti)) preferiti = [];
+  var idx = preferiti.indexOf(name);
+  if (idx === -1) {
+    preferiti.push(name);
+    if (typeof showToast === 'function') showToast('⭐ "' + name + '" aggiunta ai preferiti', 'success');
+  } else {
+    preferiti.splice(idx, 1);
+    if (typeof showToast === 'function') showToast('☆ "' + name + '" rimossa dai preferiti', 'info');
+  }
+  if (typeof saveData === 'function') saveData();
+  renderRicetteGrid();
+  if (typeof renderAIRicetteTab === 'function') renderAIRicetteTab();
+}
+
+/* ══════════════════════════════════════════════════
+   COMPATIBILITÀ DIETA
+══════════════════════════════════════════════════ */
+var _MEAT_KW  = ['pollo','tacchino','manzo','maiale','agnello','vitello','prosciutto','salame',
+                 'bresaola','pancetta','salsiccia','bacon','mortadella','speck','guanciale',
+                 'lardo','bistecca','filetto','costata','fesa','coscia','arrosto'];
+var _FISH_KW  = ['salmone','tonno','merluzzo','branzino','orata','sgombro','trota','pesce',
+                 'calamari','gamberetti','gamberone','cozze','vongole','polpo','seppia',
+                 'acciughe','sardine','aringa','nasello','dentice'];
+var _DAIRY_KW = ['latte','yogurt','formaggio','mozzarella','parmigiano','ricotta','mascarpone',
+                 'grana','burro','panna','fontina','gorgonzola','emmental','pecorino','caciotta',
+                 'kefir','quark'];
+var _EGG_KW   = ['uova','uovo'];
+var _GLUT_KW  = ['pasta','pane','farina','orzo','farro','avena','segale','grano','semola',
+                 'biscotti','crackers','grissini','focaccia','pizza','couscous','bulgur',
+                 'pangrattato','brioche','cornetto'];
+
+function isDietCompatible(recipe) {
+  var dp = (typeof dietProfile !== 'undefined') ? dietProfile : {};
+  if (!dp || !Object.keys(dp).length) return true;
+  var ings = Array.isArray(recipe.ingredienti) ? recipe.ingredienti : [];
+  var allergenici = Array.isArray(dp.allergenici) ? dp.allergenici : [];
+  for (var i = 0; i < ings.length; i++) {
+    var n = (ings[i].name || '').toLowerCase();
+    /* Allergenici custom */
+    for (var j = 0; j < allergenici.length; j++) {
+      if (allergenici[j] && n.includes(allergenici[j].toLowerCase())) return false;
+    }
+    /* Vegetariano / Vegano: no carne, no pesce */
+    if (dp.vegetariano || dp.vegano) {
+      for (var k = 0; k < _MEAT_KW.length; k++) { if (n.includes(_MEAT_KW[k])) return false; }
+      for (var k = 0; k < _FISH_KW.length; k++) { if (n.includes(_FISH_KW[k])) return false; }
+    }
+    /* Vegano: no latticini, no uova */
+    if (dp.vegano) {
+      for (var k = 0; k < _DAIRY_KW.length; k++) { if (n.includes(_DAIRY_KW[k])) return false; }
+      for (var k = 0; k < _EGG_KW.length;  k++) { if (n.includes(_EGG_KW[k]))  return false; }
+    }
+    /* Senza lattosio */
+    if (dp.senzaLattosio) {
+      for (var k = 0; k < _DAIRY_KW.length; k++) { if (n.includes(_DAIRY_KW[k])) return false; }
+    }
+    /* Senza glutine */
+    if (dp.senzaGlutine) {
+      for (var k = 0; k < _GLUT_KW.length; k++) { if (n.includes(_GLUT_KW[k])) return false; }
+    }
+  }
+  return true;
+}
 
 /* ── Utility ── */
 function esc(v) {
@@ -233,16 +306,39 @@ function buildFilterRow() {
     {key:'merenda',emoji:'🥪',label:'Merenda'},
     {key:'cena',emoji:'🌙',label:'Cena'}
   ];
-  row.innerHTML = filters.map(function(f){
-    return '<button class="rf-pill'+(f.key===ricetteFilterPasto?' active':'')+'" '+
-           'onclick="setRicetteFilter(\''+f.key+'\',this)">'+
-           f.emoji+' '+f.label+'</button>';
-  }).join('');
+  var hasDiet = typeof dietProfile !== 'undefined' && dietProfile && Object.keys(dietProfile).some(function(k){ return k !== 'allergenici' && dietProfile[k]; });
+  var extraFilters = [
+    {key:'preferiti',  emoji:'⭐', label:'Preferiti'},
+    {key:'disponibili',emoji:'🟢', label:'Disponibili'},
+  ];
+  if (hasDiet) extraFilters.push({key:'dieta', emoji:'🌿', label:'Dieta mia'});
+
+  row.innerHTML =
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">' +
+    filters.map(function(f){
+      return '<button class="rf-pill'+(f.key===ricetteFilterPasto?' active':'')+'" '+
+             'onclick="setRicetteFilter(\''+f.key+'\',this)">'+
+             f.emoji+' '+f.label+'</button>';
+    }).join('') +
+    '</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+    extraFilters.map(function(f){
+      return '<button class="rf-pill rf-pill-extra'+(f.key===ricetteFilterExtra?' active':'')+'" '+
+             'onclick="setRicetteFilterExtra(\''+f.key+'\',this)">'+
+             f.emoji+' '+f.label+'</button>';
+    }).join('') +
+    '</div>';
 }
 function setRicetteFilter(key, btn) {
   ricetteFilterPasto = key||'all';
-  document.querySelectorAll('.rf-pill').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.rf-pill:not(.rf-pill-extra)').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
+  renderRicetteGrid();
+}
+function setRicetteFilterExtra(key, btn) {
+  ricetteFilterExtra = (ricetteFilterExtra === key) ? '' : (key || '');
+  document.querySelectorAll('.rf-pill-extra').forEach(function(b){ b.classList.remove('active'); });
+  if (ricetteFilterExtra && btn) btn.classList.add('active');
   renderRicetteGrid();
 }
 function filterRicette(query) {
@@ -254,14 +350,23 @@ function filterRicette(query) {
 function renderRicetteGrid() {
   var grid = document.getElementById('ricetteGrid');
   if (!grid) return;
+  var fridgeKeys = getFridgeKeys();
   var all = getAllRicette().filter(function(r){
     if (ricetteFilterPasto!=='all' && !pastoContains(r.pasto, ricetteFilterPasto)) return false;
     if (ricetteSearchQuery) {
       var nm = safeStr(r.name||r.nome).toLowerCase();
       var ings = (Array.isArray(r.ingredienti)?r.ingredienti:[])
         .map(function(i){ return safeStr(i.name||i.nome).toLowerCase(); }).join(' ');
-      return nm.includes(ricetteSearchQuery)||ings.includes(ricetteSearchQuery);
+      if (!nm.includes(ricetteSearchQuery) && !ings.includes(ricetteSearchQuery)) return false;
     }
+    /* Filtri extra */
+    if (ricetteFilterExtra === 'preferiti' && !isFavorito(safeStr(r.name||r.nome))) return false;
+    if (ricetteFilterExtra === 'disponibili') {
+      var ings2 = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+      var avail2 = countAvailable(ings2);
+      if (ings2.length === 0 || Math.round((avail2/ings2.length)*100) < 60) return false;
+    }
+    if (ricetteFilterExtra === 'dieta' && !isDietCompatible(r)) return false;
     return true;
   });
   if (!all.length) {
@@ -319,6 +424,9 @@ function buildCard(r) {
   var ings       = Array.isArray(r.ingredienti)?r.ingredienti:[];
   var isCustom   = Boolean(r.isCustom);
   var isAI       = Boolean(r.isAI);
+  var isFav      = isFavorito(name);
+  var dietOk     = isDietCompatible(r);
+  var hasDietProfile = typeof dietProfile !== 'undefined' && dietProfile && Object.keys(dietProfile).some(function(k){ return k !== 'allergenici' && dietProfile[k]; });
   var tot        = ings.length;
   var avail      = countAvailable(ings);
   var extraCount = countExtraPiano(ings);
@@ -393,8 +501,17 @@ function buildCard(r) {
             (isAI?'<span class="rc-badge" style="background:#e8f4fd;color:#1a73e8;">🤖 AI</span>':'')+
             '<span class="rc-badge '+stateCls+'">'+stateTxt+'</span>'+
             extraBadge+
+            (hasDietProfile && dietOk ? '<span class="rc-badge badge-diet">🌿 Compatibile</span>' : '')+
+            (hasDietProfile && !dietOk ? '<span class="rc-badge badge-diet-no">⚠ Non compatibile</span>' : '')+
           '</div>'+
         '</div>'+
+        /* Stella preferiti */
+        '<button class="fav-btn'+(isFav?' fav-on':'')+'" '+
+                'onclick="toggleFavorito(\''+esc(name)+'\',event)" '+
+                'title="'+(isFav?'Rimuovi dai preferiti':'Aggiungi ai preferiti')+'" '+
+                'aria-label="'+(isFav?'Rimuovi dai preferiti':'Aggiungi ai preferiti')+'">'+
+          (isFav?'★':'☆')+
+        '</button>'+
         '<span class="rc-chevron">'+
           '<svg width="14" height="14" viewBox="0 0 14 14" fill="none">'+
             '<path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'+

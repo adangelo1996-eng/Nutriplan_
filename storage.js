@@ -18,6 +18,8 @@ var spesaLastGenerated = null;
 var selectedDateKey   = null; /* inizializzato da enterApp() */
 var pianoAlimentare   = {};   /* piano strutturato per categoria ingrediente */
 var weeklyLimitsCustom = {};  /* limiti personalizzati nel piano alimentare */
+var preferiti         = [];   /* nomi ricette preferite */
+var dietProfile       = {};   /* vincoli dieta: { vegetariano, vegano, senzaLattosio, senzaGlutine, allergenici:[] } */
 
 /* ============================================================
    INIT STORAGE (chiamata da enterApp prima di tutto)
@@ -119,6 +121,10 @@ function applyLoadedData(data) {
     pianoAlimentare = data.pianoAlimentare;
   if (data.weeklyLimitsCustom && typeof data.weeklyLimitsCustom === 'object')
     weeklyLimitsCustom = data.weeklyLimitsCustom;
+  if (Array.isArray(data.preferiti))
+    preferiti = data.preferiti;
+  if (data.dietProfile && typeof data.dietProfile === 'object')
+    dietProfile = data.dietProfile;
 }
 
 function buildSaveObject() {
@@ -138,7 +144,9 @@ function buildSaveObject() {
     spesaLastGenerated: spesaLastGenerated,
     weeklyLimits:       limitsToSave,
     pianoAlimentare:    pianoAlimentare,
-    weeklyLimitsCustom: weeklyLimitsCustom
+    weeklyLimitsCustom: weeklyLimitsCustom,
+    preferiti:          preferiti,
+    dietProfile:        dietProfile
   };
 }
 

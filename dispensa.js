@@ -200,6 +200,35 @@ function getAllPantryItems() {
 ══════════════════════════════════════════════════ */
 function renderPantry() { renderFridge(); }
 
+function buildExpiringSection() {
+  var expiring = getExpiringSoon(7);
+  if (!expiring.length) return '';
+  var html = '<div class="expiring-section">' +
+    '<div class="expiring-section-title">⏰ In scadenza presto</div>' +
+    expiring.map(function(e) {
+      var badge = buildExpiryBadge(e.data.scadenza);
+      /* Cerca ricette che usano questo ingrediente */
+      var allR = (typeof getAllRicette === 'function') ? getAllRicette() : [];
+      var matchR = allR.filter(function(r) {
+        return Array.isArray(r.ingredienti) && r.ingredienti.some(function(i){
+          var n = (i.name||'').toLowerCase();
+          return n.includes(e.name.toLowerCase()) || e.name.toLowerCase().includes(n);
+        });
+      });
+      var recipeHint = matchR.length
+        ? '<span class="expiring-recipe-hint" onclick="event.stopPropagation();setRicetteFilterExtra(\'disponibili\',null);if(typeof goToPage===\'function\')goToPage(\'ricette\')" title="Vedi ricette">'+
+            '🍽 ' + matchR.length + ' ricett' + (matchR.length===1?'a':'e') +
+          '</span>'
+        : '';
+      return '<div class="expiring-row" onclick="openQtyModal(\''+escQ(e.name)+'\')">' +
+        '<div class="expiring-name">' + e.name + '</div>' +
+        '<div style="display:flex;gap:6px;align-items:center;">' + badge + recipeHint + '</div>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+  return html;
+}
+
 function renderFridge(targetId) {
   var el = document.getElementById(targetId || 'pantryContent');
   if (!el) return;
@@ -336,16 +365,20 @@ function renderFridge(targetId) {
       '</div>';
   }
 
-  /* Pulsante AI solo nella pagina principale dispensa (non nei modal incorporati) */
-  if (!targetId && typeof openAIRecipeModal === 'function') {
-    var aiHtml =
-      '<div style="margin-bottom:14px;">' +
-        '<button class="ai-recipe-btn" onclick="openAIRecipeModal(\'dispensa\')">' +
-          '🤖 Genera ricetta AI con gli ingredienti disponibili' +
-          '<span class="ai-powered-label">Powered by Gemini</span>' +
-        '</button>' +
-      '</div>';
-    html = aiHtml + html;
+  /* Pulsante AI + sezione in scadenza solo nella pagina principale dispensa */
+  if (!targetId) {
+    var expSection = buildExpiringSection();
+    if (expSection) html = expSection + html;
+    if (typeof openAIRecipeModal === 'function') {
+      var aiHtml =
+        '<div style="margin-bottom:14px;">' +
+          '<button class="ai-recipe-btn" onclick="openAIRecipeModal(\'dispensa\')">' +
+            '🤖 Genera ricetta AI con gli ingredienti disponibili' +
+            '<span class="ai-powered-label">Powered by Gemini</span>' +
+          '</button>' +
+        '</div>';
+      html = aiHtml + html;
+    }
   }
 
   el.innerHTML = html;
@@ -533,6 +566,41 @@ function selectAddByCatItem(name) {
 /* ══════════════════════════════════════════════════
    BUILD ROW INGREDIENTE
 ══════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════
+   SCADENZE
+══════════════════════════════════════════════════ */
+function getDaysToExpiry(scadenza) {
+  if (!scadenza) return null;
+  var today = new Date(); today.setHours(0,0,0,0);
+  var exp   = new Date(scadenza + 'T00:00:00');
+  return Math.round((exp - today) / 86400000);
+}
+
+function buildExpiryBadge(scadenza) {
+  var d = getDaysToExpiry(scadenza);
+  if (d === null) return '';
+  if (d < 0)  return '<span class="expiry-badge expiry-expired">⛔ Scaduto</span>';
+  if (d === 0) return '<span class="expiry-badge expiry-today">🔴 Scade oggi</span>';
+  if (d === 1) return '<span class="expiry-badge expiry-soon">🟠 Scade domani</span>';
+  if (d <= 4)  return '<span class="expiry-badge expiry-soon">🟡 Scade in '+d+'gg</span>';
+  if (d <= 7)  return '<span class="expiry-badge expiry-ok">🟢 '+d+'gg</span>';
+  return '<span class="expiry-badge expiry-ok">📅 '+d+'gg</span>';
+}
+
+function getExpiringSoon(maxDays) {
+  maxDays = maxDays || 4;
+  var result = [];
+  if (!pantryItems) return result;
+  Object.keys(pantryItems).forEach(function(name) {
+    var pd = pantryItems[name];
+    if (!pd || !pd.scadenza || (pd.quantity||0) <= 0) return;
+    var d = getDaysToExpiry(pd.scadenza);
+    if (d !== null && d <= maxDays) result.push({ name: name, days: d, data: pd });
+  });
+  result.sort(function(a,b){ return a.days - b.days; });
+  return result;
+}
+
 function buildFridgeRow(item) {
   var sid   = safeid(item.name);
   var qty   = typeof item.quantity === 'number' ? item.quantity : 0;
@@ -543,6 +611,7 @@ function buildFridgeRow(item) {
 
   /* Formatta numero: togli decimali se intero */
   var qtyDisplay = (qty % 1 === 0) ? qty : parseFloat(qty.toFixed(2));
+  var expiryBadge = buildExpiryBadge(item.scadenza);
 
   return (
     '<div class="fi-row" id="fi-row-' + sid + '" ' +
@@ -555,7 +624,9 @@ function buildFridgeRow(item) {
       /* Info */
       '<div class="fi-row-info">' +
         '<div class="fi-row-name">' + name + '</div>' +
-        '<div class="fi-row-unit">' + unit + '</div>' +
+        '<div class="fi-row-unit">' + unit +
+          (expiryBadge ? ' ' + expiryBadge : '') +
+        '</div>' +
       '</div>' +
 
       /* Quantità + pulsanti */
@@ -632,11 +703,13 @@ function openQtyModal(name) {
   var modal = document.getElementById('editQtyModal');
   if (!modal) return;
 
-  document.getElementById('eqmIcon').textContent  = icon;
-  document.getElementById('eqmName').textContent  = name;
-  document.getElementById('eqmUnit').textContent  = unit;
-  document.getElementById('eqmInput').value       = (qty % 1 === 0) ? qty : parseFloat(qty.toFixed(2));
+  document.getElementById('eqmIcon').textContent   = icon;
+  document.getElementById('eqmName').textContent   = name;
+  document.getElementById('eqmUnit').textContent   = unit;
+  document.getElementById('eqmInput').value        = (qty % 1 === 0) ? qty : parseFloat(qty.toFixed(2));
   document.getElementById('eqmInput').dataset.name = name;
+  var scadEl = document.getElementById('eqmScadenza');
+  if (scadEl) scadEl.value = pd.scadenza || '';
 
   modal.classList.add('active');
   setTimeout(function() {
@@ -661,7 +734,10 @@ function confirmQtyModal() {
   }
   if (!pantryItems) pantryItems = {};
   var pd = pantryItems[name] || {};
-  pantryItems[name] = Object.assign({}, pd, { quantity: val });
+  var scadEl = document.getElementById('eqmScadenza');
+  var scadenza = scadEl ? (scadEl.value || '') : (pd.scadenza || '');
+  pantryItems[name] = Object.assign({}, pd, { quantity: val, scadenza: scadenza || undefined });
+  if (!pantryItems[name].scadenza) delete pantryItems[name].scadenza;
   saveData();
   closeQtyModal();
   renderFridge();
