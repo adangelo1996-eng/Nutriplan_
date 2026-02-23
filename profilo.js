@@ -351,6 +351,13 @@ function buildProfiloSettingsSection() {
       right: '<span class="settings-row-arrow">›</span>'
     },
     {
+      icon: '🔒',
+      label: 'Privacy Policy',
+      sub: 'Informativa sul trattamento dei dati',
+      action: 'if(typeof openPrivacyModal===\'function\')openPrivacyModal()',
+      right: '<span class="settings-row-arrow">›</span>'
+    },
+    {
       icon: '🗑️',
       label: 'Cancella tutti i dati',
       sub: 'Rimuove permanentemente tutti i dati',

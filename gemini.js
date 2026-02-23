@@ -83,21 +83,19 @@ function openAIRecipeModal(context) {
   /* Determina pasto iniziale */
   if (context === 'oggi' && typeof selectedMeal !== 'undefined') {
     _aiRecipeMealKey = selectedMeal;
-  } else if (context === 'dispensa') {
-    _aiRecipeMealKey = 'pranzo';
   } else {
     _aiRecipeMealKey = 'pranzo';
   }
 
   modal.classList.add('active');
 
-  if (context === 'ricette') {
-    /* Da pagina ricette: prima seleziona il pasto */
-    _renderAIStep('select');
-  } else {
-    /* Da piano/dispensa: inizia subito la generazione */
+  if (context === 'oggi') {
+    /* Dal piano giornaliero: inizia subito per il pasto corrente */
     _renderAIStep('loading');
     _runAIGeneration();
+  } else {
+    /* Da ricette o dispensa: mostra sempre il selettore del pasto */
+    _renderAIStep('select');
   }
 }
 
@@ -138,11 +136,17 @@ function _renderAIStep(step) {
 
   if (step === 'loading') {
     resultEl.innerHTML =
-      '<div class="ai-loading">' +
+      '<div style="margin-bottom:14px;">' +
+        '<div style="height:4px;background:var(--bg-subtle);border-radius:99px;overflow:hidden;">' +
+          '<div class="ai-progress-bar"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ai-loading" style="padding:16px 0;">' +
         '<span class="ai-spinner"></span>' +
         ' Gemini sta creando la tua ricetta…' +
       '</div>';
-    footerEl.innerHTML = '';
+    footerEl.innerHTML =
+      '<button class="btn btn-secondary" onclick="closeAIRecipeModal()">Annulla</button>';
     return;
   }
 
@@ -303,6 +307,15 @@ function _acceptAIRecipe() {
   /* Aggiorna viste ricette */
   if (typeof renderRicetteGrid     === 'function') renderRicetteGrid();
   if (typeof renderAIRicetteTab    === 'function') renderAIRicetteTab();
+
+  /* Naviga alla pagina ricette → tab AI per mostrare il risultato */
+  if (typeof goToPage === 'function') goToPage('ricette');
+  setTimeout(function() {
+    if (typeof switchRicetteTab === 'function') {
+      var tabBtn = document.querySelector('#page-ricette .page-tabs .page-tab:nth-child(3)');
+      switchRicetteTab('ai', tabBtn);
+    }
+  }, 80);
 }
 
 function closeAIRecipeModal() {
