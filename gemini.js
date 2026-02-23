@@ -11,7 +11,7 @@ function _getGeminiKey() {
   return (window.APP_CONFIG && window.APP_CONFIG.gemini && window.APP_CONFIG.gemini.apiKey) || '';
 }
 
-function _geminiCall(prompt, callback) {
+function _geminiCall(prompt, callback, opts) {
   var apiKey = _getGeminiKey();
   if (!apiKey) {
     callback(null, 'API key Gemini non configurata (config.js)');
@@ -24,7 +24,7 @@ function _geminiCall(prompt, callback) {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
       temperature: 0.75,
-      maxOutputTokens: 1500
+      maxOutputTokens: (opts && opts.maxOutputTokens) ? opts.maxOutputTokens : 1500
     }
   });
 
@@ -91,6 +91,10 @@ function openAIRecipeModal(context) {
 
   if (context === 'oggi') {
     /* Dal piano giornaliero: inizia subito per il pasto corrente */
+    _renderAIStep('loading');
+    _runAIGeneration();
+  } else if (context === 'oggi_piano') {
+    /* Da sezione ricette nella pagina Oggi: usa ingredienti del piano */
     _renderAIStep('loading');
     _runAIGeneration();
   } else {
@@ -216,6 +220,11 @@ function _runAIGeneration() {
     if (typeof getMealItems === 'function') {
       getMealItems(_aiRecipeMealKey).forEach(function(i) { ingredients.push(i.name); });
     }
+  } else if (_aiRecipeContext === 'oggi_piano') {
+    /* Usa gli ingredienti del piano per il pasto selezionato */
+    if (typeof getMealItems === 'function') {
+      getMealItems(_aiRecipeMealKey).forEach(function(i) { ingredients.push(i.name); });
+    }
   } else {
     /* dispensa o ricette: usa gli ingredienti disponibili in dispensa */
     if (typeof pantryItems !== 'undefined' && pantryItems) {
@@ -287,6 +296,11 @@ function _acceptAIRecipe() {
   if (!_aiPendingRecipe) return;
   if (typeof aiRecipes === 'undefined') window.aiRecipes = [];
 
+  /* Aggiungi sottocategoria se generata dalla pagina Oggi */
+  if (_aiRecipeContext === 'oggi_piano') {
+    _aiPendingRecipe.subcategory = 'Con ingredienti del piano';
+  }
+
   var name = _aiPendingRecipe.name || 'Ricetta AI';
 
   /* Evita duplicati per nome */
@@ -305,17 +319,22 @@ function _acceptAIRecipe() {
   if (typeof showToast === 'function') showToast('✅ Ricetta "' + name + '" aggiunta alle ricette AI!', 'success');
 
   /* Aggiorna viste ricette */
-  if (typeof renderRicetteGrid     === 'function') renderRicetteGrid();
-  if (typeof renderAIRicetteTab    === 'function') renderAIRicetteTab();
+  if (typeof renderRicetteGrid  === 'function') renderRicetteGrid();
+  if (typeof renderAIRicetteTab === 'function') renderAIRicetteTab();
 
-  /* Naviga alla pagina ricette → tab AI per mostrare il risultato */
-  if (typeof goToPage === 'function') goToPage('ricette');
-  setTimeout(function() {
-    if (typeof switchRicetteTab === 'function') {
-      var tabBtn = document.querySelector('#page-ricette .page-tabs .page-tab:nth-child(3)');
-      switchRicetteTab('ai', tabBtn);
-    }
-  }, 80);
+  if (_aiRecipeContext === 'oggi_piano') {
+    /* Rimane sulla pagina Oggi, aggiorna la sezione ricette */
+    if (typeof renderPianoRicette === 'function') renderPianoRicette();
+  } else {
+    /* Naviga alla pagina ricette → tab AI per mostrare il risultato */
+    if (typeof goToPage === 'function') goToPage('ricette');
+    setTimeout(function() {
+      if (typeof switchRicetteTab === 'function') {
+        var tabBtn = document.querySelector('#page-ricette .page-tabs .page-tab:nth-child(3)');
+        switchRicetteTab('ai', tabBtn);
+      }
+    }, 80);
+  }
 }
 
 function closeAIRecipeModal() {
@@ -398,7 +417,9 @@ function generateAIStatsAnalysis() {
     '1. Commento generale sulle abitudini (2-3 righe)\n' +
     '2. Tre suggerimenti pratici numerati\n' +
     '3. Un punto di forza rilevato nei dati\n\n' +
-    'Rispondi in italiano, tono positivo e diretto. Massimo 250 parole. Nessun elemento superfluo.';
+    'Rispondi in italiano, tono positivo e diretto. Massimo 250 parole. ' +
+    'IMPORTANTE: termina sempre ogni frase in modo completo, non interrompere mai a metà frase. ' +
+    'Nessun elemento superfluo.';
 
   _geminiCall(prompt, function(text, err) {
     if (btnEl) {
@@ -429,5 +450,5 @@ function generateAIStatsAnalysis() {
         '</div>' +
         '<div style="font-size:.9em;line-height:1.7;color:var(--text-2);">' + html + '</div>' +
       '</div>';
-  });
+  }, { maxOutputTokens: 2500 });
 }
