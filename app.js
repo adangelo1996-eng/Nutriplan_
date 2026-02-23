@@ -766,11 +766,11 @@ function updateAllUI() {
 ══════════════════════════════════════════════════ */
 function resetDay() {
   if (!confirm('Vuoi resettare il piano di oggi?')) return;
-  if (typeof mealPlan !== 'undefined') {
+  if (typeof pianoAlimentare !== 'undefined') {
     ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk) {
-      if (mealPlan[mk]) {
-        ['principale','contorno','frutta','extra'].forEach(function(cat) {
-          mealPlan[mk][cat] = [];
+      if (pianoAlimentare[mk]) {
+        Object.keys(pianoAlimentare[mk]).forEach(function(cat) {
+          pianoAlimentare[mk][cat] = [];
         });
       }
     });
@@ -1035,7 +1035,7 @@ function pushUndo(description) {
   _undoStack.push({
     desc:        description,
     pantryItems: JSON.parse(JSON.stringify(typeof pantryItems !== 'undefined' ? pantryItems : {})),
-    mealPlan:    JSON.parse(JSON.stringify(typeof mealPlan    !== 'undefined' ? mealPlan    : {})),
+    pianoAlimentare: JSON.parse(JSON.stringify(typeof pianoAlimentare !== 'undefined' ? pianoAlimentare : {})),
     appHistory:  JSON.parse(JSON.stringify(typeof appHistory  !== 'undefined' ? appHistory  : {})),
     spesaItems:  JSON.parse(JSON.stringify(typeof spesaItems  !== 'undefined' ? spesaItems  : []))
   });
@@ -1047,7 +1047,7 @@ function performUndo() {
   var s = _undoStack.pop();
   if (!s) { showToast('Nessuna azione da annullare', 'info'); return; }
   pantryItems = s.pantryItems;
-  mealPlan    = s.mealPlan;
+  pianoAlimentare = s.pianoAlimentare;
   appHistory  = s.appHistory;
   spesaItems  = s.spesaItems;
   if (typeof saveData === 'function') saveData();

@@ -9,9 +9,9 @@ function exportPDF() {
   /* ── Piano alimentare ── */
   var pianoRows = '';
   MEALS_ORDER.forEach(function(meal) {
-    var plan  = (mealPlan && mealPlan[meal]) ? mealPlan[meal] : {};
+    var plan  = (pianoAlimentare && pianoAlimentare[meal]) ? pianoAlimentare[meal] : {};
     var allItems = [];
-    ['principale','contorno','frutta','extra'].forEach(function(cat){
+    Object.keys(plan).forEach(function(cat){
       if (Array.isArray(plan[cat])) plan[cat].forEach(function(i){ if(i&&i.name) allItems.push(i); });
     });
     if (!allItems.length) return;

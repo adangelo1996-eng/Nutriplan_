@@ -153,8 +153,8 @@ function getAllPantryItems() {
   /* 1. Dal piano */
   var mealKeys = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
   mealKeys.forEach(function(mk) {
-    var mp = (typeof mealPlan !== 'undefined' && mealPlan && mealPlan[mk]) ? mealPlan[mk] : {};
-    ['principale', 'contorno', 'frutta', 'extra'].forEach(function(cat) {
+    var mp = (typeof pianoAlimentare !== 'undefined' && pianoAlimentare && pianoAlimentare[mk]) ? pianoAlimentare[mk] : {};
+    Object.keys(mp).forEach(function(cat) {
       var arr = mp[cat];
       if (!Array.isArray(arr)) return;
       arr.forEach(function(item) {

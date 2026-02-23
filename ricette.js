@@ -137,22 +137,6 @@ function getPianoAlimentareIngNames() {
       });
     });
   });
-  /* Fallback: usa anche mealPlan se pianoAlimentare è vuoto */
-  if (!names.length && typeof mealPlan !== 'undefined' && mealPlan) {
-    Object.keys(mealPlan).forEach(function(mk) {
-      var m = mealPlan[mk];
-      if (!m) return;
-      ['principale','contorno','frutta','extra'].forEach(function(cat) {
-        if (!Array.isArray(m[cat])) return;
-        m[cat].forEach(function(it) {
-          if (it && it.name && !seen[it.name]) {
-            seen[it.name] = true;
-            names.push(it.name.toLowerCase().trim());
-          }
-        });
-      });
-    });
-  }
   return names;
 }
 
@@ -684,15 +668,15 @@ function applyRecipeToMeal() {
   if (!currentRecipeName) return;
   var r = findRicetta(currentRecipeName); if (!r) return;
   var pasto = Array.isArray(r.pasto)?(r.pasto[0]||'pranzo'):(r.pasto||'pranzo');
-  if (!mealPlan[pasto]) mealPlan[pasto]={principale:[],contorno:[],frutta:[],extra:[]};
-  if (!Array.isArray(mealPlan[pasto].principale)) mealPlan[pasto].principale=[];
+  if (!pianoAlimentare[pasto]) pianoAlimentare[pasto]={principale:[],contorno:[],frutta:[],extra:[]};
+  if (!Array.isArray(pianoAlimentare[pasto].principale)) pianoAlimentare[pasto].principale=[];
   var ings=Array.isArray(r.ingredienti)?r.ingredienti:[], added=0;
   ings.forEach(function(ing){
     var nm=safeStr(ing.name||ing.nome).trim(); if(!nm) return;
-    var exists=mealPlan[pasto].principale.some(function(i){
+    var exists=pianoAlimentare[pasto].principale.some(function(i){
       return safeStr(i.name).toLowerCase()===nm.toLowerCase();
     });
-    if (!exists){ mealPlan[pasto].principale.push({name:nm,quantity:ing.quantity||null,unit:ing.unit||'g'}); added++; }
+    if (!exists){ pianoAlimentare[pasto].principale.push({name:nm,quantity:ing.quantity||null,unit:ing.unit||'g'}); added++; }
   });
   saveData(); closeRecipeModal();
   if (typeof renderMealPlan==='function') renderMealPlan();

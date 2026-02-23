@@ -201,7 +201,7 @@ function buildProfiloPianoSection() {
   if (!profiloEditMode) {
     /* ── VISTA LETTURA ── */
     var cards = meals.map(function(m){
-      var plan  = (mealPlan && mealPlan[m.key]) ? mealPlan[m.key] : {};
+      var plan  = (pianoAlimentare && pianoAlimentare[m.key]) ? pianoAlimentare[m.key] : {};
       var items = [];
       ['principale','contorno','frutta','extra'].forEach(function(cat){
         if (Array.isArray(plan[cat])) plan[cat].forEach(function(i){
@@ -247,7 +247,7 @@ function buildProfiloPianoSection() {
   }
 
   /* ── VISTA MODIFICA ── */
-  var data   = editMealPlanData || JSON.parse(JSON.stringify(mealPlan||{}));
+  var data   = editMealPlanData || JSON.parse(JSON.stringify(pianoAlimentare||{}));
   var fields = meals.map(function(m){
     var plan  = data[m.key] || {};
     var items = [];
@@ -324,7 +324,7 @@ function toggleProfiloPasto(header) {
 /* ── EDIT PIANO ── */
 function startEditPiano() {
   profiloEditMode  = true;
-  editMealPlanData = JSON.parse(JSON.stringify(mealPlan||{}));
+  editMealPlanData = JSON.parse(JSON.stringify(pianoAlimentare||{}));
   renderProfilo();
 }
 
@@ -387,7 +387,14 @@ function saveEditPiano() {
     });
   });
 
-  mealPlan        = newPlan;
+  /* Fondi il piano editato in pianoAlimentare, preservando le categorie nutrizionali extra */
+  if (!pianoAlimentare || typeof pianoAlimentare !== 'object') pianoAlimentare = {};
+  ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk) {
+    if (!pianoAlimentare[mk] || typeof pianoAlimentare[mk] !== 'object') pianoAlimentare[mk] = {};
+    ['principale','contorno','frutta','extra'].forEach(function(cat) {
+      pianoAlimentare[mk][cat] = newPlan[mk] ? (newPlan[mk][cat] || []) : [];
+    });
+  });
   profiloEditMode = false;
   editMealPlanData= null;
   saveData();
@@ -497,7 +504,6 @@ function executeDeleteAllData() {
 
   /* Azzeramento locale */
   if (typeof pantryItems          !== 'undefined') pantryItems          = {};
-  if (typeof mealPlan             !== 'undefined') mealPlan             = {};
   if (typeof appHistory           !== 'undefined') appHistory           = {};
   if (typeof spesaItems           !== 'undefined') spesaItems           = [];
   if (typeof pianoAlimentare      !== 'undefined') pianoAlimentare      = {};
