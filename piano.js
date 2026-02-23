@@ -49,13 +49,13 @@ function ensureDefaultPlan() {
   /* Non ripristinare i default se l'utente ha esplicitamente cancellato
      tutti i dati — il piano deve restare vuoto */
   if (localStorage.getItem('nutriplan_cleared') === '1') return;
-  var isEmpty = !mealPlan || !Object.keys(mealPlan).some(function(mk){
-    var m = mealPlan[mk] || {};
+  var isEmpty = !pianoAlimentare || !Object.keys(pianoAlimentare).some(function(mk){
+    var m = pianoAlimentare[mk] || {};
     return ['principale','contorno','frutta','extra'].some(function(cat){
       return Array.isArray(m[cat]) && m[cat].length > 0;
     });
   });
-  if (isEmpty) mealPlan = JSON.parse(JSON.stringify(defaultMealPlan));
+  if (isEmpty) pianoAlimentare = JSON.parse(JSON.stringify(defaultMealPlan));
 }
 
 /* ── PROGRESS ── */
@@ -87,20 +87,11 @@ function renderMealProgress() {
 
 /* ── MEAL ITEMS ── */
 function getMealItems(meal) {
-  var plan = (mealPlan && mealPlan[meal]) ? mealPlan[meal] : {};
-  var out  = [];
-  ['principale','contorno','frutta','extra'].forEach(function(cat){
-    var arr = plan[cat];
-    if (Array.isArray(arr)) arr.forEach(function(i){
-      if (i && i.name) out.push(Object.assign({}, i, { _cat: cat }));
-    });
-  });
-  /* Fallback: leggi da pianoAlimentare se mealPlan per questo pasto è vuoto */
-  if (!out.length && typeof pianoAlimentare !== 'undefined' && pianoAlimentare && pianoAlimentare[meal]) {
+  var out = [];
+  if (pianoAlimentare && pianoAlimentare[meal]) {
     Object.keys(pianoAlimentare[meal]).forEach(function(cat) {
       var arr = pianoAlimentare[meal][cat];
-      if (!Array.isArray(arr)) return;
-      arr.forEach(function(i) {
+      if (Array.isArray(arr)) arr.forEach(function(i) {
         if (i && i.name) out.push(Object.assign({}, i, { _cat: cat }));
       });
     });
@@ -317,10 +308,10 @@ function openSubstituteModal(name) {
   seenPlan[name] = true;
   inFridge.forEach(function(k){ seenPlan[k] = true; });
 
-  if (typeof mealPlan !== 'undefined' && mealPlan) {
+  if (typeof pianoAlimentare !== 'undefined' && pianoAlimentare) {
     ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk){
-      var mp = mealPlan[mk] || {};
-      ['principale','contorno','frutta','extra'].forEach(function(cat){
+      var mp = pianoAlimentare[mk] || {};
+      Object.keys(mp).forEach(function(cat){
         var arr = mp[cat];
         if (!Array.isArray(arr)) return;
         arr.forEach(function(item){

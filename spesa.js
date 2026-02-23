@@ -315,12 +315,9 @@ function generateShoppingList() {
   }
 
   ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk){
-    /* Legge prima da mealPlan, poi come fallback da pianoAlimentare */
-    var planMeal = (typeof mealPlan !== 'undefined' && mealPlan && mealPlan[mk])
-                   ? mealPlan[mk]
-                   : ((typeof pianoAlimentare !== 'undefined' && pianoAlimentare && pianoAlimentare[mk])
-                      ? pianoAlimentare[mk] : {});
-    ['principale','contorno','frutta','extra'].forEach(function(cat){
+    var planMeal = (typeof pianoAlimentare !== 'undefined' && pianoAlimentare && pianoAlimentare[mk])
+                   ? pianoAlimentare[mk] : {};
+    Object.keys(planMeal).forEach(function(cat){
       var arr = planMeal[cat];
       if (!Array.isArray(arr)) return;
       arr.forEach(function(item){

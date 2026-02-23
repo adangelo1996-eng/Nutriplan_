@@ -6,7 +6,6 @@
 var STORAGE_KEY = 'nutriplan_v2';
 
 /* ---- Variabili globali ---- */
-var mealPlan          = {};
 var pantryItems       = {};
 var savedFridges      = {};
 var appHistory        = {};
@@ -32,8 +31,8 @@ function initStorage() {
      - il piano è vuoto */
   var isLoggedIn = (typeof currentUser !== 'undefined') && currentUser;
   if (!isLoggedIn && localStorage.getItem('nutriplan_cleared') !== '1') {
-    if (!mealPlan || !Object.keys(mealPlan).length) {
-      mealPlan = JSON.parse(JSON.stringify(defaultMealPlan || {}));
+    if (!pianoAlimentare || !Object.keys(pianoAlimentare).length) {
+      pianoAlimentare = JSON.parse(JSON.stringify(defaultMealPlan || {}));
     }
   }
   ensurePlanStructure();
@@ -44,9 +43,9 @@ function initStorage() {
 
 function ensurePlanStructure() {
   ['colazione','spuntino','pranzo','merenda','cena'].forEach(function (mk) {
-    if (!mealPlan[mk] || typeof mealPlan[mk] !== 'object') mealPlan[mk] = {};
+    if (!pianoAlimentare[mk] || typeof pianoAlimentare[mk] !== 'object') pianoAlimentare[mk] = {};
     ['principale','contorno','frutta','extra'].forEach(function (cat) {
-      if (!Array.isArray(mealPlan[mk][cat])) mealPlan[mk][cat] = [];
+      if (!Array.isArray(pianoAlimentare[mk][cat])) pianoAlimentare[mk][cat] = [];
     });
   });
 }
@@ -64,31 +63,6 @@ function loadData() {
 
 function applyLoadedData(data) {
   if (!data) return;
-
-  /* --- mealPlan con sanitizzazione --- */
-  if (data.mealPlan && typeof data.mealPlan === 'object') {
-    mealPlan = data.mealPlan;
-    ['colazione','spuntino','pranzo','merenda','cena'].forEach(function (mk) {
-      if (!mealPlan[mk] || typeof mealPlan[mk] !== 'object') {
-        mealPlan[mk] = {};
-        return;
-      }
-      ['principale','contorno','frutta','extra'].forEach(function (cat) {
-        if (!Array.isArray(mealPlan[mk][cat])) {
-          mealPlan[mk][cat] = [];
-        } else {
-          /* Filtra item null / senza name valido */
-          mealPlan[mk][cat] = mealPlan[mk][cat].filter(function (item) {
-            return item &&
-                   typeof item === 'object' &&
-                   item.name &&
-                   typeof item.name === 'string' &&
-                   item.name.trim() !== '';
-          });
-        }
-      });
-    });
-  }
 
   /* --- pantryItems: pulisce chiavi non valide --- */
   if (data.pantryItems && typeof data.pantryItems === 'object') {
@@ -133,7 +107,6 @@ function buildSaveObject() {
     limitsToSave[k] = { current: weeklyLimits[k].current || 0 };
   });
   return {
-    mealPlan:           mealPlan,
     pantryItems:        pantryItems,
     savedFridges:       savedFridges,
     appHistory:         appHistory,
@@ -190,15 +163,18 @@ function loadFromCloud(uid) {
         applyLoadedData(data);
         ensurePlanStructure();
       } else {
-        /* Nuovo utente: azzera qualsiasi default caricato dal localStorage */
-        mealPlan = {};
-        pantryItems = {};
-        appHistory = {};
-        spesaItems = [];
-        customRecipes = [];
-        customIngredients = [];
-        pianoAlimentare = {};
-        weeklyLimitsCustom = {};
+        /* Firebase vuoto: primo login o nuovo utente.
+           Preserva i dati locali a meno che l'utente non abbia
+           esplicitamente cancellato tutto (flag nutriplan_cleared). */
+        if (localStorage.getItem('nutriplan_cleared') === '1') {
+          pantryItems        = {};
+          appHistory         = {};
+          spesaItems         = [];
+          customRecipes      = [];
+          customIngredients  = [];
+          pianoAlimentare    = {};
+          weeklyLimitsCustom = {};
+        }
         ensurePlanStructure();
       }
       /* Non salvare su localStorage: utente loggato, dati solo su Firebase */

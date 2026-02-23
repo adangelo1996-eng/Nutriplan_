@@ -54,10 +54,10 @@ function checkOnboarding() {
 
   /* Se il piano ha già qualcosa → skip onboarding */
   var hasPlan = false;
-  if (typeof mealPlan !== 'undefined' && mealPlan) {
+  if (typeof pianoAlimentare !== 'undefined' && pianoAlimentare) {
     OB_MEAL_ORDER.forEach(function(mk) {
-      var m = mealPlan[mk] || {};
-      ['principale','contorno','frutta','extra'].forEach(function(cat) {
+      var m = pianoAlimentare[mk] || {};
+      Object.keys(m).forEach(function(cat) {
         if (Array.isArray(m[cat]) && m[cat].length > 0) hasPlan = true;
       });
     });
@@ -270,18 +270,18 @@ function saveOnboardingPlan() {
       showToast('💡 Piano salvato con pochi alimenti — puoi aggiungerne altri in seguito', 'info');
   }
 
-  /* Build mealPlan */
-  if (typeof mealPlan === 'undefined') window.mealPlan = {};
+  /* Build pianoAlimentare */
+  if (typeof pianoAlimentare === 'undefined') window.pianoAlimentare = {};
   var catMap = ['principale', 'contorno', 'frutta', 'extra'];
 
   OB_MEAL_ORDER.forEach(function(mk) {
     var foods = _obData[mk] || [];
     if (!foods.length) return;
-    if (!mealPlan[mk]) mealPlan[mk] = { principale:[], contorno:[], frutta:[], extra:[] };
+    if (!pianoAlimentare[mk]) pianoAlimentare[mk] = { principale:[], contorno:[], frutta:[], extra:[] };
     foods.forEach(function(name, idx) {
       var cat = catMap[Math.min(Math.floor(idx / 2), catMap.length - 1)];
-      if (!Array.isArray(mealPlan[mk][cat])) mealPlan[mk][cat] = [];
-      mealPlan[mk][cat].push({ name: name, quantity: null, unit: 'porzione' });
+      if (!Array.isArray(pianoAlimentare[mk][cat])) pianoAlimentare[mk][cat] = [];
+      pianoAlimentare[mk][cat].push({ name: name, quantity: null, unit: 'porzione' });
     });
   });
 
