@@ -202,6 +202,20 @@ function renderMealItems() {
       }
     }
 
+    /* Pulsanti azione: ✅ solo se in dispensa, altrimenti 🗄️ e 🛒 */
+    var actionBtns;
+    if (used) {
+      actionBtns = '<button class="rc-btn-icon" title="Annulla" onclick="toggleUsedItem(\''+escQ(item.name)+'\')">↩</button>';
+    } else if (inFridge) {
+      actionBtns = '<button class="rc-btn-icon" title="Segna consumato" onclick="toggleUsedItem(\''+escQ(item.name)+'\')">✅</button>';
+    } else {
+      actionBtns =
+        '<button class="rc-btn-icon" title="Aggiungi in dispensa" style="font-size:.7em;padding:4px 6px;" ' +
+                'onclick="openAddFridgePrecompiled(\''+escQ(display)+'\')">🗄️</button>' +
+        '<button class="rc-btn-icon" title="Aggiungi alla spesa" style="font-size:.7em;padding:4px 6px;" ' +
+                'onclick="pianoAddToSpesa(\''+escQ(display)+'\',\''+escQ(item.quantity||'')+'\',\''+escQ(item.unit||'g')+'\')">🛒</button>';
+    }
+
     return '<div class="rc-card" style="margin-bottom:8px;">' +
       '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;">' +
         dot +
@@ -210,9 +224,7 @@ function renderMealItems() {
         (qty ? '<span class="rc-badge" style="font-size:.72em;">'+qty+'</span>' : '') +
         (subName ? '<span class="rc-badge" style="background:#fff3cd;color:#856404;font-size:.7em;">↔</span>' : '') +
         '<div style="display:flex;gap:4px;">' +
-          '<button class="rc-btn-icon" title="'+(used?'Annulla':'Segna consumato')+'" onclick="toggleUsedItem(\''+escQ(item.name)+'\')">'+
-            (used ? '↩' : '✅') +
-          '</button>' +
+          actionBtns +
           '<button class="rc-btn-icon" title="Sostituisci" onclick="openSubstituteModal(\''+escQ(item.name)+'\')">↔</button>' +
         '</div>' +
       '</div>' +
@@ -386,33 +398,48 @@ function openSubstituteModal(name) {
   if (body)  body.innerHTML  = html;
   if (modal) modal.classList.add('active');
 
-  /* ── Suggerimenti AI ── */
+  /* ── Suggerimenti AI — pulsante manuale, non auto-start ── */
   var aiSection = document.getElementById('aiSubstituteSection');
   if (aiSection && typeof getAISubstituteSuggestions === 'function') {
+    var nameEsc    = escQ(name);
+    var origCatEsc = escQ(origCat || '');
     aiSection.innerHTML =
       '<div style="border-top:1px solid var(--border);padding-top:12px;">' +
         '<div style="font-size:.82em;font-weight:700;color:var(--primary);margin-bottom:8px;">🤖 Suggerimenti AI</div>' +
-        '<div id="aiSubstResults" class="ai-loading"><span class="ai-spinner"></span> Analisi in corso…</div>' +
+        '<button class="ai-recipe-btn" style="padding:8px 14px;font-size:.84em;" ' +
+                'onclick="_triggerAISubstitute(\'' + nameEsc + '\',\'' + origCatEsc + '\')">' +
+          '✨ Genera suggerimenti AI' +
+          '<span class="ai-powered-label">Powered by Gemini</span>' +
+        '</button>' +
+        '<div id="aiSubstResults"></div>' +
       '</div>';
-
-    getAISubstituteSuggestions(name, origCat, function(suggestions, err) {
-      var resultsEl = document.getElementById('aiSubstResults');
-      if (!resultsEl) return;
-      if (err || !suggestions.length) {
-        resultsEl.innerHTML = '<span style="color:var(--text-3);font-size:.85em;">' +
-          (err || 'Nessun suggerimento AI disponibile') + '</span>';
-        return;
-      }
-      resultsEl.innerHTML = suggestions.map(function(sName) {
-        return '<button class="sub-opt-btn sub-opt-ai" ' +
-                       'onclick="applySubstitute(\'' + escQ(name) + '\',\'' + escQ(sName) + '\')">' +
-                 '🤖 ' + sName +
-               '</button>';
-      }).join('');
-    });
   } else if (aiSection) {
     aiSection.innerHTML = '';
   }
+}
+
+/* Avvia la generazione AI per le sostituzioni (chiamata solo al click) */
+function _triggerAISubstitute(name, origCat) {
+  var resultsEl = document.getElementById('aiSubstResults');
+  if (!resultsEl) return;
+  resultsEl.innerHTML = '<div class="ai-loading"><span class="ai-spinner"></span> Analisi in corso…</div>';
+  /* Nasconde il pulsante di trigger */
+  var btn = resultsEl.previousElementSibling;
+  if (btn) btn.style.display = 'none';
+  getAISubstituteSuggestions(name, origCat || null, function(suggestions, err) {
+    if (!resultsEl) return;
+    if (err || !suggestions || !suggestions.length) {
+      resultsEl.innerHTML = '<span style="color:var(--text-3);font-size:.85em;">' +
+        (err || 'Nessun suggerimento AI disponibile') + '</span>';
+      return;
+    }
+    resultsEl.innerHTML = suggestions.map(function(sName) {
+      return '<button class="sub-opt-btn sub-opt-ai" ' +
+                     'onclick="applySubstitute(\'' + escQ(name) + '\',\'' + escQ(sName) + '\')">' +
+               '🤖 ' + sName +
+             '</button>';
+    }).join('');
+  });
 }
 
 /* Aggiunge il suggerimento alla lista della spesa */
@@ -479,6 +506,45 @@ function applySubstitute(original, replacement) {
 function closeSubstituteModal() {
   var modal = document.getElementById('substituteModal');
   if (modal) modal.classList.remove('active');
+}
+
+/* ── Pulsanti rapidi da pagina Oggi per ingredienti non in dispensa ── */
+
+/* Apre il modal di aggiunta dispensa con nome pre-compilato (quantità vuota) */
+function openAddFridgePrecompiled(name) {
+  if (typeof openAddFridgeModal !== 'function') return;
+  /* Prima apri il modal generico */
+  openAddFridgeModal();
+  /* Poi pre-compila il nome */
+  setTimeout(function() {
+    var nameEl = document.getElementById('newFridgeItem');
+    var qtyEl  = document.getElementById('newFridgeQty');
+    /* Cerca categoria nell'indice defaultIngredients */
+    var catEl  = document.getElementById('newFridgeCategory');
+    if (nameEl) { nameEl.value = name; }
+    if (qtyEl)  { qtyEl.value = ''; qtyEl.focus(); }
+    if (catEl && typeof defaultIngredients !== 'undefined') {
+      var def = defaultIngredients.find(function(d){ return d.name === name; });
+      if (def && def.category) catEl.value = def.category;
+    }
+    /* Aggiorna eventuali autocomplete */
+    if (typeof populateIngAutocomplete === 'function') populateIngAutocomplete();
+  }, 80);
+}
+
+/* Aggiunge direttamente alla lista della spesa dalla pagina Oggi */
+function pianoAddToSpesa(name, qty, unit) {
+  if (typeof spesaItems === 'undefined') return;
+  if (!Array.isArray(spesaItems)) spesaItems = [];
+  var exists = spesaItems.find(function(i){ return i.name === name; });
+  if (!exists) {
+    var qtyNum = parseFloat(qty) || null;
+    spesaItems.push({ name: name, quantity: qtyNum, unit: unit || 'g', manual: false, bought: false });
+    if (typeof saveData === 'function') saveData();
+    if (typeof showToast === 'function') showToast('🛒 ' + name + ' aggiunto alla spesa', 'success');
+  } else {
+    if (typeof showToast === 'function') showToast('ℹ️ ' + name + ' è già nella lista della spesa', 'info');
+  }
 }
 
 /* ── GIORNO ── */
@@ -690,7 +756,33 @@ function renderPianoRicette() {
     return;
   }
 
+  /* Calcola se una ricetta contiene almeno un ingrediente in scadenza (entro 4 giorni) */
+  function hasExpiringIngredient(r) {
+    if (typeof pantryItems === 'undefined' || !pantryItems) return false;
+    var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+    return ings.some(function(ing) {
+      var n = (ing.name || ing.nome || '').toLowerCase().trim();
+      /* Cerca in pantryItems corrispondenze per nome */
+      var matched = Object.keys(pantryItems).filter(function(k) {
+        var kl = k.toLowerCase();
+        return kl === n || kl.includes(n) || n.includes(kl);
+      });
+      return matched.some(function(k) {
+        var pd = pantryItems[k];
+        if (!pd || !pd.scadenza) return false;
+        var d = typeof getDaysToExpiry === 'function' ? getDaysToExpiry(pd.scadenza) : null;
+        return d !== null && d >= 0 && d <= 4;
+      });
+    });
+  }
+
   all.sort(function(a, b) {
+    /* Priorità 1: ricette con ingredienti in scadenza ravvicinata */
+    var aExpiring = hasExpiringIngredient(a) ? 1 : 0;
+    var bExpiring = hasExpiringIngredient(b) ? 1 : 0;
+    if (bExpiring !== aExpiring) return bExpiring - aExpiring;
+
+    /* Priorità 2: ricette con maggiore disponibilità di ingredienti */
     function avail(r) {
       var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
       if (!ings.length) return 0;

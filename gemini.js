@@ -11,10 +11,70 @@ function _getGeminiKey() {
   return (window.APP_CONFIG && window.APP_CONFIG.gemini && window.APP_CONFIG.gemini.apiKey) || '';
 }
 
+/* ── Rate limiting Gemini 2.5 Flash (tier gratuito) ──────────
+   Limiti: 10 RPM (richieste/minuto), 250 RPD (richieste/giorno)
+   I contatori vengono salvati in localStorage per persistenza.
+──────────────────────────────────────────────────────────── */
+var _AI_RATE_KEY = 'nutriplan_ai_rate';
+var _AI_LIMIT_RPM = 10;
+var _AI_LIMIT_RPD = 250;
+
+function _loadAIRate() {
+  try {
+    var raw = localStorage.getItem(_AI_RATE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { minuteCount: 0, minuteReset: 0, dayCount: 0, dayKey: '' };
+}
+
+function _saveAIRate(r) {
+  try { localStorage.setItem(_AI_RATE_KEY, JSON.stringify(r)); } catch(e) {}
+}
+
+function _checkRateLimit() {
+  var now = Date.now();
+  var today = new Date().toISOString().slice(0, 10);
+  var r = _loadAIRate();
+  /* reset contatore minuto */
+  if (now - r.minuteReset >= 60000) {
+    r.minuteCount = 0;
+    r.minuteReset = now;
+  }
+  /* reset contatore giorno */
+  if (r.dayKey !== today) {
+    r.dayCount = 0;
+    r.dayKey   = today;
+  }
+  if (r.minuteCount >= _AI_LIMIT_RPM) {
+    _saveAIRate(r);
+    return { ok: false, reason: 'Troppi messaggi al minuto. Riprova tra qualche secondo. (Limite: ' + _AI_LIMIT_RPM + '/min)' };
+  }
+  if (r.dayCount >= _AI_LIMIT_RPD) {
+    _saveAIRate(r);
+    return { ok: false, reason: 'Limite giornaliero di richieste AI raggiunto (' + _AI_LIMIT_RPD + '/giorno). Riprova domani.' };
+  }
+  r.minuteCount++;
+  r.dayCount++;
+  _saveAIRate(r);
+  return { ok: true };
+}
+
+function getAIRemainingToday() {
+  var today = new Date().toISOString().slice(0, 10);
+  var r = _loadAIRate();
+  if (r.dayKey !== today) return _AI_LIMIT_RPD;
+  return Math.max(0, _AI_LIMIT_RPD - r.dayCount);
+}
+
 function _geminiCall(prompt, callback, opts) {
   var apiKey = _getGeminiKey();
   if (!apiKey) {
     callback(null, 'API key Gemini non configurata (config.js)');
+    return;
+  }
+  var rateCheck = _checkRateLimit();
+  if (!rateCheck.ok) {
+    callback(null, rateCheck.reason);
     return;
   }
 

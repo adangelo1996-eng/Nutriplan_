@@ -139,7 +139,7 @@
     <span class="nav-icon">🛒</span>
     <span class="nav-label">Spesa</span>
   </button>
-  <button class="nav-tab" id="st-stats" onclick="goToPage('statistiche')">
+  <button class="nav-tab" id="st-statistiche" onclick="goToPage('statistiche')">
     <span class="nav-icon">📊</span>
     <span class="nav-label">Stats</span>
   </button>
@@ -493,6 +493,17 @@
           </select>
         </div>
       </div>
+      <div class="form-group">
+        <label>📅 Data di scadenza <span style="font-size:.8em;color:var(--text-3);">(opzionale)</span></label>
+        <input type="date" id="newFridgeScadenza" style="width:100%;"
+               oninput="_updateAddFridgeSuggLabel()">
+        <small id="newFridgeSuggLabel" style="color:var(--text-3);font-size:.76em;">Lascia vuoto se non applicabile</small>
+      </div>
+      <label style="display:flex;align-items:center;gap:9px;padding:6px 0;cursor:pointer;font-size:.88em;">
+        <input type="checkbox" id="newFridgeFreezer" style="width:16px;height:16px;accent-color:#3b82f6;"
+               onchange="_autoFillFridgeExpiry()">
+        <span>❄️ <strong>In congelatore</strong> — scadenza estesa</span>
+      </label>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeAddFridge()">Annulla</button>
@@ -525,7 +536,13 @@
         <input type="date" id="eqmScadenza"
                style="width:100%;padding:8px 10px;border-radius:var(--r-md);border:1.5px solid var(--border);
                       background:var(--bg-subtle);color:var(--text-1);font-size:.9em;box-sizing:border-box;">
+        <small id="eqmSuggLabel" style="color:var(--text-3);font-size:.76em;display:block;margin-top:4px;"></small>
       </div>
+      <label style="display:flex;align-items:center;gap:9px;padding:10px 0 4px;cursor:pointer;font-size:.88em;">
+        <input type="checkbox" id="eqmFreezer" style="width:16px;height:16px;accent-color:#3b82f6;"
+               onchange="_updateEqmSuggestion()">
+        <span>❄️ <strong>In congelatore</strong></span>
+      </label>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeQtyModal()">Annulla</button>

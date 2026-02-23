@@ -299,51 +299,121 @@ function computeWeekUsage() {
 }
 
 /* ══════════════════════════════════════════════════════
-   GRAFICO ATTIVITÀ — ultimi 14 giorni
+   GRAFICO TIPOLOGIE — ultimi 7 giorni per categoria
 ══════════════════════════════════════════════════════ */
 function buildActivityChart() {
+  var CAT_COLORS = {
+    '🥩 Carne':              '#ef4444',
+    '🐟 Pesce':              '#3b82f6',
+    '🥛 Latticini e Uova':   '#fbbf24',
+    '🌾 Cereali e Legumi':   '#f97316',
+    '🥦 Verdure':            '#22c55e',
+    '🍎 Frutta':             '#a855f7',
+    '🥑 Grassi e Condimenti':'#84cc16',
+    '🍫 Dolci e Snack':      '#ec4899',
+    '🧂 Cucina':             '#a8a29e',
+    '🧂 Altro':              '#94a3b8'
+  };
+  var CAT_ORDER = Object.keys(CAT_COLORS);
+
+  /* Indice categoria da defaultIngredients */
+  var defCatMap = {};
+  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
+    defaultIngredients.forEach(function(d) {
+      if (d && d.name && d.category) defCatMap[d.name.toLowerCase()] = d.category;
+    });
+  }
+
+  function resolveCategory(name) {
+    if (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name] && pantryItems[name].category)
+      return pantryItems[name].category;
+    return defCatMap[name.toLowerCase()] || '🧂 Altro';
+  }
+
   var today = new Date(); today.setHours(0,0,0,0);
-  var days = [];
-  for (var i = 13; i >= 0; i--) {
+  var days7 = [];
+  var allCatsUsed = {};
+  for (var i = 6; i >= 0; i--) {
     var d = new Date(today);
     d.setDate(today.getDate() - i);
     var dk = d.getFullYear() + '-' +
       String(d.getMonth()+1).padStart(2,'0') + '-' +
       String(d.getDate()).padStart(2,'0');
     var hd = (typeof appHistory !== 'undefined' && appHistory[dk]) ? appHistory[dk] : {};
-    var count = 0;
+    var catCounts = {};
     Object.keys(hd.usedItems || {}).forEach(function(mk){
-      count += Object.keys((hd.usedItems[mk]||{})).length;
+      Object.keys(hd.usedItems[mk] || {}).forEach(function(name){
+        var cat = resolveCategory(name);
+        /* normalizza legacy */
+        if (cat === '🥩 Carne e Pesce') cat = '🥩 Carne';
+        catCounts[cat] = (catCounts[cat] || 0) + 1;
+        allCatsUsed[cat] = true;
+      });
     });
-    Object.keys(hd.ricette || {}).forEach(function(mk){
-      count += Object.keys((hd.ricette[mk]||{})).length;
-    });
-    days.push({ d:d, dk:dk, count:count, isToday: i===0 });
+    days7.push({ d: d, dk: dk, catCounts: catCounts, isToday: i === 0 });
   }
-  var maxCount = Math.max.apply(null, days.map(function(d){ return d.count; })) || 1;
+
+  var catsPresent = CAT_ORDER.filter(function(c){ return allCatsUsed[c]; });
   var dayNames = ['D','L','M','M','G','V','S'];
-  var bars = days.map(function(day){
-    var pct = Math.max(5, Math.round((day.count / maxCount) * 100));
-    var cls = 'stats-day-bar' + (day.isToday ? ' today' : '');
-    var fillCls = 'stats-bar-fill';
+
+  /* max totale per scala barre */
+  var maxTotal = 0;
+  days7.forEach(function(day){
+    var tot = Object.values(day.catCounts).reduce(function(a,b){ return a+b; }, 0);
+    if (tot > maxTotal) maxTotal = tot;
+  });
+  if (!maxTotal) maxTotal = 1;
+
+  var bars = days7.map(function(day){
+    var total = Object.values(day.catCounts).reduce(function(a,b){ return a+b; }, 0);
+    var heightPct = Math.max(total > 0 ? 8 : 0, Math.round((total / maxTotal) * 100));
+
+    /* Segmenti colorati per categoria (stacked) */
+    var segments = '';
+    if (total > 0) {
+      catsPresent.forEach(function(cat){
+        var cnt = day.catCounts[cat] || 0;
+        if (!cnt) return;
+        var segPct = Math.round((cnt / total) * 100);
+        segments += '<div style="background:' + (CAT_COLORS[cat]||'#94a3b8') + ';height:' + segPct + '%;min-height:3px;"></div>';
+      });
+    }
+
+    var todayStyle = day.isToday ? 'border:2px solid var(--primary);border-radius:4px 4px 0 0;' : '';
     return (
-      '<div class="'+cls+'">' +
-        '<div class="stats-bar-wrap">' +
-          '<div class="'+fillCls+'" style="height:'+pct+'%;"></div>' +
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;">' +
+        '<div style="width:100%;height:80px;display:flex;flex-direction:column;justify-content:flex-end;">' +
+          '<div style="width:80%;margin:0 auto;height:' + heightPct + '%;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;border-radius:3px 3px 0 0;' + todayStyle + '">' +
+            segments +
+          '</div>' +
         '</div>' +
-        '<span class="stats-day-label">' + dayNames[day.d.getDay()] + '</span>' +
-        '<span class="stats-day-val">' + (day.count || '·') + '</span>' +
+        '<span style="font-size:.7em;color:' + (day.isToday ? 'var(--primary)' : 'var(--text-3)') + ';font-weight:' + (day.isToday ? '700' : '400') + ';">' +
+          dayNames[day.d.getDay()] +
+        '</span>' +
+        '<span style="font-size:.68em;color:var(--text-3);">' + (total || '') + '</span>' +
       '</div>'
     );
   }).join('');
 
+  /* Legenda colori */
+  var legend = catsPresent.length
+    ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">' +
+        catsPresent.map(function(cat){
+          return '<span style="display:flex;align-items:center;gap:4px;font-size:.72em;color:var(--text-2);">' +
+            '<span style="width:10px;height:10px;border-radius:2px;background:' + (CAT_COLORS[cat]||'#94a3b8') + ';display:inline-block;"></span>' +
+            cat.replace(/^[^\s]+\s/, '') +
+          '</span>';
+        }).join('') +
+      '</div>'
+    : '';
+
   return (
     '<div class="rc-card" style="margin-bottom:16px;">' +
       '<div style="padding:18px 20px;">' +
-        '<div style="font-weight:700;font-size:.95em;margin-bottom:14px;">📅 Attività ultimi 14 giorni</div>' +
-        '<div class="stats-week-grid" style="grid-template-columns:repeat(14,1fr);">' +
-          bars +
-        '</div>' +
+        '<div style="font-weight:700;font-size:.95em;margin-bottom:14px;">📊 Tipologie consumate — ultimi 7 giorni</div>' +
+        (maxTotal > 1 || days7.some(function(d){ return Object.keys(d.catCounts).length > 0; })
+          ? '<div style="display:flex;gap:4px;align-items:flex-end;">' + bars + '</div>' + legend
+          : '<p style="color:var(--text-3);font-size:.88em;">Nessun dato registrato negli ultimi 7 giorni.</p>') +
       '</div>' +
     '</div>'
   );
@@ -405,7 +475,11 @@ function buildMealDistributionChart(mealCounts) {
 ══════════════════════════════════════════════════════ */
 function buildPantryCategoryChart() {
   var items = (typeof pantryItems !== 'undefined' && pantryItems) ? pantryItems : {};
-  var catCount = {};
+
+  /* struttura: { count, totalG (grammi/ml equivalenti), totalPz } */
+  var catData = {};
+
+  var _unitToG = { 'g': 1, 'kg': 1000, 'ml': 1, 'l': 1000 };
 
   /* Indice rapido da defaultIngredients per lookup categoria */
   var defCatMap = {};
@@ -424,20 +498,54 @@ function buildPantryCategoryChart() {
       cat = (item.icon === '🐟' || item.icon === '🦑' || item.icon === '🐙') ? '🐟 Pesce' : '🥩 Carne';
     }
     cat = cat || '🧂 Altro';
-    catCount[cat] = (catCount[cat]||0) + 1;
+    if (!catData[cat]) catData[cat] = { count: 0, totalG: 0, totalPz: 0 };
+    catData[cat].count++;
+    var qty  = item.quantity || 0;
+    var unit = item.unit || 'g';
+    if (_unitToG[unit] !== undefined) {
+      catData[cat].totalG += qty * _unitToG[unit];
+    } else {
+      /* unità non convertibili (pz, fette, ecc.) */
+      catData[cat].totalPz += qty;
+    }
   });
-  var cats = Object.keys(catCount).sort(function(a,b){ return catCount[b]-catCount[a]; });
-  if (!cats.length) return '';
-  var maxVal = catCount[cats[0]] || 1;
+
+  var cats = Object.keys(catData).sort(function(a,b){ return catData[b].count - catData[a].count; });
+  if (!cats.length) {
+    return (
+      '<div class="rc-card" style="margin-bottom:16px;">' +
+        '<div style="padding:18px 20px;">' +
+          '<div style="font-weight:700;font-size:.95em;margin-bottom:8px;">🗄️ Dispensa per categoria</div>' +
+          '<p style="color:var(--text-3);font-size:.88em;">Nessun ingrediente in dispensa.</p>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+  var maxVal = catData[cats[0]].count || 1;
 
   var rows = cats.map(function(cat){
-    var count = catCount[cat];
-    var pct   = Math.round((count/maxVal)*100);
+    var d     = catData[cat];
+    var pct   = Math.round((d.count / maxVal) * 100);
+
+    /* Costruisce il testo quantità */
+    var qtyParts = [];
+    if (d.totalG > 0) {
+      var gVal = d.totalG >= 1000 ? (d.totalG / 1000).toFixed(1) + ' kg' : Math.round(d.totalG) + ' g';
+      qtyParts.push('~' + gVal);
+    }
+    if (d.totalPz > 0) {
+      var pzVal = d.totalPz % 1 === 0 ? d.totalPz : parseFloat(d.totalPz.toFixed(1));
+      qtyParts.push(pzVal + ' pz');
+    }
+    var qtyLabel = qtyParts.length ? ' · ' + qtyParts.join(' + ') : '';
+
     return (
       '<div style="margin-bottom:9px;">' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
           '<span style="flex:1;font-size:.85em;font-weight:500;">' + cat + '</span>' +
-          '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">' + count + ' voci</span>' +
+          '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">' +
+            d.count + ' voc' + (d.count === 1 ? 'e' : 'i') + qtyLabel +
+          '</span>' +
         '</div>' +
         '<div class="rc-progress-track">' +
           '<div class="rc-progress-fill" style="width:' + pct + '%;"></div>' +

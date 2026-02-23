@@ -554,7 +554,43 @@ function autoFillFridgeCategory(name) {
   if (!found && typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) {
     found = { category: pantryItems[name].category };
   }
-  if (found && found.category) catSel.value = found.category;
+  if (found && found.category) {
+    catSel.value = found.category;
+    /* Auto-suggerisci scadenza in base alla categoria appena rilevata */
+    _autoFillFridgeExpiry();
+  }
+}
+
+/* Aggiorna la data di scadenza suggerita nel modal addFridgeModal */
+function _autoFillFridgeExpiry() {
+  var catEl      = document.getElementById('newFridgeCategory');
+  var scadEl     = document.getElementById('newFridgeScadenza');
+  var freezerEl  = document.getElementById('newFridgeFreezer');
+  var suggLabel  = document.getElementById('newFridgeSuggLabel');
+  if (!catEl || !scadEl) return;
+  var cat    = catEl.value || '🧂 Altro';
+  var frozen = freezerEl ? freezerEl.checked : false;
+  if (typeof _suggestExpiry !== 'function') return;
+  var suggested = _suggestExpiry(cat, frozen);
+  scadEl.value = suggested;
+  if (suggLabel) {
+    if (frozen) {
+      suggLabel.textContent = '❄️ Scadenza estesa per congelatore (modifica se necessario)';
+    } else {
+      var freshDays = (typeof FRESH_EXPIRY_DAYS !== 'undefined') ? FRESH_EXPIRY_DAYS[cat] : null;
+      if (freshDays && freshDays < 30) {
+        suggLabel.textContent = '💡 Suggerita per prodotti freschi (' + freshDays + ' giorni)';
+      } else {
+        suggLabel.textContent = 'Lascia vuoto se non applicabile';
+      }
+    }
+  }
+}
+
+function _updateAddFridgeSuggLabel() {
+  /* Chiamato quando l'utente modifica manualmente la data */
+  var suggLabel = document.getElementById('newFridgeSuggLabel');
+  if (suggLabel) suggLabel.textContent = '';
 }
 
 function populateIngAutocomplete() {
@@ -587,10 +623,12 @@ function populateIngAutocomplete() {
 }
 
 function confirmAddFridge() {
-  var name = (document.getElementById('newFridgeItem') || {}).value || '';
-  var cat  = (document.getElementById('newFridgeCategory') || {}).value || '🧂 Altro';
-  var qty  = parseFloat((document.getElementById('newFridgeQty') || {}).value || '0');
-  var unit = (document.getElementById('newFridgeUnit') || {}).value || 'g';
+  var name     = (document.getElementById('newFridgeItem')     || {}).value || '';
+  var cat      = (document.getElementById('newFridgeCategory') || {}).value || '🧂 Altro';
+  var qty      = parseFloat((document.getElementById('newFridgeQty') || {}).value || '0');
+  var unit     = (document.getElementById('newFridgeUnit')     || {}).value || 'g';
+  var scadenza = (document.getElementById('newFridgeScadenza') || {}).value || '';
+  var frozen   = !!(document.getElementById('newFridgeFreezer') || {}).checked;
 
   name = name.trim();
   if (!name) { showToast('⚠️ Inserisci il nome dell\'ingrediente', 'warning'); return; }
@@ -598,18 +636,22 @@ function confirmAddFridge() {
 
   if (!pantryItems) pantryItems = {};
   var existing = pantryItems[name] || {};
-  pantryItems[name] = Object.assign({}, existing, {
+  var entry = Object.assign({}, existing, {
     quantity: qty,
     unit:     unit,
     category: cat,
     icon:     typeof getCategoryIcon === 'function' ? getCategoryIcon(cat) : '🧂'
   });
+  if (scadenza) entry.scadenza = scadenza;
+  if (frozen)   entry.freezer  = true;
+  pantryItems[name] = entry;
 
   if (typeof saveData === 'function') saveData();
   closeAddFridgeModal();
   renderFridge();
   renderFridge('pianoFridgeContent');
-  showToast('✅ ' + name + ' aggiunto alla dispensa', 'success');
+  var msg = '✅ ' + name + (frozen ? ' ❄️ aggiunto al congelatore' : ' aggiunto alla dispensa');
+  showToast(msg, 'success');
 }
 
 /* Aggiunge un ingrediente acquistato alla dispensa (chiamato da spesa.js) */
