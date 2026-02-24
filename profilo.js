@@ -1,5 +1,5 @@
 /*
-   PROFILO.JS — v4  stile rc-card unificato
+   PROFILO.JS — v5  limiti settimanali + stile rc-card unificato
 */
 
 var profiloEditMode  = false;
@@ -12,6 +12,7 @@ function renderProfilo() {
   el.innerHTML =
     buildProfiloUserSection() +
     buildProfiloDietaSection() +
+    buildProfiloLimitiSection() +
     buildProfiloStoricoSection() +
     buildProfiloSettingsSection();
   /* Render storico nell'apposito contenitore */
@@ -138,52 +139,73 @@ function buildProfiloUserSection() {
 }
 
 /* ══════════════════════════════════════════════
-   SEZIONE LIMITI
+   SEZIONE LIMITI SETTIMANALI — NUOVO STILE GRIGLIA
 ══════════════════════════════════════════════ */
 function buildProfiloLimitiSection() {
   var limiti = (typeof weeklyLimits !== 'undefined') ? weeklyLimits : {};
   var items  = [
-    { key:'carne',    label:'Carne',    emoji:'🥩', unit:'volte/sett.' },
-    { key:'pesce',    label:'Pesce',    emoji:'🐟', unit:'volte/sett.' },
-    { key:'uova',     label:'Uova',     emoji:'🥚', unit:'volte/sett.' },
-    { key:'latticini',label:'Latticini',emoji:'🥛', unit:'volte/sett.' },
-    { key:'legumi',   label:'Legumi',   emoji:'🌱', unit:'volte/sett.' },
-    { key:'cereali',  label:'Cereali',  emoji:'🌾', unit:'porzioni/g' },
-    { key:'frutta',   label:'Frutta',   emoji:'🍎', unit:'pz/gg'      },
-    { key:'verdura',  label:'Verdura',  emoji:'🥦', unit:'porzioni/gg' }
+    { key:'carne',    label:'Carne',    emoji:'🥩', unit:'volte' },
+    { key:'pesce',    label:'Pesce',    emoji:'🐟', unit:'volte' },
+    { key:'uova',     label:'Uova',     emoji:'🥚', unit:'volte' },
+    { key:'latticini',label:'Latticini',emoji:'🥛', unit:'volte' },
+    { key:'legumi',   label:'Legumi',   emoji:'🌱', unit:'volte' },
+    { key:'cereali',  label:'Cereali',  emoji:'🌾', unit:'porz.' },
+    { key:'frutta',   label:'Frutta',   emoji:'🍎', unit:'pz'    },
+    { key:'verdura',  label:'Verdura',  emoji:'🥦', unit:'porz.' }
   ];
 
-  var rows = items.map(function(it){
-    var val = (limiti[it.key] !== undefined) ? limiti[it.key] : '—';
+  var cards = items.map(function(it){
+    var lim  = limiti[it.key] || { current:0, max:0 };
+    var cur  = lim.current || 0;
+    var max  = lim.max     || 0;
+    var pct  = (max > 0) ? Math.min(100, Math.round((cur / max) * 100)) : 0;
+
+    var stateClass = '';
+    if (max > 0) {
+      if (cur >= max) stateClass = 'exceeded';
+      else if (cur >= max * 0.8) stateClass = 'warning';
+    }
+
+    var text = max > 0 ? cur + ' / ' + max + ' ' + it.unit : '—';
+
     return (
-      '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">' +
-        '<span style="font-size:1.2em;width:28px;text-align:center;">'+it.emoji+'</span>' +
-        '<span style="flex:1;font-weight:500;">'+it.label+'</span>' +
-        '<span style="font-size:.8em;color:var(--text-3);margin-right:8px;">'+it.unit+'</span>' +
-        '<input type="number" min="0" step="1" value="'+val+'" ' +
-               'onchange="saveLimitChange(\''+it.key+'\',this.value)" ' +
-               'style="width:64px;text-align:center;padding:5px 8px;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);font-size:.95em;">' +
+      '<div class="limit-card '+ stateClass +'">' +
+        '<div class="limit-card-icon">'+it.emoji+'</div>' +
+        '<div class="limit-card-name">'+it.label+'</div>' +
+        '<div class="limit-progress-bar">' +
+          '<div class="limit-progress-fill '+stateClass+'" style="width:'+pct+'%;"></div>' +
+        '</div>' +
+        '<div class="limit-text '+stateClass+'">'+text+'</div>' +
       '</div>'
     );
   }).join('');
 
   return (
     '<div class="rc-card" style="margin-bottom:16px;">' +
-      '<div style="padding:20px;">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">' +
-          '<span style="font-weight:700;font-size:1em;">📊 Limiti settimanali</span>' +
-          '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">'+items.length+' voci</span>' +
+      '<div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">' +
+        '<div>' +
+          '<div style="font-weight:800;font-size:1.05em;margin-bottom:2px;">📊 Limiti settimanali</div>' +
+          '<div style="font-size:.75em;color:var(--text-3);">Monitoraggio consumo settimanale</div>' +
         '</div>' +
-        rows +
+        '<button class="rc-btn rc-btn-outline rc-btn-sm" onclick="openLimitiSettings()" style="white-space:nowrap;">⚙️ Modifica</button>' +
+      '</div>' +
+      '<div class="limits-grid" style="padding:14px 16px 16px;">' +
+        cards +
       '</div>' +
     '</div>'
   );
 }
 
-function saveLimitChange(key, val) {
-  if (typeof weeklyLimits === 'undefined') return;
-  weeklyLimits[key] = parseFloat(val) || 0;
-  saveData();
+function openLimitiSettings() {
+  /* Apre la pagina Piano Alimentare dove si possono modificare i limiti */
+  if (typeof goToPage === 'function') {
+    goToPage('piano-alimentare');
+    if (typeof showToast === 'function') {
+      setTimeout(function(){
+        showToast('💡 Scorri fino alla sezione "Limiti settimanali" per modificare i valori', 'info');
+      }, 300);
+    }
+  }
 }
 
 /* ══════════════════════════════════════════════
