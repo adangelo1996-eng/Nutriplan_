@@ -37,9 +37,11 @@ var OB_LIMITI = [
 ];
 
 /* Stato wizard */
-var _obCurrentStep = 1;
+var _obCurrentStep = 1;  // 1 = pasti, 2 = limiti, 3 = review
+var _obMealIndex = 0;    // indice pasto corrente (0-4) nello step 1
 var _obMeal = 'colazione';
-var _obData = {};   /* { colazione: ['Latte', 'Uova', ...], ... } */
+var _obData = {};   /* { colazione: [{name, quantity, unit}, ...], ... } */
+var _obPendingIngredient = null;  // ingrediente in attesa di quantità
 
 /* ══════════════════════════════════════════════════════
    CHECK
@@ -79,7 +81,8 @@ function checkOnboarding() {
 ══════════════════════════════════════════════════════ */
 function showOnboarding() {
   _obData = {};
-  _obMeal = 'colazione';
+  _obMealIndex = 0;
+  _obMeal = OB_MEAL_ORDER[0];
   _obCurrentStep = 1;
   var overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
@@ -117,15 +120,16 @@ function _updateObHeader() {
   var sub = header.querySelector('.onboarding-sub');
   
   if (_obCurrentStep === 1) {
-    stepLabel.textContent = 'Passo 1 di 3';
-    title.innerHTML = '🍽 Cosa mangi di solito?';
-    sub.textContent = 'Seleziona gli alimenti tipici per ogni pasto. Puoi modificarli in seguito.';
+    var info = OB_MEAL_INFO[_obMeal];
+    stepLabel.textContent = 'Pasto ' + (_obMealIndex + 1) + ' di ' + OB_MEAL_ORDER.length;
+    title.innerHTML = info.emoji + ' ' + info.label;
+    sub.textContent = 'Seleziona gli alimenti tipici per questo pasto. Puoi modificarli in seguito.';
   } else if (_obCurrentStep === 2) {
-    stepLabel.textContent = 'Passo 2 di 3';
-    title.innerHTML = '📊 Imposta i limiti (opzionale)';
+    stepLabel.textContent = 'Opzionale';
+    title.innerHTML = '📊 Imposta i limiti';
     sub.textContent = 'Indica quante volte a settimana vuoi consumare certi alimenti. Puoi saltare questo passaggio.';
   } else if (_obCurrentStep === 3) {
-    stepLabel.textContent = 'Passo 3 di 3';
+    stepLabel.textContent = 'Riepilogo';
     title.innerHTML = '✅ Riepilogo finale';
     sub.textContent = 'Controlla il tuo piano prima di salvarlo. Tutto pronto?';
   }
@@ -135,12 +139,18 @@ function _updateObProgress() {
   var container = document.querySelector('.ob-content');
   if (!container) return;
   
-  var progressHtml = 
-    '<div class="wizard-progress" style="margin-bottom:20px;">' +
-      '<span class="wizard-progress-dot ' + (_obCurrentStep >= 1 ? 'active' : '') + '"></span>' +
-      '<span class="wizard-progress-dot ' + (_obCurrentStep >= 2 ? 'active' : '') + '"></span>' +
-      '<span class="wizard-progress-dot ' + (_obCurrentStep >= 3 ? 'active' : '') + '"></span>' +
-    '</div>';
+  // Progress bar: 5 pasti + limiti + review = 7 step totali
+  var totalSteps = OB_MEAL_ORDER.length + 2;  // 5 pasti + limiti + review
+  var currentProgress = _obCurrentStep === 1 ? _obMealIndex + 1 : 
+                        _obCurrentStep === 2 ? OB_MEAL_ORDER.length + 1 :
+                        totalSteps;
+  
+  var dots = [];
+  for (var i = 1; i <= totalSteps; i++) {
+    dots.push('<span class="wizard-progress-dot' + (i <= currentProgress ? ' active' : '') + '"></span>');
+  }
+  
+  var progressHtml = '<div class="wizard-progress" style="margin-bottom:20px;">' + dots.join('') + '</div>';
   
   // Inserisco all'inizio del contenuto
   if (container.querySelector('.wizard-progress')) {
@@ -158,26 +168,11 @@ function _renderStep1Meals() {
   var limitiSection = document.getElementById('obLimitiSection');
   if (limitiSection) limitiSection.style.display = 'none';
   
-  _renderObTabs();
-  _renderObMealContent();
-}
-
-function _renderObTabs() {
+  // Nascondi tabs (non più necessari, scorriamo linearmente)
   var tabsEl = document.getElementById('obTabs');
-  if (!tabsEl) return;
+  if (tabsEl) tabsEl.style.display = 'none';
   
-  tabsEl.style.display = 'flex';
-  tabsEl.innerHTML = OB_MEAL_ORDER.map(function(mk) {
-    var info  = OB_MEAL_INFO[mk];
-    var count = (_obData[mk] || []).length;
-    return (
-      '<button class="ob-tab' + (mk === _obMeal ? ' active' : '') + '" ' +
-              'onclick="obSelectMeal(\'' + mk + '\')">' +
-        info.emoji + ' ' + info.label +
-        (count > 0 ? '<span class="ob-tab-badge">' + count + '</span>' : '') +
-      '</button>'
-    );
-  }).join('');
+  _renderObMealContent();
 }
 
 function _renderObMealContent() {
@@ -189,20 +184,20 @@ function _renderObMealContent() {
   var presets = OB_PRESETS[_obMeal] || [];
 
   var presetsHtml = presets.map(function(name) {
-    var isOn = current.indexOf(name) !== -1;
+    var isOn = current.some(function(item) { return item.name === name; });
     return (
       '<button class="ob-chip' + (isOn ? ' on' : '') + '" ' +
-              'onclick="obToggle(\'' + _obMeal + '\',this,\'' + name.replace(/'/g, "\\'") + '\')">' +
+              'onclick="obToggleWithQty(\'' + name.replace(/'/g, "\\'") + '\')">' +
         (isOn ? '✅ ' : '➕ ') + name +
       '</button>'
     );
   }).join('');
 
   var addedHtml = current.length
-    ? current.map(function(name) {
+    ? current.map(function(item) {
         return (
-          '<span class="ob-added-chip">' + name +
-            '<button onclick="obRemove(\'' + _obMeal + '\',\'' + name.replace(/'/g, "\\'") + '\')" ' +
+          '<span class="ob-added-chip">' + item.name + ' <small>(' + item.quantity + item.unit + ')</small>' +
+            '<button onclick="obRemove(\'' + _obMeal + '\',\'' + item.name.replace(/'/g, "\\'") + '\')" ' +
                     'title="Rimuovi">✕</button>' +
           '</span>'
         );
@@ -225,10 +220,107 @@ function _renderObMealContent() {
              'onkeydown="if(event.key===\'Enter\')obAddCustom()">' +
       '<button class="btn btn-primary btn-small" onclick="obAddCustom()">➕ Aggiungi</button>' +
     '</div>' +
-    '<div class="ob-section-lbl ob-added-lbl">Selezionati:</div>' +
+    '<div class="ob-section-lbl ob-added-lbl">Selezionati (' + current.length + '):</div>' +
     '<div class="ob-added-wrap">' + addedHtml + '</div>';
     
   _updateObProgress();
+}
+
+/* ══════════════════════════════════════════════════════
+   MODAL QUANTITÀ ONBOARDING
+══════════════════════════════════════════════════════ */
+function obOpenQtyModal(name) {
+  _obPendingIngredient = name;
+  
+  // Crea modal dinamico
+  var modalHtml = 
+    '<div class="modal active" id="obQtyModal" onclick="if(event.target.id===\'obQtyModal\')obCloseQtyModal()">' +
+      '<div class="modal-box" style="max-width:340px;">' +
+        '<div class="modal-handle"></div>' +
+        '<div class="modal-header">' +
+          '<h2 class="modal-title">➕ Quantità per ' + name + '</h2>' +
+          '<button class="modal-close" onclick="obCloseQtyModal()">✕</button>' +
+        '</div>' +
+        '<div class="modal-body">' +
+          '<div class="form-group">' +
+            '<label>Quantità</label>' +
+            '<input type="number" id="obQtyInput" min="1" step="1" value="100" ' +
+                   'style="width:100%;padding:10px;font-size:1rem;text-align:center;" ' +
+                   'onkeydown="if(event.key===\'Enter\')obConfirmQty()">' +
+          '</div>' +
+          '<div class="form-group">' +
+            '<label>Unità</label>' +
+            '<select id="obQtyUnit" style="width:100%;padding:10px;font-size:1rem;">' +
+              '<option value="g">g (grammi)</option>' +
+              '<option value="ml">ml (millilitri)</option>' +
+              '<option value="pz">pz (pezzi)</option>' +
+              '<option value="fette">fette</option>' +
+              '<option value="cucchiai">cucchiai</option>' +
+              '<option value="cucchiaini">cucchiaini</option>' +
+              '<option value="porzione">porzione</option>' +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+        '<div class="modal-footer">' +
+          '<button class="btn btn-secondary" onclick="obCloseQtyModal()">Annulla</button>' +
+          '<button class="btn btn-primary" onclick="obConfirmQty()">✅ Conferma</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  
+  // Focus su input
+  setTimeout(function() {
+    var input = document.getElementById('obQtyInput');
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  }, 100);
+}
+
+function obConfirmQty() {
+  var qtyInput = document.getElementById('obQtyInput');
+  var unitSelect = document.getElementById('obQtyUnit');
+  
+  if (!qtyInput || !unitSelect || !_obPendingIngredient) return;
+  
+  var qty = parseFloat(qtyInput.value);
+  var unit = unitSelect.value;
+  
+  if (!qty || qty <= 0) {
+    if (typeof showToast === 'function') {
+      showToast('⚠️ Inserisci una quantità valida', 'warning');
+    }
+    return;
+  }
+  
+  // Aggiungi ingrediente con quantità
+  if (!_obData[_obMeal]) _obData[_obMeal] = [];
+  
+  // Verifica se esiste già
+  var exists = _obData[_obMeal].some(function(item) {
+    return item.name === _obPendingIngredient;
+  });
+  
+  if (!exists) {
+    _obData[_obMeal].push({
+      name: _obPendingIngredient,
+      quantity: qty,
+      unit: unit
+    });
+  }
+  
+  obCloseQtyModal();
+  _renderObMealContent();
+  _updateObFooter();
+}
+
+function obCloseQtyModal() {
+  var modal = document.getElementById('obQtyModal');
+  if (modal) modal.remove();
+  _obPendingIngredient = null;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -319,8 +411,8 @@ function _renderStep3Review() {
       );
     }
     
-    var chipsHtml = items.map(function(name) {
-      return '<span class="wiz-review-ing-chip">' + name + '</span>';
+    var chipsHtml = items.map(function(item) {
+      return '<span class="wiz-review-ing-chip">' + item.name + ' <small>(' + item.quantity + item.unit + ')</small></span>';
     }).join('');
     
     return (
@@ -379,32 +471,37 @@ function _updateObFooter() {
   var warnEmpty = document.getElementById('obWarnEmpty');
   var actionsContainer = footer.querySelector('.onboarding-footer-actions');
   
-  // Controllo se ci sono alimenti
-  var hasItems = false;
+  // Controllo se ci sono alimenti nel pasto corrente
+  var hasItemsInMeal = (_obData[_obMeal] || []).length > 0;
+  
+  // Controllo se c'è almeno un pasto compilato
+  var hasAnyItems = false;
   OB_MEAL_ORDER.forEach(function(mk) {
-    if ((_obData[mk] || []).length > 0) hasItems = true;
+    if ((_obData[mk] || []).length > 0) hasAnyItems = true;
   });
   
   if (_obCurrentStep === 1) {
-    // Step 1: Mostra warning se vuoto
-    if (warnEmpty) {
-      warnEmpty.style.display = hasItems ? 'none' : 'block';
-    }
+    // Step 1: Pasti - navigazione tra pasti
+    if (warnEmpty) warnEmpty.style.display = 'none';
+    
+    var backBtn = _obMealIndex > 0 
+      ? '<button class="btn btn-secondary" onclick="obPrevMeal()">← Indietro</button>'
+      : '<button class="btn btn-secondary" onclick="obSkip()">Salta</button>';
+    
+    var nextLabel = _obMealIndex < OB_MEAL_ORDER.length - 1 ? 'Prossimo pasto →' : 'Vai ai limiti →';
     
     actionsContainer.innerHTML =
-      '<button class="btn btn-secondary" onclick="obSkip()">Salta per ora</button>' +
-      '<button class="btn btn-primary" onclick="obNextStep()" ' + (hasItems ? '' : 'disabled') + '>' +
-        'Avanti →' +
-      '</button>';
+      backBtn +
+      '<button class="btn btn-primary" onclick="obNextStep()">' + nextLabel + '</button>';
       
   } else if (_obCurrentStep === 2) {
-    // Step 2: Sempre abilitato (limiti opzionali)
+    // Step 2: Limiti - sempre abilitato (opzionali)
     if (warnEmpty) warnEmpty.style.display = 'none';
     
     actionsContainer.innerHTML =
       '<button class="btn btn-secondary" onclick="obPrevStep()">← Indietro</button>' +
       '<button class="btn btn-secondary" onclick="obSkipLimits()">Salta limiti</button>' +
-      '<button class="btn btn-primary" onclick="obNextStep()">Avanti →</button>';
+      '<button class="btn btn-primary" onclick="obNextStep()">Riepilogo →</button>';
       
   } else if (_obCurrentStep === 3) {
     // Step 3: Review finale
@@ -412,32 +509,59 @@ function _updateObFooter() {
     
     actionsContainer.innerHTML =
       '<button class="btn btn-secondary" onclick="obPrevStep()">← Indietro</button>' +
-      '<button class="btn btn-primary" onclick="saveOnboardingPlan()">' +
+      '<button class="btn btn-primary" onclick="saveOnboardingPlan()" ' + (hasAnyItems ? '' : 'disabled') + '>' +
         '💾 Salva e inizia!' +
       '</button>';
   }
 }
 
 function obNextStep() {
-  if (_obCurrentStep < 3) {
-    _obCurrentStep++;
+  if (_obCurrentStep === 1) {
+    // Scorro i pasti
+    if (_obMealIndex < OB_MEAL_ORDER.length - 1) {
+      _obMealIndex++;
+      _obMeal = OB_MEAL_ORDER[_obMealIndex];
+      _renderObStep();
+    } else {
+      // Ultimo pasto completato, vai ai limiti
+      _obCurrentStep = 2;
+      _renderObStep();
+    }
+  } else if (_obCurrentStep === 2) {
+    // Da limiti a review
+    _obCurrentStep = 3;
     _renderObStep();
-    
-    // Scroll to top
-    var content = document.querySelector('.ob-content');
-    if (content) content.scrollTop = 0;
+  }
+  
+  // Scroll to top
+  var content = document.querySelector('.ob-content');
+  if (content) content.scrollTop = 0;
+}
+
+function obPrevMeal() {
+  if (_obMealIndex > 0) {
+    _obMealIndex--;
+    _obMeal = OB_MEAL_ORDER[_obMealIndex];
+    _renderObStep();
   }
 }
 
 function obPrevStep() {
-  if (_obCurrentStep > 1) {
-    _obCurrentStep--;
-    _renderObStep();
-    
-    // Scroll to top
-    var content = document.querySelector('.ob-content');
-    if (content) content.scrollTop = 0;
+  if (_obCurrentStep === 2) {
+    // Da limiti torna all'ultimo pasto
+    _obCurrentStep = 1;
+    _obMealIndex = OB_MEAL_ORDER.length - 1;
+    _obMeal = OB_MEAL_ORDER[_obMealIndex];
+  } else if (_obCurrentStep === 3) {
+    // Da review torna ai limiti
+    _obCurrentStep = 2;
   }
+  
+  _renderObStep();
+  
+  // Scroll to top
+  var content = document.querySelector('.ob-content');
+  if (content) content.scrollTop = 0;
 }
 
 function obSkipLimits() {
@@ -451,45 +575,50 @@ function obSkipLimits() {
 ══════════════════════════════════════════════════════ */
 function obSelectMeal(mk) {
   _obMeal = mk;
+  var idx = OB_MEAL_ORDER.indexOf(mk);
+  if (idx !== -1) _obMealIndex = idx;
   _renderObMealContent();
 }
 
-function obToggle(mk, btn, name) {
-  if (!_obData[mk]) _obData[mk] = [];
-  var idx = _obData[mk].indexOf(name);
+function obToggleWithQty(name) {
+  if (!_obData[_obMeal]) _obData[_obMeal] = [];
+  
+  // Controlla se già presente
+  var idx = _obData[_obMeal].findIndex(function(item) { return item.name === name; });
+  
   if (idx !== -1) {
-    _obData[mk].splice(idx, 1);
+    // Rimuovi
+    _obData[_obMeal].splice(idx, 1);
+    _renderObMealContent();
+    _updateObFooter();
   } else {
-    _obData[mk].push(name);
+    // Aggiungi con modal quantità
+    obOpenQtyModal(name);
   }
-  _renderObMealContent();
-  _updateObFooter();
 }
 
 function obRemove(mk, name) {
   if (!_obData[mk]) return;
-  _obData[mk] = _obData[mk].filter(function(n) { return n !== name; });
+  _obData[mk] = _obData[mk].filter(function(item) { return item.name !== name; });
   _renderObMealContent();
   _updateObFooter();
 }
 
 function obAddCustom() {
-  var inp  = document.getElementById('obCustomInput');
+  var inp = document.getElementById('obCustomInput');
   if (!inp) return;
   var name = inp.value.trim();
   if (!name) return;
-  if (!_obData[_obMeal]) _obData[_obMeal] = [];
-  if (_obData[_obMeal].indexOf(name) === -1) _obData[_obMeal].push(name);
+  
   inp.value = '';
-  _renderObMealContent();
-  _updateObFooter();
+  obOpenQtyModal(name);
 }
 
 /* ══════════════════════════════════════════════════════
    SAVE & SKIP
 ══════════════════════════════════════════════════════ */
 function saveOnboardingPlan() {
-  /* Salva piano alimentare con quantità di default */
+  /* Salva piano alimentare con quantità dall'onboarding */
   if (typeof pianoAlimentare === 'undefined') window.pianoAlimentare = {};
   
   OB_MEAL_ORDER.forEach(function(mk) {
@@ -498,19 +627,19 @@ function saveOnboardingPlan() {
     
     if (!pianoAlimentare[mk]) pianoAlimentare[mk] = {};
     
-    items.forEach(function(name) {
-      var cat = _getCategoryForIngredient(name);
+    items.forEach(function(item) {
+      var cat = _getCategoryForIngredient(item.name);
       if (!pianoAlimentare[mk][cat]) pianoAlimentare[mk][cat] = [];
       
       var exists = pianoAlimentare[mk][cat].some(function(ing) {
-        return ing.name === name;
+        return ing.name === item.name;
       });
       
       if (!exists) {
         pianoAlimentare[mk][cat].push({
-          name: name,
-          quantity: 100,       // ✅ quantità di default obbligatoria
-          unit: 'g',           // ✅ unità di default
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
           alternatives: []
         });
       }
