@@ -562,7 +562,14 @@ function confirmPAQty() {
 
   var qty  = parseFloat(qtyEl ? qtyEl.value : '');
   var unit = (unitEl ? unitEl.value : '') || _paQtyUnit || 'g';
-  if (isNaN(qty)) qty = null;
+  
+  /* ✅ VALIDAZIONE QUANTITÀ OBBLIGATORIA */
+  if (isNaN(qty) || qty <= 0) {
+    if (typeof showToast === 'function') {
+      showToast('⚠️ Inserisci una quantità valida (maggiore di 0)', 'warning');
+    }
+    return;
+  }
 
   var name    = _paQtyName;
   var mealKey = _paQtyMeal;
@@ -660,8 +667,17 @@ function confirmPACustomIng() {
     if (typeof showToast === 'function') showToast('⚠️ Inserisci il nome dell\'ingrediente', 'warning');
     return;
   }
+  
   var qty  = parseFloat(qtyEl ? qtyEl.value : '');
-  if (isNaN(qty)) qty = null;
+  
+  /* ✅ VALIDAZIONE QUANTITÀ OBBLIGATORIA */
+  if (isNaN(qty) || qty <= 0) {
+    if (typeof showToast === 'function') {
+      showToast('⚠️ Inserisci una quantità valida (maggiore di 0)', 'warning');
+    }
+    return;
+  }
+  
   var unit = (unitEl ? unitEl.value : '') || 'g';
 
   closePACustomIngModal();
