@@ -84,6 +84,7 @@ function showOnboarding() {
   _obMealIndex = 0;
   _obMeal = OB_MEAL_ORDER[0];
   _obCurrentStep = 1;
+  _obPendingIngredient = null;
   var overlay = document.getElementById('onboardingOverlay');
   if (!overlay) return;
   overlay.classList.add('active');
@@ -204,6 +205,38 @@ function _renderObMealContent() {
       }).join('')
     : '<span class="ob-empty-note">Nessun alimento aggiunto per ' + info.label.toLowerCase() + '</span>';
 
+  // Form inline per quantità (appare sotto i chip quando _obPendingIngredient è settato)
+  var qtyFormHtml = '';
+  if (_obPendingIngredient) {
+    qtyFormHtml = 
+      '<div id="obInlineQtyForm" style="background:var(--bg-subtle);border:2px solid var(--accent);border-radius:var(--r-lg);padding:16px;margin-top:16px;animation:slideDown 0.2s ease-out;">' +
+        '<div style="font-weight:700;font-size:.92em;margin-bottom:10px;color:var(--accent);">➕ Quantità per ' + _obPendingIngredient + '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
+          '<div>' +
+            '<label style="display:block;font-size:.78em;font-weight:600;margin-bottom:4px;color:var(--text-2);">Quantità</label>' +
+            '<input type="number" id="obQtyInput" min="1" step="1" value="100" ' +
+                   'style="width:100%;padding:10px;font-size:1rem;text-align:center;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);" ' +
+                   'onkeydown="if(event.key===\'Enter\')obConfirmQty()">' +
+          '</div>' +
+          '<div>' +
+            '<label style="display:block;font-size:.78em;font-weight:600;margin-bottom:4px;color:var(--text-2);">Unità</label>' +
+            '<select id="obQtyUnit" style="width:100%;padding:10px;font-size:.92em;border:1.5px solid var(--border);border-radius:var(--r-md);background:var(--bg);color:var(--text);">' +
+              '<option value="g">g</option>' +
+              '<option value="ml">ml</option>' +
+              '<option value="pz">pz</option>' +
+              '<option value="fette">fette</option>' +
+              '<option value="cucchiai">cucchiai</option>' +
+              '<option value="porzione">porzione</option>' +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;">' +
+          '<button class="btn btn-secondary" style="flex:1;" onclick="obCancelQty()">Annulla</button>' +
+          '<button class="btn btn-primary" style="flex:1;" onclick="obConfirmQty()">✅ Conferma</button>' +
+        '</div>' +
+      '</div>';
+  }
+
   contentEl.innerHTML =
     '<div class="wizard-progress"></div>' +
     '<div class="ob-meal-header">' +
@@ -212,6 +245,7 @@ function _renderObMealContent() {
     '</div>' +
     '<div class="ob-section-lbl">Aggiungi rapidamente:</div>' +
     '<div class="ob-presets-wrap">' + presetsHtml + '</div>' +
+    qtyFormHtml +
     '<div class="ob-section-lbl">O scrivi un alimento:</div>' +
     '<div class="ob-custom-row">' +
       '<input id="obCustomInput" class="ob-custom-input" type="text" ' +
@@ -224,60 +258,28 @@ function _renderObMealContent() {
     '<div class="ob-added-wrap">' + addedHtml + '</div>';
     
   _updateObProgress();
+  
+  // Focus automatico su input quantità se presente
+  if (_obPendingIngredient) {
+    setTimeout(function() {
+      var input = document.getElementById('obQtyInput');
+      if (input) {
+        input.focus();
+        input.select();
+        // Scroll verso il form
+        var form = document.getElementById('obInlineQtyForm');
+        if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  }
 }
 
 /* ══════════════════════════════════════════════════════
-   MODAL QUANTITÀ ONBOARDING
+   INPUT QUANTITÀ INLINE
 ══════════════════════════════════════════════════════ */
-function obOpenQtyModal(name) {
+function obShowQtyForm(name) {
   _obPendingIngredient = name;
-  
-  // Crea modal dinamico
-  var modalHtml = 
-    '<div class="modal active" id="obQtyModal" onclick="if(event.target.id===\'obQtyModal\')obCloseQtyModal()">' +
-      '<div class="modal-box" style="max-width:340px;">' +
-        '<div class="modal-handle"></div>' +
-        '<div class="modal-header">' +
-          '<h2 class="modal-title">➕ Quantità per ' + name + '</h2>' +
-          '<button class="modal-close" onclick="obCloseQtyModal()">✕</button>' +
-        '</div>' +
-        '<div class="modal-body">' +
-          '<div class="form-group">' +
-            '<label>Quantità</label>' +
-            '<input type="number" id="obQtyInput" min="1" step="1" value="100" ' +
-                   'style="width:100%;padding:10px;font-size:1rem;text-align:center;" ' +
-                   'onkeydown="if(event.key===\'Enter\')obConfirmQty()">' +
-          '</div>' +
-          '<div class="form-group">' +
-            '<label>Unità</label>' +
-            '<select id="obQtyUnit" style="width:100%;padding:10px;font-size:1rem;">' +
-              '<option value="g">g (grammi)</option>' +
-              '<option value="ml">ml (millilitri)</option>' +
-              '<option value="pz">pz (pezzi)</option>' +
-              '<option value="fette">fette</option>' +
-              '<option value="cucchiai">cucchiai</option>' +
-              '<option value="cucchiaini">cucchiaini</option>' +
-              '<option value="porzione">porzione</option>' +
-            '</select>' +
-          '</div>' +
-        '</div>' +
-        '<div class="modal-footer">' +
-          '<button class="btn btn-secondary" onclick="obCloseQtyModal()">Annulla</button>' +
-          '<button class="btn btn-primary" onclick="obConfirmQty()">✅ Conferma</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  
-  document.body.insertAdjacentHTML('beforeend', modalHtml);
-  
-  // Focus su input
-  setTimeout(function() {
-    var input = document.getElementById('obQtyInput');
-    if (input) {
-      input.focus();
-      input.select();
-    }
-  }, 100);
+  _renderObMealContent();
 }
 
 function obConfirmQty() {
@@ -312,15 +314,14 @@ function obConfirmQty() {
     });
   }
   
-  obCloseQtyModal();
+  _obPendingIngredient = null;
   _renderObMealContent();
   _updateObFooter();
 }
 
-function obCloseQtyModal() {
-  var modal = document.getElementById('obQtyModal');
-  if (modal) modal.remove();
+function obCancelQty() {
   _obPendingIngredient = null;
+  _renderObMealContent();
 }
 
 /* ══════════════════════════════════════════════════════
@@ -517,6 +518,11 @@ function _updateObFooter() {
 
 function obNextStep() {
   if (_obCurrentStep === 1) {
+    // Chiudi form quantità se aperto
+    if (_obPendingIngredient) {
+      _obPendingIngredient = null;
+    }
+    
     // Scorro i pasti
     if (_obMealIndex < OB_MEAL_ORDER.length - 1) {
       _obMealIndex++;
@@ -540,6 +546,7 @@ function obNextStep() {
 
 function obPrevMeal() {
   if (_obMealIndex > 0) {
+    _obPendingIngredient = null;  // Chiudi form quantità
     _obMealIndex--;
     _obMeal = OB_MEAL_ORDER[_obMealIndex];
     _renderObStep();
@@ -577,6 +584,7 @@ function obSelectMeal(mk) {
   _obMeal = mk;
   var idx = OB_MEAL_ORDER.indexOf(mk);
   if (idx !== -1) _obMealIndex = idx;
+  _obPendingIngredient = null;
   _renderObMealContent();
 }
 
@@ -589,11 +597,12 @@ function obToggleWithQty(name) {
   if (idx !== -1) {
     // Rimuovi
     _obData[_obMeal].splice(idx, 1);
+    _obPendingIngredient = null;
     _renderObMealContent();
     _updateObFooter();
   } else {
-    // Aggiungi con modal quantità
-    obOpenQtyModal(name);
+    // Mostra form inline quantità
+    obShowQtyForm(name);
   }
 }
 
@@ -611,7 +620,7 @@ function obAddCustom() {
   if (!name) return;
   
   inp.value = '';
-  obOpenQtyModal(name);
+  obShowQtyForm(name);
 }
 
 /* ══════════════════════════════════════════════════════
