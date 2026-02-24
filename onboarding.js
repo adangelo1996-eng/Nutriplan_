@@ -661,13 +661,12 @@ function saveOnboardingPlan() {
   /* Segna onboarding completato */
   localStorage.setItem(ONBOARDING_KEY, '1');
   
-  /* Chiudi overlay */
+  /* Chiudi overlay e avvia tutorial (che poi mostrerà welcome modal) */
   var overlay = document.getElementById('onboardingOverlay');
   if (overlay) overlay.classList.remove('active');
   
-  /* Mostra welcome modal */
   setTimeout(function() {
-    showWelcomeModal();
+    if (typeof checkTutorial === 'function') checkTutorial();
   }, 300);
 }
 
@@ -686,7 +685,7 @@ function obSkip() {
 }
 
 /* ══════════════════════════════════════════════════════
-   WELCOME MODAL
+   WELCOME MODAL — ora gestito dal tutorial.js
 ══════════════════════════════════════════════════════ */
 function showWelcomeModal() {
   var modal = document.getElementById('welcomeModal');
@@ -696,37 +695,26 @@ function showWelcomeModal() {
   if (!body) return;
   
   body.innerHTML = 
+    '<div class="welcome-card" onclick="closeWelcomeModal();goToPage(\'piano\')">' +
+      '<span class="welcome-card-icon">🍽</span>' +
+      '<div class="welcome-card-title">Vedi oggi</div>' +
+      '<div class="welcome-card-desc">Pianifica i pasti di oggi</div>' +
+      '<div class="welcome-card-cta">Vai →</div>' +
+    '</div>' +
     '<div class="welcome-card" onclick="closeWelcomeModal();goToPage(\'dispensa\')">' +
       '<span class="welcome-card-icon">🗄️</span>' +
-      '<div class="welcome-card-title">Riempi la dispensa</div>' +
-      '<div class="welcome-card-desc">Aggiungi gli ingredienti che hai a disposizione</div>' +
-      '<div class="welcome-card-cta">Vai alla dispensa →</div>' +
+      '<div class="welcome-card-title">Riempi dispensa</div>' +
+      '<div class="welcome-card-desc">Aggiungi gli ingredienti</div>' +
+      '<div class="welcome-card-cta">Vai →</div>' +
     '</div>' +
     '<div class="welcome-card" onclick="closeWelcomeModal();goToPage(\'ricette\')">' +
       '<span class="welcome-card-icon">📖</span>' +
-      '<div class="welcome-card-title">Esplora le ricette</div>' +
-      '<div class="welcome-card-desc">Scopri cosa puoi cucinare con i tuoi ingredienti</div>' +
-      '<div class="welcome-card-cta">Vedi ricette →</div>' +
-    '</div>' +
-    '<div class="welcome-card" onclick="closeWelcomeModal();goToPage(\'piano\')">' +
-      '<span class="welcome-card-icon">🍽</span>' +
-      '<div class="welcome-card-title">Organizza oggi</div>' +
-      '<div class="welcome-card-desc">Pianifica i pasti di oggi dal tuo piano</div>' +
-      '<div class="welcome-card-cta">Vai a oggi →</div>' +
-    '</div>' +
-    '<div class="welcome-card" onclick="closeWelcomeModal();goToPage(\'profilo\')">' +
-      '<span class="welcome-card-icon">📊</span>' +
-      '<div class="welcome-card-title">Personalizza</div>' +
-      '<div class="welcome-card-desc">Modifica il piano e imposta obiettivi</div>' +
-      '<div class="welcome-card-cta">Vai al profilo →</div>' +
+      '<div class="welcome-card-title">Esplora ricette</div>' +
+      '<div class="welcome-card-desc">Scopri cosa cucinare</div>' +
+      '<div class="welcome-card-cta">Vai →</div>' +
     '</div>';
   
   modal.classList.add('active');
-  
-  // Avvia tutorial dopo chiusura
-  setTimeout(function() {
-    if (typeof checkTutorial === 'function') checkTutorial();
-  }, 500);
 }
 
 function closeWelcomeModal() {

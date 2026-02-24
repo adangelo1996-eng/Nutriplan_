@@ -1,7 +1,8 @@
 /*
-   TUTORIAL.JS — v4  Spotlight interattivo + card posizionata dinamicamente
-   - checkbox "Non mostrare più" visibile su tutti i passi
+   TUTORIAL.JS — v5  Welcome modal al termine tutorial
+   - checkpoint "Non mostrare più" visibile su tutti i passi
    - auto-avanzamento quando l'utente compie l'azione indicata
+   - welcome modal con azioni rapide alla fine del tutorial (solo se onboarding completato)
 */
 
 var TUTORIAL_KEY  = 'nutriplan_tutorial_done';
@@ -392,6 +393,13 @@ function _endTutorial() {
   if (spot) spot.style.cssText = 'display:none;';
   if (card) card.style.cssText = 'display:none;';
   if (ptr)  ptr.style.cssText  = 'display:none;';
+
+  /* Mostra welcome modal solo se onboarding è stato completato */
+  if (localStorage.getItem('nutriplan_onboarding_done')) {
+    setTimeout(function() {
+      if (typeof showWelcomeModal === 'function') showWelcomeModal();
+    }, 400);
+  }
 }
 
 /* Compat alias (called from old HTML) */
