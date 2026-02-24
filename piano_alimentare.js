@@ -56,6 +56,11 @@ var _paQtyCat    = '';
 var _paQtyAltIdx = -1;
 var _paQtyUnit   = 'g';
 
+/* ── edit mode state ── */
+var _paEditMode   = false;  // true = modifica, false = aggiungi
+var _paEditIngIdx = -1;     // indice ingrediente in modifica
+var _paEditAltIdx = -1;     // indice alternativa in modifica (-1 = modifica ingrediente principale)
+
 /* ──────────────────────────────────────────────────────────
    UTILITY
 ────────────────────────────────────────────────────────── */
@@ -299,6 +304,10 @@ function buildPAIngredientRow(mealKey, catName, item, idx) {
           '<span class="pa-alt-name">' + (alt.name || '') + '</span>' +
           (altQty ? '<span class="pa-alt-qty">' + altQty + '</span>' : '') +
         '</div>' +
+        '<button class="pa-alt-edit" title="Modifica" ' +
+                'onclick="editPAAlt(\'' + mealEsc + '\',\'' + catEsc + '\',' + idx + ',' + ai + ')">' +
+          '✏️' +
+        '</button>' +
         '<button class="pa-alt-del" title="Rimuovi alternativa" ' +
                 'onclick="removePAAlt(\'' + mealEsc + '\',\'' + catEsc + '\',' + idx + ',' + ai + ')">' +
           '✕' +
@@ -319,6 +328,10 @@ function buildPAIngredientRow(mealKey, catName, item, idx) {
                   'title="Mostra/Nascondi alternative" ' +
                   'onclick="togglePAAltSection(\'' + altId + '\',this)">' +
             '↔' + (hasAlts ? ' ' + alts.length : '') +
+          '</button>' +
+          '<button class="pa-ing-edit" title="Modifica" ' +
+                  'onclick="editPAIng(\'' + mealEsc + '\',\'' + catEsc + '\',' + idx + ')">' +
+            '✏️' +
           '</button>' +
           '<button class="pa-ing-del" title="Rimuovi" ' +
                   'onclick="removePAIng(\'' + mealEsc + '\',\'' + catEsc + '\',' + idx + ')">' +
@@ -367,6 +380,51 @@ function removePAAlt(mealKey, catName, ingIdx, altIdx) {
   alts.splice(altIdx, 1);
   if (typeof saveData === 'function') saveData();
   renderPianoAlimentare();
+}
+
+/* ✏️ MODIFICA INGREDIENTE PRINCIPALE */
+function editPAIng(mealKey, catName, idx) {
+  paEnsureStructure();
+  var arr = pianoAlimentare[mealKey] && pianoAlimentare[mealKey][catName];
+  if (!Array.isArray(arr) || !arr[idx]) return;
+  
+  var item = arr[idx];
+  
+  /* Imposta modalità edit */
+  _paEditMode   = true;
+  _paEditIngIdx = idx;
+  _paEditAltIdx = -1;
+  _paQtyName    = item.name;
+  _paQtyMeal    = mealKey;
+  _paQtyCat     = catName;
+  _paQtyAltIdx  = -1;
+  _paQtyUnit    = item.unit || 'g';
+  
+  openPAQtyModal(item.quantity, item.unit);
+}
+
+/* ✏️ MODIFICA ALTERNATIVA */
+function editPAAlt(mealKey, catName, ingIdx, altIdx) {
+  paEnsureStructure();
+  var arr = pianoAlimentare[mealKey] && pianoAlimentare[mealKey][catName];
+  if (!Array.isArray(arr) || !arr[ingIdx]) return;
+  
+  var alts = arr[ingIdx].alternatives;
+  if (!Array.isArray(alts) || !alts[altIdx]) return;
+  
+  var alt = alts[altIdx];
+  
+  /* Imposta modalità edit */
+  _paEditMode   = true;
+  _paEditIngIdx = ingIdx;
+  _paEditAltIdx = altIdx;
+  _paQtyName    = alt.name;
+  _paQtyMeal    = mealKey;
+  _paQtyCat     = catName;
+  _paQtyAltIdx  = ingIdx;
+  _paQtyUnit    = alt.unit || 'g';
+  
+  openPAQtyModal(alt.quantity, alt.unit);
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -510,18 +568,21 @@ function selectPAIng(name) {
 
   if (!name || !mealKey || !catName) return;
 
-  /* Passa al modal quantità */
-  _paQtyName   = name;
-  _paQtyMeal   = mealKey;
-  _paQtyCat    = catName;
-  _paQtyAltIdx = altIdx;
-  _paQtyUnit   = paGetIngUnit(name);
+  /* Passa al modal quantità - MODALITÀ AGGIUNGI */
+  _paEditMode   = false;
+  _paEditIngIdx = -1;
+  _paEditAltIdx = -1;
+  _paQtyName    = name;
+  _paQtyMeal    = mealKey;
+  _paQtyCat     = catName;
+  _paQtyAltIdx  = altIdx;
+  _paQtyUnit    = paGetIngUnit(name);
 
   openPAQtyModal();
 }
 
 /* ── Modal quantità ── */
-function openPAQtyModal() {
+function openPAQtyModal(existingQty, existingUnit) {
   var modal = document.getElementById('paQtyModal');
   if (!modal) return;
 
@@ -530,21 +591,33 @@ function openPAQtyModal() {
   var unitEl = document.getElementById('paQtyUnit');
 
   if (nameEl) nameEl.textContent = _paQtyName;
-  if (qtyEl)  { qtyEl.value = ''; }
+  
+  /* Pre-popola valori se in modalità edit */
+  if (qtyEl) {
+    qtyEl.value = (_paEditMode && existingQty !== undefined && existingQty !== null) 
+      ? existingQty 
+      : '';
+  }
+  
   if (unitEl) {
-    unitEl.value = _paQtyUnit;
+    var targetUnit = (_paEditMode && existingUnit) ? existingUnit : _paQtyUnit;
+    unitEl.value = targetUnit;
     /* Seleziona l'unità corretta se c'è */
     var opts = unitEl.options;
     var matched = false;
     for (var i = 0; i < opts.length; i++) {
-      if (opts[i].value === _paQtyUnit) { unitEl.selectedIndex = i; matched = true; break; }
+      if (opts[i].value === targetUnit) { unitEl.selectedIndex = i; matched = true; break; }
     }
     if (!matched) unitEl.value = 'g';
   }
 
   var titleEl = document.getElementById('paQtyTitle');
   if (titleEl) {
-    titleEl.textContent = _paQtyAltIdx >= 0 ? '↔ Alternativa' : '＋ Aggiungi ingrediente';
+    if (_paEditMode) {
+      titleEl.textContent = '✏️ Modifica quantità';
+    } else {
+      titleEl.textContent = _paQtyAltIdx >= 0 ? '↔ Alternativa' : '＋ Aggiungi ingrediente';
+    }
   }
 
   modal.classList.add('active');
@@ -554,6 +627,10 @@ function openPAQtyModal() {
 function closePAQtyModal() {
   var modal = document.getElementById('paQtyModal');
   if (modal) modal.classList.remove('active');
+  /* Reset edit mode */
+  _paEditMode   = false;
+  _paEditIngIdx = -1;
+  _paEditAltIdx = -1;
 }
 
 function confirmPAQty() {
@@ -582,6 +659,36 @@ function confirmPAQty() {
 
   paEnsureStructure();
 
+  /* MODALITÀ EDIT */
+  if (_paEditMode) {
+    var arr = pianoAlimentare[mealKey][catName];
+    if (!Array.isArray(arr)) return;
+    
+    if (_paEditAltIdx >= 0) {
+      /* Modifica alternativa */
+      var ing = arr[_paEditIngIdx];
+      if (!ing || !Array.isArray(ing.alternatives)) return;
+      var alt = ing.alternatives[_paEditAltIdx];
+      if (alt) {
+        alt.quantity = qty;
+        alt.unit = unit;
+      }
+    } else {
+      /* Modifica ingrediente principale */
+      var item = arr[_paEditIngIdx];
+      if (item) {
+        item.quantity = qty;
+        item.unit = unit;
+      }
+    }
+    
+    if (typeof saveData === 'function') saveData();
+    renderPianoAlimentare();
+    if (typeof showToast === 'function') showToast('✅ Quantità aggiornata', 'success');
+    return;
+  }
+
+  /* MODALITÀ AGGIUNGI (comportamento originale) */
   if (altIdx >= 0) {
     var arr = pianoAlimentare[mealKey][catName];
     if (!Array.isArray(arr) || !arr[altIdx]) return;
