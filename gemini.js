@@ -11,7 +11,7 @@ function _getGeminiKey() {
   return (window.APP_CONFIG && window.APP_CONFIG.gemini && window.APP_CONFIG.gemini.apiKey) || '';
 }
 
-/* ── Rate limiting (────────────────────────────────────────────────────────── */
+/* ── Rate limiting ──────────────────────────────────────────────────────────── */
 var _AI_RATE_KEY  = 'nutriplan_ai_rate';
 var _AI_LIMIT_RPM = 10;
 var _AI_LIMIT_RPD = 250;
@@ -42,7 +42,7 @@ function getAIRemainingToday() {
   return Math.max(0, _AI_LIMIT_RPD - r.dayCount);
 }
 
-/* ── HTTP call ────────────────────────────────────────────────────────── */
+/* ── HTTP call ────────────────────────────────────────────────────────────── */
 function _geminiCall(prompt, callback, opts) {
   var apiKey = _getGeminiKey();
   if (!apiKey) { callback(null, 'API key Gemini non configurata (config.js)'); return; }
@@ -79,11 +79,11 @@ function _geminiCall(prompt, callback, opts) {
   xhr.send(body);
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════════════
    PARSER JSON BILANCIATO
    Trova il primo oggetto JSON completo in una stringa qualsiasi,
    gestendo correttamente array e oggetti annidati.
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════════════════════ */
 
 function _extractBalancedJson(text) {
   /* Rimuovi markdown code fence se presente */
@@ -187,9 +187,9 @@ function _parseGeminiRecipe(text) {
   return _parseFreeTextRecipe(text);
 }
 
-/* ─────────────────────────────────────────────────────────
+/* ───────────────────────────────────────────────────────────────────────────
    FALLBACK: PARSER TESTO LIBERO
-───────────────────────────────────────────────────────── */
+─────────────────────────────────────────────────────────────────────────── */
 function _parseFreeTextRecipe(text) {
   var recipe = {
     name:         _ftExtractTitle(text) || 'Ricetta AI',
@@ -242,9 +242,9 @@ function _ftExtractPrep(text) {
   return '';
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════════════
    STATO INTERNO
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════════════════════ */
 var _aiPendingRecipe       = null;
 var _aiRecipeMealKey       = 'pranzo';
 var _aiRecipeContext       = 'ricette';
@@ -258,41 +258,48 @@ var _mealLabelMap = {
   pranzo:'🍽 Pranzo', merenda:'🥪 Merenda', cena:'🌙 Cena'
 };
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════════════
    ENTRY POINT
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════════════════════ */
 function openAIRecipeModal(context) {
   var modal = document.getElementById('aiRecipeModal');
   if (!modal) return;
   _aiRecipeContext  = context || 'ricette';
   _aiPendingRecipe  = null;
+  
   if (context === 'oggi' && typeof selectedMeal !== 'undefined') {
     _aiRecipeMealKey = selectedMeal;
   } else {
     _aiRecipeMealKey = 'pranzo';
   }
+  
   modal.classList.add('active');
+  
   if (context === 'oggi') {
     _aiSelectedIngredients = null;
     _renderAIStep('select-oggi');
   } else if (context === 'oggi_piano') {
     _renderAIStep('loading');
     _runAIGeneration();
+  } else if (context === 'dispensa') {
+    /* DISPENSA: mostra select pasto + lista ingredienti disponibili */
+    _aiSelectedIngredients = null;
+    _renderAIStep('select-dispensa');
   } else {
     _renderAIStep('select');
   }
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════════════
    RENDER STEPS
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════════════════════ */
 function _renderAIStep(step) {
   var resultEl = document.getElementById('aiRecipeResult');
   var footerEl = document.getElementById('aiRecipeFooter');
   if (!resultEl || !footerEl) return;
 
-  /* ── SELECT pasto (contesti ricette/dispensa) ───────────────────────── */
-  if (step === 'select' || step === 'select-oggi') {
+  /* ── SELECT pasto (contesti ricette/dispensa) ────────────────────────────── */
+  if (step === 'select' || step === 'select-oggi' || step === 'select-dispensa') {
     var meals = [
       {key:'colazione',emoji:'☀️',label:'Colazione'},
       {key:'spuntino', emoji:'🍎',label:'Spuntino'},
@@ -303,7 +310,7 @@ function _renderAIStep(step) {
 
     var pillsHtml =
       '<p style="font-size:.88em;color:var(--text-2);margin-bottom:12px;font-weight:600;">Per quale pasto?</p>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:' + (step==='select-oggi'?'18':'4') + 'px;">' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:' + (step==='select'?'4':'18') + 'px;">' +
         meals.map(function(m) {
           var active = m.key === _aiRecipeMealKey;
           var s = active
@@ -315,6 +322,8 @@ function _renderAIStep(step) {
       '</div>';
 
     var ingSection = '';
+    
+    /* Select-oggi: ingredienti piano */
     if (step === 'select-oggi') {
       var planItems = (typeof getMealItems === 'function') ? getMealItems(_aiRecipeMealKey) : [];
       if (planItems.length) {
@@ -323,7 +332,7 @@ function _renderAIStep(step) {
           '<div style="display:flex;flex-direction:column;gap:5px;">' +
             planItems.map(function(item) {
               var qty = item.quantity
-                ? ' <span style="color:var(--text-3);font-size:.76em;">(' + item.quantity + '\u202f' + (item.unit||'g') + ')</span>' : '';
+                ? ' <span style="color:var(--text-3);font-size:.76em;">(' + item.quantity + ' ' + (item.unit||'g') + ')</span>' : '';
               return '<label style="display:flex;align-items:center;gap:9px;padding:8px 11px;background:var(--bg-subtle);border-radius:var(--r-md);cursor:pointer;">' +
                 '<input type="checkbox" class="ai-ing-check" value="' + item.name.replace(/"/g,'&quot;') + '" checked ' +
                 'style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;flex-shrink:0;">' +
@@ -335,6 +344,41 @@ function _renderAIStep(step) {
         ingSection = '<p style="font-size:.84em;color:var(--text-3);font-style:italic;padding:8px 0;">Nessun ingrediente nel piano per questo pasto. La ricetta sarà generata liberamente.</p>';
       }
     }
+    
+    /* Select-dispensa: ingredienti disponibili in frigo */
+    if (step === 'select-dispensa') {
+      var availableItems = [];
+      if (typeof pantryItems !== 'undefined' && pantryItems) {
+        Object.keys(pantryItems).forEach(function(name) {
+          var pd = pantryItems[name];
+          if (pd && (pd.quantity || 0) > 0) {
+            availableItems.push({
+              name: name,
+              quantity: pd.quantity,
+              unit: pd.unit || 'g'
+            });
+          }
+        });
+      }
+      
+      if (availableItems.length) {
+        ingSection =
+          '<p style="font-size:.84em;color:var(--text-2);margin-bottom:8px;font-weight:600;">Ingredienti disponibili in dispensa — seleziona quelli da usare:</p>' +
+          '<div style="display:flex;flex-direction:column;gap:5px;max-height:280px;overflow-y:auto;">' +
+            availableItems.slice(0, 30).map(function(item) {
+              var qty = item.quantity
+                ? ' <span style="color:var(--text-3);font-size:.76em;">(' + item.quantity + ' ' + item.unit + ')</span>' : '';
+              return '<label style="display:flex;align-items:center;gap:9px;padding:8px 11px;background:var(--bg-subtle);border-radius:var(--r-md);cursor:pointer;">' +
+                '<input type="checkbox" class="ai-ing-check" value="' + item.name.replace(/"/g,'&quot;') + '" checked ' +
+                'style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;flex-shrink:0;">' +
+                '<span style="font-size:.88em;font-weight:600;color:var(--text-1);">' + item.name + qty + '</span>' +
+              '</label>';
+            }).join('') +
+          '</div>';
+      } else {
+        ingSection = '<p style="font-size:.84em;color:var(--text-3);font-style:italic;padding:8px 0;">Nessun ingrediente disponibile in dispensa. La ricetta sarà generata liberamente.</p>';
+      }
+    }
 
     resultEl.innerHTML = pillsHtml + ingSection;
     footerEl.innerHTML =
@@ -343,7 +387,7 @@ function _renderAIStep(step) {
     return;
   }
 
-  /* ── LOADING ──────────────────────────────────────────────────── */
+  /* ── LOADING ────────────────────────────────────────────────────────────── */
   if (step === 'loading') {
     resultEl.innerHTML =
       '<div style="margin-bottom:14px;"><div style="height:4px;background:var(--bg-subtle);border-radius:99px;overflow:hidden;"><div class="ai-progress-bar"></div></div></div>' +
@@ -352,7 +396,7 @@ function _renderAIStep(step) {
     return;
   }
 
-  /* ── RESULT (identico a openRecipeModal di ricette.js) ─────────────── */
+  /* ── RESULT (identico a openRecipeModal di ricette.js) ───────────────────── */
   if (step === 'result') {
     var r = _aiPendingRecipe;
     if (!r) return;
@@ -410,7 +454,7 @@ function _renderAIStep(step) {
         });
         var extra = hasExtraCheck && _isExtraFn(n);
         var qty = (ing.quantity != null && !isNaN(parseFloat(ing.quantity)))
-          ? '<span class="rm-qty">' + ing.quantity + '\u00a0' + _safeStr(ing.unit || ing.unita || '') + '</span>'
+          ? '<span class="rm-qty">' + ing.quantity + ' ' + _safeStr(ing.unit || ing.unita || '') + '</span>'
           : '';
         html +=
           '<li class="rm-ing' + (ok?' ok':'') + (extra?' rm-extra':'') + '">' +
@@ -440,12 +484,18 @@ function _renderAIStep(step) {
   }
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════════════
    HELPERS MODAL
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════════════════════ */
 function _aiSelectMealPill(meal) {
   _aiRecipeMealKey = meal;
-  _renderAIStep(_aiRecipeContext === 'oggi' ? 'select-oggi' : 'select');
+  if (_aiRecipeContext === 'oggi') {
+    _renderAIStep('select-oggi');
+  } else if (_aiRecipeContext === 'dispensa') {
+    _renderAIStep('select-dispensa');
+  } else {
+    _renderAIStep('select');
+  }
 }
 
 function _getCheckedIngredients() {
@@ -456,16 +506,16 @@ function _getCheckedIngredients() {
 }
 
 function _runAIFromModal() {
-  if (_aiRecipeContext === 'oggi') {
+  if (_aiRecipeContext === 'oggi' || _aiRecipeContext === 'dispensa') {
     _aiSelectedIngredients = _getCheckedIngredients();
   }
   _renderAIStep('loading');
   _runAIGeneration();
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════════════
    GENERAZIONE RICETTA
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════════════════════ */
 function _runAIGeneration() {
   var ingredients = [];
 
@@ -479,8 +529,13 @@ function _runAIGeneration() {
     if (typeof getMealItems === 'function') {
       getMealItems(_aiRecipeMealKey).forEach(function(i){ ingredients.push(i.name); });
     }
+  } else if (_aiRecipeContext === 'dispensa') {
+    /* Usa ingredienti selezionati dall'utente */
+    if (_aiSelectedIngredients && _aiSelectedIngredients.length > 0) {
+      ingredients = _aiSelectedIngredients.slice();
+    }
   } else {
-    /* dispensa o ricette */
+    /* ricette: usa dispensa con qty > 0 */
     if (typeof pantryItems !== 'undefined' && pantryItems) {
       Object.keys(pantryItems).forEach(function(k) {
         if (pantryItems[k] && (pantryItems[k].quantity||0) > 0) ingredients.push(k);
@@ -567,9 +622,9 @@ function _runAIGeneration() {
   });
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════════════
    AZIONI: ACCETTA / RIGENERA / CHIUDI
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════════════════════ */
 function _regenAIRecipe() {
   _aiPendingRecipe = null;
   _renderAIStep('loading');
@@ -582,6 +637,9 @@ function _acceptAIRecipe() {
 
   if (_aiRecipeContext === 'oggi' || _aiRecipeContext === 'oggi_piano') {
     _aiPendingRecipe.subcategory = 'Da piano giornaliero';
+  }
+  if (_aiRecipeContext === 'dispensa') {
+    _aiPendingRecipe.subcategory = 'Da dispensa';
   }
 
   var name = _aiPendingRecipe.name || 'Ricetta AI';
@@ -618,9 +676,9 @@ function closeAIRecipeModal() {
   _aiPendingRecipe = null;
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════════════
    SUGGERIMENTI SOSTITUZIONE AI
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════════════════════ */
 function getAISubstituteSuggestions(ingredientName, origCat, callback) {
   var catHint = origCat ? ' (categoria attuale: ' + origCat + ')' : '';
   var prompt =
@@ -644,9 +702,9 @@ function getAISubstituteSuggestions(ingredientName, origCat, callback) {
   });
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════════════
    ANALISI AI STATISTICHE
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════════════════════ */
 function generateAIStatsAnalysis() {
   var resultEl = document.getElementById('aiStatsResult');
   var btnEl    = document.getElementById('aiStatsBtn');
