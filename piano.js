@@ -232,16 +232,26 @@ function toggleUsedItem(name) {
   if (!day.usedItems) day.usedItems = {};
   if (!day.usedItems[selectedMeal]) day.usedItems[selectedMeal] = {};
   var cur = day.usedItems[selectedMeal][name];
+  
+  /* Verifica se la data selezionata è oggi */
+  var today = new Date();
+  var todayKey = formatDateKey(today);
+  var isToday = selectedDateKey === todayKey;
+  
   if (cur) {
     delete day.usedItems[selectedMeal][name];
   } else {
     day.usedItems[selectedMeal][name] = true;
-    var subs = day.substitutions && day.substitutions[selectedMeal] && day.substitutions[selectedMeal][name];
-    var consumed = subs || name;
-    if (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[consumed]) {
-      var item = getMealItems(selectedMeal).find(function(i){ return i.name === name; });
-      if (item && item.quantity) {
-        pantryItems[consumed].quantity = Math.max(0, (pantryItems[consumed].quantity||0) - parseFloat(item.quantity));
+    
+    /* Riduci dispensa SOLO se selectedDateKey è oggi */
+    if (isToday) {
+      var subs = day.substitutions && day.substitutions[selectedMeal] && day.substitutions[selectedMeal][name];
+      var consumed = subs || name;
+      if (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[consumed]) {
+        var item = getMealItems(selectedMeal).find(function(i){ return i.name === name; });
+        if (item && item.quantity) {
+          pantryItems[consumed].quantity = Math.max(0, (pantryItems[consumed].quantity||0) - parseFloat(item.quantity));
+        }
       }
     }
   }
@@ -905,6 +915,12 @@ function choosePianoRecipe(name) {
   var r = typeof findRicetta === 'function' ? findRicetta(name) : null;
   if (!r) { if (typeof showToast==='function') showToast('Ricetta non trovata','warning'); return; }
   if (typeof pushUndo === 'function') pushUndo('Scegli ricetta ' + name);
+  
+  /* Verifica se la data selezionata è oggi */
+  var today = new Date();
+  var todayKey = formatDateKey(today);
+  var isToday = selectedDateKey === todayKey;
+  
   var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
 
   /* Calcola lo stesso fattore di scala usato nella visualizzazione della card */
@@ -926,29 +942,32 @@ function choosePianoRecipe(name) {
     }
   }
 
+  /* Riduci dispensa SOLO se selectedDateKey è oggi */
   var reduced = 0;
-  ings.forEach(function(ing){
-    var n = (ing.name||ing.nome||'').trim();
-    if (!n || typeof pantryItems==='undefined' || !pantryItems) return;
-    var key = null;
-    if (pantryItems[n] && (pantryItems[n].quantity||0) > 0) {
-      key = n;
-    } else {
-      var nl = n.toLowerCase();
-      key = Object.keys(pantryItems).find(function(k){
-        var kl = k.toLowerCase();
-        return (pantryItems[k]&&(pantryItems[k].quantity||0)>0) &&
-               (kl===nl||kl.includes(nl)||nl.includes(kl));
-      }) || null;
-    }
-    if (key) {
-      var qty = (parseFloat(ing.quantity) || 0) * scaleFactor;
-      if (qty > 0) {
-        pantryItems[key].quantity = Math.max(0, (pantryItems[key].quantity||0) - qty);
-        reduced++;
+  if (isToday) {
+    ings.forEach(function(ing){
+      var n = (ing.name||ing.nome||'').trim();
+      if (!n || typeof pantryItems==='undefined' || !pantryItems) return;
+      var key = null;
+      if (pantryItems[n] && (pantryItems[n].quantity||0) > 0) {
+        key = n;
+      } else {
+        var nl = n.toLowerCase();
+        key = Object.keys(pantryItems).find(function(k){
+          var kl = k.toLowerCase();
+          return (pantryItems[k]&&(pantryItems[k].quantity||0)>0) &&
+                 (kl===nl||kl.includes(nl)||nl.includes(kl));
+        }) || null;
       }
-    }
-  });
+      if (key) {
+        var qty = (parseFloat(ing.quantity) || 0) * scaleFactor;
+        if (qty > 0) {
+          pantryItems[key].quantity = Math.max(0, (pantryItems[key].quantity||0) - qty);
+          reduced++;
+        }
+      }
+    });
+  }
 
   /* Registra nello storico (ricette + usedItems per il pasto corrente) */
   if (selectedDateKey) {
@@ -966,7 +985,7 @@ function choosePianoRecipe(name) {
   }
 
   if (typeof saveData==='function') saveData();
-  var msg = reduced > 0
+  var msg = isToday && reduced > 0
     ? '✅ ' + name + ' — dispensa aggiornata (' + reduced + ' ingredienti)'
     : '✅ ' + name + ' scelta';
   if (typeof showToast==='function') showToast(msg, 'success');
