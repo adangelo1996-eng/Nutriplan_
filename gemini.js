@@ -116,7 +116,7 @@ function _geminiCall(prompt, callback, opts) {
 
 /* ══════════════════════════════════════════════════
    PARSER ROBUSTO PER RICETTE AI
-   Gestisce JSON puro, JSON in markdown, e testo libero
+   Gestisce JSON puro, JSON in markdown, JSON annidato e testo libero
 ══════════════════════════════════════════════════ */
 
 function _parseGeminiRecipe(text) {
@@ -133,7 +133,21 @@ function _parseGeminiRecipe(text) {
       var jsonStr = jsonMatch[1] || jsonMatch[0];
       var recipe = JSON.parse(jsonStr);
       
-      /* 2. Validazione campi obbligatori */
+      /* 2. Gestione JSON annidato (Gemini a volte serializza ingredienti come stringa) */
+      if (typeof recipe.ingredienti === 'string') {
+        try {
+          recipe.ingredienti = JSON.parse(recipe.ingredienti);
+          console.log('[AI Parser] ⚠ Risolto JSON annidato in ingredienti');
+        } catch (e) {
+          console.warn('[AI Parser] Impossibile parsare ingredienti stringa:', e.message);
+        }
+      }
+      if (typeof recipe.preparazione === 'string') {
+        /* Gemini a volte mette JSON dentro preparazione, estraiamo solo testo */
+        recipe.preparazione = recipe.preparazione.replace(/\{[\s\S]*?\}/g, '').trim();
+      }
+      
+      /* 3. Validazione campi obbligatori */
       if (recipe.name && (recipe.ingredienti || recipe.ingredients)) {
         /* Normalizza campo ingredienti (inglese/italiano) */
         if (!recipe.ingredienti && recipe.ingredients) {
@@ -143,8 +157,20 @@ function _parseGeminiRecipe(text) {
         
         /* Assicura array ingredienti valido */
         if (Array.isArray(recipe.ingredienti) && recipe.ingredienti.length > 0) {
-          console.log('[AI Parser] ✓ JSON valido parsato');
-          return recipe;
+          /* Pulisci ingredienti malformati */
+          recipe.ingredienti = recipe.ingredienti.map(function(ing) {
+            if (typeof ing === 'string') {
+              return { name: ing, quantity: null, unit: '' };
+            }
+            return ing;
+          }).filter(function(ing) {
+            return ing && ing.name && typeof ing.name === 'string';
+          });
+          
+          if (recipe.ingredienti.length > 0) {
+            console.log('[AI Parser] ✓ JSON valido parsato (' + recipe.ingredienti.length + ' ingredienti)');
+            return recipe;
+          }
         }
       }
       console.warn('[AI Parser] JSON parsato ma struttura incompleta:', recipe);
@@ -153,7 +179,7 @@ function _parseGeminiRecipe(text) {
     }
   }
   
-  /* 3. Fallback: parsing testo libero */
+  /* 4. Fallback: parsing testo libero */
   console.log('[AI Parser] Tentativo parsing testo libero...');
   return _parseFreeTextRecipe(text);
 }
@@ -173,18 +199,20 @@ function _parseFreeTextRecipe(text) {
     var rawLines = ingMatch[1].split(/\n/);
     recipe.ingredienti = rawLines
       .map(function(line) {
-        /* Rimuovi prefissi lista (• - * 1. 2.) */
-        return line.replace(/^[\s•\-*\d.)]+/, '').trim();
+        /* Rimuovi prefissi lista (• - * 1. 2.) e JSON artifacts */
+        line = line.replace(/^[\s•\-*\d.)]+/, '').trim();
+        line = line.replace(/[\{\}\[\]"]/g, ''); /* Rimuovi residui JSON */
+        return line;
       })
       .filter(function(line) {
-        return line.length > 2 && !line.match(/^(pass|proced|prepar|istruz|calor|nutr)/i);
+        return line.length > 2 && !line.match(/^(pass|proced|prepar|istruz|calor|nutr|name|quantity|unit)/i);
       })
       .slice(0, 15) /* Max 15 ingredienti */
       .map(function(line) {
         /* Tenta parsing "ingrediente - quantità unità" */
-        var parts = line.split(/[-–—]/);
+        var parts = line.split(/[-–—:,]/);
         if (parts.length >= 2) {
-          var qtyMatch = parts[1].match(/(\d+(?:[.,]\d+)?)\s*([a-z]+)?/i);
+          var qtyMatch = parts[1].match(/(\d+(?:[.,]\d+)?)\s*([a-zA-Z]+)?/i);
           return {
             name: parts[0].trim(),
             quantity: qtyMatch ? parseFloat(qtyMatch[1].replace(',', '.')) : null,
@@ -205,8 +233,10 @@ function _extractTitle(text) {
   var lines = text.split(/\n/).slice(0, 5);
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i].trim();
+    /* Rimuovi residui JSON */
+    line = line.replace(/[\{\}\[\]"]/g, '');
     /* Titolo valido: 5-60 caratteri, no caratteri speciali */
-    if (line.length >= 5 && line.length <= 60 && !line.match(/[{}[\]:]/)) {
+    if (line.length >= 5 && line.length <= 60 && !line.match(/[:]/)) {
       /* Rimuovi prefissi comuni */
       line = line.replace(/^(?:ricetta|titolo|nome)[:\s]*/i, '');
       if (line.length >= 5) return line;
@@ -219,13 +249,18 @@ function _extractPreparation(text) {
   var prepMatch = text.match(/(?:preparazione|procedimento|istruzioni|passaggi)[:\s]*([\s\S]{20,}?)(?=\n\s*(?:calor|nutr|serv|note)|$)/i);
   if (prepMatch) {
     var prep = prepMatch[1].trim();
+    /* Rimuovi residui JSON */
+    prep = prep.replace(/\{[\s\S]*?\}/g, '');
+    prep = prep.replace(/[\[\]"]/g, '');
     /* Limita lunghezza per sicurezza */
-    return prep.substring(0, 800);
+    return prep.substring(0, 800).trim();
   }
   /* Fallback: prendi ultime righe significative */
   var lines = text.split(/\n/).filter(function(l) { return l.trim().length > 15; });
   if (lines.length > 0) {
-    return lines.slice(-3).join(' ').substring(0, 400);
+    var prep = lines.slice(-3).join(' ').substring(0, 400);
+    prep = prep.replace(/\{[\s\S]*?\}/g, '').replace(/[\[\]"]/g, '');
+    return prep.trim();
   }
   return null;
 }
@@ -388,12 +423,17 @@ function _renderAIStep(step) {
     var ings       = Array.isArray(r.ingredienti) ? r.ingredienti : [];
     var prep       = r.preparazione || '';
 
+    /* Funzione helper per escape HTML */
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     var html =
       '<div>' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
           '<span style="font-size:2.2rem;line-height:1;">' + icon + '</span>' +
           '<div>' +
-            '<div style="font-weight:800;font-size:1.05rem;line-height:1.2;">' + r.name + '</div>' +
+            '<div style="font-weight:800;font-size:1.05rem;line-height:1.2;">' + escapeHtml(r.name) + '</div>' +
             '<div style="font-size:.8em;color:var(--primary);font-weight:600;margin-top:4px;">' + mealLabel + '</div>' +
           '</div>' +
         '</div>';
@@ -403,8 +443,8 @@ function _renderAIStep(step) {
         '<div style="font-weight:700;font-size:.78em;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Ingredienti</div>' +
         '<ul style="margin:0 0 16px;padding-left:20px;">' +
           ings.map(function(i) {
-            var qty = (i.quantity != null) ? ' — ' + i.quantity + ' ' + (i.unit || '') : '';
-            return '<li style="margin-bottom:5px;font-size:.9em;">' + (i.name || '') + qty + '</li>';
+            var qty = (i.quantity != null && !isNaN(i.quantity)) ? ' — ' + i.quantity + ' ' + (i.unit || '') : '';
+            return '<li style="margin-bottom:5px;font-size:.9em;">' + escapeHtml(i.name || '') + qty + '</li>';
           }).join('') +
         '</ul>';
     }
@@ -412,7 +452,7 @@ function _renderAIStep(step) {
     if (prep) {
       html +=
         '<div style="font-weight:700;font-size:.78em;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Preparazione</div>' +
-        '<p style="font-size:.9em;line-height:1.65;color:var(--text-2);margin:0;">' + prep + '</p>';
+        '<p style="font-size:.9em;line-height:1.65;color:var(--text-2);margin:0;">' + escapeHtml(prep) + '</p>';
     }
 
     html += '</div>';
