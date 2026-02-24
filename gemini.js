@@ -53,8 +53,8 @@ function _geminiCall(prompt, callback, opts) {
   var body = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: (opts && opts.maxOutputTokens) ? opts.maxOutputTokens : 1500
+      temperature: (opts && opts.temperature !== undefined) ? opts.temperature : 0.3,
+      maxOutputTokens: (opts && opts.maxOutputTokens) ? opts.maxOutputTokens : 2000
     }
   });
 
@@ -80,14 +80,13 @@ function _geminiCall(prompt, callback, opts) {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   PARSER JSON BILANCIATO
-   Trova il primo oggetto JSON completo in una stringa qualsiasi,
-   gestendo correttamente array e oggetti annidati.
+   PARSER JSON MULTI-STRATEGIA
+   Prova diverse tecniche per estrarre JSON valido dalla risposta AI
 ══════════════════════════════════════════════════════════════════════════════ */
 
 function _extractBalancedJson(text) {
-  /* Rimuovi markdown code fence se presente */
-  var clean = text.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '');
+  /* Rimuovi markdown code fence e spazi extra */
+  var clean = text.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '').trim();
 
   var start = clean.indexOf('{');
   if (start === -1) return null;
@@ -106,89 +105,155 @@ function _extractBalancedJson(text) {
     if (ch === '}' || ch === ']') {
       depth--;
       if (depth === 0) {
-        /* Trovato oggetto completo */
         return clean.slice(start, i + 1);
       }
     }
   }
 
-  /* JSON troncato: tenta repair aggiungendo le chiusure mancanti */
+  /* JSON troncato: auto-repair */
   if (depth > 0) {
     var partial = clean.slice(start);
-    /* Rimuovi virgola finale pendente prima di chiudere */
     partial = partial.replace(/,\s*$/, '');
     var closing = '';
-    /* Ricostruisci sequenza di chiusura approssimativa */
-    for (var d = 0; d < depth; d++) closing += (d === 0 ? ']}' : '}');
-    console.warn('[AI Parser] JSON troncato, tentativo repair');
+    for (var d = 0; d < depth; d++) closing += '}';
+    console.warn('[AI Parser] JSON troncato, repair applicato');
     return partial + closing;
   }
 
   return null;
 }
 
+function _extractJsonWithRegex(text) {
+  /* Strategia 2: regex per trovare JSON anche con testo attorno */
+  var patterns = [
+    /\{[\s\S]*?"ingredienti"[\s\S]*?\}/,
+    /\{[\s\S]*?"name"[\s\S]*?"preparazione"[\s\S]*?\}/,
+    /\{[^{}]*\{[^{}]*\}[^{}]*\}/
+  ];
+  
+  for (var i = 0; i < patterns.length; i++) {
+    var match = text.match(patterns[i]);
+    if (match) {
+      console.log('[AI Parser] Strategia regex ' + (i+1) + ' match');
+      return match[0];
+    }
+  }
+  return null;
+}
+
+function _cleanMarkdownJson(text) {
+  /* Strategia 3: pulizia aggressiva markdown */
+  return text
+    .replace(/^[\s\S]*?(?=\{)/, '')  /* rimuovi tutto prima della prima { */
+    .replace(/\}[\s\S]*$/, '}')      /* rimuovi tutto dopo l'ultima } */
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .replace(/^[^{]*/, '')
+    .trim();
+}
+
 function _parseGeminiRecipe(text) {
-  console.log('[AI Parser] Raw response:', text.substring(0, 400));
+  console.log('[AI Parser] === INIZIO PARSING ===');
+  console.log('[AI Parser] Raw length:', text.length, 'chars');
+  console.log('[AI Parser] Preview:', text.substring(0, 200));
 
-  /* — Tentativo 1: estrai JSON bilanciato e parsalo — */
-  var jsonStr = _extractBalancedJson(text);
-  if (jsonStr) {
+  var strategies = [
+    { name: 'Balanced JSON', fn: function() { return _extractBalancedJson(text); } },
+    { name: 'Regex extraction', fn: function() { return _extractJsonWithRegex(text); } },
+    { name: 'Markdown cleanup', fn: function() { return _cleanMarkdownJson(text); } }
+  ];
+
+  var recipe = null;
+  
+  for (var i = 0; i < strategies.length; i++) {
+    var strategy = strategies[i];
+    console.log('[AI Parser] Tentativo strategia:', strategy.name);
+    
     try {
-      var recipe = JSON.parse(jsonStr);
-
-      /* Normalizza nome campo ingredienti (EN → IT) */
+      var jsonStr = strategy.fn();
+      if (!jsonStr) {
+        console.log('[AI Parser]', strategy.name, '→ nessun JSON trovato');
+        continue;
+      }
+      
+      console.log('[AI Parser]', strategy.name, '→ JSON estratto:', jsonStr.substring(0, 150));
+      recipe = JSON.parse(jsonStr);
+      
+      /* Normalizza campi EN → IT */
       if (!recipe.ingredienti && recipe.ingredients) {
         recipe.ingredienti = recipe.ingredients;
         delete recipe.ingredients;
       }
-
-      /* Se ingredienti è una stringa JSON, de-serializzala */
+      
+      /* De-serializza ingredienti se sono stringhe */
       if (typeof recipe.ingredienti === 'string') {
         try { recipe.ingredienti = JSON.parse(recipe.ingredienti); }
         catch(e) { recipe.ingredienti = []; }
       }
-
+      
       /* Normalizza ogni ingrediente */
       if (Array.isArray(recipe.ingredienti)) {
         recipe.ingredienti = recipe.ingredienti
           .map(function(ing) {
-            if (typeof ing === 'string') return { name: ing, quantity: null, unit: '' };
-            /* Normalizza chiavi EN → IT */
-            if (!ing.name && ing.nome)     ing.name     = ing.nome;
-            if (!ing.unit && ing.unita)    ing.unit     = ing.unita;
+            if (typeof ing === 'string') {
+              return { name: ing, quantity: null, unit: 'g' };
+            }
+            /* EN → IT */
+            if (!ing.name && ing.nome)         ing.name     = ing.nome;
+            if (!ing.unit && ing.unita)        ing.unit     = ing.unita;
             if (!ing.quantity && ing.quantita) ing.quantity = ing.quantita;
+            
+            /* Default unità */
+            if (!ing.unit || ing.unit.trim() === '') ing.unit = 'g';
+            
+            /* Converti quantity stringa → numero */
+            if (typeof ing.quantity === 'string') {
+              var parsed = parseFloat(ing.quantity.replace(',', '.'));
+              ing.quantity = isNaN(parsed) ? null : parsed;
+            }
+            
             return ing;
           })
           .filter(function(ing) {
             return ing && typeof ing.name === 'string' && ing.name.trim().length > 0;
           });
       }
-
-      /* Pulisci preparazione da eventuale JSON residuo */
+      
+      /* Pulisci preparazione */
       if (typeof recipe.preparazione === 'string') {
         recipe.preparazione = recipe.preparazione
           .replace(/\{[\s\S]*?\}/g, '')
-          .replace(/[\[\]"]/g, '')
+          .replace(/[\[\]]/g, '')
+          .replace(/"/g, '')
           .trim();
       }
-
-      if (recipe.name && Array.isArray(recipe.ingredienti) && recipe.ingredienti.length > 0) {
-        console.log('[AI Parser] ✓ JSON valido: "' + recipe.name + '" (' + recipe.ingredienti.length + ' ingredienti)');
+      
+      /* Validazione struttura */
+      if (recipe.name && 
+          typeof recipe.name === 'string' && 
+          recipe.name.trim().length >= 3 &&
+          Array.isArray(recipe.ingredienti) && 
+          recipe.ingredienti.length > 0) {
+        console.log('[AI Parser] ✓ Ricetta valida:', recipe.name, '('+recipe.ingredienti.length+' ing.)');
+        console.log('[AI Parser] Strategia vincente:', strategy.name);
         return recipe;
       }
-      console.warn('[AI Parser] JSON parsato ma struttura incompleta:', recipe);
+      
+      console.warn('[AI Parser]', strategy.name, '→ struttura incompleta');
+      
     } catch(e) {
-      console.error('[AI Parser] JSON.parse error:', e.message, '\nInput:', jsonStr.substring(0, 200));
+      console.warn('[AI Parser]', strategy.name, '→ errore:', e.message);
+      continue;
     }
   }
 
-  /* — Tentativo 2: fallback testo libero — */
-  console.log('[AI Parser] Fallback parsing testo libero…');
+  /* Strategia 4: Fallback testo libero */
+  console.log('[AI Parser] Tutte le strategie JSON fallite → fallback testo libero');
   return _parseFreeTextRecipe(text);
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
-   FALLBACK: PARSER TESTO LIBERO
+   FALLBACK: PARSER TESTO LIBERO MIGLIORATO
 ─────────────────────────────────────────────────────────────────────────── */
 function _parseFreeTextRecipe(text) {
   var recipe = {
@@ -199,46 +264,81 @@ function _parseFreeTextRecipe(text) {
     pasto:        _aiRecipeMealKey || 'pranzo'
   };
 
-  /* Cerca sezione ingredienti */
-  var m = text.match(/ingredient[ui]\s*:?\s*([\s\S]*?)(?=\n\s*(?:preparaz|procedim|istruz|passag|calor|nutri|serv|note)|$)/i);
-  if (m) {
-    recipe.ingredienti = m[1].split(/\n/)
-      .map(function(l) {
-        l = l.replace(/^[\s•\-*\d.):]+/, '').replace(/[\{\}\[\]"]/g,'').trim();
-        return l;
-      })
-      .filter(function(l) { return l.length > 2 && !/^(preparaz|procedim|calor|nutri|name|quantity|unit)/i.test(l); })
-      .slice(0,15)
-      .map(function(l) {
-        var parts = l.split(/\s*[-–—:]\s*/);
-        if (parts.length >= 2) {
-          var qm = parts[1].match(/(\d+(?:[.,]\d+)?)\s*([a-zA-Z]+)?/);
-          return {
-            name:     parts[0].trim(),
-            quantity: qm ? parseFloat(qm[1].replace(',','.')) : null,
-            unit:     (qm && qm[2]) ? qm[2] : 'g'
-          };
-        }
-        return { name: l, quantity: null, unit: '' };
-      });
+  /* Cerca sezione ingredienti con pattern multipli */
+  var patterns = [
+    /ingredient[ui]\s*:?\s*([\s\S]*?)(?=\n\s*(?:preparaz|procedim|istruz|passag|calor|nutri|serv|note)|$)/i,
+    /per\s+\d+\s+person[ei]\s*:?\s*([\s\S]*?)(?=\n\s*(?:preparaz|procedim)|$)/i
+  ];
+  
+  for (var p = 0; p < patterns.length; p++) {
+    var m = text.match(patterns[p]);
+    if (m && m[1]) {
+      recipe.ingredienti = m[1].split(/\n/)
+        .map(function(l) {
+          l = l.replace(/^[\s•\-*\d.):]+/, '').replace(/[\{\}\[\]"]/g,'').trim();
+          return l;
+        })
+        .filter(function(l) { 
+          return l.length > 2 && 
+                 !/^(preparaz|procedim|calor|nutri|name|quantity|unit|ricetta|titolo)/i.test(l); 
+        })
+        .slice(0,20)
+        .map(function(l) {
+          /* Prova a estrarre quantità: "Pollo 200g" o "200g pollo" */
+          var qtyMatch = l.match(/(\d+(?:[.,]\d+)?)\s*([a-zA-Z]+)?/);
+          var parts = l.split(/\s*[-–—:]\s*/);
+          
+          if (parts.length >= 2 && qtyMatch) {
+            return {
+              name:     parts[0].trim().replace(/\d+.*$/, '').trim(),
+              quantity: parseFloat(qtyMatch[1].replace(',','.')),
+              unit:     qtyMatch[2] || 'g'
+            };
+          }
+          return { name: l.replace(/\d+.*$/, '').trim(), quantity: null, unit: 'g' };
+        })
+        .filter(function(ing) { return ing.name.length >= 2; });
+      
+      if (recipe.ingredienti.length > 0) break;
+    }
   }
 
-  console.log('[AI Parser] ⚠ Testo libero: "'+recipe.name+'" ('+recipe.ingredienti.length+' ingredienti)');
+  console.log('[AI Parser] ⚠ Fallback testo libero: "'+recipe.name+'" ('+recipe.ingredienti.length+' ing.)');
   return recipe;
 }
 
 function _ftExtractTitle(text) {
-  var lines = text.replace(/```[\s\S]*?```/g,'').split(/\n/).slice(0,6);
+  var lines = text.replace(/```[\s\S]*?```/g,'').split(/\n/).slice(0,8);
   for (var i=0; i<lines.length; i++) {
-    var l = lines[i].replace(/[\{\}\[\]"]/g,'').replace(/^(?:ricetta|titolo|nome)[:\s]*/i,'').trim();
-    if (l.length>=5 && l.length<=70 && !/^[{\[:]/.test(l)) return l;
+    var l = lines[i]
+      .replace(/[\{\}\[\]"]/g,'')
+      .replace(/^(?:ricetta|titolo|nome|name)[:\s]*/i,'')
+      .replace(/^[#*\-\s]+/, '')
+      .trim();
+    if (l.length >= 5 && l.length <= 80 && !/^[{\[:]/.test(l) && !/^\d+\./.test(l)) {
+      return l;
+    }
   }
-  return null;
+  return 'Ricetta AI';
 }
 
 function _ftExtractPrep(text) {
-  var m = text.match(/(?:preparazione|procedimento|istruzioni|passaggi)[:\s]*([\s\S]{20,}?)(?=\n\s*(?:calor|nutri|serv|note)|$)/i);
-  if (m) return m[1].replace(/\{[\s\S]*?\}/g,'').replace(/[\[\]"]/g,'').trim().substring(0,800);
+  var patterns = [
+    /(?:preparazione|procedimento|istruzioni|passaggi)[:\s]*([\s\S]{30,}?)(?=\n\s*(?:calor|nutri|serv|note|ingredient)|$)/i,
+    /(?:come\s+preparare|metodo)[:\s]*([\s\S]{30,}?)$/i
+  ];
+  
+  for (var i = 0; i < patterns.length; i++) {
+    var m = text.match(patterns[i]);
+    if (m && m[1]) {
+      return m[1]
+        .replace(/\{[\s\S]*?\}/g,'')
+        .replace(/[\[\]"]/g,'')
+        .replace(/^[\s\n]+/, '')
+        .trim()
+        .substring(0, 1000);
+    }
+  }
   return '';
 }
 
@@ -249,6 +349,7 @@ var _aiPendingRecipe       = null;
 var _aiRecipeMealKey       = 'pranzo';
 var _aiRecipeContext       = 'ricette';
 var _aiSelectedIngredients = null;
+var _aiRetryCount          = 0;
 
 var _mealIconMap = {
   colazione:'☕', spuntino:'🍎', pranzo:'🍽', merenda:'🥪', cena:'🌙'
@@ -266,6 +367,7 @@ function openAIRecipeModal(context) {
   if (!modal) return;
   _aiRecipeContext  = context || 'ricette';
   _aiPendingRecipe  = null;
+  _aiRetryCount     = 0;
   
   if (context === 'oggi' && typeof selectedMeal !== 'undefined') {
     _aiRecipeMealKey = selectedMeal;
@@ -282,7 +384,6 @@ function openAIRecipeModal(context) {
     _renderAIStep('loading');
     _runAIGeneration();
   } else if (context === 'dispensa') {
-    /* DISPENSA: mostra select pasto + lista ingredienti disponibili */
     _aiSelectedIngredients = null;
     _renderAIStep('select-dispensa');
   } else {
@@ -323,7 +424,6 @@ function _renderAIStep(step) {
 
     var ingSection = '';
     
-    /* Select-oggi: ingredienti piano */
     if (step === 'select-oggi') {
       var planItems = (typeof getMealItems === 'function') ? getMealItems(_aiRecipeMealKey) : [];
       if (planItems.length) {
@@ -345,7 +445,6 @@ function _renderAIStep(step) {
       }
     }
     
-    /* Select-dispensa: ingredienti disponibili in frigo */
     if (step === 'select-dispensa') {
       var availableItems = [];
       if (typeof pantryItems !== 'undefined' && pantryItems) {
@@ -389,9 +488,10 @@ function _renderAIStep(step) {
 
   /* ── LOADING ────────────────────────────────────────────────────────────── */
   if (step === 'loading') {
+    var retryMsg = _aiRetryCount > 0 ? ' (tentativo ' + (_aiRetryCount + 1) + '/2)' : '';
     resultEl.innerHTML =
       '<div style="margin-bottom:14px;"><div style="height:4px;background:var(--bg-subtle);border-radius:99px;overflow:hidden;"><div class="ai-progress-bar"></div></div></div>' +
-      '<div class="ai-loading" style="padding:16px 0;"><span class="ai-spinner"></span> Gemini sta creando la tua ricetta…</div>';
+      '<div class="ai-loading" style="padding:16px 0;"><span class="ai-spinner"></span> Gemini sta creando la tua ricetta…' + retryMsg + '</div>';
     footerEl.innerHTML = '<button class="btn btn-secondary" onclick="closeAIRecipeModal()">Annulla</button>';
     return;
   }
@@ -401,7 +501,6 @@ function _renderAIStep(step) {
     var r = _aiPendingRecipe;
     if (!r) return;
 
-    /* Usa le utility di ricette.js se disponibili, altrimenti fallback locali */
     var _safeStr = (typeof safeStr    === 'function') ? safeStr    : function(v){ return v == null ? '' : String(v); };
     var _pColor  = (typeof pastoColor === 'function') ? pastoColor : function(){ return 'var(--primary)'; };
     var _pLabel  = (typeof pastoLabel === 'function') ? pastoLabel : function(p){ return _mealLabelMap[p] || p || ''; };
@@ -423,7 +522,6 @@ function _renderAIStep(step) {
     var barClr    = pct >= 80 ? '#2ea86a' : pct >= 40 ? '#d97706' : '#dc2626';
     var hasExtraCheck = _pianoNms.length > 0;
 
-    /* — Header hero (come openRecipeModal) — */
     var html =
       '<div class="rm-hero" style="--mc:' + color + ';">' +
         '<div class="rm-hero-icon">' + icon + '</div>' +
@@ -433,7 +531,6 @@ function _renderAIStep(step) {
         '</div>' +
       '</div>';
 
-    /* — Barra disponibilità — */
     if (tot > 0) {
       html +=
         '<div class="rm-avail">' +
@@ -442,7 +539,6 @@ function _renderAIStep(step) {
         '</div>';
     }
 
-    /* — Ingredienti — */
     if (ings.length) {
       html += '<p class="rm-section-label">Ingredienti</p><ul class="rm-ing-list">';
       ings.forEach(function(ing) {
@@ -454,7 +550,7 @@ function _renderAIStep(step) {
         });
         var extra = hasExtraCheck && _isExtraFn(n);
         var qty = (ing.quantity != null && !isNaN(parseFloat(ing.quantity)))
-          ? '<span class="rm-qty">' + ing.quantity + ' ' + _safeStr(ing.unit || ing.unita || '') + '</span>'
+          ? '<span class="rm-qty">' + ing.quantity + ' ' + _safeStr(ing.unit || ing.unita || 'g') + '</span>'
           : '';
         html +=
           '<li class="rm-ing' + (ok?' ok':'') + (extra?' rm-extra':'') + '">' +
@@ -466,7 +562,6 @@ function _renderAIStep(step) {
       html += '</ul>';
     }
 
-    /* — Preparazione (a steps se ci sono frasi multiple) — */
     if (prep) {
       var steps = prep.split(/\.\s+/).filter(function(s){ return s.trim().length > 3; });
       html += '<p class="rm-section-label">Preparazione</p>';
@@ -509,12 +604,13 @@ function _runAIFromModal() {
   if (_aiRecipeContext === 'oggi' || _aiRecipeContext === 'dispensa') {
     _aiSelectedIngredients = _getCheckedIngredients();
   }
+  _aiRetryCount = 0;
   _renderAIStep('loading');
   _runAIGeneration();
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   GENERAZIONE RICETTA
+   GENERAZIONE RICETTA CON RETRY AUTOMATICO
 ══════════════════════════════════════════════════════════════════════════════ */
 function _runAIGeneration() {
   var ingredients = [];
@@ -530,12 +626,10 @@ function _runAIGeneration() {
       getMealItems(_aiRecipeMealKey).forEach(function(i){ ingredients.push(i.name); });
     }
   } else if (_aiRecipeContext === 'dispensa') {
-    /* Usa ingredienti selezionati dall'utente */
     if (_aiSelectedIngredients && _aiSelectedIngredients.length > 0) {
       ingredients = _aiSelectedIngredients.slice();
     }
   } else {
-    /* ricette: usa dispensa con qty > 0 */
     if (typeof pantryItems !== 'undefined' && pantryItems) {
       Object.keys(pantryItems).forEach(function(k) {
         if (pantryItems[k] && (pantryItems[k].quantity||0) > 0) ingredients.push(k);
@@ -548,7 +642,6 @@ function _runAIGeneration() {
     ? 'Usa OBBLIGATORIAMENTE questi ingredienti come base: ' + ingredients.slice(0,20).join(', ') + '.'
     : 'Scegli ingredienti comuni e bilanciati per il pasto.';
 
-  /* Vincoli dieta */
   var dietHints = [];
   var dp = (typeof dietProfile !== 'undefined') ? dietProfile : {};
   if (dp.vegetariano)   dietHints.push('vegetariana (no carne, no pesce)');
@@ -559,25 +652,28 @@ function _runAIGeneration() {
     dietHints.push('senza: ' + dp.allergenici.join(', '));
   var dietClause = dietHints.length ? ' La ricetta deve essere ' + dietHints.join('; ') + '.' : '';
 
-  /* Prompt molto diretto per ottenere JSON puro */
+  /* Prompt ultra-vincolante con esempi concreti */
   var prompt =
-    'Sei uno chef italiano. Crea UNA ricetta per "' + mealLabel + '". ' + ingHint + dietClause + '\n\n' +
-    'Rispondi ESCLUSIVAMENTE con questo JSON (zero testo prima o dopo):\n' +
-    '{' +
-      '"name": "Nome della ricetta in italiano",' +
-      '"icon": "emoji adatta al piatto",' +
-      '"pasto": "' + _aiRecipeMealKey + '",' +
-      '"ingredienti": [' +
-        '{"name": "ingrediente", "quantity": 100, "unit": "g"},' +
-        '{"name": "ingrediente2", "quantity": 2, "unit": "pz"}' +
-      '],' +
-      '"preparazione": "Descrizione breve della preparazione in max 250 caratteri."' +
+    'Sei uno chef italiano esperto. Crea UNA SOLA ricetta per "' + mealLabel + '". ' + ingHint + dietClause + '\n\n' +
+    'FORMATO OBBLIGATORIO — Restituisci SOLO questo JSON (NO testo prima, NO testo dopo, NO markdown):' +
+    '\n\n{\n' +
+    '  "name": "Nome ricetta in italiano",\n' +
+    '  "icon": "🍝",\n' +
+    '  "pasto": "' + _aiRecipeMealKey + '",\n' +
+    '  "ingredienti": [\n' +
+    '    {"name": "Pasta", "quantity": 100, "unit": "g"},\n' +
+    '    {"name": "Pomodoro", "quantity": 200, "unit": "g"},\n' +
+    '    {"name": "Basilico", "quantity": 5, "unit": "foglie"}\n' +
+    '  ],\n' +
+    '  "preparazione": "Cuoci la pasta in acqua salata. Scalda i pomodori in padella. Aggiungi basilico fresco e servi."\n' +
     '}\n\n' +
-    'REGOLE TASSATIVE:\n' +
-    '- quantity deve essere un NUMERO (non una stringa)\n' +
-    '- unit deve essere: g, ml, pz, cucchiai, cucchiaino, fette, spicchi\n' +
-    '- preparazione: max 250 caratteri, nessun JSON dentro\n' +
-    '- NESSUN testo fuori dal JSON, nessun markdown, nessun commento';
+    'VINCOLI RIGIDI:\n' +
+    '✓ quantity: sempre NUMERO (mai stringa tipo "100")\n' +
+    '✓ unit: solo g, ml, pz, cucchiai, cucchiaino, fette, foglie, spicchi\n' +
+    '✓ preparazione: max 300 caratteri, NO JSON annidato\n' +
+    '✓ Almeno 3 ingredienti, max 15\n' +
+    '✓ ZERO testo fuori dal JSON\n' +
+    '✓ NO markdown, NO commenti, NO spiegazioni';
 
   _geminiCall(prompt, function(text, err) {
     var resultEl = document.getElementById('aiRecipeResult');
@@ -585,7 +681,8 @@ function _runAIGeneration() {
     if (!resultEl || !footerEl) return;
 
     if (err || !text) {
-      resultEl.innerHTML = '<p style="color:var(--danger);padding:8px 0;">Errore: ' + (err || 'risposta vuota') + '</p>';
+      /* Errore API o risposta vuota */
+      resultEl.innerHTML = '<p style="color:var(--danger);padding:8px 0;">❌ Errore: ' + (err || 'risposta vuota') + '</p>';
       footerEl.innerHTML =
         '<button class="btn btn-secondary" onclick="closeAIRecipeModal()">Chiudi</button>' +
         '<button class="btn btn-secondary" onclick="_regenAIRecipe()">Riprova</button>';
@@ -596,27 +693,52 @@ function _runAIGeneration() {
     try {
       recipe = _parseGeminiRecipe(text);
     } catch(e) {
+      console.error('[AI] Errore parsing critico:', e);
       recipe = null;
     }
 
-    if (!recipe || !recipe.name || !Array.isArray(recipe.ingredienti) || recipe.ingredienti.length === 0) {
+    /* Validazione ricetta */
+    var isValid = recipe && 
+                  recipe.name && 
+                  typeof recipe.name === 'string' &&
+                  recipe.name.trim().length >= 3 &&
+                  Array.isArray(recipe.ingredienti) && 
+                  recipe.ingredienti.length >= 2;
+
+    if (!isValid) {
+      console.warn('[AI] Ricetta non valida, retry:', _aiRetryCount);
+      
+      /* RETRY AUTOMATICO (1 volta) */
+      if (_aiRetryCount < 1) {
+        _aiRetryCount++;
+        console.log('[AI] Tentativo automatico', _aiRetryCount + 1);
+        setTimeout(function() {
+          _renderAIStep('loading');
+          _runAIGeneration();
+        }, 800);
+        return;
+      }
+      
+      /* Dopo 2 tentativi: mostra errore dettagliato */
       resultEl.innerHTML =
-        '<p style="color:var(--danger);margin-bottom:8px;">⚠️ Gemini non ha risposto correttamente. Riprova.</p>' +
-        '<details style="font-size:.74em;color:var(--text-3);border:1px solid var(--border);padding:8px;border-radius:6px;max-height:120px;overflow:auto;">' +
-          '<summary style="cursor:pointer;font-weight:600;">Mostra risposta raw</summary>' +
-          '<pre style="margin-top:6px;white-space:pre-wrap;word-break:break-all;">' + text.slice(0,600) + '</pre>' +
+        '<p style="color:var(--danger);margin-bottom:10px;font-weight:600;">⚠️ Gemini non ha risposto correttamente dopo 2 tentativi.</p>' +
+        '<p style="font-size:.85em;color:var(--text-2);margin-bottom:8px;">Prova a rigenerare o riduci il numero di ingredienti.</p>' +
+        '<details style="font-size:.72em;color:var(--text-3);border:1px solid var(--border);padding:8px;border-radius:6px;max-height:140px;overflow:auto;">' +
+          '<summary style="cursor:pointer;font-weight:600;margin-bottom:4px;">🔍 Debug: mostra risposta raw</summary>' +
+          '<pre style="margin:0;white-space:pre-wrap;word-break:break-all;font-family:monospace;">' + text.slice(0,800) + '</pre>' +
         '</details>';
       footerEl.innerHTML =
         '<button class="btn btn-secondary" onclick="closeAIRecipeModal()">Chiudi</button>' +
-        '<button class="btn btn-secondary" onclick="_regenAIRecipe()">Riprova</button>';
+        '<button class="btn btn-secondary" onclick="_regenAIRecipe()">🔄 Riprova</button>';
       return;
     }
 
-    /* Normalizza e arricchisci */
+    /* Successo! Normalizza e mostra */
     recipe.pasto = recipe.pasto || _aiRecipeMealKey;
     recipe.icon  = recipe.icon  || _mealIconMap[recipe.pasto] || '🍽';
     recipe.isAI  = true;
 
+    console.log('[AI] ✓ Ricetta generata con successo:', recipe.name);
     _aiPendingRecipe = recipe;
     _renderAIStep('result');
   });
@@ -627,6 +749,7 @@ function _runAIGeneration() {
 ══════════════════════════════════════════════════════════════════════════════ */
 function _regenAIRecipe() {
   _aiPendingRecipe = null;
+  _aiRetryCount    = 0;
   _renderAIStep('loading');
   _runAIGeneration();
 }
@@ -674,6 +797,7 @@ function closeAIRecipeModal() {
   var modal = document.getElementById('aiRecipeModal');
   if (modal) modal.classList.remove('active');
   _aiPendingRecipe = null;
+  _aiRetryCount    = 0;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -755,5 +879,5 @@ function generateAIStatsAnalysis() {
         '</div>' +
         '<div style="font-size:.9em;line-height:1.7;color:var(--text-2);">' + html + '</div>' +
       '</div>';
-  }, { maxOutputTokens: 2500 });
+  }, { maxOutputTokens: 2500, temperature: 0.5 });
 }
