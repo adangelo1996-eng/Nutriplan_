@@ -39,7 +39,12 @@ var OB_LIMITI = [
 /* Stato wizard */
 var _obCurrentStep = 1;
 var _obMeal = 'colazione';
-var _obData = {};   /* { colazione: ['Latte', 'Uova', ...], ... } */
+var _obData = {};   /* { colazione: [{name, quantity, unit}, ...], ... } */
+
+/* ── Modal quantità onboarding ── */
+var _obQtyName = '';
+var _obQtyMeal = '';
+var _obQtyUnit = 'g';
 
 /* ══════════════════════════════════════════════════
    CHECK
@@ -119,7 +124,7 @@ function _updateObHeader() {
   if (_obCurrentStep === 1) {
     stepLabel.textContent = 'Passo 1 di 3';
     title.innerHTML = '🍽 Cosa mangi di solito?';
-    sub.textContent = 'Seleziona gli alimenti tipici per ogni pasto. Puoi modificarli in seguito.';
+    sub.textContent = 'Seleziona gli alimenti e indica le quantità per ogni pasto.';
   } else if (_obCurrentStep === 2) {
     stepLabel.textContent = 'Passo 2 di 3';
     title.innerHTML = '📊 Imposta i limiti (opzionale)';
@@ -142,7 +147,6 @@ function _updateObProgress() {
       '<span class="wizard-progress-dot ' + (_obCurrentStep >= 3 ? 'active' : '') + '"></span>' +
     '</div>';
   
-  // Inserisco all'inizio del contenuto
   if (container.querySelector('.wizard-progress')) {
     container.querySelector('.wizard-progress').outerHTML = progressHtml;
   } else {
@@ -154,7 +158,6 @@ function _updateObProgress() {
    STEP 1 - PASTI
 ══════════════════════════════════════════════════ */
 function _renderStep1Meals() {
-  // Nascondi sezione limiti
   var limitiSection = document.getElementById('obLimitiSection');
   if (limitiSection) limitiSection.style.display = 'none';
   
@@ -189,20 +192,22 @@ function _renderObMealContent() {
   var presets = OB_PRESETS[_obMeal] || [];
 
   var presetsHtml = presets.map(function(name) {
-    var isOn = current.indexOf(name) !== -1;
+    var existing = current.find(function(i) { return i.name === name; });
+    var isOn = !!existing;
     return (
       '<button class="ob-chip' + (isOn ? ' on' : '') + '" ' +
-              'onclick="obToggle(\'' + _obMeal + '\',this,\'' + name.replace(/'/g, "\\'") + '\')">' +
+              'onclick="obToggle(\'' + _obMeal + '\',\'' + name.replace(/'/g, "\\'") + '\')">' +
         (isOn ? '✅ ' : '➕ ') + name +
       '</button>'
     );
   }).join('');
 
   var addedHtml = current.length
-    ? current.map(function(name) {
+    ? current.map(function(item) {
+        var qtyText = item.quantity ? ' (' + item.quantity + ' ' + (item.unit || 'g') + ')' : '';
         return (
-          '<span class="ob-added-chip">' + name +
-            '<button onclick="obRemove(\'' + _obMeal + '\',\'' + name.replace(/'/g, "\\'") + '\')" ' +
+          '<span class="ob-added-chip">' + item.name + qtyText +
+            '<button onclick="obRemove(\'' + _obMeal + '\',\'' + item.name.replace(/'/g, "\\'") + '\')" ' +
                     'title="Rimuovi">✕</button>' +
           '</span>'
         );
@@ -235,7 +240,6 @@ function _renderObMealContent() {
    STEP 2 - LIMITI
 ══════════════════════════════════════════════════ */
 function _renderStep2Limits() {
-  // Nascondi tabs pasti
   var tabsEl = document.getElementById('obTabs');
   if (tabsEl) tabsEl.style.display = 'none';
   
@@ -292,7 +296,6 @@ function obSaveLimit(key, val) {
    STEP 3 - REVIEW
 ══════════════════════════════════════════════════ */
 function _renderStep3Review() {
-  // Nascondi tabs
   var tabsEl = document.getElementById('obTabs');
   if (tabsEl) tabsEl.style.display = 'none';
   
@@ -319,8 +322,9 @@ function _renderStep3Review() {
       );
     }
     
-    var chipsHtml = items.map(function(name) {
-      return '<span class="wiz-review-ing-chip">' + name + '</span>';
+    var chipsHtml = items.map(function(item) {
+      var qtyText = item.quantity ? ' · ' + item.quantity + item.unit : '';
+      return '<span class="wiz-review-ing-chip">' + item.name + qtyText + '</span>';
     }).join('');
     
     return (
@@ -334,7 +338,6 @@ function _renderStep3Review() {
     );
   }).join('');
   
-  // Limiti settati
   var limitsHtml = '';
   var hasLimits = false;
   if (typeof weeklyLimits !== 'undefined' && weeklyLimits) {
@@ -379,14 +382,12 @@ function _updateObFooter() {
   var warnEmpty = document.getElementById('obWarnEmpty');
   var actionsContainer = footer.querySelector('.onboarding-footer-actions');
   
-  // Controllo se ci sono alimenti
   var hasItems = false;
   OB_MEAL_ORDER.forEach(function(mk) {
     if ((_obData[mk] || []).length > 0) hasItems = true;
   });
   
   if (_obCurrentStep === 1) {
-    // Step 1: Mostra warning se vuoto
     if (warnEmpty) {
       warnEmpty.style.display = hasItems ? 'none' : 'block';
     }
@@ -398,7 +399,6 @@ function _updateObFooter() {
       '</button>';
       
   } else if (_obCurrentStep === 2) {
-    // Step 2: Sempre abilitato (limiti opzionali)
     if (warnEmpty) warnEmpty.style.display = 'none';
     
     actionsContainer.innerHTML =
@@ -407,7 +407,6 @@ function _updateObFooter() {
       '<button class="btn btn-primary" onclick="obNextStep()">Avanti →</button>';
       
   } else if (_obCurrentStep === 3) {
-    // Step 3: Review finale
     if (warnEmpty) warnEmpty.style.display = 'none';
     
     actionsContainer.innerHTML =
@@ -423,7 +422,6 @@ function obNextStep() {
     _obCurrentStep++;
     _renderObStep();
     
-    // Scroll to top
     var content = document.querySelector('.ob-content');
     if (content) content.scrollTop = 0;
   }
@@ -434,14 +432,12 @@ function obPrevStep() {
     _obCurrentStep--;
     _renderObStep();
     
-    // Scroll to top
     var content = document.querySelector('.ob-content');
     if (content) content.scrollTop = 0;
   }
 }
 
 function obSkipLimits() {
-  // Salta lo step dei limiti
   _obCurrentStep = 3;
   _renderObStep();
 }
@@ -454,42 +450,128 @@ function obSelectMeal(mk) {
   _renderObMealContent();
 }
 
-function obToggle(mk, btn, name) {
+function obToggle(mk, name) {
   if (!_obData[mk]) _obData[mk] = [];
-  var idx = _obData[mk].indexOf(name);
-  if (idx !== -1) {
-    _obData[mk].splice(idx, 1);
-  } else {
-    _obData[mk].push(name);
+  
+  var existingIdx = -1;
+  for (var i = 0; i < _obData[mk].length; i++) {
+    if (_obData[mk][i].name === name) {
+      existingIdx = i;
+      break;
+    }
   }
-  _renderObMealContent();
-  _updateObFooter();
+  
+  if (existingIdx !== -1) {
+    _obData[mk].splice(existingIdx, 1);
+    _renderObMealContent();
+    _updateObFooter();
+  } else {
+    obOpenQtyModal(name);
+  }
 }
 
 function obRemove(mk, name) {
   if (!_obData[mk]) return;
-  _obData[mk] = _obData[mk].filter(function(n) { return n !== name; });
+  _obData[mk] = _obData[mk].filter(function(item) { return item.name !== name; });
   _renderObMealContent();
   _updateObFooter();
 }
 
 function obAddCustom() {
-  var inp  = document.getElementById('obCustomInput');
+  var inp = document.getElementById('obCustomInput');
   if (!inp) return;
   var name = inp.value.trim();
   if (!name) return;
-  if (!_obData[_obMeal]) _obData[_obMeal] = [];
-  if (_obData[_obMeal].indexOf(name) === -1) _obData[_obMeal].push(name);
+  
   inp.value = '';
+  obOpenQtyModal(name);
+}
+
+/* ══════════════════════════════════════════════════
+   MODAL QUANTITÀ ONBOARDING
+══════════════════════════════════════════════════ */
+function obOpenQtyModal(name) {
+  _obQtyName = name;
+  _obQtyMeal = _obMeal;
+  _obQtyUnit = obGetIngUnit(name);
+  
+  var modal = document.getElementById('obQtyModal');
+  if (!modal) return;
+  
+  var nameEl = document.getElementById('obQtyIngName');
+  var qtyEl = document.getElementById('obQtyInput');
+  var unitEl = document.getElementById('obQtyUnit');
+  
+  if (nameEl) nameEl.textContent = name;
+  if (qtyEl) qtyEl.value = '';
+  if (unitEl) unitEl.value = _obQtyUnit;
+  
+  modal.classList.add('active');
+  setTimeout(function() { if (qtyEl) qtyEl.focus(); }, 120);
+}
+
+function obCloseQtyModal() {
+  var modal = document.getElementById('obQtyModal');
+  if (modal) modal.classList.remove('active');
+}
+
+function obConfirmQty() {
+  var qtyEl = document.getElementById('obQtyInput');
+  var unitEl = document.getElementById('obQtyUnit');
+  
+  var qty = parseFloat(qtyEl ? qtyEl.value : '');
+  var unit = (unitEl ? unitEl.value : '') || 'g';
+  
+  if (isNaN(qty) || qty <= 0) {
+    if (typeof showToast === 'function') 
+      showToast('⚠️ La quantità è obbligatoria e deve essere maggiore di 0', 'warning');
+    return;
+  }
+  
+  var name = _obQtyName;
+  var mk = _obQtyMeal;
+  
+  obCloseQtyModal();
+  
+  if (!name || !mk) return;
+  
+  if (!_obData[mk]) _obData[mk] = [];
+  
+  var existingIdx = -1;
+  for (var i = 0; i < _obData[mk].length; i++) {
+    if (_obData[mk][i].name === name) {
+      existingIdx = i;
+      break;
+    }
+  }
+  
+  var ingObj = { name: name, quantity: qty, unit: unit };
+  
+  if (existingIdx >= 0) {
+    _obData[mk][existingIdx] = ingObj;
+  } else {
+    _obData[mk].push(ingObj);
+  }
+  
   _renderObMealContent();
   _updateObFooter();
+}
+
+function obGetIngUnit(name) {
+  var nl = (name || '').toLowerCase().trim();
+  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
+    var found = defaultIngredients.find(function(i) {
+      return i && i.name && i.name.toLowerCase() === nl;
+    });
+    if (found && found.unit) return found.unit;
+  }
+  return 'g';
 }
 
 /* ══════════════════════════════════════════════════
    SAVE & SKIP
 ══════════════════════════════════════════════════ */
 function saveOnboardingPlan() {
-  /* Salva piano alimentare */
   if (typeof pianoAlimentare === 'undefined') window.pianoAlimentare = {};
   
   OB_MEAL_ORDER.forEach(function(mk) {
@@ -498,36 +580,32 @@ function saveOnboardingPlan() {
     
     if (!pianoAlimentare[mk]) pianoAlimentare[mk] = {};
     
-    items.forEach(function(name) {
-      var cat = _getCategoryForIngredient(name);
+    items.forEach(function(item) {
+      var cat = _getCategoryForIngredient(item.name);
       if (!pianoAlimentare[mk][cat]) pianoAlimentare[mk][cat] = [];
       
       var exists = pianoAlimentare[mk][cat].some(function(ing) {
-        return ing.name === name;
+        return ing.name === item.name;
       });
       
       if (!exists) {
         pianoAlimentare[mk][cat].push({
-          name: name,
-          qty: '',
-          unit: 'g',
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
           alternatives: []
         });
       }
     });
   });
   
-  /* Salva localmente */
   if (typeof savePianoAlimentare === 'function') savePianoAlimentare();
   
-  /* Segna onboarding completato */
   localStorage.setItem(ONBOARDING_KEY, '1');
   
-  /* Chiudi overlay */
   var overlay = document.getElementById('onboardingOverlay');
   if (overlay) overlay.classList.remove('active');
   
-  /* Mostra welcome modal */
   setTimeout(function() {
     showWelcomeModal();
   }, 300);
@@ -585,7 +663,6 @@ function showWelcomeModal() {
   
   modal.classList.add('active');
   
-  // Avvia tutorial dopo chiusura
   setTimeout(function() {
     if (typeof checkTutorial === 'function') checkTutorial();
   }, 500);
