@@ -41,9 +41,9 @@ var _obCurrentStep = 1;
 var _obMeal = 'colazione';
 var _obData = {};   /* { colazione: ['Latte', 'Uova', ...], ... } */
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    CHECK
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function checkOnboarding() {
   if (localStorage.getItem(ONBOARDING_KEY)) {
     /* Onboarding già fatto → avvia tutorial */
@@ -74,9 +74,9 @@ function checkOnboarding() {
   showOnboarding();
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    SHOW
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function showOnboarding() {
   _obData = {};
   _obMeal = 'colazione';
@@ -87,9 +87,9 @@ function showOnboarding() {
   _renderObStep();
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    RENDER STEP
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function _renderObStep() {
   _updateObHeader();
   _updateObProgress();
@@ -105,9 +105,9 @@ function _renderObStep() {
   _updateObFooter();
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    HEADER & PROGRESS
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function _updateObHeader() {
   var header = document.querySelector('.onboarding-header');
   if (!header) return;
@@ -150,9 +150,9 @@ function _updateObProgress() {
   }
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    STEP 1 - PASTI
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function _renderStep1Meals() {
   // Nascondi sezione limiti
   var limitiSection = document.getElementById('obLimitiSection');
@@ -231,9 +231,9 @@ function _renderObMealContent() {
   _updateObProgress();
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    STEP 2 - LIMITI
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function _renderStep2Limits() {
   // Nascondi tabs pasti
   var tabsEl = document.getElementById('obTabs');
@@ -288,9 +288,9 @@ function obSaveLimit(key, val) {
   }
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    STEP 3 - REVIEW
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function _renderStep3Review() {
   // Nascondi tabs
   var tabsEl = document.getElementById('obTabs');
@@ -369,9 +369,9 @@ function _renderStep3Review() {
   _updateObProgress();
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    FOOTER & NAVIGATION
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function _updateObFooter() {
   var footer = document.querySelector('.onboarding-footer');
   if (!footer) return;
@@ -446,9 +446,9 @@ function obSkipLimits() {
   _renderObStep();
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    ACTIONS - PASTI
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function obSelectMeal(mk) {
   _obMeal = mk;
   _renderObMealContent();
@@ -485,11 +485,11 @@ function obAddCustom() {
   _updateObFooter();
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    SAVE & SKIP
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function saveOnboardingPlan() {
-  /* Salva piano alimentare */
+  /* Salva piano alimentare con quantità di default */
   if (typeof pianoAlimentare === 'undefined') window.pianoAlimentare = {};
   
   OB_MEAL_ORDER.forEach(function(mk) {
@@ -509,8 +509,8 @@ function saveOnboardingPlan() {
       if (!exists) {
         pianoAlimentare[mk][cat].push({
           name: name,
-          qty: '',
-          unit: 'g',
+          quantity: 100,       // ✅ quantità di default obbligatoria
+          unit: 'g',           // ✅ unità di default
           alternatives: []
         });
       }
@@ -547,9 +547,9 @@ function obSkip() {
   }, 300);
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    WELCOME MODAL
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function showWelcomeModal() {
   var modal = document.getElementById('welcomeModal');
   if (!modal) return;
@@ -596,9 +596,9 @@ function closeWelcomeModal() {
   if (modal) modal.classList.remove('active');
 }
 
-/* ══════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    HELPER
-══════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 function _getCategoryForIngredient(name) {
   var lowerName = name.toLowerCase();
   
