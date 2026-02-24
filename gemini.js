@@ -610,7 +610,7 @@ function _runAIFromModal() {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   GENERAZIONE RICETTA CON RETRY AUTOMATICO
+   GENERAZIONE RICETTA CON RETRY AUTOMATICO E FILTRO INTELLIGENTE INGREDIENTI
 ══════════════════════════════════════════════════════════════════════════════ */
 function _runAIGeneration() {
   var ingredients = [];
@@ -638,9 +638,20 @@ function _runAIGeneration() {
   }
 
   var mealLabel  = {colazione:'Colazione',spuntino:'Spuntino',pranzo:'Pranzo',merenda:'Merenda',cena:'Cena'}[_aiRecipeMealKey] || 'Pranzo';
-  var ingHint    = ingredients.length
-    ? 'Usa OBBLIGATORIAMENTE questi ingredienti come base: ' + ingredients.slice(0,20).join(', ') + '.'
-    : 'Scegli ingredienti comuni e bilanciati per il pasto.';
+  
+  /* PROMPT FLESSIBILE: AI sceglie quali ingredienti usare */
+  var ingHint = '';
+  if (ingredients.length > 0) {
+    ingHint = 'INGREDIENTI DISPONIBILI: ' + ingredients.slice(0,25).join(', ') + '.\n\n' +
+              'ISTRUZIONI FLESSIBILI:\n' +
+              '- TRA questi ingredienti, scegli SOLO quelli adatti che stanno bene insieme per una ricetta di ' + mealLabel + '\n' +
+              '- SCARTA ingredienti incompatibili, fuori contesto, o che non funzionano per questo pasto\n' +
+              '- USA almeno 2-3 ingredienti dalla lista SE sono sensati (ma NON tutti se sono incompatibili)\n' +
+              '- AGGIUNGI ingredienti base comuni se necessario (sale, olio, spezie, erbe aromatiche)\n' +
+              '- Se NESSUN ingrediente va bene, crea una ricetta libera adatta a ' + mealLabel;
+  } else {
+    ingHint = 'Crea una ricetta bilanciata e gustosa per ' + mealLabel + ' con ingredienti comuni italiani.';
+  }
 
   var dietHints = [];
   var dp = (typeof dietProfile !== 'undefined') ? dietProfile : {};
@@ -650,11 +661,11 @@ function _runAIGeneration() {
   if (dp.senzaGlutine)  dietHints.push('senza glutine');
   if (Array.isArray(dp.allergenici) && dp.allergenici.length)
     dietHints.push('senza: ' + dp.allergenici.join(', '));
-  var dietClause = dietHints.length ? ' La ricetta deve essere ' + dietHints.join('; ') + '.' : '';
+  var dietClause = dietHints.length ? '\n\nVINCOLI DIETA: La ricetta deve essere ' + dietHints.join('; ') + '.' : '';
 
-  /* Prompt ultra-vincolante con esempi concreti */
+  /* Prompt ultra-vincolante con filtraggio smart */
   var prompt =
-    'Sei uno chef italiano esperto. Crea UNA SOLA ricetta per "' + mealLabel + '". ' + ingHint + dietClause + '\n\n' +
+    'Sei uno chef italiano esperto. ' + ingHint + dietClause + '\n\n' +
     'FORMATO OBBLIGATORIO — Restituisci SOLO questo JSON (NO testo prima, NO testo dopo, NO markdown):' +
     '\n\n{\n' +
     '  "name": "Nome ricetta in italiano",\n' +
@@ -722,7 +733,7 @@ function _runAIGeneration() {
       /* Dopo 2 tentativi: mostra errore dettagliato */
       resultEl.innerHTML =
         '<p style="color:var(--danger);margin-bottom:10px;font-weight:600;">⚠️ Gemini non ha risposto correttamente dopo 2 tentativi.</p>' +
-        '<p style="font-size:.85em;color:var(--text-2);margin-bottom:8px;">Prova a rigenerare o riduci il numero di ingredienti.</p>' +
+        '<p style="font-size:.85em;color:var(--text-2);margin-bottom:8px;">Prova a rigenerare o seleziona meno ingredienti.</p>' +
         '<details style="font-size:.72em;color:var(--text-3);border:1px solid var(--border);padding:8px;border-radius:6px;max-height:140px;overflow:auto;">' +
           '<summary style="cursor:pointer;font-weight:600;margin-bottom:4px;">🔍 Debug: mostra risposta raw</summary>' +
           '<pre style="margin:0;white-space:pre-wrap;word-break:break-all;font-family:monospace;">' + text.slice(0,800) + '</pre>' +
