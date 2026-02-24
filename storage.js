@@ -26,13 +26,21 @@ var dietProfile       = {};   /* vincoli dieta: { vegetariano, vegano, senzaLatt
 function initStorage() {
   loadData();
   /* Ripristina il piano di default solo se:
-     - l'utente non è loggato (loggato => dati da Firebase, non da default)
-     - non c'è un clear esplicito
-     - il piano è vuoto */
-  var isLoggedIn = (typeof currentUser !== 'undefined') && currentUser;
-  if (!isLoggedIn && localStorage.getItem('nutriplan_cleared') !== '1') {
-    if (!pianoAlimentare || !Object.keys(pianoAlimentare).length) {
-      pianoAlimentare = JSON.parse(JSON.stringify(defaultMealPlan || {}));
+     - il piano è completamente vuoto (nessun pasto configurato)
+     - NON c'è un clear esplicito (che indica reset volontario) */
+  if (localStorage.getItem('nutriplan_cleared') !== '1') {
+    var isEmpty = !pianoAlimentare || 
+                  Object.keys(pianoAlimentare).length === 0 ||
+                  !Object.keys(pianoAlimentare).some(function(mk) {
+                    var meal = pianoAlimentare[mk];
+                    if (!meal || typeof meal !== 'object') return false;
+                    return Object.keys(meal).some(function(cat) {
+                      return Array.isArray(meal[cat]) && meal[cat].length > 0;
+                    });
+                  });
+    if (isEmpty && typeof defaultMealPlan !== 'undefined' && defaultMealPlan) {
+      console.log('[Storage] Piano vuoto, carico defaultMealPlan');
+      pianoAlimentare = JSON.parse(JSON.stringify(defaultMealPlan));
     }
   }
   ensurePlanStructure();
@@ -42,10 +50,30 @@ function initStorage() {
 }
 
 function ensurePlanStructure() {
+  /* Tutte le categorie nutrizionali utilizzate nell'app */
+  var allCategories = [
+    '🥩 Carne',
+    '🐟 Pesce', 
+    '🥩 Carne e Pesce',
+    '🥛 Latticini e Uova',
+    '🌾 Cereali e Legumi',
+    '🥦 Verdure',
+    '🍎 Frutta',
+    '🥑 Grassi e Condimenti',
+    '🍫 Dolci e Snack',
+    '🧂 Cucina',
+    '🧂 Altro',
+    /* Categorie legacy/compatibilità */
+    'principale', 'contorno', 'frutta', 'extra'
+  ];
+  
   ['colazione','spuntino','pranzo','merenda','cena'].forEach(function (mk) {
-    if (!pianoAlimentare[mk] || typeof pianoAlimentare[mk] !== 'object') pianoAlimentare[mk] = {};
-    ['principale','contorno','frutta','extra'].forEach(function (cat) {
-      if (!Array.isArray(pianoAlimentare[mk][cat])) pianoAlimentare[mk][cat] = [];
+    if (!pianoAlimentare[mk] || typeof pianoAlimentare[mk] !== 'object') 
+      pianoAlimentare[mk] = {};
+    
+    allCategories.forEach(function (cat) {
+      if (!Array.isArray(pianoAlimentare[mk][cat])) 
+        pianoAlimentare[mk][cat] = [];
     });
   });
 }
@@ -91,8 +119,22 @@ function applyLoadedData(data) {
       }
     });
   }
-  if (data.pianoAlimentare && typeof data.pianoAlimentare === 'object')
-    pianoAlimentare = data.pianoAlimentare;
+  
+  /* pianoAlimentare: merge intelligente preserva dati esistenti */
+  if (data.pianoAlimentare && typeof data.pianoAlimentare === 'object') {
+    var hasData = Object.keys(data.pianoAlimentare).some(function(mk) {
+      var meal = data.pianoAlimentare[mk];
+      if (!meal || typeof meal !== 'object') return false;
+      return Object.keys(meal).some(function(cat) {
+        return Array.isArray(meal[cat]) && meal[cat].length > 0;
+      });
+    });
+    /* Sovrascrivi solo se ci sono dati validi da caricare */
+    if (hasData) {
+      pianoAlimentare = data.pianoAlimentare;
+    }
+  }
+  
   if (data.weeklyLimitsCustom && typeof data.weeklyLimitsCustom === 'object')
     weeklyLimitsCustom = data.weeklyLimitsCustom;
   if (Array.isArray(data.preferiti))
@@ -125,12 +167,15 @@ function buildSaveObject() {
 
 function saveData() {
   try {
-    /* Quando l'utente è loggato, i dati vivono SOLO su Firebase (non localStorage) */
+    /* SEMPRE salva anche su localStorage come backup, anche per utenti loggati.
+       Questo previene perdita dati se Firebase fallisce. */
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(buildSaveObject()));
+    
+    /* Sync cloud solo se loggato */
     var isLoggedIn = (typeof currentUser !== 'undefined') && currentUser;
-    if (!isLoggedIn) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(buildSaveObject()));
+    if (isLoggedIn) {
+      syncToCloud();
     }
-    syncToCloud();
   } catch (e) { console.warn('Errore salvataggio:', e); }
 }
 
@@ -154,37 +199,59 @@ function syncToCloud() {
 
 function loadFromCloud(uid) {
   if (!uid) return;
+  
+  console.log('[Storage] Caricamento da Firebase per uid:', uid);
+  
   firebase.database()
     .ref('users/' + uid + '/nutriplan')
     .once('value')
     .then(function (snap) {
       var data = snap.val();
-      if (data) {
+      
+      if (data && Object.keys(data).length > 0) {
+        console.log('[Storage] Dati trovati su Firebase, applico...');
         applyLoadedData(data);
         ensurePlanStructure();
       } else {
-        /* Firebase vuoto: primo login o nuovo utente.
-           Preserva i dati locali a meno che l'utente non abbia
-           esplicitamente cancellato tutto (flag nutriplan_cleared). */
+        console.log('[Storage] Firebase vuoto, preservo dati locali esistenti');
+        /* Firebase vuoto: primo login.
+           NON azzeriamo MAI i dati esistenti automaticamente.
+           L'utente potrebbe aver costruito il piano offline.
+           Usiamo i dati già in memoria (caricati da localStorage). */
+        
+        /* Reset SOLO se l'utente ha esplicitamente richiesto cancellazione dati */
         if (localStorage.getItem('nutriplan_cleared') === '1') {
+          console.log('[Storage] Flag nutriplan_cleared attivo, reset dati');
           pantryItems        = {};
           appHistory         = {};
           spesaItems         = [];
           customRecipes      = [];
+          aiRecipes          = [];
           customIngredients  = [];
           pianoAlimentare    = {};
           weeklyLimitsCustom = {};
+          preferiti          = [];
+          dietProfile        = {};
+          /* Rimuovi il flag dopo averlo usato */
+          localStorage.removeItem('nutriplan_cleared');
         }
+        
         ensurePlanStructure();
+        
+        /* Salva i dati locali esistenti su Firebase (primo sync) */
+        console.log('[Storage] Sincronizzazione iniziale su Firebase...');
+        syncToCloud();
       }
-      /* Non salvare su localStorage: utente loggato, dati solo su Firebase */
-      syncToCloud();
+      
       refreshAllAppViews();
       showCloudStatus('synced');
     })
     .catch(function (e) {
-      console.warn('Errore caricamento cloud:', e);
-      showCloudStatus('local');
+      console.warn('[Storage] Errore caricamento cloud:', e);
+      /* In caso di errore, usa i dati locali */
+      ensurePlanStructure();
+      refreshAllAppViews();
+      showCloudStatus('error');
     });
 }
 
@@ -298,7 +365,7 @@ function refreshAllAppViews() {
     'renderMealPlan', 'renderPantry', 'renderFridge',
     'renderRicettePage', 'renderStorico', 'renderSpesa',
     'renderStatistiche', 'renderProfilo', 'updateSavedFridges',
-    'updateLimits'   /* non renderLimitsGrid — usa il nome di app.js */
+    'updateLimits', 'renderPianoAlimentare'
   ];
   fns.forEach(function (name) {
     try {
