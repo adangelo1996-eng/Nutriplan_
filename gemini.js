@@ -115,6 +115,122 @@ function _geminiCall(prompt, callback, opts) {
 }
 
 /* ══════════════════════════════════════════════════
+   PARSER ROBUSTO PER RICETTE AI
+   Gestisce JSON puro, JSON in markdown, e testo libero
+══════════════════════════════════════════════════ */
+
+function _parseGeminiRecipe(text) {
+  console.log('[AI Parser] Raw response:', text.substring(0, 300));
+  
+  /* 1. Tenta estrazione JSON (anche dentro markdown blocks) */
+  var jsonMatch = text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/i);
+  if (!jsonMatch) {
+    jsonMatch = text.match(/\{[\s\S]*?\}/);
+  }
+  
+  if (jsonMatch) {
+    try {
+      var jsonStr = jsonMatch[1] || jsonMatch[0];
+      var recipe = JSON.parse(jsonStr);
+      
+      /* 2. Validazione campi obbligatori */
+      if (recipe.name && (recipe.ingredienti || recipe.ingredients)) {
+        /* Normalizza campo ingredienti (inglese/italiano) */
+        if (!recipe.ingredienti && recipe.ingredients) {
+          recipe.ingredienti = recipe.ingredients;
+          delete recipe.ingredients;
+        }
+        
+        /* Assicura array ingredienti valido */
+        if (Array.isArray(recipe.ingredienti) && recipe.ingredienti.length > 0) {
+          console.log('[AI Parser] ✓ JSON valido parsato');
+          return recipe;
+        }
+      }
+      console.warn('[AI Parser] JSON parsato ma struttura incompleta:', recipe);
+    } catch (e) {
+      console.error('[AI Parser] JSON parse error:', e.message);
+    }
+  }
+  
+  /* 3. Fallback: parsing testo libero */
+  console.log('[AI Parser] Tentativo parsing testo libero...');
+  return _parseFreeTextRecipe(text);
+}
+
+function _parseFreeTextRecipe(text) {
+  var recipe = {
+    name: _extractTitle(text) || 'Ricetta AI',
+    ingredienti: [],
+    preparazione: _extractPreparation(text) || 'Istruzioni non disponibili.',
+    icon: '🍽',
+    pasto: _aiRecipeMealKey || 'pranzo'
+  };
+  
+  /* Estrai ingredienti (formati comuni: • - * o lista numerata) */
+  var ingMatch = text.match(/ingredient[ui]\s*:?\s*([\s\S]*?)(?=\n\s*(?:pass|proced|prepar|istruz|calor|nutr|serv)|$)/i);
+  if (ingMatch) {
+    var rawLines = ingMatch[1].split(/\n/);
+    recipe.ingredienti = rawLines
+      .map(function(line) {
+        /* Rimuovi prefissi lista (• - * 1. 2.) */
+        return line.replace(/^[\s•\-*\d.)]+/, '').trim();
+      })
+      .filter(function(line) {
+        return line.length > 2 && !line.match(/^(pass|proced|prepar|istruz|calor|nutr)/i);
+      })
+      .slice(0, 15) /* Max 15 ingredienti */
+      .map(function(line) {
+        /* Tenta parsing "ingrediente - quantità unità" */
+        var parts = line.split(/[-–—]/);
+        if (parts.length >= 2) {
+          var qtyMatch = parts[1].match(/(\d+(?:[.,]\d+)?)\s*([a-z]+)?/i);
+          return {
+            name: parts[0].trim(),
+            quantity: qtyMatch ? parseFloat(qtyMatch[1].replace(',', '.')) : null,
+            unit: qtyMatch && qtyMatch[2] ? qtyMatch[2] : 'g'
+          };
+        }
+        /* Fallback: ingrediente senza quantità */
+        return { name: line, quantity: null, unit: '' };
+      });
+  }
+  
+  console.log('[AI Parser] ⚠ Usato parser testo libero:', recipe.name, '(' + recipe.ingredienti.length + ' ingredienti)');
+  return recipe;
+}
+
+function _extractTitle(text) {
+  /* Cerca titolo nelle prime righe (evita corpo testo) */
+  var lines = text.split(/\n/).slice(0, 5);
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    /* Titolo valido: 5-60 caratteri, no caratteri speciali */
+    if (line.length >= 5 && line.length <= 60 && !line.match(/[{}[\]:]/)) {
+      /* Rimuovi prefissi comuni */
+      line = line.replace(/^(?:ricetta|titolo|nome)[:\s]*/i, '');
+      if (line.length >= 5) return line;
+    }
+  }
+  return null;
+}
+
+function _extractPreparation(text) {
+  var prepMatch = text.match(/(?:preparazione|procedimento|istruzioni|passaggi)[:\s]*([\s\S]{20,}?)(?=\n\s*(?:calor|nutr|serv|note)|$)/i);
+  if (prepMatch) {
+    var prep = prepMatch[1].trim();
+    /* Limita lunghezza per sicurezza */
+    return prep.substring(0, 800);
+  }
+  /* Fallback: prendi ultime righe significative */
+  var lines = text.split(/\n/).filter(function(l) { return l.trim().length > 15; });
+  if (lines.length > 0) {
+    return lines.slice(-3).join(' ').substring(0, 400);
+  }
+  return null;
+}
+
+/* ══════════════════════════════════════════════════
    GENERA RICETTA — stato interno
 ══════════════════════════════════════════════════ */
 var _aiPendingRecipe       = null;   /* ricetta JSON in attesa di conferma */
@@ -376,12 +492,12 @@ function _runAIGeneration() {
     : '';
 
   var prompt =
-    'Sei un nutrizionista e chef italiano. Crea UNA ricetta per il pasto "' + mealLabel + '". ' + ingHint + dietClause + '\n\n' +
-    'Rispondi ESCLUSIVAMENTE con un oggetto JSON valido. Nessun testo prima o dopo il JSON, zero markdown, zero spiegazioni. Schema esatto:\n' +
-    '{"name":"<nome ricetta in italiano>","icon":"<un singolo emoji>","pasto":"' + _aiRecipeMealKey + '",' +
-    '"ingredienti":[{"name":"<nome ingrediente>","quantity":<numero intero o decimale>,"unit":"<g|ml|pz|cucchiai|cucchiaini|fette|porzione>"}],' +
-    '"preparazione":"<istruzioni brevi in italiano, max 280 caratteri>"}\n\n' +
-    'Regola assoluta: SOLO il JSON puro, nient\'altro.';
+    'Sei un nutrizionista e chef italiano. Crea UNA ricetta per \"' + mealLabel + '\". ' + ingHint + dietClause + '\n\n' +
+    'IMPORTANTE: Rispondi SOLO con JSON PURO, NIENTE markdown (no ```, no testo extra). Schema ESATTO:\n' +
+    '{"name":"<nome italiano>","icon":"<emoji>","pasto":"' + _aiRecipeMealKey + '",' +
+    '"ingredienti":[{"name":"<nome>","quantity":<numero>,"unit":"<g|ml|pz|cucchiai>"}],' +
+    '"preparazione":"<max 280 caratteri>"}\n\n' +
+    'Zero testo prima/dopo il JSON. Solo l\'oggetto JSON valido.';
 
   _geminiCall(prompt, function(text, err) {
     var resultEl = document.getElementById('aiRecipeResult');
@@ -397,13 +513,13 @@ function _runAIGeneration() {
     }
 
     try {
-      /* Estrai il primo oggetto JSON dalla risposta */
-      var jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('nessun JSON');
-      var recipe = JSON.parse(jsonMatch[0]);
-      if (!recipe.name || !Array.isArray(recipe.ingredienti)) throw new Error('struttura non valida');
+      var recipe = _parseGeminiRecipe(text);
+      
+      if (!recipe || !recipe.name || !recipe.ingredienti || recipe.ingredienti.length === 0) {
+        throw new Error('Ricetta incompleta o vuota');
+      }
 
-      /* Normalizza */
+      /* Normalizza campi */
       recipe.pasto = recipe.pasto || _aiRecipeMealKey;
       recipe.icon  = recipe.icon  || _mealIconMap[recipe.pasto] || '🍽';
       recipe.isAI  = true;
@@ -411,10 +527,13 @@ function _runAIGeneration() {
       _aiPendingRecipe = recipe;
       _renderAIStep('result');
     } catch (parseErr) {
+      console.error('[AI] Parse failed:', parseErr.message);
       resultEl.innerHTML =
-        '<p style="color:var(--danger);margin-bottom:8px;">La risposta AI non è nel formato atteso. Riprova.</p>' +
-        '<pre style="font-size:.7em;overflow:auto;max-height:80px;color:var(--text-3);border:1px solid var(--border);padding:6px;border-radius:6px;">' +
-        text.slice(0, 300) + '</pre>';
+        '<p style="color:var(--danger);margin-bottom:8px;">⚠️ Risposta AI non valida. Gemini ha risposto male, riprova.</p>' +
+        '<details style="font-size:.75em;color:var(--text-3);border:1px solid var(--border);padding:8px;border-radius:6px;max-height:120px;overflow:auto;">' +
+          '<summary style="cursor:pointer;font-weight:600;">Mostra risposta raw</summary>' +
+          '<pre style="margin-top:6px;white-space:pre-wrap;">' + text.slice(0, 500) + '</pre>' +
+        '</details>';
       footerEl.innerHTML =
         '<button class="btn btn-secondary" onclick="closeAIRecipeModal()">Chiudi</button>' +
         '<button class="btn btn-secondary" onclick="_regenAIRecipe()">Riprova</button>';
