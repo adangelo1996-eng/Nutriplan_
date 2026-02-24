@@ -1,5 +1,6 @@
 /* ============================================================
    RICETTE_CUSTOM.JS — gestione ricette personalizzate
+   v2 — Grid style matching catalogo
    ============================================================ */
 
 var editingRecipeIdx = null;
@@ -18,50 +19,116 @@ function renderCustomRicette() {
         return;
     }
 
-    el.innerHTML = customRecipes.map(function (r, idx) {
-        return buildCustomRicettaItem(r, idx);
-    }).join('');
+    /* Grid layout come il catalogo */
+    var html = '<div class="rc-grid">';
+    customRecipes.forEach(function(r, idx) {
+        html += buildCustomRicettaCard(r, idx);
+    });
+    html += '</div>';
+    el.innerHTML = html;
 }
 
-/* ---- BUILD ITEM ---- */
-function buildCustomRicettaItem(r, idx) {
-    var name  = r.nome || r.name || 'Ricetta';
-    var icon  = r.icon || r.icona || '⭐';
-    var pasto = r.pasto || '';
-    var ings  = r.ingredienti || [];
-    var prep  = r.preparazione || '';
+/* ---- BUILD CARD (stile catalogo) ---- */
+function buildCustomRicettaCard(r, idx) {
+    if (!r) return '';
+    var name       = safeStr(r.nome || r.name || 'Ricetta');
+    var icon       = safeStr(r.icon || r.icona || '⭐');
+    var ings       = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+    var prep       = safeStr(r.preparazione || '');
+    var pLabel     = pastoLabel(r.pasto);
+    var color      = pastoColor(r.pasto);
+    var tot        = ings.length;
+    var avail      = countAvailable(ings);
+    var pct        = tot ? Math.round((avail/tot)*100) : 0;
+    var isFav      = isFavorito(name);
+    var fridgeKeys = getFridgeKeys();
+    var pianoNames = getPianoAlimentareIngNames();
+    var hasExtraCheck = pianoNames.length > 0;
+    var extraCount = countExtraPiano(ings);
 
-    var ingList = ings.map(function (i) {
-        var qty = i.quantity ? i.quantity + ' ' + (i.unit || '') : '';
-        return (i.name || '') + (qty ? ' (' + qty + ')' : '');
-    }).join(', ');
+    /* stato badge */
+    var stateCls = pct >= 80 ? 'badge-ok' : pct >= 40 ? 'badge-warn' : 'badge-grey';
+    var stateTxt = pct >= 80 ? '✔ Disponibile' : pct >= 40 ? '◑ Parziale' : '○ Da acquistare';
 
-    return '<div class="custom-ricetta-item">'
-        + '<div class="custom-ricetta-header">'
-        + '<div>'
-        + '<div class="custom-ricetta-name">' + icon + ' ' + name + '</div>'
-        + '<div class="custom-ricetta-meta" style="margin-top:3px;">'
-        + (pasto ? '<span class="rcb rcb-pasto" style="font-size:.7em;">' + capFirst(pasto) + '</span>' : '')
-        + '<span class="rcb rcb-custom" style="font-size:.7em;margin-left:4px;">'
-        + ings.length + ' ingredienti</span>'
-        + '</div>'
-        + '</div>'
-        + '<div class="custom-ricetta-actions">'
-        + '<button class="btn btn-small btn-secondary"'
-        + ' onclick="openRecipeModal(\'' + escRQ2(name) + '\')">👁 Vedi</button>'
-        + '<button class="btn btn-small btn-secondary"'
-        + ' onclick="editRicettaCustom(' + idx + ')">✏️</button>'
-        + '<button class="btn btn-small btn-warning"'
-        + ' onclick="deleteRicettaCustom(' + idx + ')">🗑</button>'
-        + '</div></div>'
-        + (ingList
-            ? '<div class="custom-ricetta-ings">🥗 ' + ingList + '</div>'
-            : '')
-        + (prep
-            ? '<div class="custom-ricetta-prep">'
-            + truncate(prep, 120) + '</div>'
-            : '')
-        + '</div>';
+    /* badge extra piano */
+    var extraBadge = '';
+    if (hasExtraCheck && extraCount > 0) {
+        extraBadge = '<span class="rc-badge badge-extra">⚠ ' + extraCount + ' extra piano</span>';
+    } else if (hasExtraCheck && extraCount === 0 && tot > 0) {
+        extraBadge = '<span class="rc-badge badge-inpiano">✓ Nel piano</span>';
+    }
+
+    /* accordion ingredienti */
+    var accHtml = '';
+    if (ings.length) {
+        accHtml += '<ul class="rc-acc-list">';
+        ings.forEach(function(ing) {
+            var n       = safeStr(ing.name || ing.nome);
+            var nl      = n.toLowerCase().trim();
+            var ok      = fridgeKeys.some(function(k) {
+                var kl = k.toLowerCase().trim();
+                return kl === nl || kl.includes(nl) || nl.includes(kl);
+            });
+            var extra   = hasExtraCheck && isIngExtraPiano(n);
+            var qty = (ing.quantity || ing.quantita)
+                ? '<span class="rc-acc-qty">' + safeStr(ing.quantity || ing.quantita) +
+                  '\u00a0' + safeStr(ing.unit || ing.unita) + '</span>'
+                : '';
+            accHtml += '<li class="rc-acc-item' + (ok ? ' ok' : '') + (extra ? ' extra-piano' : '') + '">' +
+                '<span class="rc-acc-dot"></span>' +
+                '<span class="rc-acc-name">' + n + '</span>' +
+                qty +
+                (extra ? '<span class="rc-acc-extra-tag">extra</span>' : '') +
+                '</li>';
+        });
+        accHtml += '</ul>';
+        accHtml += '<div style="display:flex;gap:8px;margin-top:2px;">' +
+            '<button class="rc-detail-btn" style="flex:1;" ' +
+            'onclick="event.stopPropagation();openRecipeModal(\'' + esc(name) + '\')">Preparazione →</button>' +
+            '<button class="rc-detail-btn" style="background:#fde8e8;color:#dc2626;white-space:nowrap;" ' +
+            'onclick="event.stopPropagation();deleteCustomRicetta(' + idx + ')">🗑 Elimina</button>' +
+            '<button class="rc-detail-btn" style="background:#e0f2fe;color:#0369a1;white-space:nowrap;" ' +
+            'onclick="event.stopPropagation();editCustomRicetta(' + idx + ')">✏️ Modifica</button>' +
+            '</div>';
+    }
+
+    return (
+        '<div class="rc-card rc-custom" ' +
+        'style="--cc:' + color + '" ' +
+        'onclick="toggleRicettaCard(this,\'' + esc(name) + '\')" ' +
+        'data-name="' + esc(name) + '">' +
+
+        /* Header card */
+        '<div class="rc-card-head">' +
+            '<div class="rc-icon-wrap">' + icon + '</div>' +
+            '<div class="rc-info">' +
+                '<div class="rc-name">' + name + '</div>' +
+                '<div class="rc-meta">' +
+                    (pLabel ? '<span class="rc-pasto" style="color:' + color + '">' + pLabel + '</span>' : '') +
+                    '<span class="rc-badge">⭐ Mia</span>' +
+                    '<span class="rc-badge ' + stateCls + '">' + stateTxt + '</span>' +
+                    extraBadge +
+                '</div>' +
+            '</div>' +
+            /* Stella preferiti */
+            '<button class="fav-btn' + (isFav ? ' fav-on' : '') + '" ' +
+                'onclick="toggleFavorito(\'' + esc(name) + '\',event)" ' +
+                'title="' + (isFav ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti') + '" ' +
+                'aria-label="' + (isFav ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti') + '">' +
+                (isFav ? '★' : '☆') +
+            '</button>' +
+            '<span class="rc-chevron">' +
+                '<svg width="14" height="14" viewBox="0 0 14 14" fill="none">' +
+                    '<path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
+                '</svg>' +
+            '</span>' +
+        '</div>' +
+
+        /* Accordion */
+        (accHtml ? '<div class="rc-accordion"><div class="rc-accordion-inner">' + accHtml + '</div></div>' : '') +
+
+        '</div>'
+    );
 }
 
 /* ---- FORM NUOVA / MODIFICA ---- */
@@ -221,16 +288,16 @@ function saveRicettaCustom() {
     closeRicettaForm();
     renderCustomRicette();
     /* Aggiorna anche il catalogo se visibile */
-    renderRicetteGrid();
+    if (typeof renderRicetteGrid === 'function') renderRicetteGrid();
     alert('✅ Ricetta "' + nome + '" salvata!');
 }
 
 /* ---- EDIT / DELETE ---- */
-function editRicettaCustom(idx) {
+function editCustomRicetta(idx) {
     openRicettaForm(idx);
 }
 
-function deleteRicettaCustom(idx) {
+function deleteCustomRicetta(idx) {
     var name = customRecipes[idx]
         ? (customRecipes[idx].nome || customRecipes[idx].name || 'questa ricetta')
         : 'questa ricetta';
@@ -238,23 +305,22 @@ function deleteRicettaCustom(idx) {
     customRecipes.splice(idx, 1);
     saveData();
     renderCustomRicette();
-    renderRicetteGrid();
+    if (typeof renderRicetteGrid === 'function') renderRicetteGrid();
 }
 
 /* ---- UTILITY ---- */
+function safeStr(v) { return v == null ? '' : String(v); }
 function truncate(str, max) {
     if (!str) return '';
     return str.length <= max ? str : str.slice(0, max) + '…';
 }
-
 function capFirst(str) {
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 }
-
-function escRQ2(str) {
-    return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+function esc(v) {
+    return String(v == null ? '' : v)
+        .replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
-
 function escHTML(str) {
     return String(str)
         .replace(/&/g, '&amp;')
@@ -262,4 +328,106 @@ function escHTML(str) {
         .replace(/'/g, '&#39;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
+}
+
+/* Helper functions from ricette.js (needed for rendering) */
+function pastoLabel(p) {
+    var map = { colazione:'☀️ Colazione', spuntino:'🍎 Spuntino',
+                pranzo:'🍽 Pranzo', merenda:'🥪 Merenda', cena:'🌙 Cena' };
+    if (!p) return '';
+    if (Array.isArray(p)) return p.filter(Boolean).map(function(k){ return map[k]||k; }).join(' · ');
+    return map[p] || p;
+}
+
+function pastoColor(p) {
+    var first = Array.isArray(p) ? p[0] : p;
+    return { colazione:'#f59e0b', spuntino:'#10b981', pranzo:'#3d8b6f',
+             merenda:'#8b5cf6', cena:'#3b82f6' }[first] || 'var(--primary)';
+}
+
+function getFridgeKeys() {
+    if (typeof pantryItems === 'undefined' || !pantryItems) return [];
+    return Object.keys(pantryItems).filter(function(k){
+        return k && k !== 'undefined' && pantryItems[k] && (pantryItems[k].quantity||0) > 0;
+    });
+}
+
+function countAvailable(ings) {
+    var keys = getFridgeKeys();
+    if (!keys.length || !Array.isArray(ings)) return 0;
+    return ings.filter(function(ing){
+        var n = safeStr(ing.name||ing.nome).toLowerCase().trim();
+        return n && keys.some(function(k){
+            var kl = k.toLowerCase().trim();
+            return kl===n || kl.includes(n) || n.includes(kl);
+        });
+    }).length;
+}
+
+function getPianoAlimentareIngNames() {
+    if (typeof pianoAlimentare === 'undefined' || !pianoAlimentare) return [];
+    var names = [];
+    var seen  = {};
+    Object.keys(pianoAlimentare).forEach(function(mealKey) {
+        var meal = pianoAlimentare[mealKey];
+        if (!meal || typeof meal !== 'object') return;
+        Object.keys(meal).forEach(function(catKey) {
+            var arr = meal[catKey];
+            if (!Array.isArray(arr)) return;
+            arr.forEach(function(item) {
+                if (item && item.name && !seen[item.name]) {
+                    seen[item.name] = true;
+                    names.push(item.name.toLowerCase().trim());
+                }
+                if (Array.isArray(item.alternatives)) {
+                    item.alternatives.forEach(function(alt) {
+                        if (alt && alt.name && !seen[alt.name]) {
+                            seen[alt.name] = true;
+                            names.push(alt.name.toLowerCase().trim());
+                        }
+                    });
+                }
+            });
+        });
+    });
+    return names;
+}
+
+function isIngExtraPiano(ingName) {
+    if (!ingName) return false;
+    var pianoNames = getPianoAlimentareIngNames();
+    if (!pianoNames.length) return false;
+    var nl = ingName.toLowerCase().trim();
+    return !pianoNames.some(function(pn) {
+        return pn === nl || pn.includes(nl) || nl.includes(pn);
+    });
+}
+
+function countExtraPiano(ings) {
+    if (!Array.isArray(ings)) return 0;
+    var pianoNames = getPianoAlimentareIngNames();
+    if (!pianoNames.length) return 0;
+    return ings.filter(function(ing) {
+        return isIngExtraPiano(safeStr(ing.name || ing.nome));
+    }).length;
+}
+
+function isFavorito(name) {
+    return Array.isArray(preferiti) && preferiti.indexOf(name) !== -1;
+}
+
+function toggleFavorito(name, event) {
+    if (event) event.stopPropagation();
+    if (!Array.isArray(preferiti)) preferiti = [];
+    var idx = preferiti.indexOf(name);
+    if (idx === -1) {
+        preferiti.push(name);
+        if (typeof showToast === 'function') showToast('⭐ "' + name + '" aggiunta ai preferiti', 'success');
+    } else {
+        preferiti.splice(idx, 1);
+        if (typeof showToast === 'function') showToast('☆ "' + name + '" rimossa dai preferiti', 'info');
+    }
+    if (typeof saveData === 'function') saveData();
+    if (typeof renderRicetteGrid === 'function') renderRicetteGrid();
+    if (typeof renderAIRicetteTab === 'function') renderAIRicetteTab();
 }
