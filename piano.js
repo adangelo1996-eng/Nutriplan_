@@ -1,4 +1,3 @@
-
 /* ══════════════════════════════════════════════════════════════════════════════
    NUTRIPLAN — piano.js
    Gestione Piano Pasto (con AI + scadenze + Piano Alimentare + ricerca opzione B)
@@ -55,6 +54,68 @@ export function initPiano() {
   _initPianoAlimentare();
   _setupAIPianoWizardBtn();
   _initRecipeSearch();  // ← OPZIONE B: barra ricerca ricette
+  _exposeGlobalFunctions(); // Espone funzioni per onclick HTML
+}
+
+/* ══════════════════════════════════════════════════
+   1B. GLOBAL FUNCTIONS — Esposti per compatibilità HTML onclick
+══════════════════════════════════════════════════ */
+function _exposeGlobalFunctions() {
+  // selectMeal: chiamato dai bottoni pasto in HTML
+  window.selectMeal = function(meal, btnElement) {
+    selectedMeal = meal;
+    
+    // Aggiorna UI bottoni
+    const buttons = document.querySelectorAll('.meal-btn');
+    buttons.forEach(b => b.classList.remove('active'));
+    if (btnElement) btnElement.classList.add('active');
+    
+    // Refresh contenuti
+    _checkDayMeals();
+    _renderSuggestedRecipes();
+  };
+  
+  // filterOggiIngredients: chiamato dalla barra ricerca
+  window.filterOggiIngredients = function(query) {
+    const searchQuery = query.toLowerCase().trim();
+    const itemsWrap = document.getElementById('mealItemsWrap');
+    if (!itemsWrap) return;
+    
+    const items = itemsWrap.querySelectorAll('.meal-item');
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+      const name = (item.querySelector('.meal-item-name')?.textContent || '').toLowerCase();
+      const cat = (item.querySelector('.meal-item-icon')?.textContent || '').toLowerCase();
+      
+      if (!searchQuery || name.includes(searchQuery) || cat.includes(searchQuery)) {
+        item.style.display = '';
+        visibleCount++;
+      } else {
+        item.style.display = 'none';
+      }
+    });
+    
+    // Aggiorna contatore
+    const counter = document.getElementById('oggiSearchCounter');
+    if (counter) {
+      if (searchQuery) {
+        counter.textContent = `${visibleCount} risultati`;
+        counter.style.display = 'block';
+      } else {
+        counter.style.display = 'none';
+      }
+    }
+  };
+  
+  // clearOggiSearch: resetta la ricerca
+  window.clearOggiSearch = function() {
+    const input = document.getElementById('oggiSearch');
+    if (input) {
+      input.value = '';
+      window.filterOggiIngredients('');
+    }
+  };
 }
 
 /* ══════════════════════════════════════════════════
@@ -788,4 +849,4 @@ function _setupAIPianoWizardBtn() {
   });
 }
 
-console.log('[piano] piano.js caricato (opzione B: ricerca + ordinamento disponibilità + fix render)');
+console.log('[piano] piano.js caricato - fix completo: module exports + global functions');
