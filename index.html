@@ -35,12 +35,1220 @@
 
 <body>
 
-<!-- Il contenuto HTML rimane identico, tralasciato per brevità -->
-<!-- ... tutto il contenuto HTML ... -->
+<!-- ═════════════════════════════════════════════════════════════════
+     LANDING PAGE
+═════════════════════════════════════════════════════════════════ -->
+<div id="landingPage">
+  <div id="landingLogo">🌿</div>
+  <h1 class="landing-title">NutriPlan</h1>
+  <p class="landing-sub">Il tuo piano alimentare personale.<br>Accedi per iniziare e sincronizzare i tuoi dati.</p>
+
+  <div class="landing-cta-wrap">
+    <!-- Stato caricamento mentre Firebase controlla la sessione -->
+    <div class="landing-auth-loading" id="landingAuthLoading">
+      <span class="landing-auth-spinner"></span> Verifica accesso…
+    </div>
+
+    <!-- Utente NON loggato: mostra Google sign-in -->
+    <button class="btn-landing-google" id="landingGoogleBtn"
+            onclick="landingSignIn()" style="display:none">
+      <svg width="20" height="20" viewBox="0 0 18 18">
+        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+        <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/>
+      </svg>
+      Accedi con Google
+    </button>
+
+    <!-- Utente GIÀ loggato: bottone entra -->
+    <button class="btn btn-primary btn-large" id="landingEnterBtn"
+            onclick="enterApp()" style="display:none">
+      ▶ Bentornato!
+    </button>
+
+    <!-- Continua senza account -->
+    <button class="landing-offline-btn" id="landingOfflineBtn"
+            onclick="landingOffline()" style="display:none">
+      Continua senza account →
+    </button>
+  </div>
+
+  <p class="landing-privacy-note">
+    Accedendo accetti la nostra
+    <a href="#" onclick="event.preventDefault();openPrivacyModal()">Privacy Policy</a>.
+    I tuoi dati alimentari restano privati e sincronizzati solo sul tuo account.
+  </p>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     HEADER
+═════════════════════════════════════════════════════════════════ -->
+<header class="app-header" id="appHeader" style="display:none">
+  <div class="app-inner">
+
+    <div class="header-left">
+      <canvas id="headerIcon" width="32" height="32" style="border-radius:8px;vertical-align:middle;"></canvas>
+      <span class="header-title">NutriPlan</span>
+    </div>
+
+    <div class="header-center">
+      <span class="cloud-status local" id="cloudStatus">☁ Locale</span>
+    </div>
+
+    <div class="header-right">
+      <button class="btn-icon-only" id="themeToggle" onclick="toggleTheme()" title="Tema">🌙</button>
+      <div class="auth-user-pill" id="authUserPill" style="display:none" onclick="openAuthModal()">
+        <img class="auth-avatar" id="authAvatar" src="" alt="">
+        <span class="auth-info" id="authName">Utente</span>
+      </div>
+      <button class="btn-icon-only" id="loginBtn" onclick="openAuthModal()" title="Accedi">👤</button>
+      <button class="btn-icon-only" id="logoutBtn" onclick="signOut()" title="Disconnetti" style="display:none">🚪</button>
+    </div>
+
+  </div>
+</header>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     SIDEBAR (desktop)
+═════════════════════════════════════════════════════════════════ -->
+<nav class="sidebar-nav" id="sidebarNav" style="display:none">
+
+  <span class="sidebar-section-label">Oggi</span>
+
+  <button class="nav-tab active" id="st-piano" onclick="goToPage('piano')">
+    <span class="nav-icon">🍽</span>
+    <span class="nav-label">Oggi</span>
+  </button>
+  <button class="nav-tab" id="st-piano-alimentare" onclick="goToPage('piano-alimentare')">
+    <span class="nav-icon">🌿</span>
+    <span class="nav-label">Piano</span>
+  </button>
+  <button class="nav-tab" id="st-dispensa" onclick="goToPage('dispensa')">
+    <span class="nav-icon">🗄️</span>
+    <span class="nav-label">Dispensa</span>
+  </button>
+  <button class="nav-tab" id="st-ricette" onclick="goToPage('ricette')">
+    <span class="nav-icon">📖</span>
+    <span class="nav-label">Ricette</span>
+  </button>
+
+  <span class="sidebar-section-label">Gestione</span>
+
+  <button class="nav-tab" id="st-spesa" onclick="goToPage('spesa')">
+    <span class="nav-icon">🛒</span>
+    <span class="nav-label">Spesa</span>
+  </button>
+  <button class="nav-tab" id="st-statistiche" onclick="goToPage('statistiche')">
+    <span class="nav-icon">📊</span>
+    <span class="nav-label">Stats</span>
+  </button>
+  <button class="nav-tab" id="st-profilo" onclick="goToPage('profilo')">
+    <span class="nav-icon">👤</span>
+    <span class="nav-label">Profilo</span>
+  </button>
+
+</nav>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     MAIN CONTENT
+═════════════════════════════════════════════════════════════════ -->
+<main class="app-main" id="appMain" style="display:none">
+
+  <!-- ── PIANO ALIMENTARE ────────────────── -->
+  <div class="page" id="page-piano-alimentare">
+    <div class="page-header">
+      <div>
+        <div class="page-header-title">🌿 Piano Alimentare</div>
+        <div class="page-header-sub">Imposta i tuoi pasti e i limiti</div>
+      </div>
+    </div>
+    <div id="pianoAlimentarePage"></div>
+  </div>
+
+  <!-- ── PIANO ────────────────────────── -->
+  <div class="page active" id="page-piano">
+    <div class="page-header">
+      <div>
+        <div class="page-header-title">🍽 Cosa mangio oggi</div>
+        <div class="page-header-sub" id="selectedDateLabel">Oggi</div>
+      </div>
+      <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="resetPiano()">🔄 Reset</button>
+      </div>
+    </div>
+
+    <!-- Calendario timeline -->
+    <div class="calendar-bar-row">
+      <button class="cal-nav-btn" id="calPrevBtn" onclick="shiftCalendar(-30)" title="Indietro">‹</button>
+      <div class="calendar-bar" id="calendarBar"></div>
+      <button class="cal-nav-btn" id="calNextBtn" onclick="shiftCalendar(30)" title="Avanti">›</button>
+    </div>
+
+    <!-- Contenuto diretto (nessun sub-tab) -->
+    <div class="meals-done-bar">
+      <span class="meals-done-icon">🍽</span>
+      <div class="meals-done-info">
+        <div class="meals-done-label">Pasti completati oggi</div>
+        <div class="meals-done-dots" id="mealsDoneDots"></div>
+      </div>
+      <span class="meals-done-count" id="mealsDoneCount">0 / 5</span>
+    </div>
+
+    <div class="meal-selector" id="mealSelector">
+      <button class="meal-btn active" onclick="selectMeal('colazione',this)">
+        <span class="meal-btn-icon">☀️</span>
+        <span class="meal-btn-label">Colazione</span>
+        <span class="meal-btn-count" id="cnt-colazione">0</span>
+      </button>
+      <button class="meal-btn" onclick="selectMeal('spuntino',this)">
+        <span class="meal-btn-icon">🍎</span>
+        <span class="meal-btn-label">Spuntino</span>
+        <span class="meal-btn-count" id="cnt-spuntino">0</span>
+      </button>
+      <button class="meal-btn" onclick="selectMeal('pranzo',this)">
+        <span class="meal-btn-icon">🍽</span>
+        <span class="meal-btn-label">Pranzo</span>
+        <span class="meal-btn-count" id="cnt-pranzo">0</span>
+      </button>
+      <button class="meal-btn" onclick="selectMeal('merenda',this)">
+        <span class="meal-btn-icon">🥪</span>
+        <span class="meal-btn-label">Merenda</span>
+        <span class="meal-btn-count" id="cnt-merenda">0</span>
+      </button>
+      <button class="meal-btn" onclick="selectMeal('cena',this)">
+        <span class="meal-btn-icon">🌙</span>
+        <span class="meal-btn-label">Cena</span>
+        <span class="meal-btn-count" id="cnt-cena">0</span>
+      </button>
+    </div>
+
+    <div id="mealProgressWrap"></div>
+
+    <!-- Barra di ricerca ingredienti Oggi -->
+    <div class="search-bar-row" style="margin-bottom:14px;">
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="oggiSearch"
+               placeholder="Cerca ingrediente, categoria o pasto…"
+               oninput="filterOggiIngredients(this.value)"
+               onsearch="filterOggiIngredients(this.value)">
+        <button class="search-clear-btn" onclick="clearOggiSearch()">✕</button>
+      </div>
+      <div id="oggiSearchCounter" class="search-counter" style="display:none;"></div>
+    </div>
+
+    <!-- Ingredienti del piano per il pasto selezionato -->
+    <div class="piano-section-label">🌿 Ingredienti nel piano</div>
+    <div id="mealItemsWrap" class="meal-items-list"></div>
+
+    <!-- Ricette per il pasto selezionato -->
+    <div class="piano-section-label">📖 Ricette</div>
+    <div id="pianoRicetteWrap"></div>
+
+  </div>
+
+  <!-- ── DISPENSA ────────────────────────── -->
+  <div class="page" id="page-dispensa">
+    <div class="page-header">
+      <div>
+        <div class="page-header-title">🗄️ Dispensa</div>
+        <div class="page-header-sub">Ingredienti disponibili</div>
+      </div>
+      <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="openSavedFridges()">📁 Salvati</button>
+        <button class="btn btn-secondary btn-small" onclick="openBarcodeScanner()" title="Scansiona barcode prodotto">📷 Barcode</button>
+        <button class="btn btn-primary btn-small" onclick="openAddFridge()">➕ Aggiungi</button>
+      </div>
+    </div>
+
+    <div class="search-bar-row">
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="pantrySearch"
+               placeholder="Cerca ingrediente o categoria…"
+               oninput="filterPantry(this.value)"
+               onsearch="filterPantry(this.value)">
+        <button class="search-clear-btn" onclick="clearPantrySearch()">✕</button>
+      </div>
+    </div>
+
+    <div id="pantryContent"></div>
+  </div>
+
+  <!-- ── RICETTE ────────────────────────── -->
+  <div class="page" id="page-ricette">
+    <div class="page-header">
+      <div>
+        <div class="page-header-title">📖 Ricette</div>
+        <div class="page-header-sub">Catalogo e ricette personali</div>
+      </div>
+    </div>
+
+    <div class="page-tabs">
+      <button class="page-tab active" onclick="switchRicetteTab('catalogo',this)">📖 Catalogo</button>
+      <button class="page-tab" onclick="switchRicetteTab('mie',this)">⭐ Le mie</button>
+      <button class="page-tab" onclick="switchRicetteTab('ai',this)">🤖 AI</button>
+    </div>
+
+    <!-- Tab: Catalogo -->
+    <div class="page-tab-content active" id="tab-catalogo">
+      <div class="ricette-filter-row" id="ricetteFilterRow"></div>
+      <div id="ricetteGrid"></div>
+    </div>
+
+    <!-- Tab: Le mie ricette -->
+    <div class="page-tab-content" id="tab-mie">
+      <div class="section-header">
+        <div class="section-title">⭐ Le mie ricette</div>
+        <button class="btn btn-primary btn-small" onclick="openRicettaForm()">＋ Nuova</button>
+      </div>
+      <div id="customRicetteList"></div>
+    </div>
+
+    <!-- Tab: Ricette generate da AI -->
+    <div class="page-tab-content" id="tab-ai">
+      <div class="section-header">
+        <div>
+          <div class="section-title">🤖 Ricette generate da AI</div>
+          <div class="ai-powered-label" style="margin-top:2px;">Powered by Google Gemini</div>
+        </div>
+        <button class="btn btn-primary btn-small" onclick="openAIRecipeModal('ricette')">✨ Genera</button>
+      </div>
+      <div id="aiRicetteList"></div>
+    </div>
+  </div>
+
+  <!-- ── SPESA ──────────────────────────── -->
+  <div class="page" id="page-spesa">
+    <div class="page-header">
+      <div>
+        <div class="page-header-title">🛒 Lista spesa</div>
+        <div class="page-header-sub">Cosa comprare</div>
+      </div>
+      <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="clearBoughtItems()">🗑 Pulisci</button>
+        <button class="btn btn-primary btn-small" onclick="openSpesaItemModal()">➕ Aggiungi</button>
+      </div>
+    </div>
+    <div id="spesaContent"></div>
+  </div>
+
+  <!-- ── STATISTICHE ────────────────────────── -->
+  <div class="page" id="page-statistiche">
+    <div class="page-header">
+      <div>
+        <div class="page-header-title">📊 Statistiche</div>
+        <div class="page-header-sub">Riepilogo settimanale</div>
+      </div>
+    </div>
+    <div id="statisticheContent"></div>
+  </div>
+
+  <!-- ── PROFILO ────────────────────────── -->
+  <div class="page" id="page-profilo">
+    <div class="page-header">
+      <div>
+        <div class="page-header-title">👤 Profilo</div>
+        <div class="page-header-sub">Impostazioni e piano personale</div>
+      </div>
+      <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="exportPDF()">📄 PDF</button>
+      </div>
+    </div>
+    <div id="profiloPage"></div>
+  </div>
+
+</main>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     BOTTOM NAV (mobile)
+═════════════════════════════════════════════════════════════════ -->
+<nav class="bottom-nav" id="bottomNav" style="display:none">
+  <div class="app-inner">
+    <button class="nav-tab active" id="bn-piano" onclick="goToPage('piano')">
+      <span class="nav-icon">🍽</span>
+      <span class="nav-label">Oggi</span>
+    </button>
+    <button class="nav-tab" id="bn-piano-alimentare" onclick="goToPage('piano-alimentare')">
+      <span class="nav-icon">🌿</span>
+      <span class="nav-label">Piano</span>
+    </button>
+    <button class="nav-tab" id="bn-dispensa" onclick="goToPage('dispensa')">
+      <span class="nav-icon">🗄️</span>
+      <span class="nav-label">Dispensa</span>
+    </button>
+    <button class="nav-tab" id="bn-ricette" onclick="goToPage('ricette')">
+      <span class="nav-icon">📖</span>
+      <span class="nav-label">Ricette</span>
+    </button>
+    <button class="nav-tab" id="bn-spesa" onclick="goToPage('spesa')">
+      <span class="nav-icon">🛒</span>
+      <span class="nav-label">Spesa</span>
+    </button>
+    <button class="nav-tab" id="bn-statistiche" onclick="goToPage('statistiche')">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Stats</span>
+    </button>
+  </div>
+</nav>
+
+<!-- [REST OF FILE - MODALS AND SCRIPTS - UNCHANGED] -->
+<!-- ═════════════════════════════════════════════════════════════════
+     MODALI
+═════════════════════════════════════════════════════════════════ -->
+
+<!-- Modale: dettaglio ricetta -->
+<div class="modal" id="recipeModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="recipeModalTitle">Ricetta</h2>
+      <button class="modal-close" onclick="closeRecipeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="recipeModalBody"></div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:8px;">
+      <button class="btn btn-secondary" onclick="closeRecipeModal()">Chiudi</button>
+      <button class="btn btn-secondary" onclick="addRecipeIngredientsToSpesa()">🛒 Spesa</button>
+      <button class="btn btn-primary" onclick="addRecipeToPlan()">✅ Piano</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: salva dispensa -->
+<div class="modal" id="saveFridgeModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">💾 Salva dispensa</h2>
+      <button class="modal-close" onclick="closeSaveFridgeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nome configurazione</label>
+        <input type="text" id="fridgeConfigName"
+               placeholder="Es. Frigo lunedì…"
+               onkeydown="if(event.key==='Enter') confirmSaveFridge()">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeSaveFridgeModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="confirmSaveFridge()">💾 Salva</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: frigo salvati -->
+<div class="modal" id="savedFridgeModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">📁 Configurazioni salvate</h2>
+      <button class="modal-close" onclick="closeSavedFridgeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="savedFridgeList">
+      <p class="text-light text-sm">Nessuna configurazione salvata.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: aggiungi al frigo -->
+<div class="modal" id="addFridgeModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">➕ Aggiungi alla dispensa</h2>
+      <button class="modal-close" onclick="closeAddFridge()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Ingrediente</label>
+        <input type="text" id="newFridgeItem"
+               placeholder="Es. Pollo, Latte…"
+               list="ingredientiAutocomplete"
+               autocomplete="off"
+               oninput="populateIngAutocomplete();autoFillFridgeCategory(this.value)"
+               onkeydown="if(event.key==='Enter') confirmAddFridge()">
+      </div>
+      <div class="form-group">
+        <label>Categoria</label>
+        <select id="newFridgeCategory">
+          <option value="">-- Seleziona categoria --</option>
+          <option value="🥩 Carne">🥩 Carne</option>
+          <option value="🐟 Pesce">🐟 Pesce</option>
+          <option value="🥛 Latticini e Uova">🥛 Latticini e Uova</option>
+          <option value="🌾 Cereali e Legumi">🌾 Cereali e Legumi</option>
+          <option value="🥦 Verdure">🥦 Verdure</option>
+          <option value="🍎 Frutta">🍎 Frutta</option>
+          <option value="🥑 Grassi e Condimenti">🥑 Grassi e Condimenti</option>
+          <option value="🍫 Dolci e Snack">🍫 Dolci e Snack</option>
+          <option value="🧂 Cucina">🧂 Cucina</option>
+        </select>
+      </div>
+      <div class="row gap-8">
+        <div class="form-group flex1">
+          <label>Quantità</label>
+          <input type="number" id="newFridgeQty" min="0" step="any"
+                 placeholder="0"
+                 onkeydown="if(event.key==='Enter') confirmAddFridge()">
+        </div>
+        <div class="form-group" style="width:110px">
+          <label>Unità</label>
+          <select id="newFridgeUnit">
+            <option value="g">g</option>
+            <option value="ml">ml</option>
+            <option value="pz">pz</option>
+            <option value="fette">fette</option>
+            <option value="cucchiai">cucchiai</option>
+            <option value="cucchiaini">cucchiaini</option>
+            <option value="porzione">porzione</option>
+            <option value="kg">kg</option>
+            <option value="l">l</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>📅 Data di scadenza <span style="font-size:.8em;color:var(--text-3);">(opzionale)</span></label>
+        <input type="date" id="newFridgeScadenza" style="width:100%;"
+               oninput="_updateAddFridgeSuggLabel()">
+        <small id="newFridgeSuggLabel" style="color:var(--text-3);font-size:.76em;">Lascia vuoto se non applicabile</small>
+      </div>
+      <label style="display:flex;align-items:center;gap:9px;padding:6px 0;cursor:pointer;font-size:.88em;">
+        <input type="checkbox" id="newFridgeFreezer" style="width:16px;height:16px;accent-color:#3b82f6;"
+               onchange="_autoFillFridgeExpiry()">
+        <span>❄️ <strong>In congelatore</strong> — scadenza estesa</span>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeAddFridge()">Annulla</button>
+      <button class="btn btn-primary" onclick="confirmAddFridge()">➕ Aggiungi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: modifica ingrediente frigo -->
+<div class="modal" id="editQtyModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">✏️ Modifica ingrediente</h2>
+      <button class="modal-close" onclick="closeQtyModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Nome ingrediente -->
+      <div class="form-group">
+        <label>Nome ingrediente</label>
+        <input type="text" id="eqmName" 
+               placeholder="Es. Pollo, Latte…"
+               list="ingredientiAutocomplete"
+               autocomplete="off"
+               oninput="populateIngAutocomplete();_updateEditCategory(this.value)"
+               style="width:100%;padding:8px 10px;border-radius:var(--r-md);border:1.5px solid var(--border);
+                      background:var(--bg-subtle);color:var(--text-1);font-size:.9em;box-sizing:border-box;font-weight:600;">
+      </div>
+      
+      <!-- Categoria -->
+      <div class="form-group">
+        <label>Categoria</label>
+        <select id="eqmCategory" style="width:100%;padding:8px 10px;border-radius:var(--r-md);border:1.5px solid var(--border);
+                                       background:var(--bg-subtle);color:var(--text-1);font-size:.9em;box-sizing:border-box;">
+          <option value="">-- Seleziona categoria --</option>
+          <option value="🥩 Carne">🥩 Carne</option>
+          <option value="🐟 Pesce">🐟 Pesce</option>
+          <option value="🥛 Latticini e Uova">🥛 Latticini e Uova</option>
+          <option value="🌾 Cereali e Legumi">🌾 Cereali e Legumi</option>
+          <option value="🥦 Verdure">🥦 Verdure</option>
+          <option value="🍎 Frutta">🍎 Frutta</option>
+          <option value="🥑 Grassi e Condimenti">🥑 Grassi e Condimenti</option>
+          <option value="🍫 Dolci e Snack">🍫 Dolci e Snack</option>
+          <option value="🧂 Cucina">🧂 Cucina</option>
+        </select>
+      </div>
+      
+      <!-- Quantità e unità -->
+      <div class="qty-modal-wrap">
+        <input type="number" id="eqmInput" min="0" step="any" placeholder="0"
+               onkeydown="if(event.key==='Enter') confirmQtyModal();
+                          if(event.key==='Escape') closeQtyModal();">
+        <select id="eqmUnit" style="width:110px">
+          <option value="g">g</option>
+          <option value="ml">ml</option>
+          <option value="pz">pz</option>
+          <option value="fette">fette</option>
+          <option value="cucchiai">cucchiai</option>
+          <option value="cucchiaini">cucchiaini</option>
+          <option value="porzione">porzione</option>
+          <option value="kg">kg</option>
+          <option value="l">l</option>
+        </select>
+      </div>
+      
+      <!-- Scadenza -->
+      <div style="margin-top:14px;">
+        <label style="display:block;font-size:.8em;font-weight:700;color:var(--text-2);margin-bottom:6px;">📅 Data di scadenza (opzionale)</label>
+        <input type="date" id="eqmScadenza"
+               style="width:100%;padding:8px 10px;border-radius:var(--r-md);border:1.5px solid var(--border);
+                      background:var(--bg-subtle);color:var(--text-1);font-size:.9em;box-sizing:border-box;">
+        <small id="eqmSuggLabel" style="color:var(--text-3);font-size:.76em;display:block;margin-top:4px;"></small>
+      </div>
+      <label style="display:flex;align-items:center;gap:9px;padding:10px 0 4px;cursor:pointer;font-size:.88em;">
+        <input type="checkbox" id="eqmFreezer" style="width:16px;height:16px;accent-color:#3b82f6;"
+               onchange="_updateEqmSuggestion()">
+        <span>❄️ <strong>In congelatore</strong></span>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeQtyModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="confirmQtyModal()">✅ Conferma</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: nuova ricetta -->
+<div class="modal" id="newRicettaModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">⭐ Nuova ricetta</h2>
+      <button class="modal-close" onclick="closeNewRicetta()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nome</label>
+        <input type="text" id="newRicettaNome" placeholder="Es. Pasta al pomodoro…">
+      </div>
+      <div class="form-group">
+        <label>Pasto ideale</label>
+        <select id="newRicettaPasto">
+          <option value="colazione">☀️ Colazione</option>
+          <option value="spuntino">🍎 Spuntino</option>
+          <option value="pranzo" selected>🍽 Pranzo</option>
+          <option value="merenda">🥪 Merenda</option>
+          <option value="cena">🌙 Cena</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Ingredienti</label>
+        <div class="ing-add-row">
+          <input type="text" id="newIngName" placeholder="Ingrediente"
+                 list="ingredientiAutocomplete" autocomplete="off" style="flex:2">
+          <input type="number" id="newIngQty" placeholder="Qtà" min="0" step="any" style="flex:1">
+          <select id="newIngUnit" style="flex:1">
+            <option value="g">g</option>
+            <option value="ml">ml</option>
+            <option value="pz">pz</option>
+            <option value="fette">fette</option>
+            <option value="cucchiai">cucchiai</option>
+            <option value="cucchiaini">cucchiaini</option>
+            <option value="porzione">porzione</option>
+            <option value="kg">kg</option>
+            <option value="l">l</option>
+          </select>
+          <button class="btn-add-ing" onclick="addIngToNewRicetta()">＋</button>
+        </div>
+        <div id="newIngList" class="ing-added-list"></div>
+      </div>
+      <div class="form-group">
+        <label>Preparazione</label>
+        <textarea id="newRicettaPrep" placeholder="Descrivi la preparazione…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeNewRicetta()">Annulla</button>
+      <button class="btn btn-primary" onclick="saveNewRicetta()">💾 Salva ricetta</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: quantità acquistata (spesa) -->
+<div class="modal" id="purchasedQtyModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">✅ Quantità acquistata</h2>
+      <button class="modal-close" onclick="closePurchasedQtyModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="text-light text-sm mb-12">
+        Inserisci la quantità acquistata per aggiornare la dispensa automaticamente.
+      </p>
+      <div class="qty-modal-wrap">
+        <input type="number" id="purchasedQtyInput" min="0" step="any" placeholder="0"
+               onkeydown="if(event.key==='Enter') confirmPurchasedQty && confirmPurchasedQty()">
+        <select id="purchasedQtyUnit" style="width:110px">
+          <option value="g">g</option>
+          <option value="ml">ml</option>
+          <option value="pz">pz</option>
+          <option value="fette">fette</option>
+          <option value="cucchiai">cucchiai</option>
+          <option value="cucchiaini">cucchiaini</option>
+          <option value="porzione">porzione</option>
+          <option value="kg">kg</option>
+          <option value="l">l</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePurchasedQtyModal()">Salta</button>
+      <button class="btn btn-primary" onclick="confirmPurchasedQty && confirmPurchasedQty()">✅ Conferma</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: sostituzione ingrediente -->
+<div class="modal" id="substituteModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">↔ Sostituisci ingrediente</h2>
+      <button class="modal-close" onclick="closeSubstituteModal()">✕</button>
+    </div>
+    <div class="modal-body" id="substituteModalBody"></div>
+    <div id="aiSubstituteSection" style="padding:0 16px 12px;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeSubstituteModal()">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: ricetta AI -->
+<div class="modal" id="aiRecipeModal">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">🤖 Genera Ricetta AI</h2>
+        <div class="ai-powered-label">Powered by Google Gemini</div>
+      </div>
+      <button class="modal-close" onclick="closeAIRecipeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="aiRecipeResult" style="max-height:60vh;overflow-y:auto;"></div>
+    <div class="modal-footer" id="aiRecipeFooter"></div>
+  </div>
+</div>
+
+<!-- Modale: aggiungi articolo spesa -->
+<div class="modal" id="spesaItemModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">➕ Aggiungi alla spesa</h2>
+      <button class="modal-close" onclick="closeSpesaItemModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Articolo</label>
+        <input type="text" id="spesaItemName" placeholder="Es. Latte, Pane…"
+               list="ingredientiAutocomplete" autocomplete="off"
+               onkeydown="if(event.key==='Enter') confirmSpesaItem()"
+               oninput="populateIngAutocomplete()">
+      </div>
+      <div class="row gap-8">
+        <div class="form-group flex1">
+          <label>Quantità</label>
+          <input type="number" id="spesaItemQty" min="0" step="any" placeholder="0">
+        </div>
+        <div class="form-group" style="width:110px">
+          <label>Unità</label>
+          <select id="spesaItemUnit">
+            <option value="g">g</option>
+            <option value="ml">ml</option>
+            <option value="pz">pz</option>
+            <option value="fette">fette</option>
+            <option value="cucchiai">cucchiai</option>
+            <option value="porzione">porzione</option>
+            <option value="kg">kg</option>
+            <option value="l">l</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeSpesaItemModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="confirmSpesaItem()">➕ Aggiungi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: quantità acquistata spesa -->
+<div class="modal" id="spesaQtyModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">✅ Quantità acquistata</h2>
+      <button class="modal-close" onclick="closeSpesaQtyModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="text-light text-sm mb-12">
+        Inserisci la quantità acquistata per <strong id="spesaQtyLabel"></strong>
+      </p>
+      <div class="qty-modal-wrap">
+        <input type="number" id="spesaQtyInput" min="0" step="any" placeholder="0"
+               onkeydown="if(event.key==='Enter') confirmSpesaQty()">
+        <select id="spesaQtyUnit" style="width:90px">
+          <option value="g">g</option>
+          <option value="ml">ml</option>
+          <option value="pz">pz</option>
+          <option value="fette">fette</option>
+          <option value="cucchiai">cucchiai</option>
+          <option value="porzione">porzione</option>
+          <option value="kg">kg</option>
+          <option value="l">l</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="skipSpesaQty()">Salta</button>
+      <button class="btn btn-primary" onclick="confirmSpesaQty()">✅ Conferma</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: form nuova/modifica ricetta personalizzata -->
+<div class="modal" id="ricettaFormModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="ricettaFormTitle">⭐ Nuova ricetta</h2>
+      <button class="modal-close" onclick="closeRicettaForm()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nome ricetta</label>
+        <input type="text" id="rfNome" placeholder="Es. Pasta al pomodoro…">
+      </div>
+      <div class="form-group">
+        <label>Pasto ideale</label>
+        <select id="rfPasto">
+          <option value="colazione">☀️ Colazione</option>
+          <option value="spuntino">🍎 Spuntino</option>
+          <option value="pranzo" selected>🍽 Pranzo</option>
+          <option value="merenda">🥪 Merenda</option>
+          <option value="cena">🌙 Cena</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Ingredienti</label>
+        <div id="rfIngredientiList"></div>
+        <button class="btn btn-secondary btn-small" style="margin-top:8px"
+                onclick="addRfIngrediente()">＋ Ingrediente</button>
+      </div>
+      <div class="form-group">
+        <label>Preparazione</label>
+        <textarea id="rfPreparazione" placeholder="Descrivi la preparazione…" rows="4"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeRicettaForm()">Annulla</button>
+      <button class="btn btn-primary" onclick="saveRicettaCustom()">💾 Salva ricetta</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: Privacy Policy -->
+<div class="modal" id="privacyModal">
+  <div class="modal-box" style="max-height:85vh;overflow-y:auto;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">📄 Privacy Policy</h2>
+      <button class="modal-close" onclick="closePrivacyModal()">✕</button>
+    </div>
+    <div class="modal-body" style="font-size:.9em;line-height:1.6;">
+      <p><strong>NutriPlan</strong> — Informativa sulla privacy</p>
+      <p><em>Ultimo aggiornamento: febbraio 2026</em></p>
+
+      <h3 style="margin-top:16px;">1. Dati raccolti</h3>
+      <p>NutriPlan raccoglie esclusivamente i dati che inserisci tu stesso: piano alimentare, ingredienti in dispensa, lista della spesa, storico dei pasti e limiti settimanali.</p>
+      <p>Se scegli di accedere con Google, raccogliamo il nome visualizzato, l'indirizzo email e la foto del profilo forniti da Google.</p>
+
+      <h3 style="margin-top:16px;">2. Come usiamo i dati</h3>
+      <p>I dati vengono utilizzati esclusivamente per il funzionamento dell'app: sincronizzazione tra dispositivi, visualizzazione del piano e delle statistiche. Non vengono mai condivisi con terze parti né utilizzati per pubblicità.</p>
+
+      <h3 style="margin-top:16px;">3. Intelligenza Artificiale (Google Gemini)</h3>
+      <p>Alcune funzioni (generazione ricette, analisi abitudini) utilizzano le API Google Gemini. Per queste funzioni vengono inviati a Google esclusivamente dati aggregati e anonimi (statistiche d'uso, lista ingredienti disponibili): <strong>mai il tuo piano alimentare completo, dati personali identificativi o dati dell'account</strong>. Il trattamento avviene ai sensi della <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy Policy di Google</a>.</p>
+
+      <h3 style="margin-top:16px;">4. Dove vengono salvati</h3>
+      <p>I dati sono salvati localmente nel tuo browser (localStorage) e, se hai effettuato l'accesso con Google, sincronizzati sul tuo account personale tramite Firebase Realtime Database di Google (server in Europa).</p>
+
+      <h3 style="margin-top:16px;">5. Sicurezza</h3>
+      <p>Ogni utente ha accesso esclusivamente ai propri dati. La sicurezza è gestita tramite le regole di Firebase Authentication.</p>
+
+      <h3 style="margin-top:16px;">6. Cancellazione dei dati</h3>
+      <p>Puoi cancellare tutti i tuoi dati in qualsiasi momento dalla sezione Profilo → Impostazioni → Cancella tutti i dati. Per eliminare il tuo account Firebase, contattaci.</p>
+
+      <h3 style="margin-top:16px;">7. Cookie</h3>
+      <p>NutriPlan utilizza cookie tecnici essenziali per il funzionamento e, con il tuo consenso, cookie analitici anonimi per migliorare l'esperienza.</p>
+
+      <h3 style="margin-top:16px;">8. Contatti</h3>
+      <p>Per qualsiasi domanda sulla privacy scrivici tramite la pagina del progetto su GitHub.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closePrivacyModal()">Ho capito ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: quantità ingrediente (Piano Alimentare) -->
+<div class="modal" id="paQtyModal">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="paQtyTitle">＋ Aggiungi ingrediente</h2>
+      <button class="modal-close" onclick="closePAQtyModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.88rem;font-weight:700;margin-bottom:14px;" id="paQtyIngName"></p>
+      <div class="row gap-8">
+        <div class="form-group flex1">
+          <label>Quantità</label>
+          <input type="number" id="paQtyInput" min="0" step="any" placeholder="—">
+        </div>
+        <div class="form-group" style="width:110px">
+          <label>Unità</label>
+          <select id="paQtyUnit">
+            <option value="g">g</option>
+            <option value="ml">ml</option>
+            <option value="pz">pz</option>
+            <option value="fette">fette</option>
+            <option value="cucchiai">cucchiai</option>
+            <option value="cucchiaini">cucchiaini</option>
+            <option value="porzione">porzione</option>
+            <option value="kg">kg</option>
+            <option value="l">l</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePAQtyModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="confirmPAQty()">Aggiungi ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: selezione ingrediente per Piano Alimentare -->
+<div class="modal" id="paIngModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="paIngModalTitle">＋ Aggiungi ingrediente</h2>
+      <button class="modal-close" onclick="closePAIngModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="search-input-wrap" style="margin-bottom:12px;">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="paIngSearch"
+               placeholder="Cerca ingrediente…"
+               oninput="filterPAIngList(this.value)"
+               onsearch="filterPAIngList(this.value)"
+               autocomplete="off">
+      </div>
+      <div id="paIngList" style="max-height:50vh;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePAIngModal()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: ingrediente personalizzato per Piano Alimentare -->
+<div class="modal" id="paCustomIngModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="paCustomIngTitle">＋ Nuovo ingrediente</h2>
+      <button class="modal-close" onclick="closePACustomIngModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nome ingrediente</label>
+        <input type="text" id="paCustomIngName"
+               placeholder="Es. Tempeh, Farro…"
+               list="ingredientiAutocomplete"
+               autocomplete="off">
+      </div>
+      <div class="row gap-8">
+        <div class="form-group flex1">
+          <label>Quantità</label>
+          <input type="number" id="paCustomIngQty" min="0" step="any" placeholder="—">
+        </div>
+        <div class="form-group" style="width:110px">
+          <label>Unità</label>
+          <select id="paCustomIngUnit">
+            <option value="g">g</option>
+            <option value="ml">ml</option>
+            <option value="pz">pz</option>
+            <option value="fette">fette</option>
+            <option value="cucchiai">cucchiai</option>
+            <option value="cucchiaini">cucchiaini</option>
+            <option value="porzione">porzione</option>
+            <option value="kg">kg</option>
+            <option value="l">l</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePACustomIngModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="confirmPACustomIng()">＋ Aggiungi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: aggiungi ingrediente per categoria (dispensa) -->
+<div class="modal" id="addByCatModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="addByCatTitle">➕ Aggiungi ingrediente</h2>
+      <button class="modal-close" onclick="closeAddByCatModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="search-input-wrap" style="margin-bottom:12px;">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="addByCatSearch"
+               placeholder="Cerca ingrediente…"
+               oninput="filterAddByCat(this.value)"
+               onsearch="filterAddByCat(this.value)"
+               autocomplete="off">
+      </div>
+      <div id="addByCatList" style="max-height:50vh;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeAddByCatModal()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: auth / accedi -->
+<div class="modal" id="authModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">Accedi</h2>
+      <button class="modal-close" onclick="closeAuthModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="auth-logo">📲</div>
+      <p class="auth-sub">Sincronizza i tuoi dati su tutti i dispositivi</p>
+      <button class="btn-google" onclick="signInWithGoogle()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+             width="20" height="20" alt="Google">
+        Continua con Google
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: conferma disconnessione -->
+<div class="modal" id="confirmLogoutModal">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">🚪 Disconnessione</h2>
+      <button class="modal-close" onclick="closeConfirmLogoutModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:10px;">Vuoi disconnetterti da NutriPlan?</p>
+      <p style="font-size:.85rem;color:var(--text-3);">I dati locali rimarranno salvati sul dispositivo.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeConfirmLogoutModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="executeSignOut()">🚪 Disconnetti</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: conferma cancellazione dati -->
+<div class="modal" id="confirmDeleteModal">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" style="color:var(--danger);">🗑️ Cancella tutti i dati</h2>
+      <button class="modal-close" onclick="closeConfirmDeleteModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:12px;">Sei sicuro di voler eliminare <strong>tutti i dati</strong> di NutriPlan?</p>
+      <div style="background:color-mix(in srgb,var(--danger) 8%,var(--bg-subtle));border:1px solid color-mix(in srgb,var(--danger) 20%,var(--border));border-radius:var(--r-lg);padding:12px 14px;">
+        <ul style="margin:0;padding-left:18px;font-size:.85rem;line-height:1.7;color:var(--text-2);">
+          <li>Piano alimentare e pasti di oggi</li>
+          <li>Dispensa e quantità ingredienti</li>
+          <li>Storico, ricette personalizzate, lista spesa</li>
+          <li>Tutti i dati su Firebase (cloud)</li>
+        </ul>
+      </div>
+      <p style="font-size:.82rem;color:var(--danger);margin-top:12px;font-weight:700;">⚠️ Questa operazione è irreversibile.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeConfirmDeleteModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="executeDeleteAllData()"
+              style="background:var(--danger);border-color:var(--danger);">🗑️ Elimina tutto</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: scanner barcode -->
+<div class="modal" id="barcodeScannerModal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">📷 Scansiona barcode</h2>
+      <button class="modal-close" onclick="closeBarcodeScanner()">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center;">
+      <p style="font-size:.85rem;color:var(--text-3);margin-bottom:14px;">
+        Inquadra il codice a barre del prodotto con la fotocamera.<br>
+        <span style="font-size:.8rem;">La scansione avviene automaticamente.</span>
+      </p>
+      <div id="barcode-reader-container"
+           style="width:100%;border-radius:var(--r-lg);overflow:hidden;background:#000;min-height:240px;display:flex;align-items:center;justify-content:center;">
+        <span style="color:#fff;font-size:.85rem;">Avvio fotocamera…</span>
+      </div>
+      <div id="barcodeScanStatus"
+           style="margin-top:12px;font-size:.82rem;color:var(--text-3);min-height:1.4em;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeBarcodeScanner()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: risultato barcode -->
+<div class="modal" id="barcodeResultModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">📦 Prodotto trovato</h2>
+      <button class="modal-close" onclick="closeBarcodeResult()">✕</button>
+    </div>
+    <div class="modal-body" id="barcodeResultContent"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeBarcodeResult()">Annulla</button>
+      <button class="btn btn-primary" onclick="confirmBarcodeAdd()">➕ Aggiungi alla dispensa</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     PWA BANNERS
+═════════════════════════════════════════════════════════════════ -->
+<div class="ios-banner" id="iosBanner">
+  <div class="ios-banner-row">
+    <span class="ios-banner-icon">📲</span>
+    <div class="ios-banner-text">
+      <strong>Installa NutriPlan come app</strong>
+      Tocca <strong>⬆️ Condividi</strong> poi <strong>"Aggiungi a schermata Home"</strong>
+    </div>
+    <button class="ios-banner-close" onclick="dismissIosBanner()">✕</button>
+  </div>
+</div>
+
+<div id="installPwaBanner" style="display:none">
+  <span class="install-icon">📲</span>
+  <div class="install-text">
+    <strong>Installa NutriPlan come app</strong>
+    Disponibile per il tuo dispositivo
+  </div>
+  <button class="btn btn-primary btn-small" id="installPwaBtn">Installa</button>
+  <button class="btn-icon-only" onclick="document.getElementById('installPwaBanner').style.display='none'">✕</button>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     UNDO BAR
+═════════════════════════════════════════════════════════════════ -->
+<div class="undo-bar" id="undoBar">
+  <span class="undo-label"></span>
+  <button class="btn btn-primary btn-small" onclick="performUndo()">↩ Annulla</button>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     COOKIE CONSENT BANNER
+═════════════════════════════════════════════════════════════════ -->
+<div class="cookie-banner" id="cookieBanner">
+  <div class="cookie-banner-inner">
+    <div class="cookie-banner-text">
+      <span class="cookie-banner-icon">🍪</span>
+      <div>
+        <strong>Privacy & Cookie</strong>
+        <p>Usiamo cookie tecnici per il funzionamento dell'app e, con il tuo consenso, cookie analitici per migliorare l'esperienza. Nessun dato viene venduto a terzi.</p>
+      </div>
+    </div>
+    <div class="cookie-banner-actions">
+      <button class="btn btn-secondary btn-small" onclick="acceptEssentialCookies()">Solo essenziali</button>
+      <button class="btn btn-primary btn-small"   onclick="acceptAllCookies()">Accetta tutti ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     ONBOARDING — Inserimento piano alimentare
+═════════════════════════════════════════════════════════════════ -->
+<div class="onboarding-overlay" id="onboardingOverlay">
+  <div class="onboarding-box">
+    <div class="onboarding-header">
+      <div>
+        <div class="onboarding-step-label">Passo 1 di 1</div>
+        <h2 class="onboarding-title">🍽 Inserimento piano alimentare</h2>
+        <p class="onboarding-sub">Indica cosa mangi tipicamente ad ogni pasto. Puoi modificarlo in qualsiasi momento dal Profilo.</p>
+      </div>
+    </div>
+
+    <!-- Tabs pasto -->
+    <div class="ob-tabs" id="obTabs"></div>
+
+    <!-- Contenuto dinamico -->
+    <div class="ob-content" id="obContent"></div>
+
+    <!-- Sezione limiti settimanali (facoltativa) -->
+    <div id="obLimitiSection" style="margin-top:16px;"></div>
+
+    <!-- Footer -->
+    <div class="onboarding-footer">
+      <div class="ob-warn-empty" id="obWarnEmpty" style="display:none">
+        ⚠️ Aggiungi almeno un alimento per continuare
+      </div>
+      <div class="onboarding-footer-actions">
+        <button class="btn btn-secondary" onclick="obSkip()">Salta per ora</button>
+        <button class="btn btn-primary"   id="obSaveBtn" onclick="saveOnboardingPlan()" disabled>
+          💾 Salva piano e inizia!
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     WELCOME MODAL — prossimi passaggi
+═════════════════════════════════════════════════════════════════ -->
+<div class="modal" id="welcomeModal">
+  <div class="modal-box welcome-box">
+    <div class="modal-handle"></div>
+    <div class="welcome-header">
+      <div class="welcome-header-icon">🎉</div>
+      <h2 class="welcome-header-title">Piano salvato! Cosa vuoi fare ora?</h2>
+      <p class="welcome-header-sub">Esplora le sezioni dell'app per iniziare il tuo percorso alimentare.</p>
+    </div>
+    <div class="welcome-cards-grid" id="welcomeModalBody"></div>
+    <button class="btn btn-ghost" onclick="closeWelcomeModal()" style="margin-top:12px;width:100%;">
+      Esplora da solo →
+    </button>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     TOAST CONTAINER
+═════════════════════════════════════════════════════════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     DATALIST AUTOCOMPLETE
+═════════════════════════════════════════════════════════════════ -->
+<datalist id="ingredientiAutocomplete"></datalist>
+<datalist id="ingredientiDatalist"></datalist>
 
 <!-- ═════════════════════════════════════════════════════════════════
      SCRIPTS — ordine obbligatorio
-     FIX: piano.js caricato come modulo ES6 per supportare import
+     FIX: piano.js caricato come modulo ES6
 ═════════════════════════════════════════════════════════════════ -->
 <!-- Libreria scanner barcode (html5-qrcode) -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -49,7 +1257,7 @@
 <script src="data.js"></script>
 <script src="storage.js"></script>
 
-<!-- FIX: piano.js come modulo ES6 -->
+<!-- FIX: piano.js come modulo ES6 per supportare import statements -->
 <script type="module" src="piano.js"></script>
 
 <script src="piano_alimentare.js"></script>
