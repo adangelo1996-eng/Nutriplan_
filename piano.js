@@ -4,6 +4,9 @@
    
    FIX: Usa Firebase compat API (db.ref(), snapshot.val(), etc.)
    invece delle modular imports che non funzionano con firebase-compat SDK.
+   
+   FIX: Popola le stub functions create da piano-global.js per compatibilità
+   con gli inline event handlers HTML (oninput, onclick, etc.)
 ══════════════════════════════════════════════════════════════════════════════ */
 
 import { db, auth } from './firebase.js';
@@ -27,14 +30,14 @@ window.dbgWeekRange = () => {
 };
 
 /* ══════════════════════════════════════════════════
-   1A. GLOBAL FUNCTIONS — Esposte IMMEDIATAMENTE al caricamento del modulo
-   FIX: non dentro initPiano() per garantire disponibilità anche prima dell'auth
+   1A. GLOBAL FUNCTIONS — Popola le implementazioni reali nelle stub
+   create da piano-global.js per garantire compatibilità con inline handlers
 ══════════════════════════════════════════════════ */
 _exposeGlobalFunctions();
 
 function _exposeGlobalFunctions() {
   // selectMeal: chiamato dai bottoni pasto in HTML
-  window.selectMeal = function(meal, btnElement) {
+  const selectMealImpl = function(meal, btnElement) {
     selectedMeal = meal;
     
     // Aggiorna UI bottoni
@@ -48,7 +51,7 @@ function _exposeGlobalFunctions() {
   };
   
   // filterOggiIngredients: chiamato dalla barra ricerca in HTML
-  window.filterOggiIngredients = function(query) {
+  const filterOggiIngredientsImpl = function(query) {
     const searchQuery = (query || '').toLowerCase().trim();
     const itemsWrap = document.getElementById('mealItemsWrap');
     if (!itemsWrap) return;
@@ -81,16 +84,16 @@ function _exposeGlobalFunctions() {
   };
   
   // clearOggiSearch: resetta la ricerca
-  window.clearOggiSearch = function() {
+  const clearOggiSearchImpl = function() {
     const input = document.getElementById('oggiSearch');
     if (input) {
       input.value = '';
-      window.filterOggiIngredients('');
+      filterOggiIngredientsImpl('');
     }
   };
 
   // resetPiano: chiamato dal bottone reset nell'HTML
-  window.resetPiano = function() {
+  const resetPianoImpl = function() {
     if (!confirm('Vuoi resettare tutti i pasti di oggi?')) return;
     const u = auth.currentUser; if (!u) return;
     const dayRef = db.ref(`users/${u.uid}/pianoPasto/${currentDate}`);
@@ -102,7 +105,7 @@ function _exposeGlobalFunctions() {
   };
 
   // shiftCalendar: chiamato dai bottoni < > del calendario
-  window.shiftCalendar = function(days) {
+  const shiftCalendarImpl = function(days) {
     const d = new Date(currentDate);
     d.setDate(d.getDate() + days);
     currentDate = d.toISOString().split('T')[0];
@@ -111,11 +114,28 @@ function _exposeGlobalFunctions() {
     _buildDayNotes();
   };
   
-  // Notifica piano-global.js che le funzioni reali sono pronte
-  if (typeof window._markPianoReady === 'function') {
-    window._markPianoReady();
-    console.log('[piano] Funzioni globali sovrascritte - piano.js pronto');
+  // Popola le implementazioni reali nelle stub create da piano-global.js
+  // Questo approccio permette agli inline handlers HTML di funzionare
+  // anche quando il modulo ES6 non è ancora stato caricato (deferred)
+  window._piano_filterOggiIngredients = filterOggiIngredientsImpl;
+  window._piano_clearOggiSearch = clearOggiSearchImpl;
+  window._piano_selectMeal = selectMealImpl;
+  window._piano_resetPiano = resetPianoImpl;
+  window._piano_shiftCalendar = shiftCalendarImpl;
+  
+  // Sovrascrivi le stub con le implementazioni reali
+  window.filterOggiIngredients = filterOggiIngredientsImpl;
+  window.clearOggiSearch = clearOggiSearchImpl;
+  window.selectMeal = selectMealImpl;
+  window.resetPiano = resetPianoImpl;
+  window.shiftCalendar = shiftCalendarImpl;
+  
+  // Processa eventuali chiamate in coda fatte prima che il modulo fosse pronto
+  if (typeof window._processPianoQueue === 'function') {
+    window._processPianoQueue();
   }
+  
+  console.log('[piano] Funzioni globali caricate - piano.js pronto');
 }
 
 export function initPiano() {
