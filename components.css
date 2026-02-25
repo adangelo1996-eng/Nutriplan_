@@ -3,7 +3,7 @@
    Sezioni: 17. Piano Pasto  18. Frigo  19. Ricette
             20. RC-Card  21. Modal  22. Storico
             23. Spesa  24. Statistiche  25. Profilo
-            26. Auth
+            26. Auth  27. Piano Alimentare
 ══════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════
@@ -1181,4 +1181,69 @@
 .profilo-ing-unit:focus {
   border-color: var(--primary);
   outline: none;
+}
+
+/* ══════════════════════════════════════════════════
+   27. PIANO ALIMENTARE
+══════════════════════════════════════════════════ */
+
+/* Bottone Aggiungi nella categoria */
+.pa-cat-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 14px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: all var(--t);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.pa-cat-add-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(61,139,111,.2);
+}
+
+.pa-cat-add-btn:active {
+  transform: translateY(0);
+}
+
+/* Bottone Aggiungi alternativa */
+.pa-add-alt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: var(--bg-subtle);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--r-md);
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: all var(--t);
+  width: 100%;
+  margin-top: 6px;
+}
+
+.pa-add-alt-btn:hover {
+  background: var(--primary-xl);
+  color: var(--primary);
+  border-color: var(--primary-mid);
+  border-style: solid;
+}
+
+.pa-add-alt-btn:active {
+  transform: scale(0.98);
 }
