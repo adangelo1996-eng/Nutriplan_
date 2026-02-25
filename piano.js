@@ -110,6 +110,12 @@ function _exposeGlobalFunctions() {
     _checkDayMeals();
     _buildDayNotes();
   };
+  
+  // Notifica piano-global.js che le funzioni reali sono pronte
+  if (typeof window._markPianoReady === 'function') {
+    window._markPianoReady();
+    console.log('[piano] Funzioni globali sovrascritte - piano.js pronto');
+  }
 }
 
 export function initPiano() {
