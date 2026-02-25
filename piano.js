@@ -1,996 +1,781 @@
-/*
-   PIANO.JS — v8  stile rc-card unificato
-*/
 
-var selectedMeal = 'colazione';
+/* ══════════════════════════════════════════════════════════════════════════════
+   NUTRIPLAN — piano.js
+   Gestione Piano Pasto (con AI + scadenze + Piano Alimentare + ricerca opzione B)
+══════════════════════════════════════════════════════════════════════════════ */
 
-/* ── INIT ── */
-function initMealSelector() {
-  var meals = [
-    { key:'colazione', emoji:'☀️', label:'Colazione' },
-    { key:'spuntino',  emoji:'🍎', label:'Spuntino'  },
-    { key:'pranzo',    emoji:'🍽', label:'Pranzo'    },
-    { key:'merenda',   emoji:'🥪', label:'Merenda'   },
-    { key:'cena',      emoji:'🌙', label:'Cena'      }
+import { db, auth } from './firebase.js';
+import {
+  ref,
+  get,
+  set,
+  update,
+  remove,
+  onValue,
+  push,
+  child
+} from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js';
+import { openRecipeModal } from './ricette.js';
+
+/* ══════════════════════════════════════════════════
+   1. INIT
+══════════════════════════════════════════════════ */
+let currentDate     = new Date().toISOString().split('T')[0];
+let selectedMeal    = 'colazione';
+let allRecipesList  = [];    // tutte le ricette del DB
+let suggestedRecipes= [];    // suggerimenti extra
+let userDiet        = null;  // obj dieta utente
+let frigoData       = [];    // dati frigo
+let paData          = null;  // dati Piano Alimentare
+
+/* DEBUG — per rimuovere YYYY-MM-DD fixati */
+window.dbgWeekRange = () => {
+  const u = auth.currentUser; if (!u) return;
+  const wkRef = ref(db, `users/${u.uid}/weekRange`);
+  remove(wkRef).then(() => console.log('weekRange rimosso'));
+};
+
+export function initPiano() {
+  if (!auth.currentUser) {
+    console.log('[piano] Utente non autenticato, skip init.');
+    return;
+  }
+  console.log('[piano] Init Piano Pasto');
+  _setupCalendar();
+  _loadFrigoData();
+  _loadDietPreferences();
+  _loadRecipes();
+  _buildMealSelector();
+  _renderAddItemRow();
+  _buildDayNotes();
+  _setupAIRecipeGen();
+  _setupAIStatsBtn();
+  _checkDayMeals();
+  _initExpiringSection();
+  _initPianoAlimentare();
+  _setupAIPianoWizardBtn();
+  _initRecipeSearch();  // ← OPZIONE B: barra ricerca ricette
+}
+
+/* ══════════════════════════════════════════════════
+   2. CALENDARIO TIMELINE (left → selected → right)
+══════════════════════════════════════════════════ */
+let pastRange = 3, futureRange = 3;
+
+function _setupCalendar() {
+  const barEl = document.getElementById('calendarBar');
+  if (!barEl) return;
+  _renderCalendarBar();
+  barEl.dataset.listen = 'true';
+}
+
+function _renderCalendarBar() {
+  const bar = document.getElementById('calendarBar');
+  if (!bar) return;
+  bar.innerHTML = '';
+
+  const selDate  = new Date(currentDate);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const today    = new Date(todayStr);
+  const minDate  = new Date(today); minDate.setDate(minDate.getDate() - pastRange);
+  const maxDate  = new Date(today); maxDate.setDate(maxDate.getDate() + futureRange);
+
+  const start = new Date(minDate);
+  const end   = new Date(maxDate);
+  const days  = [];
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
+    days.push(new Date(d));
+  }
+
+  days.forEach(d => {
+    const iso = d.toISOString().split('T')[0];
+    const isActive= (iso === currentDate);
+    const isToday = (iso === todayStr);
+    const isPast  = (d < today && !isToday);
+
+    const dayName = d.toLocaleDateString('it-IT',{weekday:'short'});
+    const dayNum  = d.getDate();
+    const month   = d.toLocaleDateString('it-IT',{month:'short'}).replace('.','');
+
+    // fade: calcola distanza dal selected
+    let distClass = '';
+    if (!isActive && !isToday) {
+      const diffDays = Math.abs(Math.floor((d - selDate)/(1000*60*60*24)));
+      if      (diffDays===1) distClass='cal-d1';
+      else if (diffDays===2) distClass='cal-d2';
+      else if (diffDays===3) distClass='cal-d3';
+      else                   distClass='cal-dfar';
+    }
+
+    const div = document.createElement('div');
+    div.className='cal-day';
+    if (isActive) div.classList.add('active');
+    if (isToday)  div.classList.add('today');
+    if (isPast)   div.classList.add('cal-past');
+    if (distClass) div.classList.add(distClass);
+    div.dataset.date=iso;
+
+    div.innerHTML=`
+      <span class="cal-day-name">${dayName}</span>
+      <span class="cal-day-num">${dayNum}</span>
+      <span class="cal-day-month">${month}</span>
+    `;
+    div.addEventListener('click',()=>{
+      currentDate=iso; 
+      _renderCalendarBar(); 
+      _checkDayMeals(); 
+      _buildDayNotes();
+    });
+    bar.appendChild(div);
+  });
+  // scroll to selected
+  setTimeout(()=>{
+    const active=bar.querySelector('.cal-day.active');
+    if (active) active.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+  },50);
+}
+
+/* ══════════════════════════════════════════════════
+   3. LOAD DATI (frigo, dieta, ricette, PA)
+══════════════════════════════════════════════════ */
+function _loadFrigoData() {
+  const u=auth.currentUser; if (!u) return;
+  const fRef=ref(db,`users/${u.uid}/frigo`);
+  onValue(fRef,snap=>{
+    if (snap.exists()) frigoData=snap.val();
+    else frigoData=[];
+  });
+}
+
+function _loadDietPreferences() {
+  const u=auth.currentUser; if (!u) return;
+  const dietRef=ref(db,`users/${u.uid}/diet`);
+  onValue(dietRef,snap=>{
+    if (snap.exists()) userDiet=snap.val();
+    else userDiet=null;
+  });
+}
+
+function _loadRecipes() {
+  const rRef=ref(db,'recipes');
+  onValue(rRef,snap=>{
+    if (snap.exists()) {
+      const obj=snap.val();
+      allRecipesList=Object.keys(obj).map(k=>({id:k,...obj[k]}));
+    } else {
+      allRecipesList=[];
+    }
+  });
+}
+
+function _initPianoAlimentare() {
+  const u=auth.currentUser; if (!u) return;
+  const paRef=ref(db,`users/${u.uid}/pianoAlimentare`);
+  onValue(paRef,snap=>{
+    paData= snap.exists() ? snap.val() : null;
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   4. SELETTORE PASTO (colazione/pranzo/cena/spuntini)
+══════════════════════════════════════════════════ */
+function _buildMealSelector() {
+  const sel=document.getElementById('mealSelector');
+  if (!sel) return;
+  const u=auth.currentUser; if (!u) return;
+
+  const meals = [
+    {key:'colazione',icon:'☕️',label:'Colazione'},
+    {key:'pranzo',icon:'🍝',label:'Pranzo'},
+    {key:'cena',icon:'🍖',label:'Cena'},
+    {key:'spuntini',icon:'🍪',label:'Spuntini'},
   ];
-  var wrap = document.getElementById('mealSelector');
-  if (!wrap) return;
-  wrap.innerHTML = meals.map(function(m){
-    var a = m.key === selectedMeal ? ' active' : '';
-    return '<button class="rf-pill'+a+'" onclick="selectMeal(\''+m.key+'\',this)">'+
-           m.emoji+' '+m.label+'</button>';
-  }).join('');
-}
 
-function selectMeal(meal, btn) {
-  selectedMeal = meal;
-  /* Aggiorna sia rf-pill che meal-btn */
-  document.querySelectorAll('#mealSelector .rf-pill, #mealSelector .meal-btn').forEach(function(b){ b.classList.remove('active'); });
-  if (btn) btn.classList.add('active');
-  _pianoRicetteFilter = 'base';
-  renderMealItems();
-  renderMealProgress();
-  renderPianoRicette();
-}
+  sel.innerHTML='';
+  const dayRef=ref(db,`users/${u.uid}/pianoPasto/${currentDate}`);
+  get(dayRef).then(snap=>{
+    const data= snap.exists() ? snap.val() : {};
+    meals.forEach(m=>{
+      const items= data[m.key]?.items || [];
+      const cons = data[m.key]?.consumed || [];
+      const totCount=items.length;
+      const consumedCount=cons.length;
 
-/* ── ENTRY POINT ── */
-function renderMealPlan() {
-  ensureDefaultPlan();
-  initMealSelector();
-  renderMealProgress();
-  renderMealItems();
-  renderPianoRicette();
-}
-
-function ensureDefaultPlan() {
-  if (typeof defaultMealPlan === 'undefined') return;
-  /* Non ripristinare i default se l'utente è loggato (dati da Firebase) */
-  if (typeof currentUser !== 'undefined' && currentUser) return;
-  /* Non ripristinare i default se l'utente ha esplicitamente cancellato
-     tutti i dati — il piano deve restare vuoto */
-  if (localStorage.getItem('nutriplan_cleared') === '1') return;
-  var isEmpty = !pianoAlimentare || !Object.keys(pianoAlimentare).some(function(mk){
-    var m = pianoAlimentare[mk] || {};
-    return ['principale','contorno','frutta','extra'].some(function(cat){
-      return Array.isArray(m[cat]) && m[cat].length > 0;
+      const btn=document.createElement('button');
+      btn.className='meal-btn';
+      if (m.key===selectedMeal) btn.classList.add('active');
+      btn.innerHTML=`
+        <div class="meal-btn-icon">${m.icon}</div>
+        <div class="meal-btn-label">${m.label}</div>
+        <div class="meal-btn-count">${consumedCount}/${totCount}</div>
+      `;
+      btn.addEventListener('click',()=>{
+        selectedMeal=m.key; _buildMealSelector(); _checkDayMeals();
+      });
+      sel.appendChild(btn);
     });
   });
-  if (isEmpty) pianoAlimentare = JSON.parse(JSON.stringify(defaultMealPlan));
 }
 
-/* ── PROGRESS ── */
-function renderMealProgress() {
-  var wrap = document.getElementById('mealProgressWrap');
-  if (!wrap) return;
-  var dayData   = getDayData(selectedDateKey);
-  var usedItems = (dayData && dayData.usedItems) ? dayData.usedItems : {};
-  var total = 0, used = 0;
-  ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk){
-    var items = getMealItems(mk);
-    total += items.length;
-    var mUsed = usedItems[mk] || {};
-    items.forEach(function(i){ if (mUsed[i.name]) used++; });
+/* ══════════════════════════════════════════════════
+   5. CHECK E RENDER ITEM PASTO
+══════════════════════════════════════════════════ */
+function _checkDayMeals() {
+  const u=auth.currentUser; if (!u) return;
+  const dayPath=`users/${u.uid}/pianoPasto/${currentDate}`;
+  const dRef=ref(db,dayPath);
+  get(dRef).then(snap=>{
+    const data= snap.exists() ? snap.val() : {};
+    _renderMealItems(data);
   });
-  if (!total) { wrap.innerHTML = ''; return; }
-  var pct = Math.round((used / total) * 100);
-  wrap.innerHTML =
-    '<div class="rc-card" style="padding:14px 18px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-        '<span style="font-size:.85em;color:var(--text-2);">Pasti completati oggi</span>' +
-        '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">'+used+' / '+total+'</span>' +
-      '</div>' +
-      '<div class="rc-progress-track">' +
-        '<div class="rc-progress-fill" style="width:'+pct+'%;background:var(--primary);"></div>' +
-      '</div>' +
-    '</div>';
 }
 
-/* ── MEAL ITEMS ── */
-function getMealItems(meal) {
-  var out = [];
-  if (pianoAlimentare && pianoAlimentare[meal]) {
-    Object.keys(pianoAlimentare[meal]).forEach(function(cat) {
-      var arr = pianoAlimentare[meal][cat];
-      if (Array.isArray(arr)) arr.forEach(function(i) {
-        if (i && i.name) out.push(Object.assign({}, i, { _cat: cat }));
-      });
+function _renderMealItems(data) {
+  const list=document.getElementById('mealItemsList');
+  if (!list) return;
+  list.innerHTML='';
+
+  const items=data[selectedMeal]?.items || [];
+  const cons =data[selectedMeal]?.consumed || [];
+
+  const catMap={
+    '🥩':'Proteine', '🍚':'Carboidrati', '🥑':'Grassi',
+    '🥦':'Verdure', '🍎':'Frutta', '🧀':'Latticini',
+    '🥚':'Uova', '🥤':'Liquidi', '🍫':'Altro'
+  };
+  const grouped={};
+  Object.keys(catMap).forEach(em=>{ grouped[em]=[]; });
+
+  items.forEach((it,idx)=>{
+    const cat= it.categoria || '🍫';
+    if (!grouped[cat]) grouped[cat]=[];
+    grouped[cat].push({...it, origIndex:idx});
+  });
+
+  Object.keys(catMap).forEach(em=>{
+    const arr=grouped[em];
+    if (!arr.length) return;
+    const secDiv=document.createElement('div');
+    secDiv.innerHTML=`<div class="meal-category-title">${em} ${catMap[em]}</div>`;
+    arr.forEach(it=>{
+      const ic= it.categoria || '🍫';
+      const isUsed=cons.includes(it.origIndex);
+      const div=document.createElement('div');
+      div.className='meal-item';
+      if (isUsed) div.classList.add('used');
+
+      let stat='';
+      if (!isUsed) {
+        const avail= _checkAvailability(it.name,it.quantity || 0,it.unit || '');
+        if (avail) stat=`<span class="meal-item-status avail">✓ In frigo</span>`;
+        else       stat=`<span class="meal-item-status missing">✗ Mancante</span>`;
+      }
+
+      div.innerHTML=`
+        <div class="meal-item-icon">${ic}</div>
+        <div class="meal-item-info">
+          <div class="meal-item-name">${it.name}</div>
+          <div class="meal-item-qty">${it.quantity||0} ${it.unit||''}</div>
+          ${stat}
+        </div>
+        <div class="meal-item-actions">
+          <button class="meal-item-btn btn-use-item" onclick="window.pianoModule.consumeItem(${it.origIndex})" 
+            ${isUsed?'disabled':''} title="Consuma">✓</button>
+          <button class="meal-item-btn btn-del-item" onclick="window.pianoModule.delItem(${it.origIndex})" 
+            title="Rimuovi">✕</button>
+        </div>
+      `;
+      secDiv.appendChild(div);
+    });
+    list.appendChild(secDiv);
+  });
+}
+
+function _checkAvailability(ingName,qNeeded,unit) {
+  const norm= s=>s?.toLowerCase().trim()||'';
+  const ingN= norm(ingName); const uN=norm(unit);
+  return frigoData.some(f=>{
+    if (norm(f.name)!==ingN) return false;
+    if (uN && norm(f.unit)!==uN) return false;
+    return (f.quantity||0)>=qNeeded;
+  });
+}
+
+window.pianoModule=window.pianoModule||{};
+window.pianoModule.consumeItem=consumeItem;
+window.pianoModule.delItem=delItem;
+
+function consumeItem(idx) {
+  const u=auth.currentUser; if (!u) return;
+  const cPath=`users/${u.uid}/pianoPasto/${currentDate}/${selectedMeal}/consumed`;
+  const cRef=ref(db,cPath);
+  get(cRef).then(snap=>{
+    let arr=snap.exists() ? snap.val() : [];
+    if (!arr.includes(idx)) arr.push(idx);
+    set(cRef,arr).then(()=>{
+      _checkDayMeals(); _buildMealSelector();
+      console.log('[piano] Item consumato:',idx);
+    });
+  });
+}
+
+function delItem(idx) {
+  if (!confirm('Rimuovere questo ingrediente dal pasto?')) return;
+  const u=auth.currentUser; if (!u) return;
+  const iPath=`users/${u.uid}/pianoPasto/${currentDate}/${selectedMeal}/items`;
+  const iRef=ref(db,iPath);
+  get(iRef).then(snap=>{
+    if (!snap.exists()) return;
+    let arr=snap.val(); arr.splice(idx,1);
+    set(iRef,arr).then(()=>{
+      _checkDayMeals(); _buildMealSelector();
+      console.log('[piano] Item rimosso:',idx);
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   6. ADD ITEM MANUALE (row inline)
+══════════════════════════════════════════════════ */
+function _renderAddItemRow() {
+  const cont=document.getElementById('addItemRow');
+  if (!cont) return;
+  cont.innerHTML=`
+    <select id="addItemCat">
+      <option value="🥩">🥩 Proteine</option>
+      <option value="🍚">🍚 Carboidrati</option>
+      <option value="🥑">🥑 Grassi</option>
+      <option value="🥦">🥦 Verdure</option>
+      <option value="🍎">🍎 Frutta</option>
+      <option value="🧀">🧀 Latticini</option>
+      <option value="🥚">🥚 Uova</option>
+      <option value="🥤">🥤 Liquidi</option>
+      <option value="🍫">🍫 Altro</option>
+    </select>
+    <input type="text" id="addItemName" placeholder="Nome ingrediente" />
+    <input type="number" id="addItemQty" placeholder="Quantità" value="1" style="max-width:80px;" />
+    <input type="text" id="addItemUnit" placeholder="Unità (g,ml…)" style="max-width:80px;" />
+    <button class="btn btn-s btn-primary" onclick="window.pianoModule.addManualItem()">+ Aggiungi</button>
+  `;
+}
+
+window.pianoModule.addManualItem=addManualItem;
+function addManualItem() {
+  const cat= document.getElementById('addItemCat')?.value || '🍫';
+  const name=document.getElementById('addItemName')?.value.trim();
+  const qty= parseFloat(document.getElementById('addItemQty')?.value) || 1;
+  const unit=document.getElementById('addItemUnit')?.value.trim() || '';
+  if (!name) { alert('Inserisci almeno il nome!'); return; }
+
+  const u=auth.currentUser; if (!u) return;
+  const iPath=`users/${u.uid}/pianoPasto/${currentDate}/${selectedMeal}/items`;
+  const iRef=ref(db,iPath);
+  get(iRef).then(snap=>{
+    let arr=snap.exists()? snap.val():[];
+    arr.push({name,quantity:qty,unit,categoria:cat});
+    set(iRef,arr).then(()=>{
+      _checkDayMeals(); _buildMealSelector();
+      document.getElementById('addItemName').value='';
+      document.getElementById('addItemQty').value='1';
+      document.getElementById('addItemUnit').value='';
+      console.log('[piano] Item manuale aggiunto:',name);
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   7. NOTE GIORNO
+══════════════════════════════════════════════════ */
+function _buildDayNotes() {
+  const noteEl=document.getElementById('dayNotesText');
+  if (!noteEl) return;
+  const u=auth.currentUser; if (!u) return;
+  const nPath=`users/${u.uid}/pianoPasto/${currentDate}/notes`;
+  const nRef=ref(db,nPath);
+  get(nRef).then(snap=>{
+    noteEl.value= snap.exists() ? snap.val() : '';
+  });
+  noteEl.removeEventListener('blur',_saveNotes);
+  noteEl.addEventListener('blur',_saveNotes);
+}
+
+function _saveNotes() {
+  const noteEl=document.getElementById('dayNotesText');
+  if (!noteEl) return;
+  const u=auth.currentUser; if (!u) return;
+  const nPath=`users/${u.uid}/pianoPasto/${currentDate}/notes`;
+  const nRef=ref(db,nPath);
+  set(nRef, noteEl.value.trim()).then(()=>console.log('[piano] Note salvate.'));
+}
+
+/* ══════════════════════════════════════════════════
+   8. RICETTE SUGGERITE — visualizza ricette filtrate
+   (Opzione B: con ricerca + ordinamento disponibilità)
+══════════════════════════════════════════════════ */
+
+// ═══ OPZIONE B: RICERCA CON CONTATORE DISPONIBILITÀ ═══
+let searchQuery = '';
+
+function _initRecipeSearch() {
+  const searchBar = document.getElementById('recipeSearchBar');
+  if (!searchBar) {
+    // crea dinamicamente la barra di ricerca sopra la griglia
+    const cont = document.getElementById('suggestedRecipesDiv');
+    if (!cont) return;
+    
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText='margin-bottom:14px;';
+    wrapper.innerHTML=`
+      <input type="text" id="recipeSearchBar" class="form-control" 
+        placeholder="🔍 Cerca ricette per nome o ingrediente..." 
+        style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--r-lg);font-size:.88rem;">
+    `;
+    cont.insertBefore(wrapper, cont.firstChild);
+  }
+  
+  const bar = document.getElementById('recipeSearchBar');
+  if (bar) {
+    bar.addEventListener('input', (e)=>{
+      searchQuery = e.target.value.toLowerCase().trim();
+      _renderSuggestedRecipes();
     });
   }
-  return out;
 }
 
-function renderMealItems() {
-  var el = document.getElementById('mealItemsWrap');
-  if (!el) return;
-  var items    = getMealItems(selectedMeal);
-  var dayData  = getDayData(selectedDateKey);
-  var usedMap  = (dayData && dayData.usedItems && dayData.usedItems[selectedMeal]) ? dayData.usedItems[selectedMeal] : {};
-  var subsMap  = (dayData && dayData.substitutions && dayData.substitutions[selectedMeal]) ? dayData.substitutions[selectedMeal] : {};
-  var mealColor = { colazione:'#f59e0b', spuntino:'#10b981', pranzo:'#3d8b6f', merenda:'#8b5cf6', cena:'#3b82f6' }[selectedMeal] || 'var(--primary)';
+function _renderSuggestedRecipes() {
+  const cont=document.getElementById('suggestedRecipesDiv');
+  if (!cont) return;
+  
+  // trova griglia o creala
+  let grid = cont.querySelector('.rc-grid');
+  if (!grid) {
+    grid = document.createElement('div');
+    grid.className='rc-grid';
+    cont.appendChild(grid);
+  }
+  grid.innerHTML='';
 
-  if (!items.length) {
-    el.innerHTML =
-      '<div class="rc-empty">' +
-        '<div style="font-size:2rem;">🍽</div>' +
-        '<p>Nessun alimento impostato per questo pasto.</p>' +
-      '</div>';
+  let filteredList = allRecipesList.slice();
+
+  // 1) FILTRO DIETA
+  if (userDiet?.enabled) {
+    const ex = userDiet.excluded || [];
+    const all= userDiet.allergens || [];
+    filteredList = filteredList.filter(r=>{
+      const tags=(r.tags||'').toLowerCase();
+      if (ex.some(e=>tags.includes(e.toLowerCase()))) return false;
+      const ings=(r.ingredients||[]).map(i=>i.name?.toLowerCase()||'');
+      if (all.some(a=>ings.some(ing=>ing.includes(a.toLowerCase())))) return false;
+      return true;
+    });
+  }
+
+  // 2) FILTRO PASTO
+  filteredList=filteredList.filter(r=> {
+    const pm=(r.pasto||'').toLowerCase();
+    if (selectedMeal==='spuntini') return pm.includes('spuntin');
+    return pm.includes(selectedMeal);
+  });
+
+  // 3) FILTRO RICERCA
+  if (searchQuery) {
+    filteredList = filteredList.filter(r=> {
+      const name = (r.name || '').toLowerCase();
+      if (name.includes(searchQuery)) return true;
+      
+      const ings = (r.ingredients || []).map(i=>(i.name||'').toLowerCase());
+      return ings.some(ing=>ing.includes(searchQuery));
+    });
+  }
+
+  // 4) ORDINA PER DISPONIBILITÀ + calcola contatore
+  const scored = filteredList.map(r=>{
+    const ings = r.ingredients || [];
+    let available=0, missing=0;
+    ings.forEach(ing=>{
+      const avail=_checkAvailability(ing.name, ing.quantity||0, ing.unit||'');
+      if (avail) available++; else missing++;
+    });
+    const total=ings.length||1;
+    const pct= (available/total)*100;
+    return { recipe:r, available, missing, total, pct };
+  });
+
+  // Ordina: 100% → 99% → … → 0%
+  scored.sort((a,b)=> b.pct - a.pct);
+
+  if (scored.length===0) {
+    grid.innerHTML=`
+      <div class="rc-empty">
+        <div class="rc-empty-icon">🍽️</div>
+        <div class="rc-empty-title">Nessuna ricetta</div>
+        <div class="rc-empty-text">
+          ${searchQuery ? 'Nessun risultato per questa ricerca.' : 'Nessuna ricetta trovata per questo pasto.'}
+        </div>
+      </div>
+    `;
     return;
   }
 
-  /* ── Sezione "già consumati" compatta ── */
-  var dayData2  = getDayData(selectedDateKey);
-  var ricetteMap = (dayData2 && dayData2.ricette && dayData2.ricette[selectedMeal]) ? dayData2.ricette[selectedMeal] : {};
-  var consumedNames = Object.keys(usedMap).filter(function(k){ return usedMap[k]; });
-  var ricetteNames  = Object.keys(ricetteMap).filter(function(k){ return ricetteMap[k]; });
-  var consumedHtml = '';
-  if (consumedNames.length || ricetteNames.length) {
-    var chips = consumedNames.map(function(n){
-      return '<span class="consumed-chip">✅ ' + n + '</span>';
-    }).join('') + ricetteNames.map(function(n){
-      return '<span class="consumed-chip consumed-chip-recipe">🍽 ' + n + '</span>';
-    }).join('');
-    consumedHtml =
-      '<div class="consumed-bar">' +
-        '<span class="consumed-bar-label">Già consumati:</span>' +
-        chips +
-      '</div>';
-  }
+  scored.forEach(s=>{
+    const r= s.recipe;
+    const card=document.createElement('div');
+    card.className='rc-card';
+    card.style.setProperty('--cc',_mealColor(r.pasto||''));
 
-  /* ── Pulsante Genera Ricetta AI ── */
-  var aiBtn =
-    '<div style="margin-bottom:10px;">' +
-      '<button class="ai-recipe-btn" onclick="openAIRecipeModal(\'oggi\')">' +
-        '🤖 Genera ricetta AI con questi ingredienti' +
-        '<span class="ai-powered-label">Powered by Gemini</span>' +
-      '</button>' +
-    '</div>';
+    // BADGE disponibilità: colori basati su pct
+    let badgeClass='badge-grey', badgeText=`${s.available}/${s.total}`;
+    if (s.pct===100) { badgeClass='badge-ok';   badgeText=`✓ Tutto disponibile`; }
+    else if (s.pct>=50) { badgeClass='badge-warn'; badgeText=`${s.available}/${s.total} disponibile`; }
+    else { badgeClass='badge-grey'; badgeText=`${s.available}/${s.total} disponibile`; }
 
-  el.innerHTML = consumedHtml + aiBtn + items.map(function(item){
-    var used    = usedMap[item.name] ? true : false;
-    var subName = subsMap[item.name] || null;
-    var display = subName || item.name;
-    var qty     = item.quantity ? item.quantity + ' ' + (item.unit||'g') : '';
-    var inFridge = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[display] && (pantryItems[display].quantity||0) > 0);
-    var dot     = inFridge
-      ? '<span style="color:var(--success);font-size:.9em;">✔</span>'
-      : '<span style="color:var(--text-3);font-size:.9em;">○</span>';
-    var usedCls = used ? ' style="opacity:.45;text-decoration:line-through;"' : '';
-
-    /* Controlla se l'ingrediente o la sua alternativa è già stata consumata di recente */
-    var alreadyBadge = '';
-    var today = new Date();
-    var todayKey = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
-    if (typeof appHistory !== 'undefined' && appHistory) {
-      var checkNames = [item.name];
-      if (subName) checkNames.push(subName);
-      var recentDaysAgo = null;
-      var recentWhat = '';
-      Object.keys(appHistory).sort(function(a,b){ return b.localeCompare(a); }).slice(0, 14).forEach(function(dk){
-        if (recentDaysAgo !== null) return;
-        if (dk === todayKey) return;
-        var hd = appHistory[dk];
-        if (!hd) return;
-        var d1 = new Date(dk.replace(/-/g,'/')), d2 = new Date(todayKey.replace(/-/g,'/'));
-        var diffDays = Math.round((d2 - d1) / 86400000);
-        ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk){
-          if (recentDaysAgo !== null) return;
-          var dayUsed = (hd.usedItems && hd.usedItems[mk]) ? hd.usedItems[mk] : {};
-          var daySubs = (hd.substitutions && hd.substitutions[mk]) ? hd.substitutions[mk] : {};
-          checkNames.forEach(function(nm){
-            if (recentDaysAgo !== null) return;
-            if (dayUsed[nm]) { recentDaysAgo = diffDays; recentWhat = nm; }
-            Object.keys(daySubs).forEach(function(orig){
-              if (recentDaysAgo !== null) return;
-              if (daySubs[orig] === nm) { recentDaysAgo = diffDays; recentWhat = nm + ' (alt.)'; }
-            });
-          });
-        });
-      });
-      if (recentDaysAgo !== null) {
-        var label = recentDaysAgo === 1 ? 'ieri' : recentDaysAgo + ' gg fa';
-        alreadyBadge = '<span class="already-selected-badge" title="Selezionato: ' + recentWhat + '">' +
-          '⏱ ' + label + '</span>';
-      }
-    }
-
-    /* Pulsanti azione: ✅ solo se in dispensa, altrimenti 🗄️ e 🛒 */
-    var actionBtns;
-    if (used) {
-      actionBtns = '<button class="rc-btn-icon" title="Annulla" onclick="toggleUsedItem(\''+escQ(item.name)+'\')">↩</button>';
-    } else if (inFridge) {
-      actionBtns = '<button class="rc-btn-icon" title="Segna consumato" onclick="toggleUsedItem(\''+escQ(item.name)+'\')">✅</button>';
-    } else {
-      actionBtns =
-        '<button class="rc-btn-icon" title="Aggiungi in dispensa" style="font-size:.7em;padding:4px 6px;" ' +
-                'onclick="openAddFridgePrecompiled(\''+escQ(display)+'\')">🗄️</button>' +
-        '<button class="rc-btn-icon" title="Aggiungi alla spesa" style="font-size:.7em;padding:4px 6px;" ' +
-                'onclick="pianoAddToSpesa(\''+escQ(display)+'\',\''+escQ(item.quantity||'')+'\',\''+escQ(item.unit||'g')+'\')">🛒</button>';
-    }
-
-    return '<div class="rc-card" style="margin-bottom:8px;">' +
-      '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;">' +
-        dot +
-        '<span'+usedCls+' style="flex:1;font-weight:500;font-size:.93em;">'+display+'</span>' +
-        alreadyBadge +
-        (qty ? '<span class="rc-badge" style="font-size:.72em;">'+qty+'</span>' : '') +
-        (subName ? '<span class="rc-badge" style="background:#fff3cd;color:#856404;font-size:.7em;">↔</span>' : '') +
-        '<div style="display:flex;gap:4px;">' +
-          actionBtns +
-          '<button class="rc-btn-icon" title="Sostituisci" onclick="openSubstituteModal(\''+escQ(item.name)+'\')">↔</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
+    card.innerHTML=`
+      <div class="rc-card-head">
+        <div class="rc-icon-wrap">${_mealEmoji(r.pasto||'')}</div>
+        <div class="rc-info">
+          <div class="rc-name">${r.name||'Senza nome'}</div>
+          <div class="rc-meta">
+            <span class="rc-pasto">${r.pasto||'Vario'}</span>
+            <span class="rc-badge ${badgeClass}">${badgeText}</span>
+          </div>
+        </div>
+        <div class="rc-chevron">▼</div>
+      </div>
+      <div class="rc-card-body">
+        <div class="rc-accordion">
+          <div class="rc-accordion-inner">
+            <ul class="rc-acc-list">
+              ${(r.ingredients||[]).map(i=>{
+                const ok=_checkAvailability(i.name,i.quantity||0,i.unit||'');
+                return `<li class="rc-acc-item ${ok?'ok':''}">
+                  <span class="rc-acc-dot"></span>
+                  <span class="rc-acc-name">${i.name}</span>
+                  <span class="rc-acc-qty">${i.quantity||0} ${i.unit||''}</span>
+                </li>`;
+              }).join('')}
+            </ul>
+            <button class="btn btn-s btn-primary" onclick="window.pianoModule.addRecipe('${r.id}')">
+              + Aggiungi al Pasto
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    card.querySelector('.rc-card-head').addEventListener('click',()=>{
+      card.classList.toggle('open');
+    });
+    grid.appendChild(card);
+  });
 }
 
-/* ── USED / SUBSTITUTE ── */
-function toggleUsedItem(name) {
-  if (!selectedDateKey) return;
-  if (typeof pushUndo === 'function') pushUndo('Segna ' + name);
-  if (!appHistory[selectedDateKey]) appHistory[selectedDateKey] = { usedItems:{}, substitutions:{} };
-  var day = appHistory[selectedDateKey];
-  if (!day.usedItems) day.usedItems = {};
-  if (!day.usedItems[selectedMeal]) day.usedItems[selectedMeal] = {};
-  var cur = day.usedItems[selectedMeal][name];
-  
-  /* Verifica se la data selezionata è oggi */
-  var today = new Date();
-  var todayKey = formatDateKey(today);
-  var isToday = selectedDateKey === todayKey;
-  
-  if (cur) {
-    delete day.usedItems[selectedMeal][name];
-  } else {
-    day.usedItems[selectedMeal][name] = true;
-    
-    /* Riduci dispensa SOLO se selectedDateKey è oggi */
-    if (isToday) {
-      var subs = day.substitutions && day.substitutions[selectedMeal] && day.substitutions[selectedMeal][name];
-      var consumed = subs || name;
-      if (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[consumed]) {
-        var item = getMealItems(selectedMeal).find(function(i){ return i.name === name; });
-        if (item && item.quantity) {
-          pantryItems[consumed].quantity = Math.max(0, (pantryItems[consumed].quantity||0) - parseFloat(item.quantity));
-        }
-      }
-    }
-  }
-  saveData();
-  renderMealItems();
-  renderMealProgress();
-  if (typeof renderFridge === 'function') renderFridge();
+function _mealEmoji(pm='') {
+  const m=pm.toLowerCase();
+  if (m.includes('colaz')) return '☕️';
+  if (m.includes('pranzo')) return '🍝';
+  if (m.includes('cena')) return '🍖';
+  if (m.includes('spunti')) return '🍪';
+  return '🍽️';
+}
+function _mealColor(pm='') {
+  const m=pm.toLowerCase();
+  if (m.includes('colaz')) return '#f59e0b';
+  if (m.includes('pranzo')) return '#3b82f6';
+  if (m.includes('cena')) return '#8b5cf6';
+  if (m.includes('spunti')) return '#ec4899';
+  return '#6b7280';
 }
 
-/* Gruppi macro-compatibili per le sostituzioni */
-var MACRO_COMPATIBLE_GROUPS = [
-  ['🥩 Carne', '🐟 Pesce', '🥩 Carne e Pesce'], /* compat */
-  ['🥛 Latticini e Uova'],
-  ['🌾 Cereali e Legumi'],
-  ['🥦 Verdure'],
-  ['🍎 Frutta'],
-  ['🥑 Grassi e Condimenti'],
-  ['🍫 Dolci e Snack']
-];
+window.pianoModule.addRecipe=addRecipe;
+function addRecipe(recipeId) {
+  const r= allRecipesList.find(x=>x.id===recipeId);
+  if (!r) { alert('Ricetta non trovata.'); return; }
 
-function _getSameGroup(cat) {
-  for (var i = 0; i < MACRO_COMPATIBLE_GROUPS.length; i++) {
-    if (MACRO_COMPATIBLE_GROUPS[i].indexOf(cat) !== -1) return MACRO_COMPATIBLE_GROUPS[i];
-  }
-  return null;
-}
+  const ings= r.ingredients || [];
+  if (!ings.length) { alert('Ricetta senza ingredienti.'); return; }
 
-/* Nome ingrediente corrente per la modal sostituzione */
-var _subCurrentName = '';
-
-function openSubstituteModal(name) {
-  _subCurrentName = name;
-
-  /* Trova la categoria dell'ingrediente da sostituire */
-  var origCat = null;
-  if (typeof defaultIngredients !== 'undefined') {
-    var def = defaultIngredients.find(function(d){ return d.name === name; });
-    if (def) origCat = def.category || null;
-  }
-  if (!origCat && typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) {
-    origCat = pantryItems[name].category || null;
-  }
-  var compatGroup = origCat ? _getSameGroup(origCat) : null;
-
-  /* === 1. Ingredienti IN DISPENSA (qty > 0), stessa categoria === */
-  var inFridge = (typeof pantryItems !== 'undefined' && pantryItems)
-    ? Object.keys(pantryItems).filter(function(k){
-        if (!k || !pantryItems[k] || (pantryItems[k].quantity||0) <= 0 || k === name) return false;
-        if (compatGroup) {
-          var kCat = pantryItems[k].category || null;
-          if (!kCat && typeof defaultIngredients !== 'undefined') {
-            var kDef = defaultIngredients.find(function(d){ return d.name === k; });
-            if (kDef) kCat = kDef.category || null;
-          }
-          return compatGroup.indexOf(kCat) !== -1;
-        }
-        return true;
-      })
-    : [];
-
-  /* === 2. Suggerimenti dal piano alimentare dell'utente, stessa categoria === */
-  var planSuggestions = [];
-  var seenPlan = {};
-  seenPlan[name] = true;
-  inFridge.forEach(function(k){ seenPlan[k] = true; });
-
-  if (typeof pianoAlimentare !== 'undefined' && pianoAlimentare) {
-    ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk){
-      var mp = pianoAlimentare[mk] || {};
-      Object.keys(mp).forEach(function(cat){
-        var arr = mp[cat];
-        if (!Array.isArray(arr)) return;
-        arr.forEach(function(item){
-          if (!item || !item.name || seenPlan[item.name]) return;
-          var iCat = null;
-          if (typeof defaultIngredients !== 'undefined') {
-            var iDef = defaultIngredients.find(function(d){ return d.name === item.name; });
-            if (iDef) iCat = iDef.category || null;
-          }
-          if (!iCat && typeof pantryItems !== 'undefined' && pantryItems && pantryItems[item.name]) {
-            iCat = pantryItems[item.name].category || null;
-          }
-          var ok = compatGroup ? (iCat && compatGroup.indexOf(iCat) !== -1) : true;
-          if (ok) {
-            seenPlan[item.name] = true;
-            planSuggestions.push(item.name);
-          }
-        });
+  const u=auth.currentUser; if (!u) return;
+  const iPath=`users/${u.uid}/pianoPasto/${currentDate}/${selectedMeal}/items`;
+  const iRef=ref(db,iPath);
+  get(iRef).then(snap=>{
+    let arr=snap.exists()? snap.val():[];
+    ings.forEach(ing=>{
+      arr.push({
+        name:ing.name,
+        quantity:ing.quantity||0,
+        unit:ing.unit||'',
+        categoria:ing.categoria||'🍫'
       });
     });
-  }
-
-  /* === 3. Suggerimenti da defaultIngredients, stessa categoria === */
-  var dbSuggestions = [];
-  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients) && origCat) {
-    defaultIngredients.forEach(function(i){
-      if (!i || !i.name || seenPlan[i.name]) return;
-      var ok = compatGroup ? compatGroup.indexOf(i.category) !== -1 : i.category === origCat;
-      if (ok) {
-        seenPlan[i.name] = true;
-        dbSuggestions.push(i.name);
-      }
+    set(iRef,arr).then(()=>{
+      _checkDayMeals(); _buildMealSelector(); _renderSuggestedRecipes();
+      console.log('[piano] Ricetta aggiunta:',r.name);
+      alert(`Ricetta "${r.name}" aggiunta al pasto!`);
     });
-  }
-
-  /* === Build HTML === */
-  var html = '<div style="margin-bottom:12px;font-weight:600;font-size:1em;">Sostituisci: <em>' + name + '</em></div>';
-  if (origCat) {
-    html += '<div style="font-size:.78em;color:var(--text-3);margin-bottom:14px;">Categoria: ' + origCat + '</div>';
-  }
-
-  /* Sezione 1: in dispensa */
-  if (inFridge.length) {
-    html += '<div style="font-size:.82em;font-weight:700;color:var(--primary);margin-bottom:8px;">✔ Disponibili in dispensa</div>';
-    html += inFridge.map(function(k){
-      return '<button class="sub-opt-btn sub-opt-available" onclick="applySubstitute(\'' + escQ(name) + '\',\'' + escQ(k) + '\')">' +
-               k + '<span class="rc-badge" style="margin-left:8px;background:var(--success-light,#dcfce7);color:var(--success,#16a34a);">in dispensa</span>' +
-             '</button>';
-    }).join('');
-  }
-
-  /* Sezione 2: suggerimenti dal piano */
-  var allSuggestions = planSuggestions.concat(dbSuggestions).slice(0, 8);
-  if (allSuggestions.length) {
-    html += '<div style="font-size:.82em;font-weight:700;color:var(--text-2);margin:14px 0 8px;">💡 Suggerimenti compatibili</div>';
-    html += allSuggestions.map(function(sName){
-      return '<div class="sub-opt-suggestion">' +
-               '<span class="sub-opt-name">' + sName + '</span>' +
-               '<div class="sub-opt-actions">' +
-                 '<button class="btn btn-secondary btn-small" title="Aggiungi alla spesa" ' +
-                         'onclick="subAddToSpesa(\'' + escQ(sName) + '\')">🛒 Spesa</button>' +
-                 '<button class="btn btn-secondary btn-small" title="Aggiungi in dispensa" ' +
-                         'onclick="subAddToDispensa(\'' + escQ(name) + '\',\'' + escQ(sName) + '\')">🗄️ Dispensa</button>' +
-               '</div>' +
-             '</div>';
-    }).join('');
-  }
-
-  if (!inFridge.length && !allSuggestions.length) {
-    html += '<p style="color:var(--text-3);font-size:.9em;padding:8px 0;">Nessun ingrediente compatibile trovato nel piano.</p>';
-  }
-
-  var body  = document.getElementById('substituteModalBody');
-  var modal = document.getElementById('substituteModal');
-  if (body)  body.innerHTML  = html;
-  if (modal) modal.classList.add('active');
-
-  /* ── Suggerimenti AI — pulsante manuale, non auto-start ── */
-  var aiSection = document.getElementById('aiSubstituteSection');
-  if (aiSection && typeof getAISubstituteSuggestions === 'function') {
-    var nameEsc    = escQ(name);
-    var origCatEsc = escQ(origCat || '');
-    aiSection.innerHTML =
-      '<div style="border-top:1px solid var(--border);padding-top:12px;">' +
-        '<div style="font-size:.82em;font-weight:700;color:var(--primary);margin-bottom:8px;">🤖 Suggerimenti AI</div>' +
-        '<button class="ai-recipe-btn" style="padding:8px 14px;font-size:.84em;" ' +
-                'onclick="_triggerAISubstitute(\'' + nameEsc + '\',\'' + origCatEsc + '\')">' +
-          '✨ Genera suggerimenti AI' +
-          '<span class="ai-powered-label">Powered by Gemini</span>' +
-        '</button>' +
-        '<div id="aiSubstResults"></div>' +
-      '</div>';
-  } else if (aiSection) {
-    aiSection.innerHTML = '';
-  }
+  });
 }
 
-/* Avvia la generazione AI per le sostituzioni (chiamata solo al click) */
-function _triggerAISubstitute(name, origCat) {
-  var resultsEl = document.getElementById('aiSubstResults');
-  if (!resultsEl) return;
-  resultsEl.innerHTML = '<div class="ai-loading"><span class="ai-spinner"></span> Analisi in corso…</div>';
-  /* Nasconde il pulsante di trigger */
-  var btn = resultsEl.previousElementSibling;
-  if (btn) btn.style.display = 'none';
-  getAISubstituteSuggestions(name, origCat || null, function(suggestions, err) {
-    if (!resultsEl) return;
-    if (err || !suggestions || !suggestions.length) {
-      resultsEl.innerHTML = '<span style="color:var(--text-3);font-size:.85em;">' +
-        (err || 'Nessun suggerimento AI disponibile') + '</span>';
+/* ══════════════════════════════════════════════════
+   9. AI — GENERA RICETTA CON GEMINI
+══════════════════════════════════════════════════ */
+function _setupAIRecipeGen() {
+  const btn=document.getElementById('aiRecipeBtn');
+  const modal=document.getElementById('aiRecipeModal');
+  const closeBtn=modal?.querySelector('.modal-close');
+  const genBtn=document.getElementById('aiGenRecipeBtn');
+  const resDiv=document.getElementById('aiRecipeResult');
+
+  if (!btn||!modal) return;
+  btn.addEventListener('click',()=>{ modal.classList.add('active'); });
+  closeBtn?.addEventListener('click',()=>{ modal.classList.remove('active'); });
+
+  genBtn?.addEventListener('click',async()=>{
+    const ingInput=document.getElementById('aiRecipeInput')?.value.trim();
+    if (!ingInput) { alert('Inserisci almeno qualche ingrediente!'); return; }
+    resDiv.innerHTML=`<div class="ai-loading"><div class="ai-spinner"></div>Gemini sta creando la ricetta…</div>`;
+
+    const prompt=`Crea una ricetta italiana per ${selectedMeal}, usando questi ingredienti: ${ingInput}. 
+Rispondi in Markdown. Titolo ##, ingredienti lista, preparazione lista numerata. Max 300 parole.`;
+
+    try {
+      const key='AIzaSyATILu4OjZ8PUzkPwgFBY5eMcV2OkTmk-E';
+      const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+      const body={ contents:[{ parts:[{text:prompt}] }] };
+      const res= await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const data=await res.json();
+      const txt=data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta da Gemini.';
+      resDiv.innerHTML=`<div class="ai-recipe-text">${_parseMarkdown(txt)}</div>`;
+    } catch (err) {
+      resDiv.innerHTML=`<p style="color:var(--danger);">Errore: ${err.message}</p>`;
+    }
+  });
+}
+
+function _parseMarkdown(md) {
+  let h= md.replace(/^## (.+)$/gm,'<h2 class="ai-h2">$1</h2>');
+  h= h.replace(/^### (.+)$/gm,'<h3 class="ai-h3">$1</h3>');
+  h= h.replace(/^#### (.+)$/gm,'<h4 class="ai-h4">$1</h4>');
+  h= h.replace(/^\* (.+)$/gm,'<li class="ai-li">$1</li>');
+  h= h.replace(/^\d+\. (.+)$/gm,'<li class="ai-li-num">$1</li>');
+  h= h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  h= h.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  h= h.replace(/\n/g,'<br/>');
+  return h;
+}
+
+/* ══════════════════════════════════════════════════
+   10. AI STATS — Analisi settimanale con Gemini
+══════════════════════════════════════════════════ */
+function _setupAIStatsBtn() {
+  const btn=document.getElementById('aiStatsBtn');
+  const modal=document.getElementById('aiStatsModal');
+  const closeBtn=modal?.querySelector('.modal-close');
+  const resDiv=document.getElementById('aiStatsResult');
+
+  if (!btn||!modal) return;
+  btn.addEventListener('click',async()=>{
+    modal.classList.add('active');
+    resDiv.innerHTML=`<div class="ai-loading"><div class="ai-spinner"></div>Gemini sta analizzando i tuoi dati…</div>`;
+
+    const weekData= await _gatherWeekData();
+    const prompt=`Analizza questi dati nutrizionali settimanali:\n${JSON.stringify(weekData)}\n
+Rispondi in italiano, formato Markdown. Max 250 parole.`;
+
+    try {
+      const key='AIzaSyATILu4OjZ8PUzkPwgFBY5eMcV2OkTmk-E';
+      const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+      const body={ contents:[{ parts:[{text:prompt}] }] };
+      const res= await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const data=await res.json();
+      const txt=data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta.';
+      resDiv.innerHTML=`<div class="ai-recipe-text">${_parseMarkdown(txt)}</div>`;
+    } catch (err) {
+      resDiv.innerHTML=`<p style="color:var(--danger);">Errore: ${err.message}</p>`;
+    }
+  });
+  closeBtn?.addEventListener('click',()=>{ modal.classList.remove('active'); });
+}
+
+async function _gatherWeekData() {
+  const u=auth.currentUser; if (!u) return {};
+  const today=new Date(); const arr=[];
+  for (let i=0; i<7; i++) {
+    const d=new Date(today); d.setDate(d.getDate()-i);
+    const iso=d.toISOString().split('T')[0];
+    const snap=await get(ref(db,`users/${u.uid}/pianoPasto/${iso}`));
+    if (!snap.exists()) continue;
+    const data=snap.val();
+    arr.push({date:iso,data});
+  }
+  return arr;
+}
+
+/* ══════════════════════════════════════════════════
+   11. SCADENZE — ingredienti in scadenza nel frigo
+══════════════════════════════════════════════════ */
+function _initExpiringSection() {
+  const expDiv=document.getElementById('expiringItemsDiv');
+  if (!expDiv) return;
+  const u=auth.currentUser; if (!u) return;
+
+  const fRef=ref(db,`users/${u.uid}/frigo`);
+  onValue(fRef,snap=>{
+    const data= snap.exists() ? snap.val() : [];
+    const today= new Date(); today.setHours(0,0,0,0);
+
+    const expiring= data.filter(f=>{
+      if (!f.expiry) return false;
+      const expDate= new Date(f.expiry); expDate.setHours(0,0,0,0);
+      const diff= Math.floor((expDate-today)/(1000*60*60*24));
+      return (diff>=0 && diff<=3);
+    }).map(f=>{
+      const expDate= new Date(f.expiry); expDate.setHours(0,0,0,0);
+      const diff= Math.floor((expDate-today)/(1000*60*60*24));
+      return {...f, daysLeft:diff};
+    });
+
+    if (!expiring.length) {
+      expDiv.innerHTML='';
       return;
     }
-    resultsEl.innerHTML = suggestions.map(function(sName) {
-      return '<button class="sub-opt-btn sub-opt-ai" ' +
-                     'onclick="applySubstitute(\'' + escQ(name) + '\',\'' + escQ(sName) + '\')">' +
-               '🤖 ' + sName +
-             '</button>';
-    }).join('');
+
+    expDiv.innerHTML=`
+      <div class="expiring-section">
+        <div class="expiring-section-title">⏰ Ingredienti in scadenza</div>
+        ${expiring.map(f=>`
+          <div class="expiring-row">
+            <div class="expiring-name">${f.name}</div>
+            <span class="expiry-badge ${_expiryClass(f.daysLeft)}">
+              ${_expiryLabel(f.daysLeft)}
+            </span>
+          </div>
+        `).join('')}
+      </div>
+    `;
   });
 }
 
-/* Aggiunge il suggerimento alla lista della spesa */
-function subAddToSpesa(suggName) {
-  if (typeof spesaItems !== 'undefined') {
-    if (!Array.isArray(spesaItems)) spesaItems = [];
-    var exists = spesaItems.find(function(i){ return i.name === suggName; });
-    if (!exists) {
-      spesaItems.push({ name: suggName, quantity: null, unit: 'g', checked: false });
-      if (typeof saveData === 'function') saveData();
-    }
-    if (typeof showToast === 'function') showToast('🛒 ' + suggName + ' aggiunto alla spesa', 'success');
-  }
-  closeSubstituteModal();
+function _expiryClass(days) {
+  if (days<0) return 'expiry-expired';
+  if (days===0) return 'expiry-today';
+  if (days<=3) return 'expiry-soon';
+  return 'expiry-ok';
 }
 
-/* Apre una mini-modal per scegliere la quantità e aggiunge il suggerimento in dispensa,
-   poi lo applica come sostituto */
-function subAddToDispensa(originalName, suggName) {
-  closeSubstituteModal();
-  /* Usa il modal quantità per dispensa */
-  var qty = prompt('Quantità di ' + suggName + ' da aggiungere in dispensa? (numero, es. 200)');
-  if (qty === null) return;
-  var qtyNum = parseFloat(qty);
-  if (isNaN(qtyNum) || qtyNum <= 0) {
-    if (typeof showToast === 'function') showToast('⚠️ Quantità non valida', 'warning');
-    return;
-  }
-
-  /* Trova unità di default */
-  var unit = 'g';
-  if (typeof defaultIngredients !== 'undefined') {
-    var def = defaultIngredients.find(function(d){ return d.name === suggName; });
-    if (def && def.unit) unit = def.unit;
-  }
-
-  if (typeof addFromSpesa === 'function') {
-    addFromSpesa(suggName, qtyNum, unit);
-  } else {
-    if (!pantryItems) pantryItems = {};
-    var pd = pantryItems[suggName] || {};
-    pantryItems[suggName] = Object.assign({}, pd, { quantity: (pd.quantity||0) + qtyNum, unit: unit });
-    if (typeof saveData === 'function') saveData();
-  }
-
-  /* Applica subito come sostituto */
-  applySubstitute(originalName, suggName);
-  if (typeof showToast === 'function') showToast('🗄️ ' + suggName + ' aggiunto in dispensa e applicato come sostituto', 'success');
+function _expiryLabel(days) {
+  if (days<0) return 'Scaduto';
+  if (days===0) return 'Oggi';
+  return `${days}gg`;
 }
 
-function applySubstitute(original, replacement) {
-  if (!selectedDateKey) return;
-  if (!appHistory[selectedDateKey]) appHistory[selectedDateKey] = { usedItems:{}, substitutions:{} };
-  var day = appHistory[selectedDateKey];
-  if (!day.substitutions) day.substitutions = {};
-  if (!day.substitutions[selectedMeal]) day.substitutions[selectedMeal] = {};
-  day.substitutions[selectedMeal][original] = replacement;
-  saveData();
-  var modal = document.getElementById('substituteModal');
-  if (modal) modal.classList.remove('active');
-  renderMealItems();
-}
-
-function closeSubstituteModal() {
-  var modal = document.getElementById('substituteModal');
-  if (modal) modal.classList.remove('active');
-}
-
-/* ── Pulsanti rapidi da pagina Oggi per ingredienti non in dispensa ── */
-
-/* Apre il modal di aggiunta dispensa con nome pre-compilato (quantità vuota) */
-function openAddFridgePrecompiled(name) {
-  if (typeof openAddFridgeModal !== 'function') return;
-  /* Prima apri il modal generico */
-  openAddFridgeModal();
-  /* Poi pre-compila il nome */
-  setTimeout(function() {
-    var nameEl = document.getElementById('newFridgeItem');
-    var qtyEl  = document.getElementById('newFridgeQty');
-    /* Cerca categoria nell'indice defaultIngredients */
-    var catEl  = document.getElementById('newFridgeCategory');
-    if (nameEl) { nameEl.value = name; }
-    if (qtyEl)  { qtyEl.value = ''; qtyEl.focus(); }
-    if (catEl && typeof defaultIngredients !== 'undefined') {
-      var def = defaultIngredients.find(function(d){ return d.name === name; });
-      if (def && def.category) catEl.value = def.category;
-    }
-    /* Aggiorna eventuali autocomplete */
-    if (typeof populateIngAutocomplete === 'function') populateIngAutocomplete();
-  }, 80);
-}
-
-/* Aggiunge direttamente alla lista della spesa dalla pagina Oggi */
-function pianoAddToSpesa(name, qty, unit) {
-  if (typeof spesaItems === 'undefined') return;
-  if (!Array.isArray(spesaItems)) spesaItems = [];
-  var exists = spesaItems.find(function(i){ return i.name === name; });
-  if (!exists) {
-    var qtyNum = parseFloat(qty) || null;
-    spesaItems.push({ name: name, quantity: qtyNum, unit: unit || 'g', manual: false, bought: false });
-    if (typeof saveData === 'function') saveData();
-    if (typeof showToast === 'function') showToast('🛒 ' + name + ' aggiunto alla spesa', 'success');
-  } else {
-    if (typeof showToast === 'function') showToast('ℹ️ ' + name + ' è già nella lista della spesa', 'info');
-  }
-}
-
-/* ── GIORNO ── */
-function renderDayIngGrid() {
-  var el = document.getElementById('dayIngGrid');
-  if (!el) return;
-  var items = getMealItems(selectedMeal);
-  if (!items.length) {
-    el.innerHTML = '<p style="color:var(--text-3);font-size:.9em;">Nessun ingrediente per questo pasto.</p>';
-    return;
-  }
-  el.innerHTML = '<div class="fridge-items">' +
-    items.map(function(item){
-      var inFridge = typeof pantryItems!=='undefined' && pantryItems && pantryItems[item.name] && (pantryItems[item.name].quantity||0)>0;
-      var dot = inFridge ? '✔' : '○';
-      var dotColor = inFridge ? 'var(--success)' : 'var(--text-3)';
-      return '<div class="fridge-card">' +
-        '<div class="fridge-icon">'+getCategoryIcon((pantryItems&&pantryItems[item.name]&&pantryItems[item.name].category)||'🧂 Altro')+'</div>' +
-        '<div class="fridge-name">'+item.name+'</div>' +
-        (item.quantity ? '<div class="fridge-qty" style="color:var(--primary);">'+item.quantity+' '+(item.unit||'g')+'</div>' : '') +
-        '<span style="color:'+dotColor+';font-size:.85em;">'+dot+'</span>' +
-      '</div>';
-    }).join('') +
-  '</div>';
-}
-
-/* ── RICETTE SUGGERITE ── */
-function renderFridgeRecipes() {
-  var el = document.getElementById('fridgeRecipesList');
-  if (!el) return;
-  if (typeof getAllRicette !== 'function') { el.innerHTML = ''; return; }
-  var all = getAllRicette();
-  var fridgeKeys = (typeof pantryItems !== 'undefined' && pantryItems)
-    ? Object.keys(pantryItems).filter(function(k){ return pantryItems[k] && (pantryItems[k].quantity||0)>0; })
-    : [];
-  var scored = all.map(function(r){
-    var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
-    var cnt  = ings.filter(function(ing){
-      var n = (ing.name||ing.nome||'').toLowerCase().trim();
-      return fridgeKeys.some(function(k){ var kl=k.toLowerCase(); return kl===n||kl.includes(n)||n.includes(kl); });
-    }).length;
-    return { r:r, cnt:cnt, tot:ings.length };
-  }).filter(function(x){ return x.cnt > 0; })
-    .sort(function(a,b){ return b.cnt - a.cnt; })
-    .slice(0, 3);
-
-  if (!scored.length) {
-    el.innerHTML = '<p style="color:var(--text-3);font-size:.9em;">Nessuna ricetta compatibile con gli ingredienti disponibili.</p>';
-    return;
-  }
-  el.innerHTML = scored.map(function(x){
-    var r   = x.r;
-    var nm  = r.name || r.nome || '';
-    var pct = x.tot > 0 ? Math.round((x.cnt/x.tot)*100) : 0;
-    return '<div class="rc-card" style="margin-bottom:10px;cursor:pointer;" onclick="openRecipeModal(\''+escQ(nm)+'\')">' +
-      '<div style="display:flex;align-items:center;gap:10px;padding:14px 16px;">' +
-        '<span style="flex:1;font-weight:500;">'+nm+'</span>' +
-        '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">'+x.cnt+'/'+x.tot+' ing.</span>' +
-        '<div class="rc-progress-track" style="width:60px;margin:0;">' +
-          '<div class="rc-progress-fill" style="width:'+pct+'%;"></div>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-}
-
-/* ── FRIGO SALVATI (tab Piano) ── */
-function updateSavedFridges() {
-  var el = document.getElementById('savedFridgesContent2');
-  if (!el) return;
-  var keys = Object.keys(savedFridges||{});
-  if (!keys.length) {
-    el.innerHTML = '<p style="color:var(--text-3);font-size:.9em;">Nessuna configurazione salvata.</p>';
-    return;
-  }
-  el.innerHTML = keys.map(function(k){
-    var f = savedFridges[k];
-    var n = Object.keys(f.items||{}).length;
-    return '<div class="rc-card" style="display:flex;align-items:center;gap:10px;padding:12px 16px;margin-bottom:8px;">' +
-      '<span style="flex:1;font-weight:500;">'+k+'</span>' +
-      '<span class="rc-badge">'+n+' ing.</span>' +
-      '<button class="rc-btn-icon" onclick="loadFridgeConfig(\''+escQ(k)+'\')">📥</button>' +
-      '<button class="rc-btn-icon" onclick="deleteFridgeConfig(\''+escQ(k)+'\')">🗑️</button>' +
-    '</div>';
-  }).join('');
-}
-
-function loadFridgeConfig(name) {
-  if (!confirm('Caricare "'+name+'"? Sostituirà il frigo attuale.')) return;
-  if (savedFridges[name]) {
-    pantryItems = JSON.parse(JSON.stringify(savedFridges[name].items||{}));
-    saveData();
-    if (typeof renderFridge==='function') renderFridge();
-    if (typeof renderPantry==='function') renderPantry();
-  }
-}
-
-function deleteFridgeConfig(name) {
-  if (!confirm('Eliminare la configurazione "'+name+'"?')) return;
-  delete savedFridges[name];
-  saveData();
-  updateSavedFridges();
-}
-
-/* ── UTILITY ── */
-function escQ(str) { return String(str).replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
-function capitalizeFirst(str) { return str ? str.charAt(0).toUpperCase()+str.slice(1) : ''; }
-function getCategoryIcon(cat) {
-  var map = {
-    '🥩 Carne':'🥩','🐟 Pesce':'🐟',
-    '🥩 Carne e Pesce':'🥩','🥛 Latticini e Uova':'🥛','🌾 Cereali e Legumi':'🌾',
-    '🥦 Verdure':'🥦','🍎 Frutta':'🍎','🥑 Grassi e Condimenti':'🥑',
-    '🍫 Dolci e Snack':'🍫','🧂 Cucina':'🧂','🧂 Altro':'🧂'
-  };
-  return (cat && map[cat]) ? map[cat] : '🧂';
-}
-
-/* Controlla se un pasto rientra nel filtro */
-function _mealContains(pasto, meal) {
-  if (!pasto) return false;
-  return Array.isArray(pasto) ? pasto.indexOf(meal) !== -1 : pasto === meal;
-}
-
-/* Chiavi frigo con quantità > 0 */
-function _getFridgeKeys() {
-  if (typeof pantryItems === 'undefined' || !pantryItems) return [];
-  return Object.keys(pantryItems).filter(function(k){
-    return k && k !== 'undefined' && pantryItems[k] && (pantryItems[k].quantity||0) > 0;
+/* ══════════════════════════════════════════════════
+   12. WIZARD PIANO ALIMENTARE — gestione rapida PA
+══════════════════════════════════════════════════ */
+function _setupAIPianoWizardBtn() {
+  const btn=document.getElementById('aiPianoWizardBtn');
+  if (!btn) return;
+  btn.addEventListener('click',()=>{
+    window.location.href='piano-alimentare.html';
   });
 }
 
-/* ── RICETTE PER PASTO SELEZIONATO (tab Piano) ── */
-var _pianoRicetteFilter = 'base'; /* 'base' | 'mie' | 'ai' */
-
-function setPianoRicetteFilter(filter, btn) {
-  _pianoRicetteFilter = filter || 'base';
-  document.querySelectorAll('.piano-ricette-pill').forEach(function(b) { b.classList.remove('active'); });
-  if (btn) btn.classList.add('active');
-  renderPianoRicette();
-}
-
-function renderPianoRicette() {
-  var el = document.getElementById('pianoRicetteWrap');
-  if (!el) return;
-
-  var filterHtml =
-    '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">' +
-      '<button class="piano-ricette-pill rf-pill' + (_pianoRicetteFilter === 'base' ? ' active' : '') + '" ' +
-        'onclick="setPianoRicetteFilter(\'base\',this)">🍴 Base</button>' +
-      '<button class="piano-ricette-pill rf-pill' + (_pianoRicetteFilter === 'mie' ? ' active' : '') + '" ' +
-        'onclick="setPianoRicetteFilter(\'mie\',this)">⭐ Mie</button>' +
-      '<button class="piano-ricette-pill rf-pill' + (_pianoRicetteFilter === 'ai' ? ' active' : '') + '" ' +
-        'onclick="setPianoRicetteFilter(\'ai\',this)">🤖 AI</button>' +
-    '</div>';
-
-  if (typeof getAllRicette !== 'function') {
-    el.innerHTML = filterHtml + '<p style="color:var(--text-3);font-size:.9em;">Modulo ricette non caricato.</p>';
-    return;
-  }
-
-  var fridgeKeys = _getFridgeKeys();
-  var planItems  = typeof getMealItems === 'function' ? getMealItems(selectedMeal) : [];
-
-  /* ── Tab AI ── */
-  if (_pianoRicetteFilter === 'ai') {
-    var aiList = (typeof aiRecipes !== 'undefined' && Array.isArray(aiRecipes))
-      ? aiRecipes.filter(function(r) { return _mealContains(r.pasto, selectedMeal); })
-      : [];
-
-    var aiHtml = aiList.length
-      ? aiList.map(function(r) { return _buildPianoRicettaCard(r, fridgeKeys, planItems); }).join('')
-      : '<div style="padding:12px 0;color:var(--text-light);font-size:.88em;">Nessuna ricetta AI per questo pasto.<br>' +
-        '<span style="font-size:.82em;">Genera ricette dalla sezione 🤖 Ricette &gt; AI.</span></div>';
-
-    el.innerHTML = filterHtml + aiHtml;
-    return;
-  }
-
-  /* ── Tab Base o Mie ── */
-  var sourceList;
-  if (_pianoRicetteFilter === 'mie') {
-    sourceList = (typeof customRecipes !== 'undefined' && Array.isArray(customRecipes))
-      ? customRecipes.map(function(r) { return Object.assign({}, r, { isCustom: true }); })
-      : [];
-  } else {
-    sourceList = (typeof defaultRecipes !== 'undefined' && Array.isArray(defaultRecipes))
-      ? defaultRecipes
-      : (typeof getAllRicette === 'function'
-          ? getAllRicette().filter(function(r) { return !r.isCustom && !r.isAI; })
-          : []);
-  }
-
-  var all = sourceList.filter(function(r) {
-    if (!_mealContains(r.pasto, selectedMeal)) return false;
-    var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
-    if (!ings.length) return true;
-    return ings.some(function(ing){
-      var n = (ing.name||ing.nome||'').toLowerCase().trim();
-      return fridgeKeys.some(function(k){ var kl=k.toLowerCase(); return kl===n||kl.includes(n)||n.includes(kl); });
-    });
-  });
-
-  if (!all.length) {
-    var emptyMsg = _pianoRicetteFilter === 'mie'
-      ? 'Nessuna tua ricetta per questo pasto con ingredienti disponibili.'
-      : 'Nessuna ricetta base con ingredienti disponibili per questo pasto.';
-    el.innerHTML = filterHtml +
-      '<div style="padding:12px 0;color:var(--text-light);font-size:.88em;">' + emptyMsg + '<br>' +
-      '<span style="font-size:.82em;">Aggiungi ingredienti alla dispensa per vedere i suggerimenti.</span></div>';
-    return;
-  }
-
-  /* Calcola se una ricetta contiene almeno un ingrediente in scadenza (entro 4 giorni) */
-  function hasExpiringIngredient(r) {
-    if (typeof pantryItems === 'undefined' || !pantryItems) return false;
-    var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
-    return ings.some(function(ing) {
-      var n = (ing.name || ing.nome || '').toLowerCase().trim();
-      /* Cerca in pantryItems corrispondenze per nome */
-      var matched = Object.keys(pantryItems).filter(function(k) {
-        var kl = k.toLowerCase();
-        return kl === n || kl.includes(n) || n.includes(kl);
-      });
-      return matched.some(function(k) {
-        var pd = pantryItems[k];
-        if (!pd || !pd.scadenza) return false;
-        var d = typeof getDaysToExpiry === 'function' ? getDaysToExpiry(pd.scadenza) : null;
-        return d !== null && d >= 0 && d <= 4;
-      });
-    });
-  }
-
-  all.sort(function(a, b) {
-    /* Priorità 1: ricette con ingredienti in scadenza ravvicinata */
-    var aExpiring = hasExpiringIngredient(a) ? 1 : 0;
-    var bExpiring = hasExpiringIngredient(b) ? 1 : 0;
-    if (bExpiring !== aExpiring) return bExpiring - aExpiring;
-
-    /* Priorità 2: ricette con maggiore disponibilità di ingredienti */
-    function avail(r) {
-      var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
-      if (!ings.length) return 0;
-      var cnt = ings.filter(function(ing){
-        var n = (ing.name||ing.nome||'').toLowerCase().trim();
-        return fridgeKeys.some(function(k){ var kl=k.toLowerCase(); return kl===n||kl.includes(n)||n.includes(kl); });
-      }).length;
-      return cnt / ings.length;
-    }
-    return avail(b) - avail(a);
-  });
-
-  el.innerHTML = filterHtml + all.map(function(r) {
-    return _buildPianoRicettaCard(r, fridgeKeys, planItems);
-  }).join('');
-}
-
-function _buildPianoRicettaCard(r, fridgeKeys, planItems) {
-  var rawName = r.name || r.nome || 'Ricetta';
-  var safeName = escQ(rawName);
-  var icon  = r.icon || r.icona || '🍽';
-  var ings  = Array.isArray(r.ingredienti) ? r.ingredienti : [];
-  var avail = ings.filter(function(ing){
-    var n = (ing.name||ing.nome||'').toLowerCase().trim();
-    return fridgeKeys.some(function(k){ var kl=k.toLowerCase(); return kl===n||kl.includes(n)||n.includes(kl); });
-  }).length;
-  var allAvailable = ings.length > 0 && avail === ings.length;
-  var pct = ings.length ? Math.round((avail/ings.length)*100) : 0;
-  var stateCls = pct>=80?'badge-ok':pct>=40?'badge-warn':'badge-grey';
-
-  /* Calcola fattore di scala rispetto al piano alimentare.
-     Cerca il primo ingrediente della ricetta che compare nel piano con una quantità
-     definita, e usa il rapporto pianQty/recipeQty come fattore per tutti gli ingredienti. */
-  var scaleFactor = 1;
-  if (Array.isArray(planItems) && planItems.length && ings.length) {
-    for (var si = 0; si < ings.length; si++) {
-      var ingName = (ings[si].name || ings[si].nome || '').toLowerCase().trim();
-      var recipeQty = parseFloat(ings[si].quantity) || 0;
-      if (!ingName || recipeQty <= 0) continue;
-      var planMatch = null;
-      for (var pi = 0; pi < planItems.length; pi++) {
-        var pn = (planItems[pi].name || '').toLowerCase().trim();
-        if (pn === ingName) { planMatch = planItems[pi]; break; }
-      }
-      if (planMatch && planMatch.quantity) {
-        var planQty = parseFloat(planMatch.quantity) || 0;
-        if (planQty > 0) { scaleFactor = planQty / recipeQty; break; }
-      }
-    }
-  }
-
-  /* Formatta la quantità scalata: rimuove decimali inutili */
-  function _fmtQty(qty, factor) {
-    var scaled = qty * factor;
-    return scaled === Math.round(scaled) ? String(Math.round(scaled)) : scaled.toFixed(1).replace(/\.0$/, '');
-  }
-
-  var ingHtml = ings.map(function(ing){
-    var n  = ing.name || ing.nome || '';
-    var nl = n.toLowerCase().trim();
-    var ok = fridgeKeys.some(function(k){ var kl=k.toLowerCase(); return kl===nl||kl.includes(nl)||nl.includes(kl); });
-    var rawQty = parseFloat(ing.quantity) || 0;
-    var qtyHtml = rawQty > 0
-      ? '<span class="rc-acc-qty">'+_fmtQty(rawQty, scaleFactor)+'\u00a0'+(ing.unit||'g')+'</span>'
-      : (ing.quantity ? '<span class="rc-acc-qty">'+ing.quantity+'\u00a0'+(ing.unit||'g')+'</span>' : '');
-    return '<li class="rc-acc-item'+(ok?' ok':'')+'">'+
-             '<span class="rc-acc-dot"></span>'+
-             '<span class="rc-acc-name">'+n+'</span>'+
-             qtyHtml+
-           '</li>';
-  }).join('');
-
-  var chooseBtn = allAvailable
-    ? '<button class="rc-detail-btn btn-choose" style="flex:1;" '+
-        'onclick="event.stopPropagation();choosePianoRecipe(\''+safeName+'\')">'+
-        '✅ Scegli</button>'
-    : '<button class="rc-detail-btn" style="flex:1;opacity:.45;cursor:not-allowed;" disabled '+
-        'title="Ingredienti mancanti in dispensa">'+
-        '🔒 Mancano '+(ings.length-avail)+' ing.</button>';
-
-  /* Badge che indica se le quantità sono state scalate rispetto alla ricetta base */
-  var scaleBadge = (scaleFactor !== 1 && ings.length > 0)
-    ? '<span class="rc-badge badge-warn" title="Quantità adattate alle porzioni del piano alimentare" '+
-        'style="font-size:.72em;">📐 adattata al piano</span>'
-    : '';
-
-  return (
-    '<div class="rc-card" style="margin-bottom:10px;" onclick="togglePianoRicettaCard(this)">'+
-      '<div class="rc-card-head">'+
-        '<div class="rc-icon-wrap">'+icon+'</div>'+
-        '<div class="rc-info">'+
-          '<div class="rc-name">'+rawName+'</div>'+
-          '<div class="rc-meta">'+
-            '<span class="rc-badge '+stateCls+'">'+avail+'/'+ings.length+' in dispensa</span>'+
-            scaleBadge+
-          '</div>'+
-        '</div>'+
-        '<span class="rc-chevron">'+
-          '<svg width="14" height="14" viewBox="0 0 14 14" fill="none">'+
-            '<path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'+
-          '</svg>'+
-        '</span>'+
-      '</div>'+
-      '<div class="rc-accordion">'+
-        '<div class="rc-accordion-inner">'+
-          (ings.length ? '<ul class="rc-acc-list">'+ingHtml+'</ul>' : '')+
-          '<div style="display:flex;gap:8px;margin-top:8px;">'+
-            '<button class="rc-detail-btn" style="flex:1;" '+
-              'onclick="event.stopPropagation();openRecipeModal(\''+safeName+'\')">'+
-              'Dettagli →</button>'+
-            chooseBtn+
-          '</div>'+
-        '</div>'+
-      '</div>'+
-    '</div>'
-  );
-}
-
-function togglePianoRicettaCard(el) {
-  var wasOpen = el.classList.contains('open');
-  var wrap = document.getElementById('pianoRicetteWrap');
-  if (wrap) wrap.querySelectorAll('.rc-card.open').forEach(function(c){ c.classList.remove('open'); });
-  if (!wasOpen) el.classList.add('open');
-}
-
-/* Segna ricetta come scelta → riduce dispensa + registra storico + usedItems */
-function choosePianoRecipe(name) {
-  var r = typeof findRicetta === 'function' ? findRicetta(name) : null;
-  if (!r) { if (typeof showToast==='function') showToast('Ricetta non trovata','warning'); return; }
-  if (typeof pushUndo === 'function') pushUndo('Scegli ricetta ' + name);
-  
-  /* Verifica se la data selezionata è oggi */
-  var today = new Date();
-  var todayKey = formatDateKey(today);
-  var isToday = selectedDateKey === todayKey;
-  
-  var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
-
-  /* Calcola lo stesso fattore di scala usato nella visualizzazione della card */
-  var scaleFactor = 1;
-  var planItemsForScale = typeof getMealItems === 'function' ? getMealItems(selectedMeal) : [];
-  if (Array.isArray(planItemsForScale) && planItemsForScale.length) {
-    for (var si = 0; si < ings.length; si++) {
-      var ingNameS = (ings[si].name || ings[si].nome || '').toLowerCase().trim();
-      var recipeQtyS = parseFloat(ings[si].quantity) || 0;
-      if (!ingNameS || recipeQtyS <= 0) continue;
-      for (var pi = 0; pi < planItemsForScale.length; pi++) {
-        var pn = (planItemsForScale[pi].name || '').toLowerCase().trim();
-        if (pn === ingNameS && planItemsForScale[pi].quantity) {
-          var planQtyS = parseFloat(planItemsForScale[pi].quantity) || 0;
-          if (planQtyS > 0) { scaleFactor = planQtyS / recipeQtyS; break; }
-        }
-      }
-      if (scaleFactor !== 1) break;
-    }
-  }
-
-  /* Riduci dispensa SOLO se selectedDateKey è oggi */
-  var reduced = 0;
-  if (isToday) {
-    ings.forEach(function(ing){
-      var n = (ing.name||ing.nome||'').trim();
-      if (!n || typeof pantryItems==='undefined' || !pantryItems) return;
-      var key = null;
-      if (pantryItems[n] && (pantryItems[n].quantity||0) > 0) {
-        key = n;
-      } else {
-        var nl = n.toLowerCase();
-        key = Object.keys(pantryItems).find(function(k){
-          var kl = k.toLowerCase();
-          return (pantryItems[k]&&(pantryItems[k].quantity||0)>0) &&
-                 (kl===nl||kl.includes(nl)||nl.includes(kl));
-        }) || null;
-      }
-      if (key) {
-        var qty = (parseFloat(ing.quantity) || 0) * scaleFactor;
-        if (qty > 0) {
-          pantryItems[key].quantity = Math.max(0, (pantryItems[key].quantity||0) - qty);
-          reduced++;
-        }
-      }
-    });
-  }
-
-  /* Registra nello storico (ricette + usedItems per il pasto corrente) */
-  if (selectedDateKey) {
-    if (typeof appHistory === 'undefined') appHistory = {};
-    if (!appHistory[selectedDateKey]) appHistory[selectedDateKey] = { usedItems:{}, substitutions:{}, ricette:{} };
-    var day = appHistory[selectedDateKey];
-    if (!day.ricette) day.ricette = {};
-    if (!day.ricette[selectedMeal]) day.ricette[selectedMeal] = {};
-    day.ricette[selectedMeal][name] = true;
-    /* Marca anche gli ingredienti del piano come usati (se presenti nel piano) */
-    var planItems = typeof getMealItems === 'function' ? getMealItems(selectedMeal) : [];
-    if (!day.usedItems) day.usedItems = {};
-    if (!day.usedItems[selectedMeal]) day.usedItems[selectedMeal] = {};
-    planItems.forEach(function(pi){ day.usedItems[selectedMeal][pi.name] = true; });
-  }
-
-  if (typeof saveData==='function') saveData();
-  var msg = isToday && reduced > 0
-    ? '✅ ' + name + ' — dispensa aggiornata (' + reduced + ' ingredienti)'
-    : '✅ ' + name + ' scelta';
-  if (typeof showToast==='function') showToast(msg, 'success');
-  renderMealItems();
-  renderPianoRicette();
-  if (typeof renderFridge==='function') renderFridge();
-  renderMealProgress();
-}
+console.log('[piano] piano.js caricato (opzione B: ricerca + ordinamento disponibilità)');
