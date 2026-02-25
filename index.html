@@ -513,25 +513,64 @@
   </div>
 </div>
 
-<!-- Modale: modifica quantità frigo -->
+<!-- Modale: modifica ingrediente frigo -->
 <div class="modal" id="editQtyModal">
   <div class="modal-box">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <h2 class="modal-title">Modifica quantità</h2>
+      <h2 class="modal-title">✏️ Modifica ingrediente</h2>
       <button class="modal-close" onclick="closeQtyModal()">✕</button>
     </div>
     <div class="modal-body">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-        <span id="eqmIcon" style="font-size:1.5rem;">🧂</span>
-        <span id="eqmName" style="font-weight:600;font-size:1rem;"></span>
+      <!-- Nome ingrediente -->
+      <div class="form-group">
+        <label>Nome ingrediente</label>
+        <input type="text" id="eqmName" 
+               placeholder="Es. Pollo, Latte…"
+               list="ingredientiAutocomplete"
+               autocomplete="off"
+               oninput="populateIngAutocomplete();_updateEditCategory(this.value)"
+               style="width:100%;padding:8px 10px;border-radius:var(--r-md);border:1.5px solid var(--border);
+                      background:var(--bg-subtle);color:var(--text-1);font-size:.9em;box-sizing:border-box;font-weight:600;">
       </div>
+      
+      <!-- Categoria -->
+      <div class="form-group">
+        <label>Categoria</label>
+        <select id="eqmCategory" style="width:100%;padding:8px 10px;border-radius:var(--r-md);border:1.5px solid var(--border);
+                                       background:var(--bg-subtle);color:var(--text-1);font-size:.9em;box-sizing:border-box;">
+          <option value="">-- Seleziona categoria --</option>
+          <option value="🥩 Carne">🥩 Carne</option>
+          <option value="🐟 Pesce">🐟 Pesce</option>
+          <option value="🥛 Latticini e Uova">🥛 Latticini e Uova</option>
+          <option value="🌾 Cereali e Legumi">🌾 Cereali e Legumi</option>
+          <option value="🥦 Verdure">🥦 Verdure</option>
+          <option value="🍎 Frutta">🍎 Frutta</option>
+          <option value="🥑 Grassi e Condimenti">🥑 Grassi e Condimenti</option>
+          <option value="🍫 Dolci e Snack">🍫 Dolci e Snack</option>
+          <option value="🧂 Cucina">🧂 Cucina</option>
+        </select>
+      </div>
+      
+      <!-- Quantità e unità -->
       <div class="qty-modal-wrap">
         <input type="number" id="eqmInput" min="0" step="any" placeholder="0"
                onkeydown="if(event.key==='Enter') confirmQtyModal();
                           if(event.key==='Escape') closeQtyModal();">
-        <span class="qty-modal-unit" id="eqmUnit">g</span>
+        <select id="eqmUnit" style="width:110px">
+          <option value="g">g</option>
+          <option value="ml">ml</option>
+          <option value="pz">pz</option>
+          <option value="fette">fette</option>
+          <option value="cucchiai">cucchiai</option>
+          <option value="cucchiaini">cucchiaini</option>
+          <option value="porzione">porzione</option>
+          <option value="kg">kg</option>
+          <option value="l">l</option>
+        </select>
       </div>
+      
+      <!-- Scadenza -->
       <div style="margin-top:14px;">
         <label style="display:block;font-size:.8em;font-weight:700;color:var(--text-2);margin-bottom:6px;">📅 Data di scadenza (opzionale)</label>
         <input type="date" id="eqmScadenza"
