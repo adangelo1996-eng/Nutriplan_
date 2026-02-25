@@ -1,15 +1,12 @@
 /* ============================================================
-   RICETTE.JS  v7  —  accordion card, minimal, array-safe
+   RICETTE.JS  v8  —  filtro intelligente per ingredienti piano pasto
    ============================================================ */
 
 var ricetteSearchQuery = '';
 var ricetteFilterPasto = 'all';
-var ricetteFilterExtra = '';   /* '' | 'preferiti' | 'disponibili' | 'dieta' */
+var ricetteFilterExtra = '';
 var currentRecipeName  = null;
 
-/* ══════════════════════════════════════════════════
-   PREFERITI
-══════════════════════════════════════════════════ */
 function isFavorito(name) {
   return Array.isArray(preferiti) && preferiti.indexOf(name) !== -1;
 }
@@ -29,9 +26,6 @@ function toggleFavorito(name, event) {
   if (typeof renderAIRicetteTab === 'function') renderAIRicetteTab();
 }
 
-/* ══════════════════════════════════════════════════
-   COMPATIBILITÀ DIETA
-══════════════════════════════════════════════════ */
 var _MEAT_KW  = ['pollo','tacchino','manzo','maiale','agnello','vitello','prosciutto','salame',
                  'bresaola','pancetta','salsiccia','bacon','mortadella','speck','guanciale',
                  'lardo','bistecca','filetto','costata','fesa','coscia','arrosto'];
@@ -53,25 +47,20 @@ function isDietCompatible(recipe) {
   var allergenici = Array.isArray(dp.allergenici) ? dp.allergenici : [];
   for (var i = 0; i < ings.length; i++) {
     var n = (ings[i].name || '').toLowerCase();
-    /* Allergenici custom */
     for (var j = 0; j < allergenici.length; j++) {
       if (allergenici[j] && n.includes(allergenici[j].toLowerCase())) return false;
     }
-    /* Vegetariano / Vegano: no carne, no pesce */
     if (dp.vegetariano || dp.vegano) {
       for (var k = 0; k < _MEAT_KW.length; k++) { if (n.includes(_MEAT_KW[k])) return false; }
       for (var k = 0; k < _FISH_KW.length; k++) { if (n.includes(_FISH_KW[k])) return false; }
     }
-    /* Vegano: no latticini, no uova */
     if (dp.vegano) {
       for (var k = 0; k < _DAIRY_KW.length; k++) { if (n.includes(_DAIRY_KW[k])) return false; }
       for (var k = 0; k < _EGG_KW.length;  k++) { if (n.includes(_EGG_KW[k]))  return false; }
     }
-    /* Senza lattosio */
     if (dp.senzaLattosio) {
       for (var k = 0; k < _DAIRY_KW.length; k++) { if (n.includes(_DAIRY_KW[k])) return false; }
     }
-    /* Senza glutine */
     if (dp.senzaGlutine) {
       for (var k = 0; k < _GLUT_KW.length; k++) { if (n.includes(_GLUT_KW[k])) return false; }
     }
@@ -79,7 +68,6 @@ function isDietCompatible(recipe) {
   return true;
 }
 
-/* ── Utility ── */
 function esc(v) {
   return String(v == null ? '' : v)
     .replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
@@ -109,7 +97,34 @@ function getFridgeKeys() {
   });
 }
 
-/* Restituisce tutti i nomi di ingredienti presenti nel pianoAlimentare */
+/* Restituisce ingredienti del piano per uno specifico pasto */
+function getPianoAlimentareIngNamesForMeal(mealKey) {
+  if (typeof pianoAlimentare === 'undefined' || !pianoAlimentare || !pianoAlimentare[mealKey]) return [];
+  var names = [];
+  var seen  = {};
+  var meal = pianoAlimentare[mealKey];
+  if (!meal || typeof meal !== 'object') return [];
+  Object.keys(meal).forEach(function(catKey) {
+    var arr = meal[catKey];
+    if (!Array.isArray(arr)) return;
+    arr.forEach(function(item) {
+      if (item && item.name && !seen[item.name]) {
+        seen[item.name] = true;
+        names.push(item.name.toLowerCase().trim());
+      }
+      if (Array.isArray(item.alternatives)) {
+        item.alternatives.forEach(function(alt) {
+          if (alt && alt.name && !seen[alt.name]) {
+            seen[alt.name] = true;
+            names.push(alt.name.toLowerCase().trim());
+          }
+        });
+      }
+    });
+  });
+  return names;
+}
+
 function getPianoAlimentareIngNames() {
   if (typeof pianoAlimentare === 'undefined' || !pianoAlimentare) return [];
   var names = [];
@@ -125,7 +140,6 @@ function getPianoAlimentareIngNames() {
           seen[item.name] = true;
           names.push(item.name.toLowerCase().trim());
         }
-        /* Anche le alternative */
         if (Array.isArray(item.alternatives)) {
           item.alternatives.forEach(function(alt) {
             if (alt && alt.name && !seen[alt.name]) {
@@ -140,18 +154,16 @@ function getPianoAlimentareIngNames() {
   return names;
 }
 
-/* Controlla se un ingrediente è fuori dal piano alimentare */
 function isIngExtraPiano(ingName) {
   if (!ingName) return false;
   var pianoNames = getPianoAlimentareIngNames();
-  if (!pianoNames.length) return false; /* piano vuoto → non segniamo nulla */
+  if (!pianoNames.length) return false;
   var nl = ingName.toLowerCase().trim();
   return !pianoNames.some(function(pn) {
     return pn === nl || pn.includes(nl) || nl.includes(pn);
   });
 }
 
-/* Conta ingredienti extra piano per una lista di ingredienti ricetta */
 function countExtraPiano(ings) {
   if (!Array.isArray(ings)) return 0;
   var pianoNames = getPianoAlimentareIngNames();
@@ -179,7 +191,6 @@ function getAllRicette() {
     customRecipes.forEach(function(r){
       if(r&&(r.name||r.nome)) out.push(Object.assign({},r,{isCustom:true}));
     });
-  /* Le ricette AI sono incluse nel catalogo con badge dedicato */
   if (typeof aiRecipes!=='undefined' && Array.isArray(aiRecipes))
     aiRecipes.forEach(function(r){
       if(r&&(r.name||r.nome)) out.push(Object.assign({},r,{isAI:true}));
@@ -187,7 +198,6 @@ function getAllRicette() {
   return out;
 }
 
-/* ── Render tab AI Ricette ── */
 function renderAIRicetteTab() {
   var el = document.getElementById('aiRicetteList');
   if (!el) return;
@@ -202,7 +212,6 @@ function renderAIRicetteTab() {
     return;
   }
 
-  /* Raggruppa per sottocategoria */
   var groups = {};
   list.forEach(function(r) {
     var key = r.subcategory || '__default__';
@@ -211,7 +220,6 @@ function renderAIRicetteTab() {
   });
 
   var html = '';
-  /* Gruppo principale (senza sottocategoria) */
   if (groups['__default__'] && groups['__default__'].length) {
     html += '<div class="rc-group">' +
       '<div class="rc-group-title" style="--gc:var(--primary);">' +
@@ -222,7 +230,6 @@ function renderAIRicetteTab() {
       '</div>' +
     '</div>';
   }
-  /* Gruppi con sottocategoria */
   Object.keys(groups).forEach(function(key) {
     if (key === '__default__') return;
     var items = groups[key];
@@ -264,7 +271,6 @@ function findRicetta(name) {
   return getAllRicette().find(function(r){ return (r.name||r.nome||'')===name; })||null;
 }
 
-/* ── Tab ── */
 function showRicetteTab(tab, btn) {
   document.querySelectorAll('#ricettePage .page-tab-content').forEach(function(c){ c.classList.remove('active'); });
   document.querySelectorAll('#ricettePage .page-tab').forEach(function(t){ t.classList.remove('active'); });
@@ -275,10 +281,8 @@ function showRicetteTab(tab, btn) {
   if (tab==='mie')      renderCustomRicette();
 }
 
-/* ── Entry point ── */
 function renderRicettePage() { buildFilterRow(); renderRicetteGrid(); }
 
-/* ── Filtri ── */
 function buildFilterRow() {
   var row = document.getElementById('ricetteFilterRow');
   if (!row) return;
@@ -330,19 +334,38 @@ function filterRicette(query) {
   renderRicetteGrid();
 }
 
-/* ── Griglia ── */
 function renderRicetteGrid() {
   var grid = document.getElementById('ricetteGrid');
   if (!grid) return;
   var fridgeKeys = getFridgeKeys();
   var all = getAllRicette().filter(function(r){
+    /* Filtro base pasto */
     if (ricetteFilterPasto!=='all' && !pastoContains(r.pasto, ricetteFilterPasto)) return false;
+
+    /* NUOVO: Filtro intelligente per ingredienti del piano */
+    if (ricetteFilterPasto !== 'all') {
+      var mealIngNames = getPianoAlimentareIngNamesForMeal(ricetteFilterPasto);
+      if (mealIngNames.length > 0) {
+        var ricettaIngs = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+        /* Verifica che TUTTI gli ingredienti della ricetta siano nel piano per quel pasto */
+        var allInPlan = ricettaIngs.every(function(ing) {
+          var ingName = (ing.name || ing.nome || '').toLowerCase().trim();
+          return mealIngNames.some(function(planName) {
+            return planName === ingName || planName.includes(ingName) || ingName.includes(planName);
+          });
+        });
+        if (!allInPlan) return false;
+      }
+    }
+
+    /* Ricerca testuale */
     if (ricetteSearchQuery) {
       var nm = safeStr(r.name||r.nome).toLowerCase();
       var ings = (Array.isArray(r.ingredienti)?r.ingredienti:[])
         .map(function(i){ return safeStr(i.name||i.nome).toLowerCase(); }).join(' ');
       if (!nm.includes(ricetteSearchQuery) && !ings.includes(ricetteSearchQuery)) return false;
     }
+
     /* Filtri extra */
     if (ricetteFilterExtra === 'preferiti' && !isFavorito(safeStr(r.name||r.nome))) return false;
     if (ricetteFilterExtra === 'disponibili') {
@@ -365,7 +388,6 @@ function renderRicetteGrid() {
   }
 }
 
-/* ── Raggruppa ── */
 function buildGroupedGrid(list) {
   var order  = ['colazione','spuntino','pranzo','merenda','cena'];
   var labels = {colazione:'☀️ Colazione',spuntino:'🍎 Spuntino',
@@ -398,9 +420,6 @@ function buildGroupedGrid(list) {
   return html;
 }
 
-/* ══════════════════════════════════════════════════
-   CARD con ACCORDION
-   ══════════════════════════════════════════════════ */
 function buildCard(r) {
   if (!r) return '';
   var name       = safeStr(r.name||r.nome||'Ricetta');
@@ -421,11 +440,9 @@ function buildCard(r) {
   var pianoNames = getPianoAlimentareIngNames();
   var hasExtraCheck = pianoNames.length > 0;
 
-  /* stato badge */
   var stateCls = pct>=80?'badge-ok':pct>=40?'badge-warn':'badge-grey';
   var stateTxt = pct>=80?'✔ Disponibile':pct>=40?'◑ Parziale':'○ Da acquistare';
 
-  /* badge extra piano */
   var extraBadge = '';
   if (hasExtraCheck && extraCount > 0) {
     extraBadge = '<span class="rc-badge badge-extra">⚠ ' + extraCount + ' extra piano</span>';
@@ -433,7 +450,6 @@ function buildCard(r) {
     extraBadge = '<span class="rc-badge badge-inpiano">✓ Nel piano</span>';
   }
 
-  /* accordion ingredienti */
   var accHtml = '';
   if (ings.length) {
     accHtml += '<ul class="rc-acc-list">';
@@ -474,7 +490,6 @@ function buildCard(r) {
          'onclick="toggleRicettaCard(this,\''+esc(name)+'\')" '+
          'data-name="'+esc(name)+'">'+
 
-      /* Header card */
       '<div class="rc-card-head">'+
         '<div class="rc-icon-wrap">'+icon+'</div>'+
         '<div class="rc-info">'+
@@ -489,7 +504,6 @@ function buildCard(r) {
             (hasDietProfile && !dietOk ? '<span class="rc-badge badge-diet-no">⚠ Non compatibile</span>' : '')+
           '</div>'+
         '</div>'+
-        /* Stella preferiti */
         '<button class="fav-btn'+(isFav?' fav-on':'')+'" '+
                 'onclick="toggleFavorito(\''+esc(name)+'\',event)" '+
                 'title="'+(isFav?'Rimuovi dai preferiti':'Aggiungi ai preferiti')+'" '+
@@ -503,23 +517,18 @@ function buildCard(r) {
         '</span>'+
       '</div>'+
 
-      /* Accordion */
       (accHtml?'<div class="rc-accordion"><div class="rc-accordion-inner">'+accHtml+'</div></div>':'')+
 
     '</div>'
   );
 }
 
-/* toggle accordion — una sola aperta alla volta */
 function toggleRicettaCard(el, name) {
   var wasOpen = el.classList.contains('open');
   document.querySelectorAll('.rc-card.open').forEach(function(c){ c.classList.remove('open'); });
   if (!wasOpen) el.classList.add('open');
 }
 
-/* ══════════════════════════════════════════════════
-   MODAL DETTAGLIO (preparazione + ingredienti completi)
-   ══════════════════════════════════════════════════ */
 function openRecipeModal(name) {
   if (!name) return;
   currentRecipeName = name;
@@ -606,7 +615,6 @@ function closeRecipeModal() {
   currentRecipeName = null;
 }
 
-/* ── Aggiungi alla spesa solo gli ingredienti MANCANTI dalla dispensa ── */
 function addRecipeIngredientsToSpesa() {
   if (!currentRecipeName) return;
   var r = findRicetta(currentRecipeName);
@@ -623,7 +631,6 @@ function addRecipeIngredientsToSpesa() {
     var needed = parseFloat(ing.quantity) || 0;
     var unit   = ing.unit || 'g';
 
-    /* Disponibile in dispensa */
     var inPantry = 0;
     if (typeof pantryItems !== 'undefined' && pantryItems) {
       var nl = name.toLowerCase();
@@ -632,7 +639,6 @@ function addRecipeIngredientsToSpesa() {
       if (pKey) inPantry = pantryItems[pKey].quantity || 0;
     }
 
-    /* Già in lista spesa (non acquistato) */
     var inSpesa = 0, existing = null;
     spesaItems.forEach(function(s){
       if (!s.bought && safeStr(s.name).toLowerCase() === name.toLowerCase()) {
@@ -663,7 +669,6 @@ function addRecipeIngredientsToSpesa() {
   if (typeof showToast === 'function') showToast('🛒 ' + (msg.join(', ') || 'Tutto già in dispensa'), 'success');
 }
 
-/* ── Applica al piano ── */
 function applyRecipeToMeal() {
   if (!currentRecipeName) return;
   var r = findRicetta(currentRecipeName); if (!r) return;
@@ -684,7 +689,6 @@ function applyRecipeToMeal() {
   alert(added>0?'✅ '+added+' ingredienti aggiunti — '+pastoLabel(pasto)+'!':'ℹ️ Già presenti nel piano.');
 }
 
-/* ── Ricette personalizzate ── */
 function renderCustomRicette() {
   var el = document.getElementById('customRicetteList'); if (!el) return;
   var list = typeof customRecipes!=='undefined'&&Array.isArray(customRecipes)?customRecipes:[];
