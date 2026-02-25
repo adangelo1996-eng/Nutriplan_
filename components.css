@@ -826,6 +826,11 @@
   background: var(--primary-light); border: 2px solid var(--primary-mid);
   display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
 }
+.profilo-avatar-placeholder {
+  width: 60px; height: 60px; border-radius: 50%; flex-shrink: 0;
+  background: var(--primary-light); border: 2px solid var(--primary-mid);
+  display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
+}
 .profilo-name  { font-size: 1rem; font-weight: 800; }
 .profilo-email { font-size: .74rem; color: var(--text-light); margin-top: 2px; }
 .profilo-since { font-size: .7rem;  color: var(--text-light); margin-top: 4px; }
@@ -1040,5 +1045,140 @@
 .settings-row-sub   { font-size: .72rem; color: var(--text-light); margin-top: 2px; }
 .settings-row-arrow { color: var(--text-light); font-size: .8rem; flex-shrink: 0; }
 
-/* Rest of the CSS file continues below... */
-/* (Remaining sections 26-end remain unchanged) */
+.settings-toggle {
+  width: 44px; height: 24px; flex-shrink: 0;
+  background: var(--border-mid); border-radius: var(--r-full);
+  position: relative; transition: background var(--t);
+}
+.settings-toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 20px; height: 20px; background: #fff;
+  border-radius: 50%; transition: transform var(--t);
+}
+.settings-toggle.on {
+  background: var(--primary);
+}
+.settings-toggle.on::after {
+  transform: translateX(20px);
+}
+
+/* Toggle dieta */
+.diet-toggle {
+  width: 44px; height: 24px; flex-shrink: 0;
+  background: var(--border-mid); border-radius: var(--r-full);
+  position: relative; transition: background var(--t);
+}
+.diet-toggle-knob {
+  position: absolute; top: 2px; left: 2px;
+  width: 20px; height: 20px; background: #fff;
+  border-radius: 50%; transition: transform var(--t);
+}
+.diet-toggle-on {
+  background: var(--primary);
+}
+.diet-toggle-on .diet-toggle-knob {
+  transform: translateX(20px);
+}
+
+/* Tag allergenico */
+.allergen-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #fee2e2; color: #991b1b;
+  border: 1px solid #fecaca;
+  padding: 4px 10px; border-radius: var(--r-full);
+  font-size: .78rem; font-weight: 700;
+}
+[data-theme="dark"] .allergen-tag {
+  background: #2d0a0a; color: #fca5a5; border-color: #7f1d1d;
+}
+.allergen-tag button {
+  background: none; border: none; cursor: pointer;
+  color: inherit; font-size: .9rem; padding: 0 2px;
+  border-radius: var(--r-xs); transition: all var(--t);
+}
+.allergen-tag button:hover { background: rgba(0,0,0,.1); }
+
+/* ══════════════════════════════════════════════════
+   26. AUTH
+══════════════════════════════════════════════════ */
+.auth-page {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 80vh; padding: 24px;
+}
+.auth-card {
+  background: var(--bg-card); border: 1.5px solid var(--border);
+  border-radius: var(--r-2xl); padding: 32px 24px;
+  width: 100%; max-width: 400px; text-align: center;
+}
+.auth-logo  { font-size: 3.5rem; margin-bottom: 16px; }
+.auth-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; }
+.auth-sub   { font-size: .82rem; color: var(--text-light); margin-bottom: 24px; line-height: 1.5; }
+
+.auth-google-btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; width: 100%; padding: 12px 20px;
+  background: #fff; color: #333;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-xl); font-weight: 700;
+  cursor: pointer; transition: all var(--t);
+}
+[data-theme="dark"] .auth-google-btn {
+  background: var(--bg-subtle); color: var(--text);
+}
+.auth-google-btn:hover {
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+.auth-google-btn img { width: 20px; height: 20px; }
+
+/* Accordion profilo */
+.rc-accordion-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  transition: all var(--t);
+}
+.rc-accordion-card:hover {
+  border-color: var(--primary-mid);
+  box-shadow: var(--shadow-xs);
+}
+.rc-accordion-header {
+  display: flex; align-items: center;
+  padding: 14px 18px; cursor: pointer;
+  transition: background var(--t);
+}
+.rc-accordion-header:hover { background: var(--bg-hover); }
+.rc-accordion-arrow {
+  transition: transform var(--t);
+  color: var(--text-light);
+}
+.rc-accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .3s ease;
+}
+
+/* Profilo ing row (edit mode) */
+.profilo-ing-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+}
+.profilo-ing-name,
+.profilo-ing-qty,
+.profilo-ing-unit {
+  padding: 8px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-card);
+  font-size: .84rem;
+  color: var(--text);
+  transition: border-color var(--t);
+}
+.profilo-ing-name:focus,
+.profilo-ing-qty:focus,
+.profilo-ing-unit:focus {
+  border-color: var(--primary);
+  outline: none;
+}
