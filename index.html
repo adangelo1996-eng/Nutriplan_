@@ -225,6 +225,19 @@
 
     <div id="mealProgressWrap"></div>
 
+    <!-- Barra di ricerca ingredienti Oggi -->
+    <div class="search-bar-row" style="margin-bottom:14px;">
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="oggiSearch"
+               placeholder="Cerca ingrediente, categoria o pasto…"
+               oninput="filterOggiIngredients(this.value)"
+               onsearch="filterOggiIngredients(this.value)">
+        <button class="search-clear-btn" onclick="clearOggiSearch()">✕</button>
+      </div>
+      <div id="oggiSearchCounter" class="search-counter" style="display:none;"></div>
+    </div>
+
     <!-- Ingredienti del piano per il pasto selezionato -->
     <div class="piano-section-label">🌿 Ingredienti nel piano</div>
     <div id="mealItemsWrap" class="meal-items-list"></div>
