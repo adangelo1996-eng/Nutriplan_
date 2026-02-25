@@ -776,23 +776,36 @@ function fridgeRemove(name) {
 
 /* ══════════════════════════════════════════════════
    MODAL INSERIMENTO MANUALE QUANTITÀ
+   ✨ AGGIORNATO per supportare modifica nome e categoria
 ══════════════════════════════════════════════════ */
 function openQtyModal(name) {
   var pd   = (pantryItems && pantryItems[name]) ? pantryItems[name] : {};
   var qty  = typeof pd.quantity === 'number' ? pd.quantity : 0;
   var unit = pd.unit || 'g';
-  var icon = pd.icon || getCategoryIcon(pd.category);
+  var cat  = pd.category || '🧂 Altro';
 
   var modal = document.getElementById('editQtyModal');
   if (!modal) return;
 
-  document.getElementById('eqmIcon').textContent   = icon;
-  document.getElementById('eqmName').textContent   = name;
-  document.getElementById('eqmUnit').textContent   = unit;
-  document.getElementById('eqmInput').value        = (qty % 1 === 0) ? qty : parseFloat(qty.toFixed(2));
-  document.getElementById('eqmInput').dataset.name = name;
-  var scadEl = document.getElementById('eqmScadenza');
+  /* Popola i nuovi campi editabili */
+  var nameInput = document.getElementById('eqmName');
+  var catSelect = document.getElementById('eqmCategory');
+  var qtyInput  = document.getElementById('eqmInput');
+  var unitSelect= document.getElementById('eqmUnit');
+  var scadEl    = document.getElementById('eqmScadenza');
+  var freezerEl = document.getElementById('eqmFreezer');
+
+  if (nameInput) nameInput.value = name;
+  if (catSelect) catSelect.value = cat;
+  if (qtyInput) {
+    qtyInput.value = (qty % 1 === 0) ? qty : parseFloat(qty.toFixed(2));
+    qtyInput.dataset.originalName = name; /* Salva il nome originale per il rename */
+  }
+  if (unitSelect) unitSelect.value = unit;
   if (scadEl) scadEl.value = pd.scadenza || '';
+  if (freezerEl) freezerEl.checked = !!pd.freezer;
+
+  /* Aggiorna suggerimento scadenza */
   var suggLabel = document.getElementById('eqmSuggLabel');
   if (suggLabel) {
     if (!pd.scadenza && pd.category) {
@@ -806,28 +819,57 @@ function openQtyModal(name) {
       suggLabel.textContent = '';
     }
   }
-  var freezerEl = document.getElementById('eqmFreezer');
-  if (freezerEl) freezerEl.checked = !!pd.freezer;
 
   modal.classList.add('active');
   setTimeout(function() {
-    var inp = document.getElementById('eqmInput');
-    if (inp) { inp.focus(); inp.select(); }
+    if (qtyInput) { qtyInput.focus(); qtyInput.select(); }
   }, 120);
+}
+
+/* Helper: aggiorna categoria quando si modifica il nome ingrediente */
+function _updateEditCategory(newName) {
+  if (!newName) return;
+  var catSel = document.getElementById('eqmCategory');
+  if (!catSel) return;
+  
+  var nl = newName.trim().toLowerCase();
+  var found = null;
+  
+  /* Cerca nel database default */
+  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
+    found = defaultIngredients.find(function(i) {
+      return i && i.name && i.name.toLowerCase() === nl;
+    });
+  }
+  
+  /* Cerca nei custom se non trovato */
+  if (!found && typeof customIngredients !== 'undefined' && Array.isArray(customIngredients)) {
+    found = customIngredients.find(function(i) {
+      return i && i.name && i.name.toLowerCase() === nl;
+    });
+  }
+  
+  /* Aggiorna categoria se trovata */
+  if (found && found.category) {
+    catSel.value = found.category;
+    _updateEqmSuggestion();
+  }
 }
 
 /* Aggiorna la scadenza suggerita quando si spunta/rimuove congelatore in editQtyModal */
 function _updateEqmSuggestion() {
-  var inp       = document.getElementById('eqmInput');
+  var catSel    = document.getElementById('eqmCategory');
   var scadEl    = document.getElementById('eqmScadenza');
   var freezerEl = document.getElementById('eqmFreezer');
   var suggLabel = document.getElementById('eqmSuggLabel');
-  if (!inp) return;
-  var name = inp.dataset.name;
-  var pd   = (pantryItems && pantryItems[name]) ? pantryItems[name] : {};
-  var cat  = pd.category || '🧂 Altro';
+  
+  if (!catSel) return;
+  
+  var cat    = catSel.value || '🧂 Altro';
   var frozen = freezerEl ? freezerEl.checked : false;
+  
   if (scadEl) scadEl.value = _suggestExpiry(cat, frozen);
+  
   if (suggLabel) {
     suggLabel.textContent = frozen ? '❄️ Scadenza estesa per congelatore' : '';
   }
@@ -839,30 +881,79 @@ function closeQtyModal() {
 }
 
 function confirmQtyModal() {
-  var inp  = document.getElementById('eqmInput');
-  if (!inp) return;
-  var name = inp.dataset.name;
-  var val  = parseFloat(inp.value);
-  if (!name || isNaN(val) || val < 0) {
+  var nameInput = document.getElementById('eqmName');
+  var catSelect = document.getElementById('eqmCategory');
+  var qtyInput  = document.getElementById('eqmInput');
+  var unitSelect= document.getElementById('eqmUnit');
+  var scadEl    = document.getElementById('eqmScadenza');
+  var freezerEl = document.getElementById('eqmFreezer');
+  
+  if (!nameInput || !qtyInput) return;
+  
+  var originalName = qtyInput.dataset.originalName || '';
+  var newName      = nameInput.value.trim();
+  var newCat       = catSelect ? catSelect.value : '🧂 Altro';
+  var qty          = parseFloat(qtyInput.value);
+  var unit         = unitSelect ? unitSelect.value : 'g';
+  var scadenza     = scadEl ? scadEl.value : '';
+  var frozen       = freezerEl ? freezerEl.checked : false;
+  
+  if (!newName) {
+    if (typeof showToast === 'function') showToast('⚠️ Inserisci un nome valido', 'warning');
+    return;
+  }
+  
+  if (isNaN(qty) || qty < 0) {
     if (typeof showToast === 'function') showToast('⚠️ Quantità non valida', 'warning');
     return;
   }
+  
   if (!pantryItems) pantryItems = {};
-  var pd = pantryItems[name] || {};
-  var scadEl    = document.getElementById('eqmScadenza');
-  var freezerEl = document.getElementById('eqmFreezer');
-  var scadenza  = scadEl ? (scadEl.value || '') : (pd.scadenza || '');
-  var frozen    = freezerEl ? freezerEl.checked : (pd.freezer || false);
-  var updated   = Object.assign({}, pd, { quantity: val });
+  
+  /* Gestisci rename: rimuovi vecchia entry se il nome è cambiato */
+  if (originalName && originalName !== newName && pantryItems[originalName]) {
+    delete pantryItems[originalName];
+  }
+  
+  /* Crea/aggiorna entry con nuovo nome */
+  var oldData = pantryItems[newName] || pantryItems[originalName] || {};
+  var updated = Object.assign({}, oldData, {
+    name:     newName,
+    quantity: qty,
+    unit:     unit,
+    category: newCat,
+    icon:     getCategoryIcon(newCat)
+  });
+  
   if (scadenza) { updated.scadenza = scadenza; } else { delete updated.scadenza; }
   if (frozen)   { updated.freezer = true; }     else { delete updated.freezer; }
-  pantryItems[name] = updated;
+  
+  pantryItems[newName] = updated;
+  
+  /* Se il nome è cambiato, aggiorna anche customIngredients se presente */
+  if (originalName && originalName !== newName) {
+    if (typeof customIngredients !== 'undefined' && Array.isArray(customIngredients)) {
+      var idx = customIngredients.findIndex(function(i) {
+        return i && i.name === originalName;
+      });
+      if (idx !== -1) {
+        customIngredients[idx].name = newName;
+        customIngredients[idx].category = newCat;
+      }
+    }
+  }
+  
   saveData();
   closeQtyModal();
   renderFridge();
   renderFridge('pianoFridgeContent');
   if (typeof updateAllUI === 'function') updateAllUI();
-  if (typeof showToast === 'function') showToast('✅ ' + name + ': ' + val + ' ' + (pd.unit || 'g'), 'success');
+  
+  var msg = originalName && originalName !== newName
+    ? '✅ ' + originalName + ' → ' + newName + ': ' + qty + ' ' + unit
+    : '✅ ' + newName + ': ' + qty + ' ' + unit;
+  
+  if (typeof showToast === 'function') showToast(msg, 'success');
 }
 
 /* Chiudi modal su click sfondo */
