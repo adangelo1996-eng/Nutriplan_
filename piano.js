@@ -144,6 +144,8 @@ function _loadFrigoData() {
   onValue(fRef,snap=>{
     if (snap.exists()) frigoData=snap.val();
     else frigoData=[];
+    // FIX: re-render ricette quando il frigo cambia
+    _renderSuggestedRecipes();
   });
 }
 
@@ -153,6 +155,8 @@ function _loadDietPreferences() {
   onValue(dietRef,snap=>{
     if (snap.exists()) userDiet=snap.val();
     else userDiet=null;
+    // FIX: re-render ricette quando la dieta cambia
+    _renderSuggestedRecipes();
   });
 }
 
@@ -165,6 +169,8 @@ function _loadRecipes() {
     } else {
       allRecipesList=[];
     }
+    // FIX: render ricette quando si caricano dal DB
+    _renderSuggestedRecipes();
   });
 }
 
@@ -210,7 +216,11 @@ function _buildMealSelector() {
         <div class="meal-btn-count">${consumedCount}/${totCount}</div>
       `;
       btn.addEventListener('click',()=>{
-        selectedMeal=m.key; _buildMealSelector(); _checkDayMeals();
+        selectedMeal=m.key; 
+        _buildMealSelector(); 
+        _checkDayMeals();
+        // FIX: aggiorna ricette suggerite quando cambia pasto
+        _renderSuggestedRecipes();
       });
       sel.appendChild(btn);
     });
@@ -778,4 +788,4 @@ function _setupAIPianoWizardBtn() {
   });
 }
 
-console.log('[piano] piano.js caricato (opzione B: ricerca + ordinamento disponibilità)');
+console.log('[piano] piano.js caricato (opzione B: ricerca + ordinamento disponibilità + fix render)');
