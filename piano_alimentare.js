@@ -1,9 +1,8 @@
 /* ============================================================
-   PIANO_ALIMENTARE.JS — v2.1
+   PIANO_ALIMENTARE.JS — v2
    Pagina dedicata all'impostazione del piano alimentare:
    - Struttura: pasto → categorie ingredienti → ingredienti + alternative
    - In fondo: limiti settimanali (usa weeklyLimits da data.js)
-   - ✨ Nuovo: suggerimenti ingredienti da database in modal custom
    ============================================================ */
 
 /* ──────────────────────────────────────────────────────────
@@ -152,28 +151,22 @@ function renderPianoAlimentare() {
   PA_MEALS.forEach(function(m) { totalCount += paGetMealCount(m.key); });
   var isEmpty = totalCount === 0;
 
-  /* ✨ MODIFICA 2: Due tasti affiancati — Piano semplificato + Modifica piano */
+  /* Card invito wizard */
   var wizardCard =
     '<div class="pa-wizard-invite' + (isEmpty ? ' pa-wizard-invite-empty' : '') + '">' +
       '<div class="pa-wizard-invite-icon">🧙</div>' +
       '<div class="pa-wizard-invite-body">' +
         '<div class="pa-wizard-invite-title">' +
-          (isEmpty ? 'Configura il tuo piano alimentare' : 'Gestisci il tuo piano') +
+          (isEmpty ? 'Configura il tuo piano alimentare' : 'Modifica piano guidato') +
         '</div>' +
         '<div class="pa-wizard-invite-sub">' +
           (isEmpty
-            ? 'Inizia con la configurazione semplificata o modifica manualmente'
-            : 'Usa il piano semplificato o modifica ingrediente per ingrediente') +
+            ? 'Inserisci gli ingredienti pasto per pasto con la configurazione guidata'
+            : 'Rivedi e modifica gli ingredienti di ogni pasto') +
         '</div>' +
-        '<div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;">' +
-          '<button class="pa-wizard-invite-btn" onclick="openPAWizard()" style="flex:1;min-width:200px;">' +
-            (isEmpty ? '✨ Piano semplificato →' : '✨ Piano semplificato →') +
-          '</button>' +
-          '<button class="pa-wizard-invite-btn" onclick="goToPage(\'piano\')" ' +
-                  'style="flex:1;min-width:200px;background:var(--bg-2);color:var(--text-1);border:1px solid var(--border);">' +
-            '✏️ Modifica piano →' +
-          '</button>' +
-        '</div>' +
+        '<button class="pa-wizard-invite-btn" onclick="openPAWizard()">' +
+          (isEmpty ? '✨ Inizia configurazione →' : '✏️ Modifica guidata →') +
+        '</button>' +
       '</div>' +
     '</div>';
 
@@ -728,8 +721,8 @@ function confirmPAQty() {
 }
 
 /* ──────────────────────────────────────────────────────────
-   ✨ MODIFICA 3: MODAL INGREDIENTE PERSONALIZZATO 
-   con SUGGERIMENTI dal database ingredienti
+   MODAL INGREDIENTE PERSONALIZZATO
+   (salva variabili PRIMA di closePAIngModal)
 ────────────────────────────────────────────────────────── */
 var _paCustomIngMeal = '';
 var _paCustomIngCat  = '';
@@ -761,10 +754,6 @@ function openPACustomIngModal() {
   if (qtyEl)  qtyEl.value  = '';
   if (unitEl) unitEl.value = 'g';
 
-  /* ✨ Reset lista suggerimenti */
-  var sugList = document.getElementById('paCustomIngSuggestions');
-  if (sugList) sugList.innerHTML = '';
-
   modal.classList.add('active');
   setTimeout(function() { if (nameEl) nameEl.focus(); }, 120);
 }
@@ -772,83 +761,6 @@ function openPACustomIngModal() {
 function closePACustomIngModal() {
   var modal = document.getElementById('paCustomIngModal');
   if (modal) modal.classList.remove('active');
-}
-
-/* ✨ Filtra suggerimenti ingredienti dal database mentre l'utente digita */
-function filterPACustomIngSuggestions(query) {
-  var sugList = document.getElementById('paCustomIngSuggestions');
-  if (!sugList) return;
-
-  var q = (query || '').trim().toLowerCase();
-  
-  if (!q) {
-    sugList.innerHTML = '';
-    return;
-  }
-
-  /* Cerca nel database defaultIngredients */
-  var matches = [];
-  var seen = {};
-  
-  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
-    defaultIngredients.forEach(function(ing) {
-      if (ing && ing.name && !seen[ing.name]) {
-        var nl = ing.name.toLowerCase();
-        if (nl.includes(q)) {
-          seen[ing.name] = true;
-          matches.push(ing);
-        }
-      }
-    });
-  }
-  
-  if (typeof customIngredients !== 'undefined' && Array.isArray(customIngredients)) {
-    customIngredients.forEach(function(ing) {
-      if (ing && ing.name && !seen[ing.name]) {
-        var nl = ing.name.toLowerCase();
-        if (nl.includes(q)) {
-          seen[ing.name] = true;
-          matches.push(ing);
-        }
-      }
-    });
-  }
-
-  if (!matches.length) {
-    sugList.innerHTML = '<div style="padding:8px;color:var(--text-3);font-size:.85rem;">Nessun suggerimento</div>';
-    return;
-  }
-
-  matches.sort(function(a, b) { return a.name.localeCompare(b.name, 'it'); });
-
-  sugList.innerHTML = matches.slice(0, 10).map(function(ing) {
-    var nameEsc = paEscQ(ing.name);
-    var unitEsc = paEscQ(ing.unit || 'g');
-    return (
-      '<div class="pa-custom-sug-item" ' +
-           'onclick="selectPACustomIngSuggestion(\'' + nameEsc + '\',\'' + unitEsc + '\')">' +
-        '<span>' + ing.name + '</span>' +
-        '<span style="font-size:.75rem;color:var(--text-3);">' + (ing.category || '') + '</span>' +
-      '</div>'
-    );
-  }).join('');
-}
-
-/* ✨ Seleziona suggerimento e popola il form */
-function selectPACustomIngSuggestion(name, unit) {
-  var nameEl = document.getElementById('paCustomIngName');
-  var unitEl = document.getElementById('paCustomIngUnit');
-  var qtyEl  = document.getElementById('paCustomIngQty');
-  
-  if (nameEl) nameEl.value = name;
-  if (unitEl) unitEl.value = unit || 'g';
-  
-  /* Nascondi suggerimenti */
-  var sugList = document.getElementById('paCustomIngSuggestions');
-  if (sugList) sugList.innerHTML = '';
-  
-  /* Focus sulla quantità */
-  if (qtyEl) qtyEl.focus();
 }
 
 function confirmPACustomIng() {
@@ -1010,16 +922,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  /* ✨ Enter/Escape + input listener per custom ing */
+  /* Enter/Escape custom ing */
   var nameEl = document.getElementById('paCustomIngName');
   if (nameEl) {
     nameEl.addEventListener('keydown', function(e) {
       if (e.key === 'Enter')  confirmPACustomIng();
       if (e.key === 'Escape') closePACustomIngModal();
-    });
-    /* Input listener per suggerimenti */
-    nameEl.addEventListener('input', function(e) {
-      filterPACustomIngSuggestions(e.target.value);
     });
   }
 });
