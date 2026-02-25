@@ -34,32 +34,12 @@ window.dbgWeekRange = () => {
   remove(wkRef).then(() => console.log('weekRange rimosso'));
 };
 
-export function initPiano() {
-  if (!auth.currentUser) {
-    console.log('[piano] Utente non autenticato, skip init.');
-    return;
-  }
-  console.log('[piano] Init Piano Pasto');
-  _setupCalendar();
-  _loadFrigoData();
-  _loadDietPreferences();
-  _loadRecipes();
-  _buildMealSelector();
-  _renderAddItemRow();
-  _buildDayNotes();
-  _setupAIRecipeGen();
-  _setupAIStatsBtn();
-  _checkDayMeals();
-  _initExpiringSection();
-  _initPianoAlimentare();
-  _setupAIPianoWizardBtn();
-  _initRecipeSearch();  // ← OPZIONE B: barra ricerca ricette
-  _exposeGlobalFunctions(); // Espone funzioni per onclick HTML
-}
-
 /* ══════════════════════════════════════════════════
-   1B. GLOBAL FUNCTIONS — Esposti per compatibilità HTML onclick
+   1A. GLOBAL FUNCTIONS — Esposte IMMEDIATAMENTE al caricamento del modulo
+   FIX: non dentro initPiano() per garantire disponibilità anche prima dell'auth
 ══════════════════════════════════════════════════ */
+_exposeGlobalFunctions();
+
 function _exposeGlobalFunctions() {
   // selectMeal: chiamato dai bottoni pasto in HTML
   window.selectMeal = function(meal, btnElement) {
@@ -75,9 +55,9 @@ function _exposeGlobalFunctions() {
     _renderSuggestedRecipes();
   };
   
-  // filterOggiIngredients: chiamato dalla barra ricerca
+  // filterOggiIngredients: chiamato dalla barra ricerca in HTML
   window.filterOggiIngredients = function(query) {
-    const searchQuery = query.toLowerCase().trim();
+    const searchQuery = (query || '').toLowerCase().trim();
     const itemsWrap = document.getElementById('mealItemsWrap');
     if (!itemsWrap) return;
     
@@ -116,6 +96,50 @@ function _exposeGlobalFunctions() {
       window.filterOggiIngredients('');
     }
   };
+
+  // resetPiano: chiamato dal bottone reset nell'HTML
+  window.resetPiano = function() {
+    if (!confirm('Vuoi resettare tutti i pasti di oggi?')) return;
+    const u = auth.currentUser; if (!u) return;
+    const dayRef = ref(db, `users/${u.uid}/pianoPasto/${currentDate}`);
+    remove(dayRef).then(() => {
+      _checkDayMeals();
+      _buildMealSelector();
+      console.log('[piano] Piano resettato per', currentDate);
+    });
+  };
+
+  // shiftCalendar: chiamato dai bottoni < > del calendario
+  window.shiftCalendar = function(days) {
+    const d = new Date(currentDate);
+    d.setDate(d.getDate() + days);
+    currentDate = d.toISOString().split('T')[0];
+    _renderCalendarBar();
+    _checkDayMeals();
+    _buildDayNotes();
+  };
+}
+
+export function initPiano() {
+  if (!auth.currentUser) {
+    console.log('[piano] Utente non autenticato, skip init.');
+    return;
+  }
+  console.log('[piano] Init Piano Pasto');
+  _setupCalendar();
+  _loadFrigoData();
+  _loadDietPreferences();
+  _loadRecipes();
+  _buildMealSelector();
+  _renderAddItemRow();
+  _buildDayNotes();
+  _setupAIRecipeGen();
+  _setupAIStatsBtn();
+  _checkDayMeals();
+  _initExpiringSection();
+  _initPianoAlimentare();
+  _setupAIPianoWizardBtn();
+  _initRecipeSearch();  // ← OPZIONE B: barra ricerca ricette
 }
 
 /* ══════════════════════════════════════════════════
@@ -849,4 +873,4 @@ function _setupAIPianoWizardBtn() {
   });
 }
 
-console.log('[piano] piano.js caricato - fix completo: module exports + global functions');
+console.log('[piano] piano.js caricato - global functions esposte immediatamente');
