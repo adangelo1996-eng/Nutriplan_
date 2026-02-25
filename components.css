@@ -3,7 +3,7 @@
    Sezioni: 17. Piano Pasto  18. Frigo  19. Ricette
             20. RC-Card  21. Modal  22. Storico
             23. Spesa  24. Statistiche  25. Profilo
-            26. Auth  27. Piano Alimentare
+            26. Auth  27. Piano Alimentare (COMPLETE)
 ══════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════
@@ -1184,8 +1184,196 @@
 }
 
 /* ══════════════════════════════════════════════════
-   27. PIANO ALIMENTARE
+   27. PIANO ALIMENTARE — COMPLETE CSS
 ══════════════════════════════════════════════════ */
+
+/* Wizard invite card */
+.pa-wizard-invite {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, var(--primary-xl) 0%, var(--bg-card) 100%);
+  border: 1.5px solid var(--primary-mid);
+  border-radius: var(--r-2xl);
+  padding: 20px;
+  margin-bottom: 24px;
+  transition: all var(--t);
+}
+
+.pa-wizard-invite-empty {
+  background: linear-gradient(135deg, #fffbeb 0%, var(--bg-card) 100%);
+  border-color: #fde68a;
+}
+
+[data-theme="dark"] .pa-wizard-invite-empty {
+  background: linear-gradient(135deg, #2d1b00 0%, var(--bg-card) 100%);
+  border-color: #78350f;
+}
+
+.pa-wizard-invite-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.1));
+}
+
+.pa-wizard-invite-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pa-wizard-invite-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.pa-wizard-invite-sub {
+  font-size: .82rem;
+  color: var(--text-mid);
+  line-height: 1.4;
+}
+
+.pa-wizard-invite-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: var(--primary);
+  color: #fff;
+  border: 1.5px solid var(--primary-dark);
+  border-radius: var(--r-xl);
+  font-size: .84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--t);
+  white-space: nowrap;
+}
+
+.pa-wizard-invite-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(61,139,111,.3);
+}
+
+.pa-wizard-invite-btn:active {
+  transform: translateY(0);
+}
+
+/* Pulse animation for empty state */
+@keyframes wizardPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); box-shadow: 0 8px 24px rgba(245,158,11,.3); }
+}
+
+.pa-wizard-invite-pulse {
+  animation: wizardPulse 1.2s ease-in-out;
+}
+
+/* Meal section */
+.pa-meal-section {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-2xl);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  transition: all var(--t);
+}
+
+.pa-meal-section:hover {
+  border-color: var(--primary-mid);
+  box-shadow: var(--shadow-xs);
+}
+
+.pa-meal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.pa-meal-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-xl);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--primary-mid);
+}
+
+.pa-meal-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pa-meal-label {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.pa-meal-count {
+  font-size: .74rem;
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+.pa-meal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Category section */
+.pa-cat-section {
+  background: var(--bg-subtle);
+  border-radius: var(--r-lg);
+  padding: 12px 14px;
+  transition: all var(--t);
+}
+
+.pa-cat-section:hover {
+  background: color-mix(in srgb, var(--primary) 3%, var(--bg-subtle));
+}
+
+.pa-cat-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pa-cat-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.pa-cat-name {
+  flex: 1;
+  font-size: .8rem;
+  font-weight: 800;
+  color: var(--text-mid);
+  letter-spacing: .02em;
+}
+
+.pa-cat-count {
+  font-size: .7rem;
+  font-weight: 800;
+  background: var(--bg-card);
+  color: var(--text-light);
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--border);
+}
 
 /* Bottone Aggiungi nella categoria */
 .pa-cat-add-btn {
@@ -1193,16 +1381,15 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  padding: 7px 14px;
+  padding: 6px 12px;
   background: var(--bg-card);
   border: 1.5px solid var(--border);
-  border-radius: var(--r-lg);
-  font-size: .78rem;
+  border-radius: var(--r-md);
+  font-size: .74rem;
   font-weight: 700;
   color: var(--text-mid);
   cursor: pointer;
   transition: all var(--t);
-  margin-left: auto;
   white-space: nowrap;
 }
 
@@ -1218,23 +1405,201 @@
   transform: translateY(0);
 }
 
+.pa-cat-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Ingredient row */
+.pa-ing-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 10px 12px;
+  transition: all var(--t);
+}
+
+.pa-ing-row:hover {
+  border-color: var(--primary-mid);
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+}
+
+.pa-ing-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-subtle);
+  border-radius: var(--r-md);
+}
+
+.pa-ing-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pa-ing-name {
+  font-size: .86rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pa-ing-qty {
+  font-size: .72rem;
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+.pa-ing-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.pa-ing-btn {
+  width: 28px;
+  height: 28px;
+  background: var(--bg-subtle);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-size: .82rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-mid);
+  transition: all var(--t);
+}
+
+.pa-ing-btn:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  transform: scale(1.05);
+}
+
+.pa-ing-btn.btn-edit:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.pa-ing-btn.btn-delete:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+/* Alternative row */
+.pa-alt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-subtle);
+  border: 1px dashed var(--border);
+  border-radius: var(--r-md);
+  padding: 8px 10px;
+  margin-left: 46px;
+  transition: all var(--t);
+}
+
+.pa-alt-row:hover {
+  background: var(--bg-card);
+  border-style: solid;
+  border-color: var(--primary-mid);
+}
+
+.pa-alt-icon {
+  font-size: .9rem;
+  color: var(--text-light);
+  flex-shrink: 0;
+}
+
+.pa-alt-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pa-alt-name {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--text-mid);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pa-alt-qty {
+  font-size: .68rem;
+  color: var(--text-light);
+  font-weight: 600;
+}
+
+.pa-alt-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.pa-alt-btn {
+  width: 24px;
+  height: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  font-size: .72rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-light);
+  transition: all var(--t);
+}
+
+.pa-alt-btn:hover {
+  color: var(--text);
+  border-color: var(--primary-mid);
+  transform: scale(1.05);
+}
+
+.pa-alt-btn.btn-delete:hover {
+  background: #fee2e2;
+  color: var(--danger);
+  border-color: #fecaca;
+}
+
 /* Bottone Aggiungi alternativa */
 .pa-add-alt-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 6px 12px;
+  gap: 4px;
+  padding: 6px 10px;
   background: var(--bg-subtle);
   border: 1.5px dashed var(--border);
   border-radius: var(--r-md);
-  font-size: .75rem;
+  font-size: .72rem;
   font-weight: 700;
   color: var(--text-light);
   cursor: pointer;
   transition: all var(--t);
   width: 100%;
-  margin-top: 6px;
+  margin-top: 4px;
+  margin-left: 46px;
 }
 
 .pa-add-alt-btn:hover {
@@ -1246,4 +1611,102 @@
 
 .pa-add-alt-btn:active {
   transform: scale(0.98);
+}
+
+/* Limiti settimanali section */
+.pa-limiti-section {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-2xl);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.pa-limiti-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.pa-limiti-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.pa-limiti-title {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.pa-limiti-sub {
+  font-size: .74rem;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+.pa-limiti-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+/* Empty states */
+.pa-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  text-align: center;
+  gap: 8px;
+}
+
+.pa-empty-icon {
+  font-size: 2.4rem;
+  opacity: .35;
+  margin-bottom: 4px;
+}
+
+.pa-empty-text {
+  font-size: .84rem;
+  color: var(--text-light);
+  font-weight: 600;
+  max-width: 200px;
+  line-height: 1.4;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .pa-wizard-invite {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .pa-wizard-invite-icon {
+    font-size: 3rem;
+  }
+  
+  .pa-alt-row,
+  .pa-add-alt-btn {
+    margin-left: 0;
+  }
+  
+  .pa-limiti-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .pa-meal-section {
+    padding: 20px 24px;
+  }
+  
+  .pa-limiti-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
 }
