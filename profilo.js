@@ -1,15 +1,50 @@
 /*
-   PROFILO.JS — v5  limiti settimanali + stile rc-card unificato
+   PROFILO.JS — v6  Step 2 Enhanced Limits + Step 4 Wizard Detection
 */
 
 var profiloEditMode  = false;
 var editMealPlanData = null;
 
+/* STEP 4: Check if meal plan is empty */
+function isPianoAlimentareEmpty() {
+  if (!pianoAlimentare || typeof pianoAlimentare !== 'object') return true;
+  
+  var meals = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
+  var totalItems = 0;
+  
+  meals.forEach(function(meal) {
+    if (!pianoAlimentare[meal] || typeof pianoAlimentare[meal] !== 'object') return;
+    ['principale', 'contorno', 'frutta', 'extra'].forEach(function(cat) {
+      if (Array.isArray(pianoAlimentare[meal][cat])) {
+        totalItems += pianoAlimentare[meal][cat].length;
+      }
+    });
+  });
+  
+  return totalItems === 0;
+}
+
 /* ── ENTRY POINT ── */
 function renderProfilo() {
   var el = document.getElementById('profiloPage');
   if (!el) return;
+  
+  /* STEP 4: Show wizard invite if plan is empty */
+  var wizardInvite = '';
+  if (isPianoAlimentareEmpty()) {
+    wizardInvite = 
+      '<div class="rc-card" style="margin-bottom:16px;padding:24px;text-align:center;">' +
+        '<div style="font-size:3rem;margin-bottom:12px;">🧙‍♂️</div>' +
+        '<div style="font-weight:800;font-size:1.1em;margin-bottom:8px;">Piano Alimentare Vuoto</div>' +
+        '<div style="font-size:.88em;color:var(--text-3);margin-bottom:16px;">Crea il tuo piano settimanale guidato passo-passo</div>' +
+        '<button class="rc-btn rc-btn-primary" onclick="startMealPlanWizard()" style="padding:12px 24px;font-size:.95em;">' +
+          '✨ Avvia Wizard di Configurazione' +
+        '</button>' +
+      '</div>';
+  }
+  
   el.innerHTML =
+    wizardInvite +
     buildProfiloUserSection() +
     buildProfiloDietaSection() +
     buildProfiloLimitiSection() +
@@ -34,13 +69,13 @@ function buildProfiloDietaSection() {
 
   var togglesHtml = flags.map(function(f) {
     var on = Boolean(dp[f.key]);
-    return '<div class="settings-row" onclick="toggleDietPref(\''+f.key+'\')" style="cursor:pointer;">' +
+    return '<div class="settings-row" onclick="toggleDietPref(\\''+f.key+'\\')" style="cursor:pointer;">' +
       '<div class="settings-row-icon">'+f.emoji+'</div>' +
       '<div class="settings-row-info">' +
         '<div class="settings-row-label">'+f.label+'</div>' +
         '<div class="settings-row-sub">'+f.sub+'</div>' +
       '</div>' +
-      '<div class="diet-toggle'+(on?' diet-toggle-on':'')+'">'+
+      '<div class="diet-toggle'+(on?' diet-toggle-on':'')+'">' +
         '<div class="diet-toggle-knob"></div>' +
       '</div>' +
     '</div>';
@@ -53,7 +88,7 @@ function buildProfiloDietaSection() {
         (allergenici.length
           ? allergenici.map(function(a){
               return '<span class="allergen-tag">'+a+
-                '<button onclick="removeAllergen(\''+a.replace(/'/g,"\\'")+'\')" aria-label="Rimuovi">✕</button></span>';
+                '<button onclick="removeAllergen(\\''+a.replace(/'/g,"\\\\'")+'\\')'" aria-label="Rimuovi">✕</button></span>';
             }).join('')
           : '<span style="font-size:.8em;color:var(--text-3);font-style:italic;">Nessun ingrediente aggiunto</span>'
         ) +
@@ -62,7 +97,7 @@ function buildProfiloDietaSection() {
         '<input type="text" id="allergenInput" placeholder="Es. arachidi, soia…" ' +
                'style="flex:1;padding:7px 10px;border-radius:var(--r-md);border:1.5px solid var(--border);' +
                'background:var(--bg-subtle);font-size:.86em;color:var(--text-1);outline:none;" ' +
-               'onkeydown="if(event.key===\'Enter\')addAllergen()">' +
+               'onkeydown="if(event.key===\\'Enter\\')addAllergen()">' +
         '<button class="rc-btn rc-btn-primary" style="padding:7px 14px;font-size:.86em;" onclick="addAllergen()">＋</button>' +
       '</div>' +
     '</div>';
@@ -114,7 +149,7 @@ function removeAllergen(name) {
 function buildProfiloUserSection() {
   var user = (typeof currentUser !== 'undefined') ? currentUser : null;
   var avatarHtml = user && user.photoURL
-    ? '<img src="' + user.photoURL + '" class="profilo-avatar" alt="Foto profilo" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+    ? '<img src="' + user.photoURL + '" class="profilo-avatar" alt="Foto profilo" onerror="this.style.display=\\'none\\';this.nextElementSibling.style.display=\\'flex\\'">' +
       '<div class="profilo-avatar-placeholder" style="display:none;">👤</div>'
     : '<div class="profilo-avatar-placeholder">👤</div>';
 
@@ -202,7 +237,7 @@ function openLimitiSettings() {
     goToPage('piano-alimentare');
     if (typeof showToast === 'function') {
       setTimeout(function(){
-        showToast('💡 Scorri fino alla sezione "Limiti settimanali" per modificare i valori', 'info');
+        showToast('💡 Scorri fino alla sezione \"Limiti settimanali\" per modificare i valori', 'info');
       }, 300);
     }
   }
@@ -305,7 +340,7 @@ function buildProfiloPianoSection() {
             '<span style="font-weight:700;">'+m.label+'</span>' +
           '</div>' +
           '<div class="profilo-ing-rows" id="profilo-rows-'+m.key+'">'+rows+'</div>' +
-          '<button class="rc-btn rc-btn-outline rc-btn-sm" onclick="addEditRow(\''+m.key+'\')" style="margin-top:8px;">＋ Aggiungi</button>' +
+          '<button class="rc-btn rc-btn-outline rc-btn-sm" onclick="addEditRow(\\''+m.key+'\\')" style="margin-top:8px;">＋ Aggiungi</button>' +
         '</div>' +
       '</div>'
     );
@@ -453,27 +488,27 @@ function buildProfiloSettingsSection() {
       label: isDark ? 'Tema: Scuro' : 'Tema: Chiaro',
       sub: 'Cambia tra tema chiaro e scuro',
       action: 'toggleDarkMode()',
-      right: '<span class="settings-toggle '+(isDark?'on':'')+'"></span>'
+      right: '<span class="settings-toggle '+(isDark?'on':'')+'\"></span>'
     },
     {
       icon: '📚',
       label: 'Guida introduttiva',
       sub: 'Rivedi il tutorial passo-passo',
-      action: 'if(typeof resetTutorial===\'function\')resetTutorial()',
+      action: 'if(typeof resetTutorial===\\'function\\')resetTutorial()',
       right: '<span class="settings-row-arrow">›</span>'
     },
     {
       icon: '📄',
       label: 'Esporta PDF',
       sub: 'Stampa piano, dispensa e storico',
-      action: 'if(typeof exportPDF===\'function\')exportPDF()',
+      action: 'if(typeof exportPDF===\\'function\\')exportPDF()',
       right: '<span class="settings-row-arrow">›</span>'
     },
     {
       icon: '🔒',
       label: 'Privacy Policy',
       sub: 'Informativa sul trattamento dei dati',
-      action: 'if(typeof openPrivacyModal===\'function\')openPrivacyModal()',
+      action: 'if(typeof openPrivacyModal===\\'function\\')openPrivacyModal()',
       right: '<span class="settings-row-arrow">›</span>'
     },
     {
@@ -511,7 +546,7 @@ function confirmClearAllData() {
     modal.classList.add('active');
   } else {
     /* Fallback per sicurezza */
-    if (!confirm('Cancellare TUTTI i dati di NutriPlan?\nQuesta operazione è irreversibile.')) return;
+    if (!confirm('Cancellare TUTTI i dati di NutriPlan?\\nQuesta operazione è irreversibile.')) return;
     executeDeleteAllData();
   }
 }
@@ -539,7 +574,7 @@ function executeDeleteAllData() {
     });
   }
 
-  /* Marca come "cancellato esplicitamente" per impedire il ripristino
+  /* Marca come \"cancellato esplicitamente\" per impedire il ripristino
      automatico del piano di default (ensureDefaultPlan / initStorage) */
   try { localStorage.setItem('nutriplan_cleared', '1'); } catch(e) {}
 
@@ -565,6 +600,28 @@ function executeDeleteAllData() {
   if (typeof showToast      === 'function') showToast('🗑️ Tutti i dati eliminati', 'info');
 }
 
+/* STEP 4: Wizard trigger (placeholder - implement full wizard separately) */
+function startMealPlanWizard() {
+  /* Navigate to Piano Alimentare page */
+  if (typeof goToPage === 'function') {
+    goToPage('piano-alimentare');
+  }
+  
+  /* Show instructions */
+  if (typeof showToast === 'function') {
+    setTimeout(function() {
+      showToast('💡 Inizia aggiungendo ingredienti per ogni pasto', 'info', 5000);
+    }, 500);
+  }
+  
+  /* Future: Implement full step-by-step wizard with:
+     - Step 1: Select meals to configure
+     - Step 2: Add ingredients per meal
+     - Step 3: Set weekly limits
+     - Step 4: Review and save
+  */
+}
+
 /* ── UTILITY ── */
-function escQP(str) { return String(str||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+function escQP(str) { return String(str||'').replace(/'/g,"\\\\'").replace(/"/g,'&quot;'); }
 function _escHtml(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
