@@ -1,44 +1,39 @@
 /*
-   DISPENSA.JS — v4
-   Frigo con card stile rc-card accordion:
-   - Raggruppato per categoria
-   - Ogni item: icona · nome · qtà · unità · + −
-   - Click sull'item → modal inserimento quantità manuale
+   DISPENSA.JS — v5
+   + Modifica categoria ingrediente
+   + Notifiche deficit ingredienti
 */
 
 var pantrySearchQuery = '';
 
 /* ══════════════════════════════════════════════════
    SCADENZE SUGGERITE PER CATEGORIA (giorni da oggi)
-   Fonte: stime medie per prodotti freschi
 ══════════════════════════════════════════════════ */
 var FRESH_EXPIRY_DAYS = {
-  '🥩 Carne':               3,   /* carne fresca */
-  '🥩 Carne e Pesce':        3,   /* compat legacy */
-  '🐟 Pesce':                2,   /* pesce fresco */
-  '🥛 Latticini e Uova':     7,   /* latte, yogurt, uova */
-  '🥦 Verdure':              5,   /* verdure fresche */
-  '🍎 Frutta':               7,   /* frutta fresca */
-  '🥑 Grassi e Condimenti':  30,  /* oli, condimenti */
-  '🌾 Cereali e Legumi':     180, /* secchi/confezionati */
-  '🍫 Dolci e Snack':        90,  /* dolci confezionati */
-  '🧂 Cucina':               365, /* spezie/brodi */
+  '🥩 Carne':               3,
+  '🥩 Carne e Pesce':        3,
+  '🐟 Pesce':                2,
+  '🥛 Latticini e Uova':     7,
+  '🥦 Verdure':              5,
+  '🍎 Frutta':               7,
+  '🥑 Grassi e Condimenti':  30,
+  '🌾 Cereali e Legumi':     180,
+  '🍫 Dolci e Snack':        90,
+  '🧂 Cucina':               365,
   '🧂 Altro':                90
 };
 
-/* Giorni aggiuntivi in congelatore rispetto alla scadenza fresca */
 var FREEZER_EXTRA_DAYS = {
-  '🥩 Carne':               150, /* ~5 mesi */
+  '🥩 Carne':               150,
   '🥩 Carne e Pesce':        150,
-  '🐟 Pesce':                150, /* ~5 mesi */
-  '🥛 Latticini e Uova':     90,  /* ~3 mesi */
-  '🥦 Verdure':              300, /* ~10 mesi */
-  '🍎 Frutta':               300, /* ~10 mesi */
-  '🌾 Cereali e Legumi':     90,  /* pane/pasta cotta ~3 mesi */
+  '🐟 Pesce':                150,
+  '🥛 Latticini e Uova':     90,
+  '🥦 Verdure':              300,
+  '🍎 Frutta':               300,
+  '🌾 Cereali e Legumi':     90,
   '🍫 Dolci e Snack':        90
 };
 
-/* Calcola una data di scadenza suggerita (stringa ISO YYYY-MM-DD) */
 function _suggestExpiry(category, frozen) {
   var freshDays = FRESH_EXPIRY_DAYS[category] || 30;
   var extraDays = frozen ? (FREEZER_EXTRA_DAYS[category] || 90) : 0;
@@ -56,7 +51,7 @@ function _suggestExpiry(category, frozen) {
 var CATEGORY_ORDER = [
   '🥩 Carne',
   '🐟 Pesce',
-  '🥩 Carne e Pesce', /* compatibilità dati precedenti */
+  '🥩 Carne e Pesce',
   '🥛 Latticini e Uova',
   '🌾 Cereali e Legumi',
   '🥦 Verdure',
@@ -70,7 +65,7 @@ var CATEGORY_ORDER = [
 var CATEGORY_COLORS = {
   '🥩 Carne':                '#ef4444',
   '🐟 Pesce':                '#0ea5e9',
-  '🥩 Carne e Pesce':        '#ef4444', /* compat */
+  '🥩 Carne e Pesce':        '#ef4444',
   '🥛 Latticini e Uova':     '#f59e0b',
   '🌾 Cereali e Legumi':     '#a16207',
   '🥦 Verdure':              '#22c55e',
@@ -83,26 +78,17 @@ var CATEGORY_COLORS = {
 
 function getCategoryIcon(cat) {
   var map = {
-    '🥩 Carne':               '🥩',
-    '🐟 Pesce':               '🐟',
-    '🥩 Carne e Pesce':       '🥩',
-    '🥛 Latticini e Uova':    '🥛',
-    '🌾 Cereali e Legumi':    '🌾',
-    '🥦 Verdure':             '🥦',
-    '🍎 Frutta':              '🍎',
-    '🥑 Grassi e Condimenti': '🥑',
-    '🍫 Dolci e Snack':       '🍫',
-    '🧂 Cucina':              '🧂',
-    '🧂 Altro':               '🧂'
+    '🥩 Carne':'🥩','🐟 Pesce':'🐟','🥩 Carne e Pesce':'🥩',
+    '🥛 Latticini e Uova':'🥛','🌾 Cereali e Legumi':'🌾',
+    '🥦 Verdure':'🥦','🍎 Frutta':'🍎','🥑 Grassi e Condimenti':'🥑',
+    '🍫 Dolci e Snack':'🍫','🧂 Cucina':'🧂','🧂 Altro':'🧂'
   };
   return (cat && map[cat]) ? map[cat] : '🧂';
 }
 
-/* Rimappa la vecchia categoria "Carne e Pesce" basandosi su defaultIngredients */
 function resolveDisplayCategory(item) {
   var cat = item.category || '🧂 Altro';
   if (cat !== '🥩 Carne e Pesce') return cat;
-  /* cerca nel database default */
   if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
     var defIng = defaultIngredients.find(function(d) {
       return d && d.name && d.name.toLowerCase() === (item.name || '').toLowerCase();
@@ -111,7 +97,6 @@ function resolveDisplayCategory(item) {
       return defIng.category;
     }
   }
-  /* fallback: usa l'icona */
   if (['🐟','🦑','🐙'].indexOf(item.icon || '') !== -1) return '🐟 Pesce';
   return '🥩 Carne';
 }
@@ -144,13 +129,89 @@ function isValidItem(item) {
 }
 
 /* ══════════════════════════════════════════════════
+   CALCOLO DEFICIT INGREDIENTI
+══════════════════════════════════════════════════ */
+function getDeficitIngredients() {
+  var deficits = [];
+  if (!pianoAlimentare || !pantryItems) return deficits;
+  
+  var mealKeys = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
+  var needed = {};
+  
+  /* Calcola fabbisogno totale dal piano */
+  mealKeys.forEach(function(mk) {
+    var mp = pianoAlimentare[mk] || {};
+    Object.keys(mp).forEach(function(cat) {
+      var arr = mp[cat];
+      if (!Array.isArray(arr)) return;
+      arr.forEach(function(item) {
+        if (!isValidItem(item) || !item.quantity) return;
+        var name = item.name.trim();
+        var qty = parseFloat(item.quantity) || 0;
+        if (!needed[name]) needed[name] = { total: 0, unit: item.unit || 'g' };
+        needed[name].total += qty;
+      });
+    });
+  });
+  
+  /* Confronta con disponibilità in dispensa */
+  Object.keys(needed).forEach(function(name) {
+    var required = needed[name].total;
+    var available = (pantryItems[name] && pantryItems[name].quantity) || 0;
+    var remaining = Math.max(0, available - required);
+    
+    /* Se rimane meno di una porzione, segnala deficit */
+    if (available < required * 1.5) {
+      deficits.push({
+        name: name,
+        required: required,
+        available: available,
+        remaining: remaining,
+        unit: needed[name].unit,
+        severity: available <= 0 ? 'critical' : available < required ? 'warning' : 'low'
+      });
+    }
+  });
+  
+  deficits.sort(function(a, b) {
+    var severityOrder = { critical: 0, warning: 1, low: 2 };
+    return severityOrder[a.severity] - severityOrder[b.severity];
+  });
+  
+  return deficits;
+}
+
+function buildDeficitSection() {
+  var deficits = getDeficitIngredients();
+  if (!deficits.length) return '';
+  
+  var html = '<div class="deficit-section">' +
+    '<div class="deficit-section-title">📬 Ingredienti in esaurimento</div>' +
+    deficits.map(function(d) {
+      var icon = d.severity === 'critical' ? '🔴' : d.severity === 'warning' ? '🟠' : '🟡';
+      var label = d.available <= 0 
+        ? 'Esaurito'
+        : 'Rimangono ' + d.remaining.toFixed(0) + ' ' + d.unit;
+      return '<div class="deficit-row" onclick="openQtyModal(\'' + escQ(d.name) + '\')">' +
+        '<span class="deficit-icon">' + icon + '</span>' +
+        '<div class="deficit-info">' +
+          '<div class="deficit-name">' + d.name + '</div>' +
+          '<div class="deficit-label">' + label + '</div>' +
+        '</div>' +
+        '<button class="rc-btn-icon" onclick="event.stopPropagation();pianoAddToSpesa(\'' + escQ(d.name) + '\',\'' + d.required + '\',\'' + escQ(d.unit) + '\')" title="Aggiungi alla spesa">🛒</button>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+  return html;
+}
+
+/* ══════════════════════════════════════════════════
    CATALOGO COMPLETO
 ══════════════════════════════════════════════════ */
 function getAllPantryItems() {
   var result = [];
   var seen   = {};
 
-  /* 1. Dal piano */
   var mealKeys = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
   mealKeys.forEach(function(mk) {
     var mp = (typeof pianoAlimentare !== 'undefined' && pianoAlimentare && pianoAlimentare[mk]) ? pianoAlimentare[mk] : {};
@@ -175,7 +236,6 @@ function getAllPantryItems() {
     });
   });
 
-  /* 2. Default */
   if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
     defaultIngredients.forEach(function(item) {
       if (!isValidItem(item)) return;
@@ -194,7 +254,6 @@ function getAllPantryItems() {
     });
   }
 
-  /* 3. Custom */
   if (typeof customIngredients !== 'undefined' && Array.isArray(customIngredients)) {
     customIngredients.forEach(function(item) {
       if (!isValidItem(item)) return;
@@ -213,7 +272,6 @@ function getAllPantryItems() {
     });
   }
 
-  /* 4. Extra in pantryItems con qty > 0 */
   if (typeof pantryItems !== 'undefined' && pantryItems && typeof pantryItems === 'object') {
     Object.keys(pantryItems).forEach(function(name) {
       if (!isValidPantryKey(name) || seen[name]) return;
@@ -249,7 +307,6 @@ function buildExpiringSection() {
     '<div class="expiring-section-title">⏰ In scadenza presto</div>' +
     expiring.map(function(e) {
       var badge = buildExpiryBadge(e.data.scadenza);
-      /* Cerca ricette che usano questo ingrediente */
       var allR = (typeof getAllRicette === 'function') ? getAllRicette() : [];
       var matchR = allR.filter(function(r) {
         return Array.isArray(r.ingredienti) && r.ingredienti.some(function(i){
@@ -275,15 +332,11 @@ function renderFridge(targetId) {
   var el = document.getElementById(targetId || 'pantryContent');
   if (!el) return;
 
-  /* Tutti gli elementi per il conteggio */
   var allItems = getAllPantryItems();
-
-  /* Solo elementi con qty > 0 per il display principale */
   var active = allItems.filter(function(i) {
     return isValidItem(i) && (i.quantity || 0) > 0;
   });
 
-  /* Filtro ricerca */
   var searchActive = false;
   if (pantrySearchQuery) {
     searchActive = true;
@@ -294,7 +347,6 @@ function renderFridge(targetId) {
     });
   }
 
-  /* In modalità ricerca: mostra solo risultati */
   if (searchActive) {
     if (!active.length) {
       el.innerHTML =
@@ -303,7 +355,6 @@ function renderFridge(targetId) {
           '<p>Nessun ingrediente corrisponde a "<strong>' + pantrySearchQuery + '</strong>".</p>' +
         '</div>';
     } else {
-      /* Raggruppa per categoria solo i risultati */
       var sGroups = {};
       active.forEach(function(item) {
         var cat = item.category || '🧂 Altro';
@@ -336,9 +387,6 @@ function renderFridge(targetId) {
     return;
   }
 
-  /* Modalità normale: mostra TUTTE le categorie, anche vuote */
-
-  /* Raggruppa gli elementi attivi per categoria (con rimappatura carne/pesce) */
   var groups = {};
   active.forEach(function(item) {
     var cat = resolveDisplayCategory(item);
@@ -346,7 +394,6 @@ function renderFridge(targetId) {
     groups[cat].push(item);
   });
 
-  /* Tutte le categorie definite + quelle extra dai dati */
   var allCats = CATEGORY_ORDER.slice();
   Object.keys(groups).forEach(function(c) {
     if (allCats.indexOf(c) === -1) allCats.push(c);
@@ -354,8 +401,7 @@ function renderFridge(targetId) {
 
   var html = '';
   allCats.forEach(function(cat) {
-    if (cat === '🧂 Altro') return; /* "Altro" mostrato solo se ha elementi */
-    /* Nasconde la categoria legacy "Carne e Pesce" se ora abbiamo Carne e Pesce separate */
+    if (cat === '🧂 Altro') return;
     if (cat === '🥩 Carne e Pesce' && (groups['🥩 Carne'] || groups['🐟 Pesce'] || !groups[cat])) return;
     var items = groups[cat] || [];
     var color = getCategoryColor(cat);
@@ -389,7 +435,6 @@ function renderFridge(targetId) {
       '</div>';
   });
 
-  /* "Altro" solo se ha elementi */
   if (groups['🧂 Altro'] && groups['🧂 Altro'].length) {
     var altroItems = groups['🧂 Altro'];
     html +=
@@ -407,7 +452,6 @@ function renderFridge(targetId) {
       '</div>';
   }
 
-  /* ── Sezione Congelatore ── (solo nella pagina principale) */
   if (!targetId) {
     var freezerItems = active.filter(function(i) { return i.freezer; });
     if (freezerItems.length) {
@@ -428,9 +472,10 @@ function renderFridge(targetId) {
     }
   }
 
-  /* Pulsante AI + sezione in scadenza solo nella pagina principale dispensa */
   if (!targetId) {
+    var deficitSection = buildDeficitSection();
     var expSection = buildExpiringSection();
+    if (deficitSection) html = deficitSection + html;
     if (expSection) html = expSection + html;
     if (typeof openAIRecipeModal === 'function') {
       var aiHtml =
@@ -491,9 +536,6 @@ function _renderAddByCatList(query) {
   if (!listEl) return;
 
   var cat = _addByCatCurrent;
-
-  /* Raccoglie ingredienti della categoria dai default e custom.
-     Gestisce anche la compatibilità: '🥩 Carne e Pesce' copre sia '🥩 Carne' che '🐟 Pesce' */
   var candidates = [];
   var seen = {};
   var catCompat = (cat === '🥩 Carne' || cat === '🐟 Pesce')
@@ -504,8 +546,6 @@ function _renderAddByCatList(query) {
     defaultIngredients.forEach(function(i) {
       if (i && i.name && !seen[i.name]) {
         var matchCat = catCompat.indexOf(i.category) !== -1;
-        /* Se la categoria è 🥩 Carne e Pesce ma stiamo mostrando Carne o Pesce,
-           filtra ulteriormente per icona pesce */
         if (matchCat && i.category === '🥩 Carne e Pesce') {
           var isFish = ['🐟','🦑','🐙'].indexOf(i.icon || '') !== -1;
           if (cat === '🐟 Pesce' && !isFish) matchCat = false;
@@ -527,9 +567,7 @@ function _renderAddByCatList(query) {
     });
   }
 
-  /* Se la ricerca non ha trovato nulla nella categoria, mostra risultati liberi */
   if (!candidates.length) {
-    /* Mostra tutti e filtra per query */
     if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
       defaultIngredients.forEach(function(i) {
         if (i && i.name && !seen[i.name]) {
@@ -540,14 +578,12 @@ function _renderAddByCatList(query) {
     }
   }
 
-  /* Filtra per query */
   if (query) {
     candidates = candidates.filter(function(n) {
       return n.toLowerCase().includes(query);
     });
   }
 
-  /* Esclude già in dispensa con qty > 0 */
   var alreadyIn = (typeof pantryItems !== 'undefined' && pantryItems)
     ? Object.keys(pantryItems).filter(function(k) {
         return pantryItems[k] && (pantryItems[k].quantity || 0) > 0;
@@ -599,13 +635,8 @@ function openAddFridgeFromCat(cat) {
 }
 
 function selectAddByCatItem(name) {
-  /* Pre-compila il modal aggiunta standard e aprilo */
   closeAddByCatModal();
-
-  /* Usa il modal addFridgeModal con precompilazione */
   var cat = _addByCatCurrent || '🧂 Altro';
-
-  /* Apri il modal generico precompilato */
   var modal = document.getElementById('addFridgeModal');
   if (!modal) { openAddFridgeModal(); return; }
 
@@ -626,9 +657,6 @@ function selectAddByCatItem(name) {
   }, 120);
 }
 
-/* ══════════════════════════════════════════════════
-   BUILD ROW INGREDIENTE
-══════════════════════════════════════════════════ */
 /* ══════════════════════════════════════════════════
    SCADENZE
 ══════════════════════════════════════════════════ */
@@ -672,14 +700,11 @@ function buildFridgeRow(item) {
   var name  = item.name;
   var color = getCategoryColor(item.category);
 
-  /* Formatta numero: togli decimali se intero */
   var qtyDisplay = (qty % 1 === 0) ? qty : parseFloat(qty.toFixed(2));
   var expiryBadge = buildExpiryBadge(item.scadenza);
 
-  /* Evidenziazione visiva per ingredienti in scadenza (entro 3 giorni) */
   var daysToExp = getDaysToExpiry(item.scadenza);
   var expiryRowStyle = '';
-  var expiryRowClass = '';
   if (daysToExp !== null) {
     if (daysToExp < 0) {
       expiryRowStyle = 'border-left:3px solid #ef4444;background:rgba(239,68,68,.05);';
@@ -691,7 +716,6 @@ function buildFridgeRow(item) {
       expiryRowStyle = 'border-left:3px solid #eab308;background:rgba(234,179,8,.03);';
     }
   }
-  /* Indicatore congelatore */
   if (item.freezer) {
     expiryRowStyle += 'border-left:3px solid #3b82f6;';
   }
@@ -700,19 +724,13 @@ function buildFridgeRow(item) {
     '<div class="fi-row" id="fi-row-' + sid + '" ' +
          'onclick="openQtyModal(\'' + escQ(name) + '\')" ' +
          'style="--rc:' + color + ';' + expiryRowStyle + '">' +
-
-      /* Icona */
       '<div class="fi-row-icon">' + icon + '</div>' +
-
-      /* Info */
       '<div class="fi-row-info">' +
         '<div class="fi-row-name">' + name + '</div>' +
         '<div class="fi-row-unit">' + unit +
           (expiryBadge ? ' ' + expiryBadge : '') +
         '</div>' +
       '</div>' +
-
-      /* Quantità + pulsanti */
       '<div class="fi-row-right" onclick="event.stopPropagation();">' +
         '<button class="fi-btn fi-btn-minus" onclick="fridgeAdjust(\'' + escQ(name) + '\',-1)"' +
                 ' aria-label="Riduci">−</button>' +
@@ -720,11 +738,8 @@ function buildFridgeRow(item) {
         '<button class="fi-btn fi-btn-plus" onclick="fridgeAdjust(\'' + escQ(name) + '\',1)"' +
                 ' aria-label="Aumenta">+</button>' +
       '</div>' +
-
-      /* Tasto elimina */
       '<button class="fi-row-del" onclick="event.stopPropagation();fridgeRemove(\'' + escQ(name) + '\')" ' +
               'aria-label="Rimuovi">✕</button>' +
-
     '</div>'
   );
 }
@@ -743,20 +758,17 @@ function fridgeAdjust(name, direction) {
   pantryItems[name] = Object.assign({}, pd, { quantity: next });
   saveData();
 
-  /* Aggiorna solo la span senza re-render completo */
   var sid  = safeid(name);
   var span = document.getElementById('fi-qty-' + sid);
   if (span) {
     var disp = (next % 1 === 0) ? next : parseFloat(next.toFixed(2));
     span.textContent = disp;
-    /* Animazione flash */
     span.classList.remove('fi-qty-flash');
     void span.offsetWidth;
     span.classList.add('fi-qty-flash');
     setTimeout(function() { span.classList.remove('fi-qty-flash'); }, 400);
   }
 
-  /* Se qty arriva a 0 → rimuovi la riga dopo un attimo */
   if (next <= 0) {
     setTimeout(function() { renderFridge(); }, 300);
   }
@@ -775,13 +787,14 @@ function fridgeRemove(name) {
 }
 
 /* ══════════════════════════════════════════════════
-   MODAL INSERIMENTO MANUALE QUANTITÀ
+   MODAL INSERIMENTO MANUALE QUANTITÀ - CON MODIFICA CATEGORIA
 ══════════════════════════════════════════════════ */
 function openQtyModal(name) {
   var pd   = (pantryItems && pantryItems[name]) ? pantryItems[name] : {};
   var qty  = typeof pd.quantity === 'number' ? pd.quantity : 0;
   var unit = pd.unit || 'g';
   var icon = pd.icon || getCategoryIcon(pd.category);
+  var cat  = pd.category || '🧂 Altro';
 
   var modal = document.getElementById('editQtyModal');
   if (!modal) return;
@@ -791,6 +804,13 @@ function openQtyModal(name) {
   document.getElementById('eqmUnit').textContent   = unit;
   document.getElementById('eqmInput').value        = (qty % 1 === 0) ? qty : parseFloat(qty.toFixed(2));
   document.getElementById('eqmInput').dataset.name = name;
+  
+  /* Aggiungi select per categoria */
+  var catSelect = document.getElementById('eqmCategory');
+  if (catSelect) {
+    catSelect.value = cat;
+  }
+  
   var scadEl = document.getElementById('eqmScadenza');
   if (scadEl) scadEl.value = pd.scadenza || '';
   var suggLabel = document.getElementById('eqmSuggLabel');
@@ -816,16 +836,16 @@ function openQtyModal(name) {
   }, 120);
 }
 
-/* Aggiorna la scadenza suggerita quando si spunta/rimuove congelatore in editQtyModal */
 function _updateEqmSuggestion() {
   var inp       = document.getElementById('eqmInput');
   var scadEl    = document.getElementById('eqmScadenza');
   var freezerEl = document.getElementById('eqmFreezer');
+  var catSelect = document.getElementById('eqmCategory');
   var suggLabel = document.getElementById('eqmSuggLabel');
   if (!inp) return;
   var name = inp.dataset.name;
   var pd   = (pantryItems && pantryItems[name]) ? pantryItems[name] : {};
-  var cat  = pd.category || '🧂 Altro';
+  var cat  = catSelect ? catSelect.value : (pd.category || '🧂 Altro');
   var frozen = freezerEl ? freezerEl.checked : false;
   if (scadEl) scadEl.value = _suggestExpiry(cat, frozen);
   if (suggLabel) {
@@ -851,9 +871,17 @@ function confirmQtyModal() {
   var pd = pantryItems[name] || {};
   var scadEl    = document.getElementById('eqmScadenza');
   var freezerEl = document.getElementById('eqmFreezer');
+  var catSelect = document.getElementById('eqmCategory');
   var scadenza  = scadEl ? (scadEl.value || '') : (pd.scadenza || '');
   var frozen    = freezerEl ? freezerEl.checked : (pd.freezer || false);
-  var updated   = Object.assign({}, pd, { quantity: val });
+  var newCat    = catSelect ? catSelect.value : (pd.category || '🧂 Altro');
+  var newIcon   = getCategoryIcon(newCat);
+  
+  var updated   = Object.assign({}, pd, { 
+    quantity: val,
+    category: newCat,
+    icon: newIcon
+  });
   if (scadenza) { updated.scadenza = scadenza; } else { delete updated.scadenza; }
   if (frozen)   { updated.freezer = true; }     else { delete updated.freezer; }
   pantryItems[name] = updated;
@@ -865,7 +893,6 @@ function confirmQtyModal() {
   if (typeof showToast === 'function') showToast('✅ ' + name + ': ' + val + ' ' + (pd.unit || 'g'), 'success');
 }
 
-/* Chiudi modal su click sfondo */
 document.addEventListener('DOMContentLoaded', function() {
   var modal = document.getElementById('editQtyModal');
   if (modal) {
@@ -873,7 +900,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (e.target === modal) closeQtyModal();
     });
   }
-  /* Enter nel campo */
   var inp = document.getElementById('eqmInput');
   if (inp) {
     inp.addEventListener('keydown', function(e) {
@@ -892,13 +918,11 @@ function filterPantry(query) {
 }
 
 /* ══════════════════════════════════════════════════
-   BARCODE SCANNER — OpenFoodFacts API
-   Endpoint: https://world.openfoodfacts.org/api/v2/product/{barcode}.json
-   Libreria: html5-qrcode (CDN)
+   BARCODE SCANNER
 ══════════════════════════════════════════════════ */
 var _barcodeScanner  = null;
 var _barcodeResult   = null;
-var _barcodeScanLock = false; /* impedisce scansioni multiple */
+var _barcodeScanLock = false;
 
 function openBarcodeScanner() {
   if (typeof Html5Qrcode === 'undefined') {
@@ -915,9 +939,7 @@ function openBarcodeScanner() {
   modal.classList.add('active');
   if (statusEl) statusEl.textContent = 'Avvio fotocamera…';
 
-  /* Piccolo delay per permettere al modal di renderizzare */
   setTimeout(function() {
-    /* Svuota il container prima di ricreare lo scanner */
     var container = document.getElementById('barcode-reader-container');
     if (container) container.innerHTML = '';
 
@@ -935,7 +957,7 @@ function openBarcodeScanner() {
             _lookupBarcode(decodedText);
           });
         },
-        function() { /* errori di scansione frame: ignora */ }
+        function() { }
       ).then(function() {
         if (statusEl) statusEl.textContent = 'Inquadra il codice a barre del prodotto…';
       }).catch(function(err) {
@@ -972,9 +994,6 @@ function _stopBarcodeScanner(callback) {
   }
 }
 
-/* ──────────────────────────────────────────────────
-   Lookup OpenFoodFacts
-────────────────────────────────────────────────── */
 function _lookupBarcode(barcode) {
   if (typeof showToast === 'function') showToast('🔍 Ricerca prodotto…', 'info');
 
@@ -1002,9 +1021,6 @@ function _lookupBarcode(barcode) {
     });
 }
 
-/* ──────────────────────────────────────────────────
-   Mappatura categorie OpenFoodFacts → categorie app
-────────────────────────────────────────────────── */
 function _mapOFFCategory(categories_tags) {
   if (!Array.isArray(categories_tags) || !categories_tags.length) return '🧂 Altro';
   var s = categories_tags.join(' ').toLowerCase();
@@ -1031,9 +1047,6 @@ function _mapOFFCategory(categories_tags) {
   return '🧂 Altro';
 }
 
-/* ──────────────────────────────────────────────────
-   Mostra modale risultato barcode
-────────────────────────────────────────────────── */
 function _showBarcodeResult(product, barcode) {
   var name = (product.product_name_it || product.product_name || '').trim();
   if (!name) name = 'Prodotto ' + barcode;
@@ -1050,7 +1063,6 @@ function _showBarcodeResult(product, barcode) {
   var fat      = n['fat_100g']            != null ? parseFloat(n['fat_100g']).toFixed(1)          : null;
   var fiber    = n['fiber_100g']          != null ? parseFloat(n['fiber_100g']).toFixed(1)        : null;
 
-  /* Sezione dettagli collassabili */
   var hasDetails = brand || kcal !== null || proteins !== null || carbs !== null || fat !== null;
   var detailsHtml = '';
   if (hasDetails) {
@@ -1074,7 +1086,6 @@ function _showBarcodeResult(product, barcode) {
   var catIcon = getCategoryIcon(category);
   var catName = category.replace(/^[^\s]+\s/, '');
 
-  /* Opzioni select categoria */
   var catOptions = [
     '🥩 Carne', '🐟 Pesce', '🥛 Latticini e Uova', '🌾 Cereali e Legumi',
     '🥦 Verdure', '🍎 Frutta', '🥑 Grassi e Condimenti',
@@ -1083,7 +1094,6 @@ function _showBarcodeResult(product, barcode) {
     return '<option value="' + c + '"' + (c === category ? ' selected' : '') + '>' + c + '</option>';
   }).join('');
 
-  /* Scadenza suggerita per categoria */
   var suggestedExpiry = _suggestExpiry(category, false);
   var todayIso = new Date().toISOString().slice(0, 10);
   var hasFreshSuggestion = FRESH_EXPIRY_DAYS[category] && FRESH_EXPIRY_DAYS[category] < 30;
@@ -1126,7 +1136,6 @@ function _showBarcodeResult(product, barcode) {
         '</select>' +
       '</div>' +
     '</div>' +
-    /* Data di scadenza con calendario popup */
     '<div class="form-group">' +
       '<label>📅 Data di scadenza <span style="font-size:.78em;color:var(--text-3);">(opzionale)</span></label>' +
       '<input type="date" id="barcodeIngScadenza" min="' + todayIso + '" ' +
@@ -1136,7 +1145,6 @@ function _showBarcodeResult(product, barcode) {
         ? '<small id="barcodeSuggLabel" style="color:var(--text-3);font-size:.76em;">💡 Suggerita in base alla categoria (modifica se necessario)</small>'
         : '<small id="barcodeSuggLabel" style="color:var(--text-3);font-size:.76em;">Lascia vuoto se non applicabile</small>') +
     '</div>' +
-    /* Checkbox congelatore */
     (hasFreezerExtra
       ? '<label style="display:flex;align-items:center;gap:9px;padding:8px 0;cursor:pointer;font-size:.88em;">' +
           '<input type="checkbox" id="barcodeIngFreezer" style="width:16px;height:16px;accent-color:#3b82f6;" ' +
@@ -1153,7 +1161,6 @@ function _showBarcodeResult(product, barcode) {
   if (modal) modal.classList.add('active');
 }
 
-/* Aggiorna la data di scadenza suggerita quando cambia la categoria o il checkbox congelatore */
 function _updateBarcodeSuggestion() {
   var catEl      = document.getElementById('barcodeIngCategory');
   var scadEl     = document.getElementById('barcodeIngScadenza');
@@ -1222,14 +1229,12 @@ function confirmBarcodeAdd() {
 
   pantryItems[name] = entry;
 
-  /* Aggiunge anche a customIngredients se non già presente */
   if (!customIngredients) customIngredients = [];
   var alreadyCustom = customIngredients.some(function(i) { return i && i.name === name; });
   if (!alreadyCustom) {
     customIngredients.push({ name: name, category: cat, unit: unit, icon: icon });
   }
 
-  /* Rimuove il flag "cleared" se l'utente aggiunge ingredienti */
   try { localStorage.removeItem('nutriplan_cleared'); } catch(e) {}
 
   saveData();
