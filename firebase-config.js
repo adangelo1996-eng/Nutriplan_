@@ -9,12 +9,12 @@
              signInWithGoogle, signOut, showCloudStatus
 ============================================================ */
 
-/* ── CONFIGURAZIONE ────────────────────────────────────────
+/* ── CONFIGURAZIONE ────────────────────────────────────────────
    La config viene iniettata da config.js:
    - In produzione (GitHub Pages): generato da GitHub Actions via Secrets.
    - In sviluppo locale: copia config.example.js → config.js con le tue chiavi.
    Il SDK Firebase è caricato dal CDN pubblico gstatic.com (index.html).
-────────────────────────────────────────────────────────── */
+────────────────────────────────────────────────────────────── */
 var _rawCfg = (window.APP_CONFIG && window.APP_CONFIG.firebase) || null;
 /* Valida: scarta la config se apiKey è vuota o contiene placeholder */
 var firebaseConfig = (_rawCfg && _rawCfg.apiKey &&
@@ -226,7 +226,7 @@ function showCloudStatus(status) {
 
   var cfg = {
     local:  { text: '☁ Locale',           cls: 'local'  },
-    saving: { text: '⏳ Salvataggio...',   cls: 'saving' },
+    saving: { text: '⌛ Salvataggio...',   cls: 'saving' },
     synced: { text: '✓ Sincronizzato',     cls: 'synced' },
     error:  { text: '⚠️ Errore sync',      cls: 'error'  }
   };
