@@ -425,258 +425,6 @@ function updateCloudStatus(state, text) {
                                          state === 'error'   ? '✗ Errore sync'  : '☁ Locale');
 }
 
-/* ══════════════════════════════════════════════════
-   SISTEMA NOTIFICHE INGREDIENTI IN ESAURIMENTO
-   Issue #34 — Calcola disponibilità e mostra avvisi
-══════════════════════════════════════════════════ */
-
-var _notificationData = null; /* cache risultato calcolo */
-var _notificationThreshold = 2; /* giorni soglia per notifica */
-
-/* Calcola disponibilità ingredienti rispetto al piano dei prossimi 7 giorni */
-function calculateIngredientAvailability() {
-  if (!pianoAlimentare || !pantryItems) return [];
-
-  var today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  /* Aggrega consumo giornaliero medio dagli ultimi 7 giorni di storico */
-  var consumption = {}; /* { ingredientName: totalQty } */
-  var daysAnalyzed = 0;
-
-  for (var i = -7; i <= 7; i++) {
-    var d = new Date(today);
-    d.setDate(today.getDate() + i);
-    var dk = formatDateKey(d);
-    var dayData = (appHistory && appHistory[dk]) ? appHistory[dk] : {};
-    var usedItems = dayData.usedItems || {};
-
-    var hasSomeData = false;
-    ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'].forEach(function(mk) {
-      var meal = usedItems[mk] || {};
-      Object.keys(meal).forEach(function(name) {
-        if (!meal[name] || typeof meal[name].quantity !== 'number') return;
-        hasSomeData = true;
-        if (!consumption[name]) consumption[name] = 0;
-        consumption[name] += meal[name].quantity || 0;
-      });
-    });
-
-    if (hasSomeData) daysAnalyzed++;
-  }
-
-  /* Se non ci sono dati storici, usa il piano corrente */
-  if (daysAnalyzed === 0) {
-    ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'].forEach(function(mk) {
-      var meal = pianoAlimentare[mk] || {};
-      Object.keys(meal).forEach(function(cat) {
-        var arr = meal[cat] || [];
-        arr.forEach(function(item) {
-          if (!item || !item.name || typeof item.quantity !== 'number') return;
-          if (!consumption[item.name]) consumption[item.name] = 0;
-          consumption[item.name] += item.quantity || 0;
-        });
-      });
-    });
-    daysAnalyzed = 1;
-  }
-
-  /* Calcola consumo giornaliero medio */
-  var avgDaily = {};
-  Object.keys(consumption).forEach(function(name) {
-    avgDaily[name] = consumption[name] / Math.max(daysAnalyzed, 1);
-  });
-
-  /* Confronta con disponibilità */
-  var notifications = [];
-  Object.keys(avgDaily).forEach(function(name) {
-    var pantryItem = pantryItems[name];
-    if (!pantryItem || typeof pantryItem.quantity !== 'number') return;
-
-    var available = pantryItem.quantity || 0;
-    var dailyUse = avgDaily[name];
-
-    if (dailyUse <= 0) return; /* nessun consumo */
-
-    var daysLeft = available / dailyUse;
-
-    if (daysLeft <= _notificationThreshold) {
-      var missingQty = Math.max(0, (7 * dailyUse) - available); /* quantità per 7 giorni */
-      notifications.push({
-        name: name,
-        daysLeft: Math.max(0, daysLeft),
-        missingQty: Math.round(missingQty * 100) / 100,
-        unit: pantryItem.unit || 'g',
-        category: pantryItem.category || '🧂 Altro'
-      });
-    }
-  });
-
-  /* Ordina per giorni rimanenti (meno giorni = più urgente) */
-  notifications.sort(function(a, b) {
-    return a.daysLeft - b.daysLeft;
-  });
-
-  return notifications;
-}
-
-/* Aggiorna badge numerico navbar */
-function updateNotificationBadge() {
-  _notificationData = calculateIngredientAvailability();
-  
-  var badge = document.getElementById('notificationBadge');
-  if (!badge) return;
-
-  var unreadCount = getUnreadNotificationsCount();
-  
-  if (unreadCount > 0) {
-    badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-    badge.style.display = 'flex';
-  } else {
-    badge.style.display = 'none';
-  }
-}
-
-/* Conta notifiche non lette */
-function getUnreadNotificationsCount() {
-  if (!_notificationData || !_notificationData.length) return 0;
-  
-  var readNotifications = JSON.parse(localStorage.getItem('nutriplan_read_notifications') || '{}');
-  var today = formatDateKey(new Date());
-  
-  /* Conta solo notifiche non lette di oggi */
-  var unread = _notificationData.filter(function(n) {
-    var key = today + '_' + n.name;
-    return !readNotifications[key];
-  });
-  
-  return unread.length;
-}
-
-/* Apri modal notifiche */
-function openNotificationsModal() {
-  var modal = document.getElementById('notificationsModal');
-  if (!modal) return;
-
-  renderNotificationsList();
-  modal.classList.add('active');
-  
-  /* Marca tutte come lette dopo 1 secondo */
-  setTimeout(markAllNotificationsAsRead, 1000);
-}
-
-/* Chiudi modal notifiche */
-function closeNotificationsModal() {
-  var modal = document.getElementById('notificationsModal');
-  if (modal) modal.classList.remove('active');
-}
-
-/* Render lista notifiche */
-function renderNotificationsList() {
-  var listEl = document.getElementById('notificationsList');
-  if (!listEl) return;
-
-  if (!_notificationData || !_notificationData.length) {
-    listEl.innerHTML =
-      '<div class="notifications-empty">' +
-        '<div style="font-size:3rem;margin-bottom:12px;">✅</div>' +
-        '<p style="font-size:.95em;color:var(--text-2);">Hai ingredienti sufficienti per i prossimi giorni!</p>' +
-      '</div>';
-    return;
-  }
-
-  var html = _notificationData.map(function(n) {
-    var urgencyClass = n.daysLeft < 1 ? 'notif-critical' : 'notif-warning';
-    var icon = n.daysLeft < 1 ? '🔴' : '🟡';
-    var daysText = n.daysLeft < 0.1 ? 'Finito' : 
-                   n.daysLeft < 1 ? 'Meno di 1 giorno' :
-                   Math.round(n.daysLeft) === 1 ? '1 giorno' :
-                   Math.round(n.daysLeft) + ' giorni';
-
-    return (
-      '<div class="notification-item ' + urgencyClass + '">' +
-        '<div class="notification-icon">' + icon + '</div>' +
-        '<div class="notification-content">' +
-          '<div class="notification-title">' + n.name + '</div>' +
-          '<div class="notification-details">' +
-            '<span>' + daysText + ' rimanenti</span>' +
-            '<span class="notification-separator">•</span>' +
-            '<span>Servono ~' + n.missingQty + ' ' + n.unit + '</span>' +
-          '</div>' +
-        '</div>' +
-        '<button class="notification-action" ' +
-                'onclick="addToShoppingListFromNotif(\'' + n.name.replace(/'/g, "\\'" ) + '\', ' + n.missingQty + ', \'' + n.unit + '\')">'+
-          'Aggiungi a spesa' +
-        '</button>' +
-      '</div>'
-    );
-  }).join('');
-
-  listEl.innerHTML = html;
-}
-
-/* Marca tutte le notifiche come lette */
-function markAllNotificationsAsRead() {
-  if (!_notificationData || !_notificationData.length) return;
-  
-  var readNotifications = JSON.parse(localStorage.getItem('nutriplan_read_notifications') || '{}');
-  var today = formatDateKey(new Date());
-  
-  _notificationData.forEach(function(n) {
-    var key = today + '_' + n.name;
-    readNotifications[key] = true;
-  });
-  
-  localStorage.setItem('nutriplan_read_notifications', JSON.stringify(readNotifications));
-  updateNotificationBadge();
-}
-
-/* Aggiungi ingrediente alla lista spesa da notifica */
-function addToShoppingListFromNotif(name, qty, unit) {
-  if (!spesaItems) spesaItems = [];
-  
-  /* Verifica se già presente */
-  var existing = spesaItems.find(function(item) {
-    return item.name === name;
-  });
-  
-  if (existing) {
-    existing.quantity += qty;
-    showToast('📝 ' + name + ' aggiornato nella lista spesa', 'success');
-  } else {
-    spesaItems.push({
-      name: name,
-      quantity: qty,
-      unit: unit,
-      purchased: false
-    });
-    showToast('✅ ' + name + ' aggiunto alla lista spesa', 'success');
-  }
-  
-  if (typeof saveData === 'function') saveData();
-  if (typeof renderSpesa === 'function') renderSpesa();
-}
-
-/* Pulisci notifiche vecchie (> 7 giorni) */
-function cleanOldNotifications() {
-  var readNotifications = JSON.parse(localStorage.getItem('nutriplan_read_notifications') || '{}');
-  var today = new Date();
-  today.setHours(0, 0, 0, 0);
-  var weekAgo = new Date(today);
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  
-  var cleaned = {};
-  Object.keys(readNotifications).forEach(function(key) {
-    var datePart = key.split('_')[0];
-    var d = parseDateKey(datePart);
-    if (d >= weekAgo) {
-      cleaned[key] = readNotifications[key];
-    }
-  });
-  
-  localStorage.setItem('nutriplan_read_notifications', JSON.stringify(cleaned));
-}
-
 /* updateAuthUI è definita in firebase-config.js con i corretti ID HTML */
 
 function openAuthModal() {
@@ -775,16 +523,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (e.target === modal) modal.classList.remove('active');
     });
   });
-  
-  /* Init sistema notifiche */
-  updateNotificationBadge();
-  cleanOldNotifications();
-  
-  /* Aggiorna notifiche ogni 5 minuti */
-  setInterval(function() {
-    updateNotificationBadge();
-    cleanOldNotifications();
-  }, 300000); /* 5 minuti */
 });
 
 /* ══════════════════════════════════════════════════
@@ -912,7 +650,6 @@ function confirmAddFridge() {
   closeAddFridgeModal();
   renderFridge();
   renderFridge('pianoFridgeContent');
-  updateNotificationBadge(); /* Aggiorna notifiche dopo modifica dispensa */
   var msg = '✅ ' + name + (frozen ? ' ❄️ aggiunto al congelatore' : ' aggiunto alla dispensa');
   showToast(msg, 'success');
 }
@@ -942,7 +679,6 @@ function addFromSpesa(name, qty, unit) {
   });
   if (typeof saveData === 'function') saveData();
   if (typeof renderFridge === 'function') renderFridge();
-  updateNotificationBadge(); /* Aggiorna notifiche dopo aggiunta da spesa */
   if (typeof showToast === 'function') showToast('🛒 ' + name + ': ' + qty + ' ' + (unit || 'g') + ' → dispensa', 'success');
 }
 
@@ -1001,7 +737,6 @@ function loadFridgeConfig(id) {
   if (typeof saveData === 'function') saveData();
   closeSavedFridgeModal();
   renderFridge();
-  updateNotificationBadge(); /* Aggiorna notifiche dopo caricamento config */
   showToast('📁 Dispensa "' + cfg.name + '" caricata', 'success');
 }
 
@@ -1024,7 +759,6 @@ function updateAllUI() {
   if (typeof renderRicette === 'function' && currentPage === 'ricette') renderRicette();
   if (typeof renderSpesa   === 'function' && currentPage === 'spesa') renderSpesa();
   if (typeof renderStats   === 'function' && currentPage === 'stats') renderStats();
-  updateNotificationBadge(); /* Aggiorna notifiche quando cambia l'UI */
 }
 
 /* ══════════════════════════════════════════════════
@@ -1043,7 +777,6 @@ function resetDay() {
   }
   if (typeof saveData === 'function') saveData();
   if (typeof renderPiano === 'function') renderPiano();
-  updateNotificationBadge(); /* Aggiorna notifiche dopo reset */
   showToast('🔄 Piano resettato', 'info');
 }
 
@@ -1077,9 +810,6 @@ function startApp() {
 
   /* Pagina attiva di default */
   switchPage('piano');
-  
-  /* Init notifiche */
-  updateNotificationBadge();
 }
 
 /* Auto-start se non c'è landing page */
@@ -1185,7 +915,6 @@ function enterApp() {
   buildCalendarBar();
   updateDateLabel();
   goToPage('piano-alimentare');
-  updateNotificationBadge(); /* Init notifiche dopo login */
 
   /* Prima mostra onboarding (piano alimentare), poi tutorial */
   if (typeof checkOnboarding === 'function') {
@@ -1333,7 +1062,6 @@ function performUndo() {
   };
   if (typeof currentPage !== 'undefined' && rmap[currentPage]) rmap[currentPage]();
   showToast('↩ ' + s.desc + ' annullato', 'info');
-  updateNotificationBadge(); /* Aggiorna notifiche dopo undo */
   if (_undoStack.length > 0) _showUndoBar(_undoStack[_undoStack.length - 1].desc);
   else _hideUndoBar();
 }
