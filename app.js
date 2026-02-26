@@ -1007,6 +1007,7 @@ function enterApp() {
 
 /* ── goToPage() ── navigazione con i nuovi ID ─────────── */
 function goToPage(key) {
+  if (document.body.classList.contains('edit-day-mode') && key !== 'edit-day' && key !== 'piano' && key !== 'profilo') return;
   currentPage = key;
 
   /* Nasconde tutte le pagine */
@@ -1292,6 +1293,7 @@ if (typeof signOut === 'undefined') {
 
 /* ── Modifica giorno passato ───────────────────────────── */
 function openEditDayPage() {
+  document.body.classList.add('edit-day-mode');
   goToPage('edit-day');
   var content = document.getElementById('editDayContent');
   var label = document.getElementById('editDayDateLabel');
@@ -1353,6 +1355,7 @@ function loadEditDayContent() {
 }
 
 function closeEditDayPage() {
+  document.body.classList.remove('edit-day-mode');
   if (typeof editDayActive !== 'undefined') window.editDayActive = false;
   if (typeof editDayDateKey !== 'undefined') window.editDayDateKey = null;
   if (typeof _savedDateKeyBeforeEdit !== 'undefined' && _savedDateKeyBeforeEdit) {
@@ -1363,8 +1366,15 @@ function closeEditDayPage() {
 }
 
 function saveAndCloseEditDay() {
+  document.body.classList.remove('edit-day-mode');
   if (typeof saveData === 'function') saveData();
-  closeEditDayPage();
+  if (typeof editDayActive !== 'undefined') window.editDayActive = false;
+  if (typeof editDayDateKey !== 'undefined') window.editDayDateKey = null;
+  if (typeof _savedDateKeyBeforeEdit !== 'undefined' && _savedDateKeyBeforeEdit) {
+    if (typeof selectedDateKey !== 'undefined') window.selectedDateKey = _savedDateKeyBeforeEdit;
+  }
+  if (typeof getCurrentDateKey === 'function') window.selectedDateKey = getCurrentDateKey();
+  goToPage('profilo');
   if (typeof showToast === 'function') showToast('Salvataggio completato', 'success');
 }
 

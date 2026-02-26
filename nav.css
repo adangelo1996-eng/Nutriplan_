@@ -226,3 +226,11 @@
 @media (min-width: 768px) {
   .bottom-nav { display: none !important; }
 }
+
+/* Modifica giorno: disabilita temporaneamente le altre schede */
+body.edit-day-mode .sidebar-nav .nav-tab,
+body.edit-day-mode .bottom-nav .nav-tab {
+  pointer-events: none;
+  opacity: 0.5;
+  cursor: not-allowed;
+}

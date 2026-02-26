@@ -94,22 +94,9 @@ function initFirebase() {
         if (typeof renderProfilo === 'function')  renderProfilo();
         if (typeof loadFromCloud === 'function')  loadFromCloud(user.uid);
 
-        /* Auto-redirect: se la landing è visibile, entra nell'app dopo breve pausa */
-        var landing = document.getElementById('landingPage');
-        if (landing && landing.style.display !== 'none') {
-          /* Mostra spinner di caricamento e poi entra automaticamente */
-          var loadEl = document.getElementById('landingAuthLoading');
-          if (loadEl) {
-            loadEl.style.display = 'flex';
-            loadEl.innerHTML = '<span class="landing-auth-spinner"></span> Accesso rilevato, entro…';
-          }
-          setTimeout(function() {
-            var stillOnLanding = document.getElementById('landingPage');
-            if (stillOnLanding && stillOnLanding.style.display !== 'none') {
-              if (typeof enterApp === 'function') enterApp();
-            }
-          }, 1500);
-        }
+        /* Accesso rilevato: NON entrare automaticamente; resta sulla homepage con le card di selezione.
+           Se l'utente ha fatto login esplicitamente (es. click su Google), enterApp() viene chiamata
+           dal then() di signInWithPopup in signInWithGoogle(). */
       } else {
         currentUser = null;
         showCloudStatus('local');
