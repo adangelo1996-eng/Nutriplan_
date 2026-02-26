@@ -18,9 +18,20 @@ function renderCustomRicette() {
         return;
     }
 
-    el.innerHTML = customRecipes.map(function (r, idx) {
-        return buildCustomRicettaItem(r, idx);
-    }).join('');
+    /* Usa lo stesso layout delle altre ricette (rc-card) */
+    if (typeof buildCard === 'function') {
+        el.innerHTML =
+          '<div class="rc-grid">' +
+          customRecipes.map(function(r){
+              return buildCard(Object.assign({}, r, { isCustom:true }));
+          }).join('') +
+          '</div>';
+    } else {
+        /* Fallback: layout precedente */
+        el.innerHTML = customRecipes.map(function (r, idx) {
+            return buildCustomRicettaItem(r, idx);
+        }).join('');
+    }
 }
 
 /* ---- BUILD ITEM ---- */

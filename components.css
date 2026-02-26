@@ -52,8 +52,8 @@
 }
 .meal-btn-icon  { font-size: 1.4rem; }
 .meal-btn-label {
-  font-size: .68rem; font-weight: 800;
-  color: var(--text-mid); letter-spacing: .02em;
+  font-size: .82rem; font-weight: 800;
+  color: var(--text-mid); letter-spacing: .04em;
 }
 .meal-btn.active .meal-btn-label { color: rgba(255,255,255,.9); }
 .meal-btn-count {

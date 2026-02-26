@@ -835,8 +835,11 @@ function confirmPACustomIng() {
    Permette di modificare i valori MAX
 ────────────────────────────────────────────────────────── */
 function buildPALimitiSection() {
-  var wl = (typeof weeklyLimits !== 'undefined' && weeklyLimits) ? weeklyLimits : {};
-  var keys = Object.keys(wl);
+  var wl  = (typeof weeklyLimits !== 'undefined' && weeklyLimits) ? weeklyLimits : {};
+  var wlc = (typeof weeklyLimitsCustom !== 'undefined' && weeklyLimitsCustom) ? weeklyLimitsCustom : {};
+  var baseKeys   = Object.keys(wl);
+  var customKeys = Object.keys(wlc);
+  var keys = baseKeys.concat(customKeys);
 
   if (!keys.length) {
     return (
@@ -853,17 +856,19 @@ function buildPALimitiSection() {
   }
 
   var rows = keys.map(function(key) {
-    var lim   = wl[key];
-    var icon  = lim.icon  || '📊';
-    var label = key;
+    var lim   = wl[key] || wlc[key];
+    if (!lim) return '';
+    var icon  = lim.icon  || (wlc[key] ? '📌' : '📊');
+    var label = lim.label || key;
     var unit  = lim.unit  || '';
     var max   = (lim.max !== undefined && lim.max !== null) ? lim.max : '';
     var keyEsc = paEscQ(key);
+    var isCustom = Boolean(wlc[key]);
     return (
-      '<div class="pa-limit-row">' +
+      '<div class="pa-limit-row' + (isCustom ? ' pa-limit-row-custom' : '') + '">' +
         '<span class="pa-limit-icon">' + icon + '</span>' +
         '<div class="pa-limit-info">' +
-          '<span class="pa-limit-label">' + label + '</span>' +
+          '<span class="pa-limit-label">' + label + (isCustom ? ' (personalizzato)' : '') + '</span>' +
           '<span class="pa-limit-unit">' + unit + '</span>' +
         '</div>' +
         '<div class="pa-limit-right">' +
@@ -883,18 +888,64 @@ function buildPALimitiSection() {
       '<div class="pa-limiti-header">' +
         '<span class="pa-limiti-icon">📊</span>' +
         '<span class="pa-limiti-title">Limiti settimanali</span>' +
-        '<span class="pa-limiti-sub">Imposta i valori massimi</span>' +
+        '<span class="pa-limiti-sub">Imposta i valori massimi (inclusi personalizzati)</span>' +
       '</div>' +
-      '<div class="pa-limiti-body">' + rows + '</div>' +
+      '<div class="pa-limiti-body">' +
+        rows +
+        '<div style="padding:10px 14px;border-top:1px solid var(--border);margin-top:4px;">' +
+          '<div style="font-size:.8rem;font-weight:700;color:var(--text-2);margin-bottom:6px;">➕ Limite personalizzato</div>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">' +
+            '<input id="paCustomLimitName" type="text" placeholder="Ingrediente / abitudine" ' +
+                   'style="flex:1;min-width:120px;padding:6px 8px;border-radius:var(--r-md);border:1.5px solid var(--border);font-size:.85rem;">' +
+            '<input id="paCustomLimitUnit" type="text" placeholder="es. volte/sett." ' +
+                   'style="width:110px;padding:6px 8px;border-radius:var(--r-md);border:1.5px solid var(--border);font-size:.85rem;">' +
+            '<input id="paCustomLimitMax" type="number" min="0" step="1" placeholder="Max" ' +
+                   'style="width:70px;padding:6px 8px;border-radius:var(--r-md);border:1.5px solid var(--border);font-size:.85rem;text-align:center;">' +
+            '<button class="rc-btn rc-btn-primary rc-btn-sm" onclick="addPACustomLimit()">Aggiungi</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
     '</div>'
   );
 }
 
 function savePALimit(key, val) {
-  if (typeof weeklyLimits === 'undefined' || !weeklyLimits || !weeklyLimits[key]) return;
   var n = parseFloat(val);
-  weeklyLimits[key].max = isNaN(n) ? 0 : n;
+  if (isNaN(n) || n < 0) n = 0;
+  if (typeof weeklyLimits !== 'undefined' && weeklyLimits && weeklyLimits[key]) {
+    weeklyLimits[key].max = n;
+  } else if (typeof weeklyLimitsCustom !== 'undefined' && weeklyLimitsCustom && weeklyLimitsCustom[key]) {
+    weeklyLimitsCustom[key].max = n;
+  } else {
+    return;
+  }
   if (typeof saveData === 'function') saveData();
+}
+
+function addPACustomLimit() {
+  var nameEl = document.getElementById('paCustomLimitName');
+  var unitEl = document.getElementById('paCustomLimitUnit');
+  var maxEl  = document.getElementById('paCustomLimitMax');
+  if (!nameEl || !maxEl) return;
+  var name = (nameEl.value || '').trim();
+  if (!name) {
+    if (typeof showToast === 'function') showToast('⚠️ Inserisci un nome per il limite', 'warning');
+    nameEl.focus();
+    return;
+  }
+  var max = parseFloat(maxEl.value);
+  if (isNaN(max) || max < 0) max = 0;
+  var unit = (unitEl && unitEl.value || '').trim();
+
+  if (typeof weeklyLimitsCustom === 'undefined' || !weeklyLimitsCustom) weeklyLimitsCustom = {};
+  if (!weeklyLimitsCustom[name]) {
+    weeklyLimitsCustom[name] = { icon:'📌', label:name, unit:unit, current:0, max:max };
+  } else {
+    weeklyLimitsCustom[name].unit = unit;
+    weeklyLimitsCustom[name].max  = max;
+  }
+  if (typeof saveData === 'function') saveData();
+  if (typeof renderPianoAlimentare === 'function') renderPianoAlimentare();
 }
 
 /* ──────────────────────────────────────────────────────────
