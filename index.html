@@ -225,6 +225,19 @@
 
     <div id="mealProgressWrap"></div>
 
+        <!-- Barra ricerca ingredienti - pagina Oggi -->
+        <div class="search-bar-row" id="pianoSearchRow">
+          <div class="search-input-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="search" id="pianoSearchInput"
+              placeholder="Cerca ingrediente nel piano…"
+              oninput="filterPianoToday(this.value)"
+              onsearch="filterPianoToday(this.value)">
+            <button class="search-clear-btn" onclick="filterPianoToday('');document.getElementById('pianoSearchInput').value=''">✕</button>
+          </div>
+        </div>
+        <!-- Avviso ingredienti mancanti dalla dispensa -->
+        <div id="pianoMissingWrap"></div>
     <!-- Ingredienti del piano per il pasto selezionato -->
     <div class="piano-section-label">🌿 Ingredienti nel piano</div>
     <div id="mealItemsWrap" class="meal-items-list"></div>
