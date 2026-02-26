@@ -415,6 +415,28 @@ function showToast(msg, type, duration) {
   }, duration);
 }
 
+/* Gamification: celebrazione al completamento attività (Oggi) */
+function showCompletionCelebration() {
+  if (typeof showToast === 'function') {
+    showToast('🎉 Completato! Ottimo lavoro!', 'success', 2200);
+  }
+  var overlay = document.createElement('div');
+  overlay.className = 'celebration-overlay';
+  overlay.setAttribute('aria-hidden', 'true');
+  overlay.innerHTML = '<span class="celebration-icon">✓</span>';
+  document.body.appendChild(overlay);
+  requestAnimationFrame(function() {
+    overlay.classList.add('celebration-visible');
+  });
+  setTimeout(function() {
+    overlay.classList.remove('celebration-visible');
+    overlay.classList.add('celebration-out');
+    setTimeout(function() {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }, 400);
+  }, 900);
+}
+
 /* ══════════════════════════════════════════════════
    CLOUD STATUS
 ══════════════════════════════════════════════════ */
@@ -837,6 +859,7 @@ function startApp() {
 
   /* Pagina attiva di default */
   switchPage('piano');
+  if (typeof initSwipePages === 'function') initSwipePages();
 }
 
 /* Auto-start se non c'è landing page */
@@ -943,6 +966,8 @@ function enterApp() {
   updateDateLabel();
   goToPage('piano-alimentare');
 
+  if (typeof initSwipePages === 'function') initSwipePages();
+
   /* Prima mostra onboarding (piano alimentare), poi tutorial */
   if (typeof checkOnboarding === 'function') {
     checkOnboarding();
@@ -985,6 +1010,35 @@ function goToPage(key) {
     'profilo':          function() { if (typeof renderProfilo          === 'function') renderProfilo(); }
   };
   if (renders[key]) renders[key]();
+}
+
+/* ── Swipe tra pagine (mobile) ─────────────────────────── */
+var SWIPE_PAGE_ORDER = ['piano','piano-alimentare','dispensa','ricette','spesa','statistiche'];
+var _swipeStartX = 0;
+
+function initSwipePages() {
+  if (window._swipePagesInited) return;
+  window._swipePagesInited = true;
+  var container = document.getElementById('appMain') || document.querySelector('.app-inner') || document.body;
+  if (!container) return;
+  container.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1) _swipeStartX = e.touches[0].clientX;
+  }, { passive: true });
+  container.addEventListener('touchend', function(e) {
+    if (e.changedTouches.length !== 1) return;
+    var endX = e.changedTouches[0].clientX;
+    var delta = _swipeStartX - endX;
+    var threshold = 80;
+    var idx = SWIPE_PAGE_ORDER.indexOf(currentPage);
+    if (idx === -1) return;
+    if (delta > threshold && idx < SWIPE_PAGE_ORDER.length - 1) {
+      e.preventDefault();
+      goToPage(SWIPE_PAGE_ORDER[idx + 1]);
+    } else if (delta < -threshold && idx > 0) {
+      e.preventDefault();
+      goToPage(SWIPE_PAGE_ORDER[idx - 1]);
+    }
+  }, { passive: false });
 }
 
 /* ── switchPianoTab / switchRicetteTab ────────────────── */

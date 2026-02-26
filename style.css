@@ -1093,12 +1093,19 @@ textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
 .saved-fridge-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
 /* ══════════════════════════════════════════════════
-   19. RICETTE — filtri rf-pill scrollabili
+   19. RICETTE — filtri a due righe (Pasto + Compat)
 ══════════════════════════════════════════════════ */
-.ricette-filter-row, #ricetteFilterRow, #mealSelector {
+#mealSelector {
   display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none;
   padding: 2px 0 14px; flex-wrap: nowrap; -webkit-overflow-scrolling: touch;
 }
+.ricette-filter-row, #ricetteFilterRow {
+  display: flex; flex-direction: column; gap: 0; padding: 2px 0 14px; width: 100%;
+}
+#ricetteFilterRow > div {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; width: 100%;
+}
+#ricetteFilterRow > div:last-child { margin-bottom: 0; }
 .ricette-filter-row::-webkit-scrollbar,
 #ricetteFilterRow::-webkit-scrollbar { display: none; }
 

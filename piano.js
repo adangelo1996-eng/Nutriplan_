@@ -316,7 +316,7 @@ function toggleUsedItem(name) {
     delete day.usedItems[selectedMeal][name];
   } else {
     day.usedItems[selectedMeal][name] = true;
-    
+    if (typeof showCompletionCelebration === 'function') showCompletionCelebration();
     if (isToday) {
       var subs = day.substitutions && day.substitutions[selectedMeal] && day.substitutions[selectedMeal][name];
       var consumed = subs || name;
@@ -330,7 +330,7 @@ function toggleUsedItem(name) {
   }
   saveData();
   renderMealItems();
-  renderMealProgress();
+  if (typeof renderMealProgress === 'function') renderMealProgress();
   if (typeof renderFridge === 'function') renderFridge();
 }
 
@@ -545,38 +545,13 @@ function renderPianoRicette() {
     return (a.name || a.nome || '').localeCompare(b.name || b.nome || '', 'it');
   });
 
+  /* Stesso layout della pagina Ricette: rc-grid + buildCard */
+  var cardsHtml = (typeof buildCard === 'function')
+    ? compatibleRicette.map(function(r) { return buildCard(r); }).join('')
+    : '';
   var html = '<div class="piano-ricette-section">' +
     '<div class="piano-ricette-title">Ricette compatibili per questo pasto</div>' +
-    '<div class="piano-ricette-grid">';
-
-  compatibleRicette.slice(0, 6).forEach(function(r) {
-    var name = r.name || r.nome || 'Ricetta';
-    var icon = r.icon || r.icona || '🍽';
-    var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
-    var tot = ings.length;
-    var avail = 0;
-
-    if (typeof pantryItems !== 'undefined' && pantryItems) {
-      ings.forEach(function(ing) {
-        var ingName = (ing.name || ing.nome || '').toLowerCase().trim();
-        if (Object.keys(pantryItems).some(function(k) {
-          return k.toLowerCase().trim() === ingName && (pantryItems[k].quantity || 0) > 0;
-        })) avail++;
-      });
-    }
-
-    var pct = tot ? Math.round((avail / tot) * 100) : 0;
-    var badge = pct >= 80 ? '✔ Disponibile' : pct >= 40 ? '◑ Parziale' : '○ Da acquistare';
-    var badgeCls = pct >= 80 ? 'badge-ok' : pct >= 40 ? 'badge-warn' : 'badge-grey';
-
-    html += '<div class="piano-ricetta-card" onclick="if(typeof openRecipeModal===\'function\')openRecipeModal(\''+escQ(name)+'\')">'+
-      '<div class="piano-ricetta-icon">'+icon+'</div>'+
-      '<div class="piano-ricetta-name">'+name+'</div>'+
-      '<span class="rc-badge '+badgeCls+'">'+badge+'</span>'+
-    '</div>';
-  });
-
-  html += '</div></div>';
+    '<div class="rc-grid">' + cardsHtml + '</div></div>';
   container.innerHTML = html;
 }
 

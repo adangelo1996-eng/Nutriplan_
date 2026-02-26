@@ -258,16 +258,24 @@
    19. RICETTE
 ══════════════════════════════════════════════════ */
 
-/* Filtri scrollabili */
+/* Filtri: due righe (Pasto + Compatibilità) su mobile e desktop */
 .ricette-filter-row,
 #ricetteFilterRow {
-  display: flex; gap: 7px;
-  overflow-x: auto; scrollbar-width: none;
-  padding: 2px 0 14px; flex-wrap: nowrap;
-  -webkit-overflow-scrolling: touch;
-  position: static;     /* mai absolute */
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 2px 0 14px;
+  width: 100%;
+  position: static;
+}
+#ricetteFilterRow > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
   width: 100%;
 }
+#ricetteFilterRow > div:last-child { margin-bottom: 0; }
 .ricette-filter-row::-webkit-scrollbar,
 #ricetteFilterRow::-webkit-scrollbar { display: none; }
 
@@ -2630,4 +2638,46 @@ div > .ai-powered-label {
   background: color-mix(in srgb, #f59e0b 20%, var(--bg-card));
   border-color: #f59e0b;
   color: #fbbf24;
+}
+
+/* ── Gamification: celebrazione al completamento (Oggi) ── */
+.celebration-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+.celebration-overlay.celebration-visible {
+  opacity: 1;
+}
+.celebration-overlay.celebration-out {
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+.celebration-icon {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--primary, #3d8b6f);
+  border-radius: 50%;
+  box-shadow: 0 8px 32px rgba(61, 139, 111, .5);
+  transform: scale(0.3);
+  transition: transform .35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.celebration-visible .celebration-icon {
+  transform: scale(1);
+}
+.celebration-out .celebration-icon {
+  transform: scale(1.2);
+  opacity: 0;
 }
