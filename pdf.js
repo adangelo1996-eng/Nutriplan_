@@ -32,11 +32,11 @@ function exportPDF() {
     });
   }
 
-  /* ── Storico (ultimi 7 giorni) ── */
+  /* ── Storico (ultimi 30 giorni) ── */
   var storicoHtml = '';
   var storicoKeys = [];
   if (typeof appHistory !== 'undefined') {
-    storicoKeys = Object.keys(appHistory).sort(function(a,b){ return b.localeCompare(a); }).slice(0,7);
+    storicoKeys = Object.keys(appHistory).sort(function(a,b){ return b.localeCompare(a); }).slice(0,30);
     storicoKeys.forEach(function(dk){
       var d     = new Date(dk+'T00:00:00');
       var label = DAYS_IT[d.getDay()]+' '+d.getDate()+' '+MONTHS_IT[d.getMonth()];
@@ -179,7 +179,7 @@ function exportPDF() {
       : '')+
 
     (storicoHtml
-      ? '<h2>📅 Storico pasti (ultimi 7 giorni)</h2>'+storicoHtml
+      ? '<h2>📅 Storico pasti (ultimi 30 giorni)</h2>'+storicoHtml
       : '')+
 
     (spesaRows
@@ -194,7 +194,7 @@ function exportPDF() {
             chart1Html
           : '')+
         (chart2Html
-          ? '<div class="chart-title" style="margin-top:20px;">📅 Attività ultimi 7 giorni</div>'+
+          ? '<div class="chart-title" style="margin-top:20px;">📅 Attività ultimi 30 giorni</div>'+
             '<div class="chart-sub">Numero totale di alimenti segnati come consumati per giorno</div>'+
             chart2Html
           : '')

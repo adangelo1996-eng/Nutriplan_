@@ -444,7 +444,7 @@ function applySubstitute(original, substitute) {
 var _pianoRicetteFilter = 'base';
 
 function renderPianoRicette() {
-  var container = document.getElementById('pianoRicetteContainer');
+  var container = document.getElementById('pianoRicetteWrap');
   if (!container) return;
 
   /* Ottieni tutti gli ingredienti previsti per questo pasto */
