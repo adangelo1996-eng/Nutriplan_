@@ -428,12 +428,12 @@ function renderFridge(targetId) {
     }
 
     html +=
-      '<div class="fi-group" style="--gc:' + color + ';">' +
-        '<div class="fi-group-header">' +
+      '<details class="fi-group fi-group-collapsible" style="--gc:' + color + ';" open>' +
+        '<summary class="fi-group-header">' +
           '<span class="fi-group-icon">' + icon + '</span>' +
           '<span class="fi-group-name">' + catName + '</span>' +
           '<span class="fi-group-count">' + (items.length || '') + '</span>' +
-        '</div>' +
+        '</summary>' +
         '<div class="fi-list">' +
           (items.length
             ? items.map(function(item) { return buildFridgeRow(item); }).join('') +
@@ -452,42 +452,42 @@ function renderFridge(targetId) {
               '</div>'
           ) +
         '</div>' +
-      '</div>';
+      '</details>';
   });
 
   if (groups['🧂 Altro'] && groups['🧂 Altro'].length) {
     var altroItems = groups['🧂 Altro'];
     html +=
-      '<div class="fi-group" style="--gc:#64748b;">' +
-        '<div class="fi-group-header">' +
+      '<details class="fi-group fi-group-collapsible" style="--gc:#64748b;" open>' +
+        '<summary class="fi-group-header">' +
           '<span class="fi-group-icon">🧂</span>' +
           '<span class="fi-group-name">Altro</span>' +
           '<span class="fi-group-count">' + altroItems.length + '</span>' +
-        '</div>' +
+        '</summary>' +
         '<div class="fi-list">' +
           altroItems.map(function(item) { return buildFridgeRow(item); }).join('') +
           '<button class="fi-add-inline-btn" ' +
                   'onclick="openAddByCatModal(\'🧂 Altro\')">＋ Aggiungi</button>' +
         '</div>' +
-      '</div>';
+      '</details>';
   }
 
   if (!targetId) {
     var freezerItems = active.filter(function(i) { return i.freezer; });
     if (freezerItems.length) {
       var freezerHtml =
-        '<div class="fi-group" style="--gc:#3b82f6;margin-bottom:16px;">' +
-          '<div class="fi-group-header" style="background:rgba(59,130,246,.12);">' +
+        '<details class="fi-group fi-group-collapsible" style="--gc:#3b82f6;margin-bottom:16px;" open>' +
+          '<summary class="fi-group-header" style="background:rgba(59,130,246,.12);">' +
             '<span class="fi-group-icon">❄️</span>' +
             '<span class="fi-group-name" style="color:#3b82f6;">Congelatore</span>' +
             '<span class="fi-group-count">' + freezerItems.length + '</span>' +
-          '</div>' +
+          '</summary>' +
           '<div class="fi-list">' +
             freezerItems.map(function(item) {
               return buildFridgeRow(item);
             }).join('') +
           '</div>' +
-        '</div>';
+        '</details>';
       html = freezerHtml + html;
     }
   }

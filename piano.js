@@ -283,16 +283,16 @@ function renderMealItems() {
     var icon  = (typeof getCategoryIcon === 'function') ? getCategoryIcon(cat) : '🧂';
     var catName = (cat && cat.replace) ? cat.replace(/^[^\s]+\s/, '') : cat;
     listHtml +=
-      '<div class="fi-group" style="--gc:' + color + ';">' +
-        '<div class="fi-group-header">' +
+      '<details class="fi-group fi-group-collapsible" style="--gc:' + color + ';" open>' +
+        '<summary class="fi-group-header">' +
           '<span class="fi-group-icon">' + icon + '</span>' +
           '<span class="fi-group-name">' + catName + '</span>' +
           '<span class="fi-group-count">' + catItems.length + '</span>' +
-        '</div>' +
+        '</summary>' +
         '<div class="fi-list">' +
           catItems.map(buildPianoItemCard).join('') +
         '</div>' +
-      '</div>';
+      '</details>';
   });
 
   el.innerHTML = consumedHtml + aiBtn + listHtml;

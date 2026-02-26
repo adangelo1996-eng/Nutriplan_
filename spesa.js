@@ -251,16 +251,16 @@ function renderSpesa() {
     var icon  = (typeof getCategoryIcon === 'function') ? getCategoryIcon(cat) : '🧂';
     var catName = (cat && cat.replace) ? cat.replace(/^[^\s]+\s/, '') : cat;
     html +=
-      '<div class="fi-group" style="--gc:' + color + ';">' +
-        '<div class="fi-group-header">' +
+      '<details class="fi-group fi-group-collapsible" style="--gc:' + color + ';" open>' +
+        '<summary class="fi-group-header">' +
           '<span class="fi-group-icon">' + icon + '</span>' +
           '<span class="fi-group-name">' + catName + '</span>' +
           '<span class="fi-group-count">' + catItems.length + '</span>' +
-        '</div>' +
+        '</summary>' +
         '<div class="fi-list">' +
           catItems.map(function(item) { return buildSpesaCard(item, items.indexOf(item)); }).join('') +
         '</div>' +
-      '</div>';
+      '</details>';
   });
 
   el.innerHTML = html;

@@ -158,6 +158,31 @@
   border: 1px solid color-mix(in srgb, var(--gc, var(--primary)) 30%, transparent);
 }
 
+/* Categorie collassabili (Spesa, Dispensa, Oggi) */
+.fi-group-collapsible {
+  display: block;
+}
+.fi-group-collapsible .fi-group-header {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.fi-group-collapsible .fi-group-header::-webkit-details-marker { display: none; }
+.fi-group-collapsible .fi-group-header::before {
+  content: '▶';
+  font-size: .6em;
+  opacity: .8;
+  margin-right: 4px;
+  transition: transform .2s ease;
+  display: inline-block;
+}
+.fi-group-collapsible[open] .fi-group-header::before {
+  transform: rotate(90deg);
+}
+.fi-group-collapsible > .fi-list {
+  border-top: 1px solid var(--border);
+}
+
 .fi-list { display: flex; flex-direction: column; }
 .fi-row {
   display: flex; align-items: center; gap: 12px;

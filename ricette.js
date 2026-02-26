@@ -5,6 +5,8 @@
 var ricetteSearchQuery = '';
 var ricetteFilterPasto = 'all';
 var ricetteFilterExtra = '';
+var ricetteFilterCompatibili = 'all';   /* 'all' | 'compatibili' | 'non_compatibili' */
+var ricetteFilterIngredienti = 'solo_piano'; /* 'solo_piano' | 'anche_extra' (per pasto selezionato) */
 var currentRecipeName  = null;
 
 function isFavorito(name) {
@@ -301,14 +303,33 @@ function buildFilterRow() {
   ];
   if (hasDiet) extraFilters.push({key:'dieta', emoji:'🌿', label:'Dieta mia'});
 
+  var compatPills = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">' +
+    '<span style="font-size:.75rem;font-weight:700;color:var(--text-3);margin-right:4px;align-self:center;">Compatibilità:</span>' +
+    ['all','compatibili','non_compatibili'].map(function(k){
+      var lab = k==='all'?'Tutte':(k==='compatibili'?'Solo compatibili':'Solo non compatibili');
+      return '<button class="rf-pill rf-pill-compat'+(ricetteFilterCompatibili===k?' active':'')+'" onclick="setRicetteFilterCompatibili(\''+k+'\',this)">'+lab+'</button>';
+    }).join('') + '</div>';
+
+  var ingPills = '';
+  if (ricetteFilterPasto !== 'all') {
+    ingPills = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">' +
+      '<span style="font-size:.75rem;font-weight:700;color:var(--text-3);margin-right:4px;align-self:center;">Ingredienti:</span>' +
+      '<button class="rf-pill rf-pill-ing'+(ricetteFilterIngredienti==='solo_piano'?' active':'')+'" onclick="setRicetteFilterIngredienti(\'solo_piano\',this)">Solo nel piano</button>' +
+      '<button class="rf-pill rf-pill-ing'+(ricetteFilterIngredienti==='anche_extra'?' active':'')+'" onclick="setRicetteFilterIngredienti(\'anche_extra\',this)">Anche extra piano</button>' +
+      '</div>';
+  }
+
   row.innerHTML =
     '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">' +
+    '<span style="font-size:.75rem;font-weight:700;color:var(--text-3);margin-right:4px;align-self:center;">Pasto:</span>' +
     filters.map(function(f){
       return '<button class="rf-pill'+(f.key===ricetteFilterPasto?' active':'')+'" '+
              'onclick="setRicetteFilter(\''+f.key+'\',this)">'+
              f.emoji+' '+f.label+'</button>';
     }).join('') +
     '</div>' +
+    compatPills +
+    ingPills +
     '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
     extraFilters.map(function(f){
       return '<button class="rf-pill rf-pill-extra'+(f.key===ricetteFilterExtra?' active':'')+'" '+
@@ -319,7 +340,20 @@ function buildFilterRow() {
 }
 function setRicetteFilter(key, btn) {
   ricetteFilterPasto = key||'all';
-  document.querySelectorAll('.rf-pill:not(.rf-pill-extra)').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.rf-pill:not(.rf-pill-extra):not(.rf-pill-compat):not(.rf-pill-ing)').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  buildFilterRow();
+  renderRicetteGrid();
+}
+function setRicetteFilterCompatibili(key, btn) {
+  ricetteFilterCompatibili = key || 'all';
+  document.querySelectorAll('.rf-pill-compat').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  renderRicetteGrid();
+}
+function setRicetteFilterIngredienti(key, btn) {
+  ricetteFilterIngredienti = key || 'solo_piano';
+  document.querySelectorAll('.rf-pill-ing').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   renderRicetteGrid();
 }
@@ -342,12 +376,11 @@ function renderRicetteGrid() {
     /* Filtro base pasto */
     if (ricetteFilterPasto!=='all' && !pastoContains(r.pasto, ricetteFilterPasto)) return false;
 
-    /* NUOVO: Filtro intelligente per ingredienti del piano */
-    if (ricetteFilterPasto !== 'all') {
+    /* Filtro ingredienti: solo nel piano (per pasto selezionato) o anche extra */
+    if (ricetteFilterPasto !== 'all' && ricetteFilterIngredienti === 'solo_piano') {
       var mealIngNames = getPianoAlimentareIngNamesForMeal(ricetteFilterPasto);
       if (mealIngNames.length > 0) {
         var ricettaIngs = Array.isArray(r.ingredienti) ? r.ingredienti : [];
-        /* Verifica che TUTTI gli ingredienti della ricetta siano nel piano per quel pasto */
         var allInPlan = ricettaIngs.every(function(ing) {
           var ingName = (ing.name || ing.nome || '').toLowerCase().trim();
           return mealIngNames.some(function(planName) {
@@ -357,6 +390,10 @@ function renderRicetteGrid() {
         if (!allInPlan) return false;
       }
     }
+
+    /* Filtro compatibilità dieta (profilo / allergie / evitati) */
+    if (ricetteFilterCompatibili === 'compatibili' && !isDietCompatible(r)) return false;
+    if (ricetteFilterCompatibili === 'non_compatibili' && isDietCompatible(r)) return false;
 
     /* Ricerca testuale */
     if (ricetteSearchQuery) {
