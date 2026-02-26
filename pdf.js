@@ -34,9 +34,10 @@ function exportPDF() {
 
   /* ── Storico (ultimi 7 giorni) ── */
   var storicoHtml = '';
+  var storicoKeys = [];
   if (typeof appHistory !== 'undefined') {
-    var skeys = Object.keys(appHistory).sort(function(a,b){ return b.localeCompare(a); }).slice(0,7);
-    skeys.forEach(function(dk){
+    storicoKeys = Object.keys(appHistory).sort(function(a,b){ return b.localeCompare(a); }).slice(0,7);
+    storicoKeys.forEach(function(dk){
       var d     = new Date(dk+'T00:00:00');
       var label = DAYS_IT[d.getDay()]+' '+d.getDate()+' '+MONTHS_IT[d.getMonth()];
       var hd    = appHistory[dk] || {};
@@ -73,6 +74,68 @@ function exportPDF() {
     });
   }
 
+  /* ── GRAFICO 1: ingredienti attivi per categoria ── */
+  var chart1Html = '';
+  if (typeof pantryItems !== 'undefined' && pantryItems) {
+    var catCounts = {};
+    Object.keys(pantryItems).forEach(function(name){
+      var p = pantryItems[name];
+      if (!p || (p.quantity||0) <= 0) return;
+      var cat = p.category || '🧂 Altro';
+      catCounts[cat] = (catCounts[cat] || 0) + 1;
+    });
+    var catKeys = Object.keys(catCounts);
+    if (catKeys.length) {
+      var maxCount = catKeys.reduce(function(m,k){ return Math.max(m, catCounts[k]); }, 0) || 1;
+      chart1Html = '<div class="chart-section">';
+      catKeys.sort().forEach(function(cat){
+        var count = catCounts[cat];
+        var label = cat.replace(/^\S+\s/, '');
+        var width = Math.round((count / maxCount) * 100);
+        chart1Html +=
+          '<div class="chart-bar">'+
+            '<span class="chart-bar-label">'+label+'</span>'+
+            '<div class="chart-bar-track"><div class="chart-bar-fill" style="width:'+width+'%;"></div></div>'+
+            '<span class="chart-bar-value">'+count+'</span>'+
+          '</div>';
+      });
+      chart1Html += '</div>';
+    }
+  }
+
+  /* ── GRAFICO 2: attività ultimi 7 giorni ── */
+  var chart2Html = '';
+  if (typeof appHistory !== 'undefined' && storicoKeys.length) {
+    var dayTotals = [];
+    var maxUsed = 0;
+    storicoKeys.slice().reverse().forEach(function(dk){
+      var hd   = appHistory[dk] || {};
+      var used = hd.usedItems || {};
+      var totalUsed = 0;
+      MEALS_ORDER.forEach(function(mk){
+        var mUsed = used[mk] || {};
+        totalUsed += Object.keys(mUsed).length;
+      });
+      maxUsed = Math.max(maxUsed, totalUsed);
+      var dObj = new Date(dk+'T00:00:00');
+      var shortLabel = DAYS_IT[dObj.getDay()]+' '+dObj.getDate()+'/'+(dObj.getMonth()+1);
+      dayTotals.push({ label: shortLabel, value: totalUsed });
+    });
+    if (maxUsed > 0) {
+      chart2Html = '<div class="chart-section">';
+      dayTotals.forEach(function(row){
+        var width = Math.round((row.value / maxUsed) * 100);
+        chart2Html +=
+          '<div class="chart-bar">'+
+            '<span class="chart-bar-label">'+row.label+'</span>'+
+            '<div class="chart-bar-track"><div class="chart-bar-fill chart-bar-fill-2" style="width:'+width+'%;"></div></div>'+
+            '<span class="chart-bar-value">'+row.value+'</span>'+
+          '</div>';
+      });
+      chart2Html += '</div>';
+    }
+  }
+
   var html =
     '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">'+
     '<title>NutriPlan — Export '+todayLabel+'</title>'+
@@ -92,6 +155,15 @@ function exportPDF() {
       '.ing-chip.ric{background:#ede9fe;border-color:#c4b5fd;}'+
       '.ing-chip em{color:#6b7280;font-style:normal;}'+
       'tr.bought td{color:#9ca3af;text-decoration:line-through;}'+
+      '.chart-section{margin:12px 0 20px;page-break-inside:avoid;}'+
+      '.chart-bar{display:flex;align-items:center;gap:8px;margin-bottom:4px;}'+
+      '.chart-bar-label{flex:0 0 90px;font-size:.78rem;color:#4b5563;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'+
+      '.chart-bar-track{flex:1;height:10px;border-radius:999px;background:#e5e7eb;overflow:hidden;}'+
+      '.chart-bar-fill{height:100%;border-radius:999px;background:#4ade80;}'+
+      '.chart-bar-fill-2{height:100%;border-radius:999px;background:#60a5fa;}'+
+      '.chart-bar-value{font-size:.78rem;color:#374151;min-width:24px;text-align:right;}'+
+      '.chart-title{font-size:.85rem;font-weight:700;color:#374151;margin-bottom:6px;}'+
+      '.chart-sub{font-size:.76rem;color:#6b7280;margin-bottom:8px;}'+
       '@media print{body{padding:12px 16px;}h2{page-break-before:auto;}}'+
     '</style></head><body>'+
     '<h1>🌿 NutriPlan</h1>'+
@@ -112,6 +184,20 @@ function exportPDF() {
 
     (spesaRows
       ? '<h2>🛒 Lista spesa</h2><table class="data-table">'+spesaRows+'</table>'
+      : '')+
+
+    (chart1Html || chart2Html
+      ? '<h2>📈 Riepilogo visivo</h2>'+
+        (chart1Html
+          ? '<div class="chart-title">🗄️ Ingredienti attivi per categoria</div>'+
+            '<div class="chart-sub">Numero di ingredienti con quantità &gt; 0 in dispensa</div>'+
+            chart1Html
+          : '')+
+        (chart2Html
+          ? '<div class="chart-title" style="margin-top:20px;">📅 Attività ultimi 7 giorni</div>'+
+            '<div class="chart-sub">Numero totale di alimenti segnati come consumati per giorno</div>'+
+            chart2Html
+          : '')
       : '')+
 
     '<script>window.onload=function(){window.print();}<\/script>'+
