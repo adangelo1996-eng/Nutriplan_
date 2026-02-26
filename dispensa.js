@@ -181,28 +181,33 @@ function getDeficitIngredients() {
   return deficits;
 }
 
-function buildDeficitSection() {
+/* Restituisce i deficit raggruppati per categoria (per inserirli sotto ogni fi-group). */
+function getDeficitByCategory() {
   var deficits = getDeficitIngredients();
-  if (!deficits.length) return '';
-  
-  var html = '<div class="deficit-section">' +
-    '<div class="deficit-section-title">📬 Ingredienti in esaurimento</div>' +
-    deficits.map(function(d) {
-      var icon = d.severity === 'critical' ? '🔴' : d.severity === 'warning' ? '🟠' : '🟡';
-      var label = d.available <= 0 
-        ? 'Esaurito'
-        : 'Rimangono ' + d.remaining.toFixed(0) + ' ' + d.unit;
-      return '<div class="deficit-row" onclick="openQtyModal(\'' + escQ(d.name) + '\')">' +
-        '<span class="deficit-icon">' + icon + '</span>' +
-        '<div class="deficit-info">' +
-          '<div class="deficit-name">' + d.name + '</div>' +
-          '<div class="deficit-label">' + label + '</div>' +
-        '</div>' +
-        '<button class="rc-btn rc-btn-primary rc-btn-sm" onclick="event.stopPropagation();pianoAddToSpesa(\'' + escQ(d.name) + '\',\'' + d.required + '\',\'' + escQ(d.unit) + '\')" title="Aggiungi alla lista della spesa">Aggiungi alla lista della spesa</button>' +
-      '</div>';
-    }).join('') +
+  if (!deficits.length) return {};
+  var byCat = {};
+  deficits.forEach(function(d) {
+    var pd = (pantryItems && pantryItems[d.name]) ? pantryItems[d.name] : {};
+    var cat = resolveDisplayCategory({ name: d.name, category: pd.category, icon: pd.icon });
+    if (!byCat[cat]) byCat[cat] = [];
+    byCat[cat].push(d);
+  });
+  return byCat;
+}
+
+function buildDeficitRow(d) {
+  var icon = d.severity === 'critical' ? '🔴' : d.severity === 'warning' ? '🟠' : '🟡';
+  var label = d.available <= 0
+    ? 'Esaurito'
+    : 'Rimangono ' + d.remaining.toFixed(0) + ' ' + d.unit;
+  return '<div class="deficit-row" onclick="openQtyModal(\'' + escQ(d.name) + '\')">' +
+    '<span class="deficit-icon">' + icon + '</span>' +
+    '<div class="deficit-info">' +
+      '<div class="deficit-name">' + d.name + '</div>' +
+      '<div class="deficit-label">' + label + '</div>' +
+    '</div>' +
+    '<button class="rc-btn rc-btn-primary rc-btn-sm" onclick="event.stopPropagation();pianoAddToSpesa(\'' + escQ(d.name) + '\',\'' + d.required + '\',\'' + escQ(d.unit) + '\')" title="Aggiungi alla lista della spesa">Aggiungi alla lista della spesa</button>' +
   '</div>';
-  return html;
 }
 
 /* ══════════════════════════════════════════════════
@@ -399,6 +404,8 @@ function renderFridge(targetId) {
     if (allCats.indexOf(c) === -1) allCats.push(c);
   });
 
+  var deficitByCat = !targetId ? getDeficitByCategory() : {};
+
   var html = '';
   allCats.forEach(function(cat) {
     if (cat === '🧂 Altro') return;
@@ -408,6 +415,17 @@ function renderFridge(targetId) {
     var icon  = getCategoryIcon(cat);
     var catName = cat.replace(/^[^\s]+\s/, '');
     var catEsc  = cat.replace(/'/g, "\\'");
+    var deficitItems = deficitByCat[cat] || [];
+    var deficitHtml = '';
+    if (deficitItems.length) {
+      deficitHtml =
+        '<details class="fi-deficit-details">' +
+          '<summary class="fi-deficit-summary">📬 In esaurimento (' + deficitItems.length + ')</summary>' +
+          '<div class="fi-deficit-list">' +
+            deficitItems.map(function(d) { return buildDeficitRow(d); }).join('') +
+          '</div>' +
+        '</details>';
+    }
 
     html +=
       '<div class="fi-group" style="--gc:' + color + ';">' +
@@ -419,12 +437,14 @@ function renderFridge(targetId) {
         '<div class="fi-list">' +
           (items.length
             ? items.map(function(item) { return buildFridgeRow(item); }).join('') +
+              deficitHtml +
               '<button class="fi-add-inline-btn fi-add-existing" ' +
                       'onclick="openAddByCatModal(\'' + catEsc + '\')">' +
                 '＋ Aggiungi ' + catName +
               '</button>'
             : '<div class="fi-empty-cat">' +
                 '<span class="fi-empty-cat-text">Nessun ingrediente in dispensa per questa categoria</span>' +
+                deficitHtml +
                 '<button class="fi-add-inline-btn" ' +
                         'onclick="openAddByCatModal(\'' + catEsc + '\')">' +
                   '＋ Aggiungi ' + catName +
@@ -473,9 +493,7 @@ function renderFridge(targetId) {
   }
 
   if (!targetId) {
-    var deficitSection = buildDeficitSection();
     var expSection = buildExpiringSection();
-    if (deficitSection) html = deficitSection + html;
     if (expSection) html = expSection + html;
     if (typeof openAIRecipeModal === 'function') {
       var aiHtml =

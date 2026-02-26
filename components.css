@@ -2523,6 +2523,44 @@ div > .ai-powered-label {
   flex-shrink: 0;
 }
 
+/* Sottosezione "In esaurimento" dentro ogni categoria dispensa */
+.fi-deficit-details {
+  margin: 8px 0;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, #f59e0b 8%, var(--bg-card));
+}
+[data-theme="dark"] .fi-deficit-details {
+  background: color-mix(in srgb, #f59e0b 12%, var(--bg-card));
+}
+.fi-deficit-summary {
+  padding: 6px 10px;
+  font-size: .82em;
+  font-weight: 700;
+  color: #92400e;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fi-deficit-summary::-webkit-details-marker { display: none; }
+.fi-deficit-summary::before {
+  content: '▶';
+  font-size: .7em;
+  transition: transform .2s;
+}
+.fi-deficit-details[open] .fi-deficit-summary::before { transform: rotate(90deg); }
+[data-theme="dark"] .fi-deficit-summary { color: #fbbf24; }
+.fi-deficit-list {
+  padding: 4px 8px 8px;
+  border-top: 1px solid rgba(245, 158, 11, 0.25);
+}
+.fi-deficit-list .deficit-row {
+  padding: 6px 4px;
+  border-bottom-color: rgba(245, 158, 11, 0.2);
+}
+
 
 /* ── AVVISO INGREDIENTI MANCANTI ── */
 .piano-missing-banner {

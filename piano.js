@@ -187,7 +187,7 @@ function renderMealItems() {
       '</button>' +
     '</div>';
 
-  el.innerHTML = consumedHtml + aiBtn + items.map(function(item){
+  function buildPianoItemCard(item) {
     var used    = usedMap[item.name] ? true : false;
     var subName = subsMap[item.name] || null;
     var display = subName || item.name;
@@ -198,7 +198,6 @@ function renderMealItems() {
       : '<span style="color:var(--text-3);font-size:.9em;">○</span>';
     var usedCls = used ? ' style="opacity:.45;text-decoration:line-through;"' : '';
 
-    /* Controlla se l'ingrediente o la sua alternativa è già stata consumata di recente */
     var alreadyBadge = '';
     var today = new Date();
     var todayKey = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
@@ -235,7 +234,6 @@ function renderMealItems() {
       }
     }
 
-    /* Pulsanti azione: ✅ solo se in dispensa, altrimenti pulsanti testuali per dispensa / spesa */
     var actionBtns;
     if (used) {
       actionBtns = '<button class="rc-btn-icon" title="Annulla" onclick="toggleUsedItem(\''+escQ(item.name)+'\')">↩</button>';
@@ -262,7 +260,42 @@ function renderMealItems() {
         '</div>' +
       '</div>' +
     '</div>';
-  }).join('');
+  }
+
+  /* Raggruppa per categoria alimento (stesso ordine dispensa) */
+  var groups = {};
+  items.forEach(function(item) {
+    var cat = (typeof getSpesaItemCategory === 'function') ? getSpesaItemCategory(item) : '🧂 Altro';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(item);
+  });
+  var catOrder = (typeof CATEGORY_ORDER !== 'undefined' && Array.isArray(CATEGORY_ORDER)) ? CATEGORY_ORDER.slice() : [];
+  Object.keys(groups).forEach(function(c) {
+    if (catOrder.indexOf(c) === -1) catOrder.push(c);
+  });
+
+  var listHtml = '';
+  catOrder.forEach(function(cat) {
+    if (cat === '🥩 Carne e Pesce' && (groups['🥩 Carne'] || groups['🐟 Pesce'])) return;
+    var catItems = groups[cat];
+    if (!catItems || !catItems.length) return;
+    var color = (typeof getCategoryColor === 'function') ? getCategoryColor(cat) : '#64748b';
+    var icon  = (typeof getCategoryIcon === 'function') ? getCategoryIcon(cat) : '🧂';
+    var catName = (cat && cat.replace) ? cat.replace(/^[^\s]+\s/, '') : cat;
+    listHtml +=
+      '<div class="fi-group" style="--gc:' + color + ';">' +
+        '<div class="fi-group-header">' +
+          '<span class="fi-group-icon">' + icon + '</span>' +
+          '<span class="fi-group-name">' + catName + '</span>' +
+          '<span class="fi-group-count">' + catItems.length + '</span>' +
+        '</div>' +
+        '<div class="fi-list">' +
+          catItems.map(buildPianoItemCard).join('') +
+        '</div>' +
+      '</div>';
+  });
+
+  el.innerHTML = consumedHtml + aiBtn + listHtml;
 }
 
 /* ── USED / SUBSTITUTE ── */

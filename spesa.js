@@ -192,6 +192,17 @@ function generateFromSelectedRecipes() {
   if (typeof showToast==='function') showToast('✅ Lista generata da '+selected.length+' ricett'+(selected.length===1?'a':'e'),'success');
 }
 
+/* Restituisce la categoria di display per un item della spesa (stile dispensa). */
+function getSpesaItemCategory(item) {
+  var name = (item && item.name) ? item.name : '';
+  var pd = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) ? pantryItems[name] : null;
+  var cat = pd ? (pd.category || '🧂 Altro') : (typeof paGetIngCat === 'function' ? paGetIngCat(name) : '🧂 Altro');
+  if (typeof resolveDisplayCategory === 'function') {
+    return resolveDisplayCategory({ name: name, category: cat, icon: pd ? pd.icon : null });
+  }
+  return cat || '🧂 Altro';
+}
+
 /* ══════════════════════════════════════════════
    RENDER PRINCIPALE
 ══════════════════════════════════════════════ */
@@ -200,8 +211,6 @@ function renderSpesa() {
   if (!el) return;
 
   var items  = typeof spesaItems !== 'undefined' ? spesaItems : [];
-  var manual = items.filter(function(i){ return i.manual; });
-  var auto   = items.filter(function(i){ return !i.manual; });
 
   /* ── toolbar ── */
   var toolbar =
@@ -221,28 +230,38 @@ function renderSpesa() {
     return;
   }
 
+  /* Raggruppa per categoria (stesso ordine della dispensa) */
+  var groups = {};
+  items.forEach(function(item) {
+    var cat = getSpesaItemCategory(item);
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(item);
+  });
+  var catOrder = (typeof CATEGORY_ORDER !== 'undefined' && Array.isArray(CATEGORY_ORDER)) ? CATEGORY_ORDER.slice() : [];
+  Object.keys(groups).forEach(function(c) {
+    if (catOrder.indexOf(c) === -1) catOrder.push(c);
+  });
+
   var html = toolbar;
-
-  /* ── SEZIONE AUTO ── */
-  if (auto.length) {
+  catOrder.forEach(function(cat) {
+    var catItems = groups[cat];
+    if (!catItems || !catItems.length) return;
+    if (cat === '🥩 Carne e Pesce' && (groups['🥩 Carne'] || groups['🐟 Pesce'])) return;
+    var color = (typeof getCategoryColor === 'function') ? getCategoryColor(cat) : '#64748b';
+    var icon  = (typeof getCategoryIcon === 'function') ? getCategoryIcon(cat) : '🧂';
+    var catName = (cat && cat.replace) ? cat.replace(/^[^\s]+\s/, '') : cat;
     html +=
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
-        '<span style="font-weight:700;font-size:.95em;">🤖 Dal piano</span>' +
-        '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">'+auto.length+'</span>' +
-      '</div>' +
-      auto.map(function(item, idx){ return buildSpesaCard(item, items.indexOf(item)); }).join('') +
-      '<div style="margin-bottom:20px;"></div>';
-  }
-
-  /* ── SEZIONE MANUALE ── */
-  if (manual.length) {
-    html +=
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
-        '<span style="font-weight:700;font-size:.95em;">✏️ Aggiunti manualmente</span>' +
-        '<span class="rc-badge" style="background:var(--bg2);color:var(--text-2);">'+manual.length+'</span>' +
-      '</div>' +
-      manual.map(function(item){ return buildSpesaCard(item, items.indexOf(item)); }).join('');
-  }
+      '<div class="fi-group" style="--gc:' + color + ';">' +
+        '<div class="fi-group-header">' +
+          '<span class="fi-group-icon">' + icon + '</span>' +
+          '<span class="fi-group-name">' + catName + '</span>' +
+          '<span class="fi-group-count">' + catItems.length + '</span>' +
+        '</div>' +
+        '<div class="fi-list">' +
+          catItems.map(function(item) { return buildSpesaCard(item, items.indexOf(item)); }).join('') +
+        '</div>' +
+      '</div>';
+  });
 
   el.innerHTML = html;
 }
