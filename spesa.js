@@ -387,6 +387,49 @@ function generateShoppingList() {
   if (typeof showToast==='function') showToast('✅ Lista generata per '+days+' giorn'+(days===1?'o':'i')+' ('+autoItems.length+' ingredienti)','success');
 }
 
+/* ══════════════════════════════════════════════
+   SUPPORTO PIANO → SPESA (singolo ingrediente)
+   Usato da pagina Oggi e Dispensa (pianoAddToSpesa)
+══════════════════════════════════════════════ */
+function pianoAddToSpesa(name, quantity, unit, silent) {
+  if (!name) return;
+  if (typeof spesaItems === 'undefined' || !Array.isArray(spesaItems)) spesaItems = [];
+  var q = parseFloat(quantity);
+  if (isNaN(q) || q <= 0) q = null;
+  unit = unit || 'g';
+
+  var nl = name.toLowerCase().trim();
+  var existing = spesaItems.find(function(item) {
+    if (!item || !item.name) return false;
+    return !item.bought &&
+      item.name.toLowerCase().trim() === nl &&
+      (item.unit || 'g') === unit &&
+      !item.manual;
+  });
+
+  if (existing) {
+    if (q !== null) {
+      var cur = parseFloat(existing.quantity) || 0;
+      existing.quantity = parseFloat((cur + q).toFixed(3));
+    }
+  } else {
+    spesaItems.push({
+      name: name,
+      quantity: q,
+      unit: unit,
+      manual: false,
+      bought: false
+    });
+  }
+
+  if (typeof saveData === 'function') saveData();
+  if (typeof renderSpesa === 'function') renderSpesa();
+  if (!silent && typeof showToast === 'function') {
+    var label = q ? (q + ' ' + unit) : '';
+    showToast('🛒 ' + name + (label ? ' (' + label + ')' : '') + ' aggiunto alla lista della spesa', 'success');
+  }
+}
+
 /* ── MODAL AGGIUNGI MANUALE ── */
 function openSpesaItemModal() {
   var modal = document.getElementById('spesaItemModal');

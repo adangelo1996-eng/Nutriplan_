@@ -61,6 +61,8 @@ function buildProfiloDietaSection() {
         '<input type="text" id="allergenInput" placeholder="Es. arachidi, soia…" ' +
                'style="flex:1;padding:7px 10px;border-radius:var(--r-md);border:1.5px solid var(--border);' +
                'background:var(--bg-subtle);font-size:.86em;color:var(--text-1);outline:none;" ' +
+               'list="ingredientiAutocomplete" autocomplete="off" ' +
+               'oninput="if(typeof populateIngAutocomplete===\'function\')populateIngAutocomplete()" ' +
                'onkeydown="if(event.key===\'Enter\')addAllergen()">' +
         '<button class="rc-btn rc-btn-primary" style="padding:7px 14px;font-size:.86em;" onclick="addAllergen()">＋</button>' +
       '</div>' +

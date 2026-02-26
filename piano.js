@@ -235,7 +235,7 @@ function renderMealItems() {
       }
     }
 
-    /* Pulsanti azione: ✅ solo se in dispensa, altrimenti 🗄️ e 🛒 */
+    /* Pulsanti azione: ✅ solo se in dispensa, altrimenti pulsanti testuali per dispensa / spesa */
     var actionBtns;
     if (used) {
       actionBtns = '<button class="rc-btn-icon" title="Annulla" onclick="toggleUsedItem(\''+escQ(item.name)+'\')">↩</button>';
@@ -243,10 +243,10 @@ function renderMealItems() {
       actionBtns = '<button class="rc-btn-icon" title="Segna consumato" onclick="toggleUsedItem(\''+escQ(item.name)+'\')">✅</button>';
     } else {
       actionBtns =
-        '<button class="rc-btn-icon" title="Aggiungi in dispensa" style="font-size:.7em;padding:4px 6px;" ' +
-                'onclick="openAddFridgePrecompiled(\''+escQ(display)+'\')">🗄️</button>' +
-        '<button class="rc-btn-icon" title="Aggiungi alla spesa" style="font-size:.7em;padding:4px 6px;" ' +
-                'onclick="pianoAddToSpesa(\''+escQ(display)+'\',\''+escQ(item.quantity||'')+'\',\''+escQ(item.unit||'g')+'\')">🛒</button>';
+        '<button class="rc-btn rc-btn-outline rc-btn-sm" title="Aggiungi alla dispensa" ' +
+                'onclick="openAddFridgePrecompiled(\''+escQ(display)+'\')">Aggiungi alla dispensa</button>' +
+        '<button class="rc-btn rc-btn-primary rc-btn-sm" title="Aggiungi alla lista della spesa" ' +
+                'onclick="pianoAddToSpesa(\''+escQ(display)+'\',\''+escQ(item.quantity||'')+'\',\''+escQ(item.unit||'g')+'\')">Aggiungi alla lista della spesa</button>';
     }
 
     return '<div class="rc-card" style="margin-bottom:8px;">' +
@@ -414,7 +414,7 @@ function openSubstituteModal(name) {
     }).join('');
   }
 
-  var contentEl = document.getElementById('substituteModalContent');
+  var contentEl = document.getElementById('substituteModalBody');
   if (contentEl) contentEl.innerHTML = html;
 
   var modal = document.getElementById('substituteModal');
@@ -574,7 +574,37 @@ function renderPianoMissingAlert() {
   wrap.innerHTML =
     '<div class="piano-missing-banner">' +
     '<span class="piano-missing-icon">⚠️</span>' +
-    '<div><strong>Ingredienti mancanti in dispensa:</strong><br>' +
+    '<div style="flex:1;min-width:0;"><strong>Ingredienti mancanti in dispensa:</strong><br>' +
     '<div class="piano-missing-chips">' + chips + '</div></div>' +
+    '<button class="rc-btn rc-btn-primary rc-btn-sm" style="flex-shrink:0;white-space:nowrap;" onclick="pianoAddMissingToSpesa()">Aggiungi alla lista della spesa</button>' +
     '</div>';
+}
+
+/* Aggiunge tutti gli ingredienti mancanti del pasto corrente alla lista spesa,
+   usando le quantità minime previste dal piano. */
+function pianoAddMissingToSpesa() {
+  if (typeof pianoAddToSpesa !== 'function') return;
+  var items = getMealItems(selectedMeal);
+  if (!items.length) return;
+  var added = 0;
+  items.forEach(function(item) {
+    if (!item || !item.name) return;
+    var name = item.name;
+    var inFridge = (typeof pantryItems !== 'undefined' && pantryItems &&
+      pantryItems[name] && (pantryItems[name].quantity || 0) > 0);
+    if (inFridge) return;
+    var qty  = item.quantity || null;
+    var unit = item.unit || 'g';
+    pianoAddToSpesa(name, qty, unit, true);
+    added++;
+  });
+  if (typeof saveData === 'function') saveData();
+  if (typeof renderSpesa === 'function') renderSpesa();
+  if (typeof showToast === 'function') {
+    if (added) {
+      showToast('🛒 ' + added + ' ingredienti aggiunti alla lista della spesa', 'success');
+    } else {
+      showToast('ℹ️ Nessun ingrediente da aggiungere', 'info');
+    }
+  }
 }

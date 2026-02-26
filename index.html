@@ -294,6 +294,17 @@
     <!-- Tab: Catalogo -->
     <div class="page-tab-content active" id="tab-catalogo">
       <div class="ricette-filter-row" id="ricetteFilterRow"></div>
+      <div class="search-bar-row">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="search" id="ricetteSearchInput"
+                 placeholder="Cerca ricetta o ingrediente…"
+                 oninput="filterRicette(this.value)"
+                 onsearch="filterRicette(this.value)">
+          <button class="search-clear-btn"
+                  onclick="document.getElementById('ricetteSearchInput').value='';filterRicette('')">✕</button>
+        </div>
+      </div>
       <div id="ricetteGrid"></div>
     </div>
 

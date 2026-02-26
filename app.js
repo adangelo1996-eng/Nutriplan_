@@ -4,14 +4,17 @@
 ============================================================ */
 
 /* ── Registra Service Worker (PWA) ── */
-/* Usa path relativo ('sw.js') invece di assoluto ('/sw.js')
-   così funziona sia in root che in sottocartella (es. GitHub Pages project page) */
-if ('serviceWorker' in navigator) {
+/* Nota: i Service Worker sono supportati solo su http/https,
+   non funzionano se apri il file direttamente da disco (file://). */
+if ('serviceWorker' in navigator &&
+    (location.protocol === 'https:' || location.protocol === 'http:')) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('sw.js').catch(function(e) {
       console.warn('[NutriPlan] SW registration failed:', e);
     });
   });
+} else {
+  console.info('[NutriPlan] Service Worker disattivato (protocollo non supportato: ' + location.protocol + ')');
 }
 
 /* ══════════════════════════════════════════════════
@@ -498,6 +501,30 @@ function openAddFridgeModal() {
   if (qty) qty.value = '';
   m.classList.add('active');
   populateIngAutocomplete();
+}
+
+/* Apre il modal dispensa con il nome ingrediente già compilato
+   (usato dalla pagina Oggi per aggiungere velocemente alla dispensa). */
+function openAddFridgePrecompiled(name) {
+  var modal = document.getElementById('addFridgeModal');
+  if (!modal) return;
+  modal.classList.add('active');
+
+  var nameEl = document.getElementById('newFridgeItem');
+  var qtyEl  = document.getElementById('newFridgeQty');
+  var catEl  = document.getElementById('newFridgeCategory');
+
+  if (nameEl) {
+    nameEl.value = name || '';
+    if (typeof populateIngAutocomplete === 'function') populateIngAutocomplete();
+    if (typeof autoFillFridgeCategory === 'function' && name) autoFillFridgeCategory(name);
+  }
+  if (qtyEl) qtyEl.value = '';
+  if (catEl && !catEl.value) catEl.value = '🧂 Altro';
+
+  setTimeout(function() {
+    if (qtyEl) { qtyEl.focus(); qtyEl.select(); }
+  }, 100);
 }
 function closeAddFridgeModal() {
   var m = document.getElementById('addFridgeModal');
