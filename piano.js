@@ -34,11 +34,13 @@ function selectMeal(meal, btn) {
   renderMealItems();
   renderMealProgress();
   renderPianoRicette();
+   renderPianoMissingAlert();
 }
 
 function filterPianoToday(query) {
   pianoSearchQuery = (query || '').toLowerCase().trim();
   renderMealItems();
+   renderPianoMissingAlert();
 }
 
 /* ── ENTRY POINT ── */
@@ -48,6 +50,7 @@ function renderMealPlan() {
   renderMealProgress();
   renderMealItems();
   renderPianoRicette();
+   renderPianoMissingAlert();
 }
 
 function ensureDefaultPlan() {
@@ -546,4 +549,32 @@ function renderPianoRicette() {
 
 function escQ(str) {
   return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+/* ── MISSING ALERT ── */
+function renderPianoMissingAlert() {
+  var wrap = document.getElementById('pianoMissingWrap');
+  if (!wrap) return;
+  var items = getMealItems(selectedMeal);
+  if (!items.length) { wrap.innerHTML = ''; return; }
+  var missing = [];
+  items.forEach(function(item) {
+    var name = item.name;
+    var inFridge = (typeof pantryItems !== 'undefined' && pantryItems &&
+      pantryItems[name] && (pantryItems[name].quantity || 0) > 0);
+    if (!inFridge) missing.push(name);
+  });
+  if (!missing.length) {
+    wrap.innerHTML = '';
+    return;
+  }
+  var chips = missing.map(function(n) {
+    return '<span class="piano-missing-chip">' + n + '</span>';
+  }).join('');
+  wrap.innerHTML =
+    '<div class="piano-missing-banner">' +
+    '<span class="piano-missing-icon">⚠️</span>' +
+    '<div><strong>Ingredienti mancanti in dispensa:</strong><br>' +
+    '<div class="piano-missing-chips">' + chips + '</div></div>' +
+    '</div>';
 }
