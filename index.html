@@ -61,11 +61,42 @@
       Accedi con Google
     </button>
 
-    <!-- Utente GIÀ loggato: bottone entra -->
-    <button class="btn btn-primary btn-large" id="landingEnterBtn"
-            onclick="enterApp()" style="display:none">
-      ▶ Bentornato!
-    </button>
+    <!-- Utente GIÀ loggato: nav grandi con descrizioni -->
+    <div class="landing-nav-logged" id="landingNavLogged" style="display:none;">
+      <p class="landing-nav-logged-sub">Scegli dove andare</p>
+      <div class="landing-nav-grid">
+        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('piano')">
+          <span class="landing-nav-card-icon">🍽</span>
+          <span class="landing-nav-card-label">Oggi</span>
+          <span class="landing-nav-card-desc">Ingredienti e ricette del giorno</span>
+        </button>
+        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('piano-alimentare')">
+          <span class="landing-nav-card-icon">🌿</span>
+          <span class="landing-nav-card-label">Piano</span>
+          <span class="landing-nav-card-desc">Configura il piano alimentare</span>
+        </button>
+        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('dispensa')">
+          <span class="landing-nav-card-icon">🗄️</span>
+          <span class="landing-nav-card-label">Dispensa</span>
+          <span class="landing-nav-card-desc">Ingredienti disponibili</span>
+        </button>
+        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('ricette')">
+          <span class="landing-nav-card-icon">📖</span>
+          <span class="landing-nav-card-label">Ricette</span>
+          <span class="landing-nav-card-desc">Catalogo e le tue ricette</span>
+        </button>
+        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('spesa')">
+          <span class="landing-nav-card-icon">🛒</span>
+          <span class="landing-nav-card-label">Spesa</span>
+          <span class="landing-nav-card-desc">Lista della spesa</span>
+        </button>
+        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('statistiche')">
+          <span class="landing-nav-card-icon">📊</span>
+          <span class="landing-nav-card-label">Statistiche</span>
+          <span class="landing-nav-card-desc">Riepilogo settimanale</span>
+        </button>
+      </div>
+    </div>
 
     <!-- Continua senza account -->
     <button class="landing-offline-btn" id="landingOfflineBtn"
@@ -98,7 +129,7 @@
 
     <div class="header-right">
       <button class="btn-icon-only" id="themeToggle" onclick="toggleTheme()" title="Tema">🌙</button>
-      <div class="auth-user-pill" id="authUserPill" style="display:none" onclick="typeof onAuthPillClick==='function'?onAuthPillClick():openAuthModal()">
+      <div class="auth-user-pill" id="authUserPill" style="display:none" onclick="handleAuthPillClick(event)">
         <img class="auth-avatar" id="authAvatar" src="" alt="">
         <span class="auth-info" id="authName">Utente</span>
       </div>
@@ -351,6 +382,22 @@
     <div id="profiloPage"></div>
   </div>
 
+  <!-- ── MODIFICA GIORNO PASSATO ────────────────────────── -->
+  <div class="page" id="page-edit-day">
+    <div class="page-header">
+      <div>
+        <div class="page-header-title">📅 Modifica giorno</div>
+        <div class="page-header-sub" id="editDayDateLabel">Seleziona una data</div>
+      </div>
+      <div class="page-header-actions">
+        <button class="rc-btn rc-btn-outline rc-btn-sm" onclick="closeEditDayPage()">Annulla</button>
+        <button class="rc-btn rc-btn-primary rc-btn-sm" onclick="saveAndCloseEditDay()">Salva</button>
+        <button class="rc-btn rc-btn-outline rc-btn-sm" onclick="closeEditDayPage();goToPage('piano')">Torna alla home</button>
+      </div>
+    </div>
+    <div id="editDayContent"></div>
+  </div>
+
 </main>
 
 <!-- ═════════════════════════════════════════════════════════════════
@@ -390,19 +437,20 @@
      MODALI
 ═════════════════════════════════════════════════════════════════ -->
 
-<!-- Modale: dettaglio ricetta -->
+<!-- Modale: dettaglio ricetta (stile unificato rc) -->
 <div class="modal" id="recipeModal">
-  <div class="modal-box">
+  <div class="modal-box modal-box-rc">
     <div class="modal-handle"></div>
     <div class="modal-header">
       <h2 class="modal-title" id="recipeModalTitle">Ricetta</h2>
-      <button class="modal-close" onclick="closeRecipeModal()">✕</button>
+      <button class="modal-close" onclick="closeRecipeModal()" aria-label="Chiudi">✕</button>
     </div>
     <div class="modal-body" id="recipeModalBody"></div>
-    <div class="modal-footer" style="flex-wrap:wrap;gap:8px;">
-      <button class="btn btn-secondary" onclick="closeRecipeModal()">Chiudi</button>
-      <button class="btn btn-secondary" onclick="addRecipeIngredientsToSpesa()">🛒 Spesa</button>
-      <button class="btn btn-primary" onclick="addRecipeToPlan()">✅ Piano</button>
+    <div class="modal-footer modal-footer-rc">
+      <button class="rc-btn rc-btn-outline" onclick="closeRecipeModal()">Chiudi</button>
+      <button class="rc-btn rc-btn-outline" onclick="addRecipeIngredientsToSpesa()">🛒 Spesa</button>
+      <button class="rc-btn rc-btn-primary" id="recipeModalPreparataBtn" style="display:none;" onclick="markRecipeAsPreparedAndClose()">🍽 Segna come preparata</button>
+      <button class="rc-btn rc-btn-primary" onclick="addRecipeToPlan()">✅ Aggiungi al piano</button>
     </div>
   </div>
 </div>

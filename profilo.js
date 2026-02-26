@@ -134,6 +134,7 @@ function buildProfiloUserSection() {
           : '<button class="rc-btn rc-btn-primary" onclick="signInWithGoogle()" style="width:100%;">🔑 Accedi con Google</button>' +
             '<p style="font-size:.8em;color:var(--text-3);margin-top:8px;text-align:center;">Accedi per sincronizzare i dati su tutti i dispositivi.</p>'
         ) +
+        '<button class="rc-btn rc-btn-outline" onclick="openEditDayPage()" style="width:100%;margin-top:10px;">📅 Modifica giorni passati</button>' +
       '</div>' +
     '</div>'
   );

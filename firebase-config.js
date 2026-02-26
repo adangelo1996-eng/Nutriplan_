@@ -273,25 +273,21 @@ function updateAuthUI(user) {
   }
 
   /* Aggiorna CTA della landing in base allo stato auth */
-  var landingLoading = document.getElementById('landingAuthLoading');
-  var landingGoogle  = document.getElementById('landingGoogleBtn');
-  var landingEnter   = document.getElementById('landingEnterBtn');
-  var landingOffline = document.getElementById('landingOfflineBtn');
+  var landingLoading   = document.getElementById('landingAuthLoading');
+  var landingGoogle    = document.getElementById('landingGoogleBtn');
+  var landingNavLogged = document.getElementById('landingNavLogged');
+  var landingOffline   = document.getElementById('landingOfflineBtn');
 
   if (user) {
-    /* Con auto-redirect, nasconde tutti i bottoni e mostra solo lo spinner */
-    if (landingLoading) {
-      landingLoading.style.display = 'flex';
-      /* Il testo verrà aggiornato dal listener onAuthStateChanged */
-    }
-    if (landingGoogle)  landingGoogle.style.display  = 'none';
-    if (landingEnter)   landingEnter.style.display   = 'none';
-    if (landingOffline) landingOffline.style.display = 'none';
+    if (landingLoading)   landingLoading.style.display = 'none';
+    if (landingGoogle)   landingGoogle.style.display  = 'none';
+    if (landingNavLogged) landingNavLogged.style.display = 'block';
+    if (landingOffline)  landingOffline.style.display = 'none';
   } else {
-    if (landingLoading) landingLoading.style.display = 'none';
-    if (landingGoogle)  landingGoogle.style.display  = '';
-    if (landingEnter)   landingEnter.style.display   = 'none';
-    if (landingOffline) landingOffline.style.display = '';
+    if (landingLoading)   landingLoading.style.display = 'none';
+    if (landingGoogle)   landingGoogle.style.display  = '';
+    if (landingNavLogged) landingNavLogged.style.display = 'none';
+    if (landingOffline)  landingOffline.style.display = '';
   }
 
   /* Aggiorna icona profilo nel nav (bottom + sidebar) quando loggato */

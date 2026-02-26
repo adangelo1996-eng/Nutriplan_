@@ -437,6 +437,25 @@ function showCompletionCelebration() {
   }, 900);
 }
 
+/* Celebrazione ricetta preparata (diversa da completamento ingrediente) */
+function showRecipeCelebration() {
+  var overlay = document.createElement('div');
+  overlay.className = 'celebration-overlay celebration-recipe';
+  overlay.setAttribute('aria-hidden', 'true');
+  overlay.innerHTML = '<span class="celebration-icon celebration-recipe-icon">🍽</span>';
+  document.body.appendChild(overlay);
+  requestAnimationFrame(function() {
+    overlay.classList.add('celebration-visible');
+  });
+  setTimeout(function() {
+    overlay.classList.remove('celebration-visible');
+    overlay.classList.add('celebration-out');
+    setTimeout(function() {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }, 450);
+  }, 1100);
+}
+
 /* ══════════════════════════════════════════════════
    CLOUD STATUS
 ══════════════════════════════════════════════════ */
@@ -452,11 +471,10 @@ function updateCloudStatus(state, text) {
 
 /* updateAuthUI è definita in firebase-config.js con i corretti ID HTML */
 
-/* Da mobile: click sul nome utente → vai a Profilo; da desktop → modal auth */
-function onAuthPillClick() {
-  var isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
-  if (isMobile && typeof goToPage === 'function') {
-    goToPage('profilo');
+function handleAuthPillClick(e) {
+  if (window.innerWidth < 768 || ('ontouchstart' in window)) {
+    e.preventDefault();
+    if (typeof goToPage === 'function') goToPage('profilo');
   } else {
     openAuthModal();
   }
@@ -711,6 +729,7 @@ function confirmAddFridge() {
   renderFridge('pianoFridgeContent');
   var msg = '✅ ' + name + (frozen ? ' ❄️ aggiunto al congelatore' : ' aggiunto alla dispensa');
   showToast(msg, 'success');
+  if (typeof showCompletionCelebration === 'function') showCompletionCelebration();
 }
 
 /* Aggiunge un ingrediente acquistato alla dispensa (chiamato da spesa.js) */
@@ -739,7 +758,6 @@ function addFromSpesa(name, qty, unit) {
   if (typeof saveData === 'function') saveData();
   if (typeof renderFridge === 'function') renderFridge();
   if (typeof showToast === 'function') showToast('🛒 ' + name + ': ' + qty + ' ' + (unit || 'g') + ' → dispensa', 'success');
-  if (typeof showCompletionCelebration === 'function') showCompletionCelebration();
 }
 
 function saveFridgeConfig() {
@@ -765,7 +783,6 @@ function confirmSaveFridge() {
   localStorage.setItem('nutriplanFridgeConfigs', JSON.stringify(configs));
   closeSaveFridgeModal();
   showToast('💾 Dispensa "' + name + '" salvata', 'success');
-  if (typeof showCompletionCelebration === 'function') showCompletionCelebration();
 }
 
 function renderSavedFridgeList(container) {
@@ -1024,9 +1041,10 @@ function goToPage(key) {
   if (renders[key]) renders[key]();
 }
 
-/* ── Swipe tra pagine (mobile) ─────────────────────────── */
+/* ── Swipe tra pagine (effetto libro) ──────────────────── */
 var SWIPE_PAGE_ORDER = ['piano','piano-alimentare','dispensa','ricette','spesa','statistiche'];
 var _swipeStartX = 0;
+var _swipeAnimating = false;
 
 function initSwipePages() {
   if (window._swipePagesInited) return;
@@ -1037,18 +1055,79 @@ function initSwipePages() {
     if (e.touches.length === 1) _swipeStartX = e.touches[0].clientX;
   }, { passive: true });
   container.addEventListener('touchend', function(e) {
-    if (e.changedTouches.length !== 1) return;
+    if (e.changedTouches.length !== 1 || _swipeAnimating) return;
     var endX = e.changedTouches[0].clientX;
     var delta = _swipeStartX - endX;
     var threshold = 80;
     var idx = SWIPE_PAGE_ORDER.indexOf(currentPage);
     if (idx === -1) return;
+    var main = document.getElementById('appMain');
+    var currentEl = main ? main.querySelector('.page.active') : null;
+    if (!main || !currentEl) return;
     if (delta > threshold && idx < SWIPE_PAGE_ORDER.length - 1) {
       e.preventDefault();
-      goToPage(SWIPE_PAGE_ORDER[idx + 1]);
+      _swipeAnimating = true;
+      var nextKey = SWIPE_PAGE_ORDER[idx + 1];
+      var nextEl = document.getElementById('page-' + nextKey);
+      if (!nextEl) { _swipeAnimating = false; return; }
+      main.classList.add('swipe-book');
+      nextEl.style.display = 'block';
+      nextEl.style.transform = 'translateX(100%)';
+      nextEl.classList.add('swipe-in-from-right');
+      currentEl.classList.add('swipe-out-left');
+      requestAnimationFrame(function() {
+        nextEl.style.transform = 'translateX(0)';
+        currentEl.style.transform = 'translateX(-100%) scale(0.98)';
+      });
+      setTimeout(function() {
+        currentEl.classList.remove('active', 'swipe-out-left');
+        currentEl.style.transform = '';
+        nextEl.classList.add('active');
+        nextEl.classList.remove('swipe-in-from-right');
+        nextEl.style.transform = '';
+        main.classList.remove('swipe-book');
+        currentPage = nextKey;
+        if (typeof goToPage === 'function') {
+          document.querySelectorAll('.page').forEach(function(p) { p.style.display = ''; });
+          nextEl.style.display = 'block';
+          var renders = { 'piano': function() { if (typeof renderPiano === 'function') renderPiano(); }, 'piano-alimentare': function() { if (typeof renderPianoAlimentare === 'function') renderPianoAlimentare(); }, 'dispensa': function() { if (typeof renderFridge === 'function') renderFridge(); }, 'ricette': function() { if (typeof renderRicette === 'function') renderRicette(); }, 'spesa': function() { if (typeof renderSpesa === 'function') renderSpesa(); }, 'statistiche': function() { if (typeof renderStats === 'function') renderStats(); } };
+          if (renders[nextKey]) renders[nextKey]();
+          document.querySelectorAll('.sidebar-nav .nav-tab').forEach(function(t) { t.classList.toggle('active', t.id === 'st-' + nextKey); });
+          document.querySelectorAll('.bottom-nav .nav-tab').forEach(function(t) { t.classList.toggle('active', t.id === 'bn-' + nextKey); });
+        }
+        _swipeAnimating = false;
+      }, 350);
     } else if (delta < -threshold && idx > 0) {
       e.preventDefault();
-      goToPage(SWIPE_PAGE_ORDER[idx - 1]);
+      _swipeAnimating = true;
+      var prevKey = SWIPE_PAGE_ORDER[idx - 1];
+      var prevEl = document.getElementById('page-' + prevKey);
+      if (!prevEl) { _swipeAnimating = false; return; }
+      main.classList.add('swipe-book');
+      prevEl.style.display = 'block';
+      prevEl.style.transform = 'translateX(-100%)';
+      prevEl.classList.add('swipe-in-from-left');
+      currentEl.classList.add('swipe-out-right');
+      requestAnimationFrame(function() {
+        prevEl.style.transform = 'translateX(0)';
+        currentEl.style.transform = 'translateX(100%) scale(0.98)';
+      });
+      setTimeout(function() {
+        currentEl.classList.remove('active', 'swipe-out-right');
+        currentEl.style.transform = '';
+        prevEl.classList.add('active');
+        prevEl.classList.remove('swipe-in-from-left');
+        prevEl.style.transform = '';
+        main.classList.remove('swipe-book');
+        currentPage = prevKey;
+        document.querySelectorAll('.page').forEach(function(p) { p.style.display = ''; });
+        prevEl.style.display = 'block';
+        var renders = { 'piano': function() { if (typeof renderPiano === 'function') renderPiano(); }, 'piano-alimentare': function() { if (typeof renderPianoAlimentare === 'function') renderPianoAlimentare(); }, 'dispensa': function() { if (typeof renderFridge === 'function') renderFridge(); }, 'ricette': function() { if (typeof renderRicette === 'function') renderRicette(); }, 'spesa': function() { if (typeof renderSpesa === 'function') renderSpesa(); }, 'statistiche': function() { if (typeof renderStats === 'function') renderStats(); } };
+        if (renders[prevKey]) renders[prevKey]();
+        document.querySelectorAll('.sidebar-nav .nav-tab').forEach(function(t) { t.classList.toggle('active', t.id === 'st-' + prevKey); });
+        document.querySelectorAll('.bottom-nav .nav-tab').forEach(function(t) { t.classList.toggle('active', t.id === 'bn-' + prevKey); });
+        _swipeAnimating = false;
+      }, 350);
     }
   }, { passive: false });
 }
@@ -1209,6 +1288,84 @@ if (typeof signOut === 'undefined') {
   function signOut() {
     if (typeof signOutUser === 'function') signOutUser();
   }
+}
+
+/* ── Modifica giorno passato ───────────────────────────── */
+function openEditDayPage() {
+  goToPage('edit-day');
+  var content = document.getElementById('editDayContent');
+  var label = document.getElementById('editDayDateLabel');
+  if (!content) return;
+  var yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  var defaultDate = yesterday.getFullYear() + '-' + String(yesterday.getMonth() + 1).padStart(2, '0') + '-' + String(yesterday.getDate()).padStart(2, '0');
+  content.innerHTML =
+    '<div class="edit-day-picker">' +
+      '<label style="display:block;font-size:.86em;font-weight:700;margin-bottom:8px;color:var(--text-2);">Seleziona la data da modificare</label>' +
+      '<input type="date" id="editDayDateInput" value="' + defaultDate + '" style="padding:10px 14px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);color:var(--text-1);font-size:1em;width:100%;max-width:240px;">' +
+      '<button class="rc-btn rc-btn-primary" style="margin-top:12px;" onclick="loadEditDayContent()">Carica giorno</button>' +
+    '</div>';
+  if (label) label.textContent = 'Seleziona una data';
+}
+
+function loadEditDayContent() {
+  var input = document.getElementById('editDayDateInput');
+  if (!input || !input.value) return;
+  var dateKey = input.value;
+  if (typeof editDayDateKey !== 'undefined') window.editDayDateKey = dateKey;
+  if (typeof _savedDateKeyBeforeEdit !== 'undefined') window._savedDateKeyBeforeEdit = window.selectedDateKey;
+  if (typeof selectedDateKey !== 'undefined') window.selectedDateKey = dateKey;
+  if (typeof editDayActive !== 'undefined') window.editDayActive = true;
+  if (typeof selectedMeal !== 'undefined') window.selectedMeal = 'colazione';
+
+  var label = document.getElementById('editDayDateLabel');
+  if (label) {
+    var d = new Date(dateKey.replace(/-/g, '/'));
+    label.textContent = d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  var meals = [
+    { key: 'colazione', emoji: '☀️', label: 'Colazione' },
+    { key: 'spuntino', emoji: '🍎', label: 'Spuntino' },
+    { key: 'pranzo', emoji: '🍽', label: 'Pranzo' },
+    { key: 'merenda', emoji: '🥪', label: 'Merenda' },
+    { key: 'cena', emoji: '🌙', label: 'Cena' }
+  ];
+  var content = document.getElementById('editDayContent');
+  if (!content) return;
+  content.innerHTML =
+    '<div class="meal-selector" id="editDay_mealSelector">' +
+    meals.map(function(m) {
+      var active = m.key === 'colazione' ? ' active' : '';
+      return '<button class="meal-btn' + active + '" onclick="selectMeal(\'' + m.key + '\',this);if(typeof renderPianoRicette===\'function\')renderPianoRicette();">' +
+        '<span class="meal-btn-icon">' + m.emoji + '</span>' +
+        '<span class="meal-btn-label">' + m.label + '</span>' +
+        '</button>';
+    }).join('') +
+    '</div>' +
+    '<div class="piano-section-label">🌿 Ingredienti nel piano</div>' +
+    '<div id="editDay_mealItemsWrap"></div>' +
+    '<div class="piano-section-label">📖 Ricette</div>' +
+    '<div id="editDay_ricetteWrap"></div>';
+
+  if (typeof renderMealItems === 'function') renderMealItems();
+  if (typeof renderPianoRicette === 'function') renderPianoRicette();
+}
+
+function closeEditDayPage() {
+  if (typeof editDayActive !== 'undefined') window.editDayActive = false;
+  if (typeof editDayDateKey !== 'undefined') window.editDayDateKey = null;
+  if (typeof _savedDateKeyBeforeEdit !== 'undefined' && _savedDateKeyBeforeEdit) {
+    if (typeof selectedDateKey !== 'undefined') window.selectedDateKey = _savedDateKeyBeforeEdit;
+  }
+  if (typeof getCurrentDateKey === 'function') window.selectedDateKey = getCurrentDateKey();
+  goToPage('profilo');
+}
+
+function saveAndCloseEditDay() {
+  if (typeof saveData === 'function') saveData();
+  closeEditDayPage();
+  if (typeof showToast === 'function') showToast('Salvataggio completato', 'success');
 }
 
 /* ── Aggiorna cloud status (alias per firebase-config) ── */

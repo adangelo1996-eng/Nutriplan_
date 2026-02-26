@@ -643,6 +643,13 @@ function openRecipeModal(name) {
 
   if (title) title.textContent = icon+' '+name;
   body.innerHTML = html;
+
+  var preparataBtn = document.getElementById('recipeModalPreparataBtn');
+  if (preparataBtn) {
+    var fromOggiOrEdit = (typeof currentPage !== 'undefined' && (currentPage === 'piano' || currentPage === 'edit-day') &&
+      typeof selectedMeal !== 'undefined' && selectedDateKey);
+    preparataBtn.style.display = fromOggiOrEdit ? '' : 'none';
+  }
   modal.classList.add('active');
 }
 
@@ -723,7 +730,47 @@ function applyRecipeToMeal() {
   saveData(); closeRecipeModal();
   if (typeof renderMealPlan==='function') renderMealPlan();
   if (typeof renderProfilo==='function')  renderProfilo();
-  alert(added>0?'✅ '+added+' ingredienti aggiunti — '+pastoLabel(pasto)+'!':'ℹ️ Già presenti nel piano.');
+  if (added > 0) {
+    if (typeof showToast === 'function') showToast('✅ ' + added + ' ingredienti aggiunti — ' + pastoLabel(pasto) + '!', 'success');
+    if (typeof showCompletionCelebration === 'function') showCompletionCelebration();
+  } else if (typeof showToast === 'function') showToast('ℹ️ Già presenti nel piano.', 'info');
+}
+
+/* Segna ricetta come preparata (da pagina Oggi): salva in storico, sottrae ingredienti dalla dispensa, celebrazione */
+function markRecipeAsPreparedAndClose() {
+  var recipeName = currentRecipeName;
+  if (!recipeName || typeof selectedMeal === 'undefined' || !selectedDateKey) return;
+  var r = findRicetta(recipeName);
+  if (!r) return;
+  var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+  if (typeof appHistory === 'undefined') appHistory = {};
+  if (!appHistory[selectedDateKey]) appHistory[selectedDateKey] = { usedItems: {}, substitutions: {}, ricette: {} };
+  if (!appHistory[selectedDateKey].ricette) appHistory[selectedDateKey].ricette = {};
+  if (!appHistory[selectedDateKey].ricette[selectedMeal]) appHistory[selectedDateKey].ricette[selectedMeal] = {};
+  appHistory[selectedDateKey].ricette[selectedMeal][recipeName] = true;
+
+  if (typeof pantryItems !== 'undefined' && pantryItems && ings.length) {
+    ings.forEach(function(ing) {
+      var iname = (ing.name || ing.nome || '').trim();
+      if (!iname) return;
+      var qty = parseFloat(ing.quantity || ing.quantita) || 0;
+      if (qty <= 0) return;
+      var key = Object.keys(pantryItems).find(function(k) {
+        return k.toLowerCase().trim() === iname.toLowerCase();
+      });
+      if (!key) return;
+      var cur = parseFloat(pantryItems[key].quantity) || 0;
+      pantryItems[key].quantity = Math.max(0, cur - qty);
+    });
+  }
+
+  if (typeof saveData === 'function') saveData();
+  closeRecipeModal();
+  if (typeof showRecipeCelebration === 'function') showRecipeCelebration();
+  if (typeof showToast === 'function') showToast('🍽 ' + recipeName + ' segnata come preparata!', 'success');
+  if (typeof renderMealItems === 'function') renderMealItems();
+  if (typeof renderPianoRicette === 'function') renderPianoRicette();
+  if (typeof renderFridge === 'function') renderFridge();
 }
 
 function renderCustomRicette() {

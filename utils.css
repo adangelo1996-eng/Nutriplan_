@@ -140,11 +140,15 @@
   font-weight: 800; color: var(--text); margin-bottom: 3px;
 }
 .ios-banner-close {
-  background: none; border: none; cursor: pointer;
-  font-size: .8rem; color: var(--text-light);
-  padding: 2px; flex-shrink: 0; transition: color var(--t);
+  background: var(--bg-subtle); border: 1px solid var(--border);
+  color: var(--text-1); width: 32px; height: 32px;
+  border-radius: var(--r-full); cursor: pointer;
+  font-size: 1rem; font-weight: 700; padding: 0; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: color var(--t), background var(--t), border-color var(--t);
 }
-.ios-banner-close:hover { color: var(--danger); }
+[data-theme="light"] .ios-banner-close { color: #374151; background: #f3f4f6; border-color: #d1d5db; }
+.ios-banner-close:hover { color: var(--danger); background: #fee2e2; border-color: #fecaca; }
 
 #installPwaBanner {
   position: fixed;
@@ -166,6 +170,16 @@
 #installPwaBanner .install-icon { font-size: 1.5rem; flex-shrink: 0; }
 #installPwaBanner .install-text { flex: 1; font-size: .78rem; color: var(--text-mid); }
 #installPwaBanner .install-text strong { display: block; font-weight: 800; color: var(--text); }
+#installPwaBanner .btn-icon-only {
+  background: var(--bg-subtle); border: 1px solid var(--border);
+  color: var(--text-1); width: 36px; height: 36px;
+  border-radius: var(--r-full); font-size: 1.1rem; font-weight: 700;
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+}
+[data-theme="light"] #installPwaBanner .btn-icon-only {
+  color: #374151; background: #f3f4f6; border-color: #d1d5db;
+}
+#installPwaBanner .btn-icon-only:hover { background: #fee2e2; color: var(--danger); border-color: #fecaca; }
 
 /* ══════════════════════════════════════════════════
    31. LIMITI SETTIMANALI

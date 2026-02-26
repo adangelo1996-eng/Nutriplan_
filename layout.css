@@ -12,6 +12,30 @@
 .app-main {
   margin-top: var(--header-h);
   margin-bottom: var(--nav-h);
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Swipe come pagina di libro: transizione slide 3D */
+.app-main.swipe-book .page {
+  transition: transform .35s cubic-bezier(0.32, 0.72, 0, 1),
+              opacity .3s ease;
+}
+.app-main.swipe-book .page.swipe-out-left {
+  transform: translateX(-100%) scale(0.98);
+  opacity: 0.3;
+}
+.app-main.swipe-book .page.swipe-out-right {
+  transform: translateX(100%) scale(0.98);
+  opacity: 0.3;
+}
+.app-main.swipe-book .page.swipe-in-from-right {
+  transform: translateX(0);
+  display: block;
+}
+.app-main.swipe-book .page.swipe-in-from-left {
+  transform: translateX(0);
+  display: block;
 }
 
 /* FIX contenimento pagine:
@@ -46,51 +70,6 @@
 .page-tab-content.active {
   display: block;
   animation: pageIn .2s ease;
-}
-
-/* Mobile: pagine meno affollate, più respiro */
-@media (max-width: 767px) {
-  .page {
-    padding: 20px 16px 28px;
-  }
-  .page-header {
-    margin-bottom: 20px;
-  }
-  .page-tab-content {
-    padding-top: 4px;
-  }
-  .section-header,
-  .piano-section-label {
-    margin-bottom: 12px;
-  }
-  .fi-group {
-    margin-bottom: 14px;
-  }
-  .fi-group-header {
-    padding: 14px 18px;
-  }
-  .fi-list .rc-card,
-  .fi-row {
-    margin-bottom: 10px;
-  }
-  .rc-card {
-    padding: 14px 16px;
-    margin-bottom: 10px;
-  }
-  .meal-btn {
-    padding: 14px 20px;
-    min-width: 76px;
-  }
-  .consumed-bar {
-    padding: 12px 14px;
-    margin-bottom: 14px;
-  }
-  .search-bar-row {
-    margin-bottom: 12px;
-  }
-  .rc-grid {
-    gap: 12px;
-  }
 }
 
 @media (min-width: 768px) {

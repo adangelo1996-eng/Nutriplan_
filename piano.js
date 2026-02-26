@@ -4,6 +4,9 @@
 
 var selectedMeal = 'colazione';
 var pianoSearchQuery = '';
+var editDayActive = false;
+var editDayDateKey = null;
+var _savedDateKeyBeforeEdit = null;
 
 /* ── INIT ── */
 function initMealSelector() {
@@ -28,13 +31,15 @@ function selectMeal(meal, btn) {
   pianoSearchQuery = '';
   var searchInput = document.getElementById('pianoSearchInput');
   if (searchInput) searchInput.value = '';
-  document.querySelectorAll('#mealSelector .rf-pill, #mealSelector .meal-btn').forEach(function(b){ b.classList.remove('active'); });
+  var sel = (editDayActive && document.getElementById('editDay_mealSelector'))
+    ? '#editDay_mealSelector' : '#mealSelector';
+  document.querySelectorAll(sel + ' .rf-pill, ' + sel + ' .meal-btn').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   _pianoRicetteFilter = 'base';
   renderMealItems();
-  renderMealProgress();
+  if (typeof renderMealProgress === 'function') renderMealProgress();
   renderPianoRicette();
-   renderPianoMissingAlert();
+  if (typeof renderPianoMissingAlert === 'function') renderPianoMissingAlert();
 }
 
 function filterPianoToday(query) {
@@ -108,7 +113,7 @@ function getMealItems(meal) {
 }
 
 function renderMealItems() {
-  var el = document.getElementById('mealItemsWrap');
+  var el = document.getElementById((editDayActive ? 'editDay_mealItemsWrap' : 'mealItemsWrap'));
   if (!el) return;
   var items    = getMealItems(selectedMeal);
   var dayData  = getDayData(selectedDateKey);
@@ -477,7 +482,7 @@ function applySubstitute(original, substitute) {
 var _pianoRicetteFilter = 'base';
 
 function renderPianoRicette() {
-  var container = document.getElementById('pianoRicetteWrap');
+  var container = document.getElementById(editDayActive ? 'editDay_ricetteWrap' : 'pianoRicetteWrap');
   if (!container) return;
 
   /* Ottieni tutti gli ingredienti previsti per questo pasto */
