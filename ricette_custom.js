@@ -231,8 +231,8 @@ function saveRicettaCustom() {
     saveData();
     closeRicettaForm();
     renderCustomRicette();
-    /* Aggiorna anche il catalogo se visibile */
-    renderRicetteGrid();
+    if (typeof renderRicetteGrid === 'function') renderRicetteGrid();
+    if (typeof showCompletionCelebration === 'function') showCompletionCelebration();
     alert('✅ Ricetta "' + nome + '" salvata!');
 }
 

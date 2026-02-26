@@ -98,7 +98,7 @@
 
     <div class="header-right">
       <button class="btn-icon-only" id="themeToggle" onclick="toggleTheme()" title="Tema">🌙</button>
-      <div class="auth-user-pill" id="authUserPill" style="display:none" onclick="openAuthModal()">
+      <div class="auth-user-pill" id="authUserPill" style="display:none" onclick="typeof onAuthPillClick==='function'?onAuthPillClick():openAuthModal()">
         <img class="auth-avatar" id="authAvatar" src="" alt="">
         <span class="auth-info" id="authName">Utente</span>
       </div>

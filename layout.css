@@ -48,6 +48,51 @@
   animation: pageIn .2s ease;
 }
 
+/* Mobile: pagine meno affollate, più respiro */
+@media (max-width: 767px) {
+  .page {
+    padding: 20px 16px 28px;
+  }
+  .page-header {
+    margin-bottom: 20px;
+  }
+  .page-tab-content {
+    padding-top: 4px;
+  }
+  .section-header,
+  .piano-section-label {
+    margin-bottom: 12px;
+  }
+  .fi-group {
+    margin-bottom: 14px;
+  }
+  .fi-group-header {
+    padding: 14px 18px;
+  }
+  .fi-list .rc-card,
+  .fi-row {
+    margin-bottom: 10px;
+  }
+  .rc-card {
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .meal-btn {
+    padding: 14px 20px;
+    min-width: 76px;
+  }
+  .consumed-bar {
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .search-bar-row {
+    margin-bottom: 12px;
+  }
+  .rc-grid {
+    gap: 12px;
+  }
+}
+
 @media (min-width: 768px) {
   .app-main { margin-left: var(--sidebar-w); margin-bottom: 0; }
   .page     { padding: 28px 32px; max-width: none; margin: 0; }

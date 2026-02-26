@@ -298,8 +298,9 @@ function toggleBought(idx) {
   if (!items[idx]) return;
   items[idx].bought = !items[idx].bought;
 
-  /* se appena acquistato → apri modal quantità */
+  /* se appena acquistato → apri modal quantità e celebrazione */
   if (items[idx].bought) {
+    if (typeof showCompletionCelebration === 'function') showCompletionCelebration();
     openSpesaQtyModal(idx);
   }
   saveData();
@@ -319,6 +320,7 @@ function clearBoughtItems() {
     .filter(function(i){ return !i.bought; });
   saveData();
   renderSpesa();
+  if (typeof showCompletionCelebration === 'function') showCompletionCelebration();
 }
 
 /* ── GENERA DA PIANO (× giorni) ── */

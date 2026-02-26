@@ -452,6 +452,16 @@ function updateCloudStatus(state, text) {
 
 /* updateAuthUI è definita in firebase-config.js con i corretti ID HTML */
 
+/* Da mobile: click sul nome utente → vai a Profilo; da desktop → modal auth */
+function onAuthPillClick() {
+  var isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  if (isMobile && typeof goToPage === 'function') {
+    goToPage('profilo');
+  } else {
+    openAuthModal();
+  }
+}
+
 function openAuthModal() {
   var modal = document.getElementById('authModal');
   if (!modal) return;
@@ -729,6 +739,7 @@ function addFromSpesa(name, qty, unit) {
   if (typeof saveData === 'function') saveData();
   if (typeof renderFridge === 'function') renderFridge();
   if (typeof showToast === 'function') showToast('🛒 ' + name + ': ' + qty + ' ' + (unit || 'g') + ' → dispensa', 'success');
+  if (typeof showCompletionCelebration === 'function') showCompletionCelebration();
 }
 
 function saveFridgeConfig() {
@@ -754,6 +765,7 @@ function confirmSaveFridge() {
   localStorage.setItem('nutriplanFridgeConfigs', JSON.stringify(configs));
   closeSaveFridgeModal();
   showToast('💾 Dispensa "' + name + '" salvata', 'success');
+  if (typeof showCompletionCelebration === 'function') showCompletionCelebration();
 }
 
 function renderSavedFridgeList(container) {
