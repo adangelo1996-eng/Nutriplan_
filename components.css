@@ -91,6 +91,29 @@
 .meal-item-status.missing { color: var(--danger);  }
 .meal-item-actions { display: flex; gap: 5px; flex-shrink: 0; }
 
+/* Pagina Oggi — card ingrediente compatta (solo nome, + dispensa / + spesa) */
+.piano-item-card .piano-item-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; flex-wrap: wrap;
+}
+.piano-item-card .piano-item-name {
+  flex: 1; min-width: 0;
+  font-weight: 600; font-size: .9em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.piano-item-card .piano-item-qty { font-size: .72em; }
+.piano-item-card .piano-item-sub { font-size: .7em; }
+.piano-item-card .piano-item-actions {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.piano-item-add-btns {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.piano-item-add-btns .rc-btn { white-space: nowrap; }
+@media (min-width: 420px) {
+  .piano-item-add-btns { flex-direction: row; }
+}
+
 .meal-item-btn {
   width: 30px; height: 30px;
   background: var(--bg-subtle); border: 1.5px solid var(--border);

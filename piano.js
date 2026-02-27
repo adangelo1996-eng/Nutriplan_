@@ -198,9 +198,6 @@ function renderMealItems() {
     var display = subName || item.name;
     var qty     = item.quantity ? item.quantity + ' ' + (item.unit||'g') : '';
     var inFridge = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[display] && (pantryItems[display].quantity||0) > 0);
-    var dot     = inFridge
-      ? '<span style="color:var(--success);font-size:.9em;">✔</span>'
-      : '<span style="color:var(--text-3);font-size:.9em;">○</span>';
     var usedCls = used ? ' style="opacity:.45;text-decoration:line-through;"' : '';
 
     var alreadyBadge = '';
@@ -246,20 +243,21 @@ function renderMealItems() {
       actionBtns = '<button class="rc-btn-icon" title="Segna consumato" onclick="toggleUsedItem(\''+escQ(item.name)+'\')">✅</button>';
     } else {
       actionBtns =
+        '<div class="piano-item-add-btns">' +
         '<button class="rc-btn rc-btn-outline rc-btn-sm" title="Aggiungi alla dispensa" ' +
-                'onclick="openAddFridgePrecompiled(\''+escQ(display)+'\')">Aggiungi alla dispensa</button>' +
+                'onclick="openAddFridgePrecompiled(\''+escQ(display)+'\')">+ dispensa</button>' +
         '<button class="rc-btn rc-btn-primary rc-btn-sm" title="Aggiungi alla lista della spesa" ' +
-                'onclick="pianoAddToSpesa(\''+escQ(display)+'\',\''+escQ(item.quantity||'')+'\',\''+escQ(item.unit||'g')+'\')">Aggiungi alla lista della spesa</button>';
+                'onclick="pianoAddToSpesa(\''+escQ(display)+'\',\''+escQ(item.quantity||'')+'\',\''+escQ(item.unit||'g')+'\')">+ spesa</button>' +
+        '</div>';
     }
 
-    return '<div class="rc-card" style="margin-bottom:8px;">' +
-      '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;">' +
-        dot +
-        '<span'+usedCls+' style="flex:1;font-weight:500;font-size:.93em;">'+display+'</span>' +
+    return '<div class="rc-card piano-item-card" style="margin-bottom:8px;">' +
+      '<div class="piano-item-row">' +
+        '<span'+usedCls+' class="piano-item-name">'+display+'</span>' +
         alreadyBadge +
-        (qty ? '<span class="rc-badge" style="font-size:.72em;">'+qty+'</span>' : '') +
-        (subName ? '<span class="rc-badge" style="background:#fff3cd;color:#856404;font-size:.7em;">↔</span>' : '') +
-        '<div style="display:flex;gap:4px;">' +
+        (qty ? '<span class="rc-badge piano-item-qty">'+qty+'</span>' : '') +
+        (subName ? '<span class="rc-badge piano-item-sub">↔</span>' : '') +
+        '<div class="piano-item-actions">' +
           actionBtns +
           '<button class="rc-btn-icon" title="Sostituisci" onclick="openSubstituteModal(\''+escQ(item.name)+'\')">↔</button>' +
         '</div>' +
@@ -589,7 +587,7 @@ function renderPianoMissingAlert() {
     '<span class="piano-missing-icon">⚠️</span>' +
     '<div style="flex:1;min-width:0;"><strong>Ingredienti mancanti in dispensa:</strong><br>' +
     '<div class="piano-missing-chips">' + chips + '</div></div>' +
-    '<button class="rc-btn rc-btn-primary rc-btn-sm" style="flex-shrink:0;white-space:nowrap;" onclick="pianoAddMissingToSpesa()">Aggiungi alla lista della spesa</button>' +
+    '<button class="rc-btn rc-btn-primary rc-btn-sm" onclick="pianoAddMissingToSpesa()">+ spesa</button>' +
     '</div>';
 }
 

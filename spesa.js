@@ -217,6 +217,7 @@ function renderSpesa() {
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">' +
       '<button class="rc-btn rc-btn-outline" onclick="openSpesaItemModal()">＋ Aggiungi</button>' +
       '<button class="rc-btn rc-btn-outline" onclick="clearBoughtItems()">🗑️ Acquistati</button>' +
+      '<button class="rc-btn rc-btn-outline" onclick="clearEntireSpesaList()">🗑️ Pulisci lista</button>' +
     '</div>' +
     buildSpesaGeneratePanel();
 
@@ -320,6 +321,14 @@ function clearBoughtItems() {
     .filter(function(i){ return !i.bought; });
   saveData();
   renderSpesa();
+}
+
+function clearEntireSpesaList() {
+  if (!confirm('Vuoi svuotare tutta la lista della spesa? Tutti gli articoli (anche non ancora acquistati) verranno rimossi.')) return;
+  spesaItems = [];
+  if (typeof saveData === 'function') saveData();
+  if (typeof renderSpesa === 'function') renderSpesa();
+  if (typeof showToast === 'function') showToast('Lista della spesa svuotata', 'info');
 }
 
 /* ── GENERA DA PIANO (× giorni) ── */

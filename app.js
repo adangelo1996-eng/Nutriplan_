@@ -135,13 +135,32 @@ window.addEventListener('beforeinstallprompt', function(e) {
     var b = document.getElementById('installPwaBanner');
     if (b) b.style.display = 'flex';
   }
+  _wireInstallPwaBtn();
 });
 
+function _wireInstallPwaBtn() {
+  var btn = document.getElementById('installPwaBtn');
+  if (!btn || btn._installWired) return;
+  btn._installWired = true;
+  btn.addEventListener('click', function() {
+    if (typeof installPwa === 'function') installPwa();
+  });
+}
+
 function installPwa() {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
-  dismissInstallBanner();
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
+    dismissInstallBanner();
+    return;
+  }
+  if (isIos()) {
+    var b = document.getElementById('iosBanner');
+    if (b) b.classList.add('show');
+    if (typeof showToast === 'function') showToast('Usa Condividi → Aggiungi a Home per installare l\'app', 'info');
+  } else if (typeof showToast === 'function') {
+    showToast('Installa da menu del browser (⋮ → Installa app) o riprova più tardi', 'info');
+  }
 }
 function dismissInstallBanner() {
   var b = document.getElementById('installPwaBanner');
@@ -903,6 +922,7 @@ function startApp() {
 
 /* Auto-start se non c'è landing page */
 document.addEventListener('DOMContentLoaded', function() {
+  _wireInstallPwaBtn();
   /* Cookie consent — prima di tutto */
   initCookieConsent();
 

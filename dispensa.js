@@ -206,7 +206,7 @@ function buildDeficitRow(d) {
       '<div class="deficit-name">' + d.name + '</div>' +
       '<div class="deficit-label">' + label + '</div>' +
     '</div>' +
-    '<button class="rc-btn rc-btn-primary rc-btn-sm" onclick="event.stopPropagation();pianoAddToSpesa(\'' + escQ(d.name) + '\',\'' + d.required + '\',\'' + escQ(d.unit) + '\')" title="Aggiungi alla lista della spesa">Aggiungi alla lista della spesa</button>' +
+    '<button class="rc-btn rc-btn-primary rc-btn-sm" onclick="event.stopPropagation();pianoAddToSpesa(\'' + escQ(d.name) + '\',\'' + d.required + '\',\'' + escQ(d.unit) + '\')" title="Aggiungi alla lista della spesa">+ spesa</button>' +
   '</div>';
 }
 

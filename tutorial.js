@@ -13,64 +13,65 @@ var _tutActive    = false;
 var _tutAutoEl      = null;
 var _tutAutoHandler = null;
 
+/* Ordine allineato alle schede della nav: Oggi → Piano → Dispensa → Ricette → Spesa */
 var TUTORIAL_STEPS = [
   {
     icon:   '🌿',
     title:  'Benvenuto in NutriPlan!',
-    text:   'Il tuo assistente alimentare. Ti mostriamo le sezioni principali in meno di un minuto.',
+    text:   'Il tuo assistente alimentare. Segui le schede in basso: tocca quella indicata per continuare.',
     page:   null,
     target: null,
     hint:   ''
   },
   {
-    icon:   '🌿',
-    title:  'Piano Alimentare',
-    text:   'Qui imposti il tuo piano: per ogni pasto scegli le categorie di ingredienti e le alternative. In fondo puoi impostare i limiti settimanali.',
-    page:   'piano-alimentare',
-    target: '#bn-piano-alimentare,#st-piano-alimentare',
-    hint:   'Tocca "Piano" per aprire la sezione',
-    autoAdvance: true
-  },
-  {
     icon:   '🍽',
-    title:  'Cosa mangio oggi',
-    text:   'Qui vedi il tuo piano giornaliero. Tocca un pasto e spunta ✅ gli ingredienti man mano che li consumi.',
+    title:  'Oggi',
+    text:   'Qui vedi il piano del giorno. Scegli un pasto e segna gli ingredienti che consumi.',
     page:   'piano',
     target: '#bn-piano,#st-piano',
-    hint:   'Tocca "Oggi" per aprire la sezione',
+    hint:   'Tocca la scheda "Oggi" per continuare',
     autoAdvance: true
   },
   {
-    icon:   '📖',
-    title:  'Ricette',
-    text:   'Sfoglia le ricette ordinate per ingredienti disponibili. Il tasto 🛒 aggiunge alla spesa solo ciò che manca.',
-    page:   'ricette',
-    target: '#bn-ricette,#st-ricette',
-    hint:   'Tocca "Ricette" per aprire la sezione',
+    icon:   '🌿',
+    title:  'Piano alimentare',
+    text:   'Imposta gli ingredienti per ogni pasto e i limiti settimanali.',
+    page:   'piano-alimentare',
+    target: '#bn-piano-alimentare,#st-piano-alimentare',
+    hint:   'Tocca la scheda "Piano" per continuare',
     autoAdvance: true
   },
   {
     icon:   '🗄️',
     title:  'Dispensa',
-    text:   'Tieni traccia di tutto ciò che hai in casa. Le quantità si aggiornano automaticamente quando consumi.',
+    text:   'Tieni traccia di ciò che hai in casa. Le quantità si aggiornano quando consumi.',
     page:   'dispensa',
     target: '#bn-dispensa,#st-dispensa',
-    hint:   'Tocca "Dispensa" per aprire la sezione',
+    hint:   'Tocca la scheda "Dispensa" per continuare',
+    autoAdvance: true
+  },
+  {
+    icon:   '📖',
+    title:  'Ricette',
+    text:   'Sfoglia le ricette. Il tasto 🛒 aggiunge alla spesa solo ciò che manca.',
+    page:   'ricette',
+    target: '#bn-ricette,#st-ricette',
+    hint:   'Tocca la scheda "Ricette" per continuare',
     autoAdvance: true
   },
   {
     icon:   '🛒',
-    title:  'Lista della Spesa',
-    text:   'Genera la spesa dal piano × N giorni o dalle ricette. Spunta gli acquisti per aggiornare la dispensa.',
+    title:  'Lista della spesa',
+    text:   'Genera la lista dal piano o dalle ricette. Spunta gli acquisti per aggiornare la dispensa.',
     page:   'spesa',
     target: '#bn-spesa,#st-spesa',
-    hint:   'Tocca "Spesa" per aprire la sezione',
+    hint:   'Tocca la scheda "Spesa" per continuare',
     autoAdvance: true
   },
   {
     icon:   '🎉',
     title:  'Tutto pronto!',
-    text:   'Ora sei pronto per usare NutriPlan. Puoi riaprire questa guida in qualsiasi momento dal Profilo → Impostazioni.',
+    text:   'Ora puoi usare NutriPlan. Riapri questa guida dal Profilo → Impostazioni.',
     page:   null,
     target: null,
     hint:   ''
@@ -410,12 +411,6 @@ function _endTutorial() {
   if (card) card.style.cssText = 'display:none;';
   if (ptr)  ptr.style.cssText  = 'display:none;';
 
-  /* Mostra welcome modal solo se onboarding è stato completato e il tutorial è globale */
-  if (_tutMode === 'global' && localStorage.getItem('nutriplan_onboarding_done')) {
-    setTimeout(function() {
-      if (typeof showWelcomeModal === 'function') showWelcomeModal();
-    }, 400);
-  }
 }
 
 /* ══════════════════════════════════════════════════
