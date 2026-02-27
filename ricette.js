@@ -303,8 +303,8 @@ function buildFilterRow() {
   ];
   if (hasDiet) extraFilters.push({key:'dieta', emoji:'🌿', label:'Dieta mia'});
 
-  var compatPills = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">' +
-    '<span style="font-size:.75rem;font-weight:700;color:var(--text-3);margin-right:4px;align-self:center;">Compatibilità:</span>' +
+  var compatPills = '<div class="ricette-filters-row">' +
+    '<span class="ricette-filters-label">Compatibilità:</span>' +
     ['all','compatibili','non_compatibili'].map(function(k){
       var lab = k==='all'?'Tutte':(k==='compatibili'?'Solo compatibili':'Solo non compatibili');
       return '<button class="rf-pill rf-pill-compat'+(ricetteFilterCompatibili===k?' active':'')+'" onclick="setRicetteFilterCompatibili(\''+k+'\',this)">'+lab+'</button>';
@@ -312,31 +312,47 @@ function buildFilterRow() {
 
   var ingPills = '';
   if (ricetteFilterPasto !== 'all') {
-    ingPills = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">' +
-      '<span style="font-size:.75rem;font-weight:700;color:var(--text-3);margin-right:4px;align-self:center;">Ingredienti:</span>' +
+    ingPills = '<div class="ricette-filters-row">' +
+      '<span class="ricette-filters-label">Ingredienti:</span>' +
       '<button class="rf-pill rf-pill-ing'+(ricetteFilterIngredienti==='solo_piano'?' active':'')+'" onclick="setRicetteFilterIngredienti(\'solo_piano\',this)">Solo nel piano</button>' +
       '<button class="rf-pill rf-pill-ing'+(ricetteFilterIngredienti==='anche_extra'?' active':'')+'" onclick="setRicetteFilterIngredienti(\'anche_extra\',this)">Anche extra piano</button>' +
       '</div>';
   }
 
-  row.innerHTML =
-    '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">' +
-    '<span style="font-size:.75rem;font-weight:700;color:var(--text-3);margin-right:4px;align-self:center;">Pasto:</span>' +
-    filters.map(function(f){
-      return '<button class="rf-pill'+(f.key===ricetteFilterPasto?' active':'')+'" '+
-             'onclick="setRicetteFilter(\''+f.key+'\',this)">'+
-             f.emoji+' '+f.label+'</button>';
-    }).join('') +
-    '</div>' +
-    compatPills +
-    ingPills +
-    '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
-    extraFilters.map(function(f){
-      return '<button class="rf-pill rf-pill-extra'+(f.key===ricetteFilterExtra?' active':'')+'" '+
-             'onclick="setRicetteFilterExtra(\''+f.key+'\',this)">'+
-             f.emoji+' '+f.label+'</button>';
-    }).join('') +
+  var pastoBlock =
+    '<div class="ricette-filters-group ricette-filters-pasti">' +
+      '<span class="ricette-filters-label">Pasto:</span>' +
+      '<div class="ricette-filters-pills">' +
+        filters.map(function(f){
+          return '<button class="rf-pill'+(f.key===ricetteFilterPasto?' active':'')+'" '+
+                 'onclick="setRicetteFilter(\''+f.key+'\',this)">'+
+                 f.emoji+' '+f.label+'</button>';
+        }).join('') +
+        extraFilters.map(function(f){
+          return '<button class="rf-pill rf-pill-extra'+(f.key===ricetteFilterExtra?' active':'')+'" '+
+                 'onclick="setRicetteFilterExtra(\''+f.key+'\',this)">'+
+                 f.emoji+' '+f.label+'</button>';
+        }).join('') +
+      '</div>' +
     '</div>';
+
+  var compatBlock =
+    '<div class="ricette-filters-group ricette-filters-compat">' +
+      compatPills + ingPills +
+    '</div>';
+
+  row.innerHTML =
+    '<details class="ricette-filters-details" id="ricetteFiltersDetails">' +
+      '<summary class="ricette-filters-summary">Filtri: Pasto e compatibilità</summary>' +
+      '<div class="ricette-filters-inner">' +
+        pastoBlock +
+        compatBlock +
+      '</div>' +
+    '</details>';
+  if (window.innerWidth >= 768) {
+    var d = document.getElementById('ricetteFiltersDetails');
+    if (d) d.setAttribute('open', '');
+  }
 }
 function setRicetteFilter(key, btn) {
   ricetteFilterPasto = key||'all';

@@ -99,7 +99,12 @@
 .piano-item-card .piano-item-name {
   flex: 1; min-width: 0;
   font-weight: 600; font-size: .9em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
 }
 .piano-item-card .piano-item-qty { font-size: .72em; }
 .piano-item-card .piano-item-sub { font-size: .7em; }
@@ -285,24 +290,70 @@
    19. RICETTE
 ══════════════════════════════════════════════════ */
 
-/* Filtri: due righe (Pasto + Compatibilità) su mobile e desktop */
+/* Filtri ricette: desktop = sempre visibili; mobile = menu a espansione */
 .ricette-filter-row,
 #ricetteFilterRow {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
   padding: 2px 0 14px;
   width: 100%;
   position: static;
 }
-#ricetteFilterRow > div {
+.ricette-filters-details {
+  width: 100%;
+}
+.ricette-filters-summary {
+  list-style: none;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  background: var(--bg-subtle);
+  font-size: .88rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ricette-filters-summary::-webkit-details-marker { display: none; }
+.ricette-filters-summary::after { content: ' ▾'; color: var(--text-light); }
+.ricette-filters-details[open] .ricette-filters-summary::after { content: ' ▴'; }
+.ricette-filters-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0 0;
+}
+.ricette-filters-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ricette-filters-label {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--text-3);
+  margin-bottom: 2px;
+}
+.ricette-filters-pills,
+.ricette-filters-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 6px;
-  width: 100%;
+  align-items: center;
 }
-#ricetteFilterRow > div:last-child { margin-bottom: 0; }
+.ricette-filters-row .ricette-filters-label { margin-right: 4px; margin-bottom: 0; }
+.ricette-filters-row { margin-bottom: 6px; }
+.ricette-filters-row:last-child { margin-bottom: 0; }
+
+@media (min-width: 768px) {
+  .ricette-filters-summary { display: none; }
+  .ricette-filters-details .ricette-filters-inner { padding-top: 0; }
+  .ricette-filters-details[open] .ricette-filters-inner,
+  .ricette-filters-details .ricette-filters-inner { display: block; }
+  .ricette-filters-group { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .ricette-filters-group .ricette-filters-label { margin-right: 8px; margin-bottom: 0; }
+  .ricette-filters-group .ricette-filters-pills { flex: 1; }
+}
 .ricette-filter-row::-webkit-scrollbar,
 #ricetteFilterRow::-webkit-scrollbar { display: none; }
 

@@ -1017,7 +1017,7 @@ function _lookupBarcode(barcode) {
 
   var url = 'https://world.openfoodfacts.org/api/v2/product/' +
             encodeURIComponent(barcode) +
-            '.json?fields=product_name,product_name_it,brands,categories_tags,nutriments';
+            '.json?fields=product_name,product_name_it,brands,categories_tags,nutriments,quantity';
 
   fetch(url)
     .then(function(r) {
@@ -1065,6 +1065,70 @@ function _mapOFFCategory(categories_tags) {
   return '🧂 Altro';
 }
 
+/**
+ * Estrae quantità e unità dal campo quantity di Open Food Facts (es. "500g", "1 L", "200ml", "6 x 125 g").
+ * Restituisce { qty: number, unit: string } con default 1 e "pz" se non disponibile.
+ */
+function _parseBarcodeQuantity(quantity) {
+  var qty = 1;
+  var unit = 'pz';
+  if (quantity == null || quantity === '') return { qty: qty, unit: unit };
+
+  var s = String(quantity).trim().toLowerCase();
+  if (!s) return { qty: qty, unit: unit };
+
+  var num = null;
+  var u = '';
+
+  if (/^\d+(?:[.,]\d+)?\s*[a-z]+$/.test(s)) {
+    var m = s.match(/^(\d+(?:[.,]\d+)?)\s*([a-z]+)$/);
+    if (m) { num = parseFloat(m[1].replace(',', '.')); u = m[2]; }
+  }
+  if (num == null && /^\d+(?:[.,]\d+)?[a-z]+$/.test(s)) {
+    var m2 = s.match(/^(\d+(?:[.,]\d+)?)([a-z]+)$/);
+    if (m2) { num = parseFloat(m2[1].replace(',', '.')); u = m2[2]; }
+  }
+  if (num == null) {
+    var m3 = s.match(/^(\d+(?:[.,]\d+)?)\s*([a-z]+)?$/);
+    if (m3) { num = parseFloat(m3[1].replace(',', '.')); u = (m3[2] || '').trim(); }
+  }
+  if (num == null) {
+    var m4 = s.match(/(\d+(?:[.,]\d+)?)/);
+    if (m4) num = parseFloat(m4[1].replace(',', '.'));
+  }
+
+  if (num != null && !isNaN(num) && num > 0) qty = num;
+  if (u) {
+    if (u === 'g' || u === 'gr') unit = 'g';
+    else if (u === 'kg') { qty = qty * 1000; unit = 'g'; }
+    else if (u === 'ml' || u === 'millilitri') unit = 'ml';
+    else if (u === 'l' || u === 'lt') { qty = qty * 1000; unit = 'ml'; }
+    else if (u === 'pz' || u === 'pezzi' || u === 'x') unit = 'pz';
+    else if (_barcodeUnitMap(u)) unit = _barcodeUnitMap(u);
+    else if (u.length <= 10) unit = u;
+  }
+  if (qty <= 0) qty = 1;
+  return { qty: qty, unit: unit };
+}
+
+function _barcodeUnitMap(u) {
+  var map = { 'fette': 'fette', 'cucchiai': 'cucchiai', 'cucchiaini': 'cucchiaini', 'porzione': 'porzione' };
+  return map[u] || null;
+}
+
+function _barcodeUnitOptions(selectedUnit) {
+  var units = [
+    { v: 'pz', l: 'pz' }, { v: 'g', l: 'g' }, { v: 'kg', l: 'kg' },
+    { v: 'ml', l: 'ml' }, { v: 'l', l: 'l' }, { v: 'fette', l: 'fette' },
+    { v: 'cucchiai', l: 'cucchiai' }, { v: 'cucchiaini', l: 'cucchiaini' },
+    { v: 'porzione', l: 'porzione' }
+  ];
+  var sel = (selectedUnit || 'pz').toLowerCase();
+  return units.map(function(u) {
+    return '<option value="' + u.v + '"' + (u.v === sel ? ' selected' : '') + '>' + u.l + '</option>';
+  }).join('');
+}
+
 function _showBarcodeResult(product, barcode) {
   var name = (product.product_name_it || product.product_name || '').trim();
   if (!name) name = 'Prodotto ' + barcode;
@@ -1104,6 +1168,10 @@ function _showBarcodeResult(product, barcode) {
   var catIcon = getCategoryIcon(category);
   var catName = category.replace(/^[^\s]+\s/, '');
 
+  var qtyFromApi = _parseBarcodeQuantity(product.quantity);
+  var defaultQty = qtyFromApi.qty;
+  var defaultUnit = qtyFromApi.unit;
+
   var catOptions = [
     '🥩 Carne', '🐟 Pesce', '🥛 Latticini e Uova', '🌾 Cereali e Legumi',
     '🥦 Verdure', '🍎 Frutta', '🥑 Grassi e Condimenti',
@@ -1136,21 +1204,13 @@ function _showBarcodeResult(product, barcode) {
     '</div>' +
     '<div class="row gap-8">' +
       '<div class="form-group flex1">' +
-        '<label>Quantità</label>' +
-        '<input type="number" id="barcodeIngQty" min="0" step="any" placeholder="0">' +
+        '<label>Quantità <span style="font-size:.78em;color:var(--text-3);">(da API, modificabile)</span></label>' +
+        '<input type="number" id="barcodeIngQty" min="0" step="any" value="' + defaultQty + '" placeholder="' + defaultQty + '">' +
       '</div>' +
       '<div class="form-group" style="width:110px;">' +
         '<label>Unità</label>' +
         '<select id="barcodeIngUnit">' +
-          '<option value="g" selected>g</option>' +
-          '<option value="ml">ml</option>' +
-          '<option value="pz">pz</option>' +
-          '<option value="fette">fette</option>' +
-          '<option value="cucchiai">cucchiai</option>' +
-          '<option value="cucchiaini">cucchiaini</option>' +
-          '<option value="porzione">porzione</option>' +
-          '<option value="kg">kg</option>' +
-          '<option value="l">l</option>' +
+          _barcodeUnitOptions(defaultUnit) +
         '</select>' +
       '</div>' +
     '</div>' +
@@ -1225,8 +1285,9 @@ function confirmBarcodeAdd() {
     return;
   }
 
-  var qty      = parseFloat(qtyEl ? qtyEl.value : 0) || 0;
-  var unit     = unitEl ? unitEl.value : 'g';
+  var qty      = parseFloat(qtyEl ? qtyEl.value : 0);
+  if (!qty || qty < 0) qty = 1;
+  var unit     = unitEl ? unitEl.value : 'pz';
   var cat      = catEl.value || '🧂 Altro';
   var icon     = getCategoryIcon(cat);
   var scadenza = scadEl ? scadEl.value : '';

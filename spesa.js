@@ -216,8 +216,8 @@ function renderSpesa() {
   var toolbar =
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">' +
       '<button class="rc-btn rc-btn-outline" onclick="openSpesaItemModal()">＋ Aggiungi</button>' +
-      '<button class="rc-btn rc-btn-outline" onclick="clearBoughtItems()">🗑️ Acquistati</button>' +
-      '<button class="rc-btn rc-btn-outline" onclick="clearEntireSpesaList()">🗑️ Pulisci lista</button>' +
+      '<button class="rc-btn rc-btn-outline" onclick="clearBoughtItems()">Rimuovi acquistati</button>' +
+      '<button class="rc-btn rc-btn-outline" onclick="clearEntireSpesaList()">Svuota tutta la lista</button>' +
     '</div>' +
     buildSpesaGeneratePanel();
 
