@@ -451,6 +451,20 @@ function buildProfiloSettingsSection() {
       right: '<span class="settings-row-arrow">›</span>'
     },
     {
+      icon: '📦',
+      label: 'Scarica i miei dati (JSON)',
+      sub: 'Esporta una copia completa dei tuoi dati',
+      action: 'if(typeof downloadUserData===\'function\')downloadUserData()',
+      right: '<span class="settings-row-arrow">›</span>'
+    },
+    {
+      icon: '⚙️',
+      label: 'Genera nuovo piano alimentare',
+      sub: 'Crea un piano completo a partire dai tuoi dati',
+      action: 'if(typeof openPlanGeneratorFromProfile===\'function\')openPlanGeneratorFromProfile()',
+      right: '<span class="settings-row-arrow">›</span>'
+    },
+    {
       icon: '🔒',
       label: 'Privacy Policy',
       sub: 'Informativa sul trattamento dei dati',
@@ -484,6 +498,68 @@ function buildProfiloSettingsSection() {
       html+
     '</div>'
   );
+}
+
+function openPlanGeneratorFromProfile() {
+  if (typeof goToPage !== 'function') return;
+  var hasPlan = false;
+  if (pianoAlimentare && typeof pianoAlimentare === 'object') {
+    hasPlan = Object.keys(pianoAlimentare).some(function(mk) {
+      var meal = pianoAlimentare[mk];
+      if (!meal || typeof meal !== 'object') return false;
+      return Object.keys(meal).some(function(cat) {
+        return Array.isArray(meal[cat]) && meal[cat].length > 0;
+      });
+    });
+  }
+  if (hasPlan) {
+    var msg = 'Esiste già un piano alimentare.\nVuoi generarne uno nuovo che potrebbe sostituire quello attuale?';
+    if (!window.confirm(msg)) return;
+  }
+  goToPage('piano-gen');
+}
+
+function downloadUserData() {
+  if (typeof buildSaveObject !== 'function') {
+    console.warn('downloadUserData: buildSaveObject non disponibile');
+    return;
+  }
+  try {
+    var payload = buildSaveObject();
+    var meta = {};
+    var user = (typeof currentUser !== 'undefined') ? currentUser : null;
+    meta.exportedAt = new Date().toISOString();
+    meta.appVersion = 'nutriplan-web';
+    if (user && user.email) meta.userEmail = user.email;
+    payload.__meta = meta;
+
+    var json = JSON.stringify(payload, null, 2);
+    var blob = new Blob([json], { type: 'application/json' });
+    var url  = URL.createObjectURL(blob);
+
+    var a = document.createElement('a');
+    a.href = url;
+    var d = new Date();
+    var fname = 'nutriplan-data-' + d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0') + '.json';
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 0);
+
+    if (typeof showToast === 'function') {
+      showToast('📄 Dati esportati in JSON', 'success');
+    }
+  } catch (e) {
+    console.warn('downloadUserData error:', e);
+    if (typeof showToast === 'function') {
+      showToast('Impossibile esportare i dati in questo momento', 'error');
+    }
+  }
 }
 
 function confirmClearAllData() {

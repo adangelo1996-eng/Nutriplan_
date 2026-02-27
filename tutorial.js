@@ -77,6 +77,11 @@ var TUTORIAL_STEPS = [
   }
 ];
 
+/* Array di passi attivi (tutorial completo o aiuto pagina) */
+var _tutSteps = TUTORIAL_STEPS;
+/* Modalità corrente: 'global' (tutorial iniziale) o 'page' (aiuto contestuale) */
+var _tutMode  = 'global';
+
 /* ══════════════════════════════════════════════════
    PUBLIC API
 ══════════════════════════════════════════════════ */
@@ -86,6 +91,8 @@ function checkTutorial() {
 }
 
 function startTutorial() {
+  _tutMode   = 'global';
+  _tutSteps  = TUTORIAL_STEPS;
   _tutStep   = 0;
   _tutActive = true;
   _createTutElements();
@@ -94,6 +101,8 @@ function startTutorial() {
 
 function resetTutorial() {
   localStorage.removeItem(TUTORIAL_KEY);
+  _tutMode   = 'global';
+  _tutSteps  = TUTORIAL_STEPS;
   _tutStep   = 0;
   _tutActive = true;
   _clearAutoAdvance();
@@ -156,7 +165,7 @@ function _createTutElements() {
    RENDER
 ══════════════════════════════════════════════════ */
 function _renderTutStep() {
-  var step = TUTORIAL_STEPS[_tutStep];
+  var step = _tutSteps[_tutStep];
   if (!step) { _endTutorial(); return; }
 
   /* Rimuovi listener auto-avanzamento precedente */
@@ -177,7 +186,7 @@ function _renderTutStep() {
   if (card) card.style.display = 'block';
 
   if (iconEl)  iconEl.textContent = step.icon || '🌿';
-  if (stepEl)  stepEl.textContent = (_tutStep + 1) + ' di ' + TUTORIAL_STEPS.length;
+  if (stepEl)  stepEl.textContent = (_tutStep + 1) + ' di ' + _tutSteps.length;
   if (titleEl) titleEl.textContent = step.title;
   if (textEl)  textEl.textContent  = step.text;
 
@@ -186,11 +195,11 @@ function _renderTutStep() {
     hintEl.style.display = step.hint ? 'flex' : 'none';
   }
 
-  var isLast = _tutStep === TUTORIAL_STEPS.length - 1;
+  var isLast = _tutStep === _tutSteps.length - 1;
   if (nextBtn) nextBtn.textContent = isLast ? '🎉 Inizia!' : 'Avanti →';
 
   if (dotsEl) {
-    dotsEl.innerHTML = TUTORIAL_STEPS.map(function(_, i) {
+    dotsEl.innerHTML = _tutSteps.map(function(_, i) {
       return '<span class="tut-dot' + (i === _tutStep ? ' active' : '') + '"></span>';
     }).join('');
   }
@@ -365,7 +374,7 @@ function _positionStep(step) {
 function nextTutorialStep() {
   _clearAutoAdvance();
   _tutStep++;
-  if (_tutStep >= TUTORIAL_STEPS.length) {
+  if (_tutStep >= _tutSteps.length) {
     _maybeSuppressTutorial();
     _endTutorial();
   } else {
@@ -381,7 +390,9 @@ function skipTutorial() {
 
 function _maybeSuppressTutorial() {
   var cb = document.getElementById('tutNoShow');
-  if (cb && cb.checked) localStorage.setItem(TUTORIAL_KEY, '1');
+  if (_tutMode === 'global' && cb && cb.checked) {
+    localStorage.setItem(TUTORIAL_KEY, '1');
+  }
 }
 
 function _endTutorial() {
@@ -394,12 +405,143 @@ function _endTutorial() {
   if (card) card.style.cssText = 'display:none;';
   if (ptr)  ptr.style.cssText  = 'display:none;';
 
-  /* Mostra welcome modal solo se onboarding è stato completato */
-  if (localStorage.getItem('nutriplan_onboarding_done')) {
+  /* Mostra welcome modal solo se onboarding è stato completato e il tutorial è globale */
+  if (_tutMode === 'global' && localStorage.getItem('nutriplan_onboarding_done')) {
     setTimeout(function() {
       if (typeof showWelcomeModal === 'function') showWelcomeModal();
     }, 400);
   }
+}
+
+/* ══════════════════════════════════════════════════
+   AIUTO CONTESTUALE PER PAGINA
+   startPageHelp('piano' | 'dispensa' | 'ricette' | 'spesa' | 'statistiche' | 'profilo' | 'piano-alimentare' | 'piano-gen')
+══════════════════════════════════════════════════ */
+var TUTORIAL_STEPS_BY_PAGE = {
+  'piano': [
+    {
+      icon:  '🍽',
+      title: 'Scegli il pasto',
+      text:  'Qui selezioni il pasto che stai gestendo (colazione, pranzo, cena…).',
+      page:  'piano',
+      target:'#mealSelector',
+      hint:  'Tocca un pasto per vedere gli ingredienti relativi.'
+    },
+    {
+      icon:  '🌿',
+      title: 'Ingredienti nel piano',
+      text:  'Questa sezione mostra gli ingredienti previsti dal piano per il pasto selezionato.',
+      page:  'piano',
+      target:'#mealItemsWrap',
+      hint:  'Da qui puoi segnare consumato, sostituire o aggiungere alla dispensa/spesa.'
+    },
+    {
+      icon:  '📖',
+      title: 'Ricette compatibili',
+      text:  'Qui trovi le ricette compatibili con il piano e la dispensa per il pasto scelto.',
+      page:  'piano',
+      target:'#pianoRicetteWrap',
+      hint:  'Apri una ricetta per segnare la preparazione e aggiornare la dispensa.'
+    }
+  ],
+  'piano-alimentare': [
+    {
+      icon:  '🌿',
+      title: 'Configura il tuo piano',
+      text:  'In questa pagina imposti gli ingredienti per ogni pasto e le categorie nutrizionali.',
+      page:  'piano-alimentare',
+      target:'#pianoAlimentarePage',
+      hint:  'Usa i pulsanti “+” per aggiungere o modificare gli ingredienti.'
+    }
+  ],
+  'piano-gen': [
+    {
+      icon:  '⚙️',
+      title: 'Generatore di piano',
+      text:  'Compila i dati (età, peso, obiettivo) per calcolare un piano alimentare su misura.',
+      page:  'piano-gen',
+      target:'#pianoGenContent',
+      hint:  'Segui i passi e conferma per applicare il piano generato.'
+    }
+  ],
+  'dispensa': [
+    {
+      icon:  '🗄️',
+      title: 'Categorie della dispensa',
+      text:  'Gli ingredienti sono raggruppati per categoria (carne, latticini, verdure, ecc.).',
+      page:  'dispensa',
+      target:'#pantryContent',
+      hint:  'Puoi espandere/collassare ogni categoria a seconda delle necessità.'
+    }
+  ],
+  'ricette': [
+    {
+      icon:  '📖',
+      title: 'Filtri ricette',
+      text:  'Filtra le ricette per pasto, compatibilità e ingredienti extra piano.',
+      page:  'ricette',
+      target:'#ricetteFilterRow',
+      hint:  'Scegli il pasto e il tipo di compatibilità che ti interessa.'
+    },
+    {
+      icon:  '📚',
+      title: 'Catalogo e ricette personali',
+      text:  'Sfoglia il catalogo o passa alla tab “Le mie” per le tue ricette salvate.',
+      page:  'ricette',
+      target:'#ricetteGrid',
+      hint:  'Apri una card per vedere dettagli e aggiungere al piano o alla spesa.'
+    }
+  ],
+  'spesa': [
+    {
+      icon:  '🛒',
+      title: 'Lista della spesa per categoria',
+      text:  'Gli articoli sono raggruppati per categoria come in dispensa.',
+      page:  'spesa',
+      target:'#spesaContent',
+      hint:  'Spunta ciò che hai acquistato per aggiornare facilmente la dispensa.'
+    }
+  ],
+  'statistiche': [
+    {
+      icon:  '📊',
+      title: 'Andamento nel tempo',
+      text:  'Qui trovi grafici e riepiloghi delle ultime settimane di utilizzo.',
+      page:  'statistiche',
+      target:'#statisticheContent',
+      hint:  'Usa questi dati per confrontarti con il nutrizionista.'
+    }
+  ],
+  'profilo': [
+    {
+      icon:  '👤',
+      title: 'Dati profilo e accesso',
+      text:  'Gestisci account, accesso Google e dati visibili nel tuo profilo.',
+      page:  'profilo',
+      target:'#profiloPage',
+      hint:  'Scorri per trovare vincoli dieta, storico e impostazioni avanzate.'
+    }
+  ]
+};
+
+function startPageHelp(pageKey) {
+  if (!pageKey) return;
+  var steps = TUTORIAL_STEPS_BY_PAGE[pageKey];
+  if (!steps || !steps.length) {
+    /* Fallback: se non definito, mostra il tutorial completo */
+    startTutorial();
+    return;
+  }
+  _tutMode   = 'page';
+  _tutSteps  = steps;
+  _tutStep   = 0;
+  _tutActive = true;
+  _clearAutoAdvance();
+  _createTutElements();
+  /* Nasconde la checkbox "Non mostrare più" per l'aiuto contestuale */
+  var noShowWrap = document.getElementById('tutNoShowWrap');
+  if (noShowWrap) noShowWrap.style.display = 'none';
+  _renderTutStep();
 }
 
 /* Compat alias (called from old HTML) */

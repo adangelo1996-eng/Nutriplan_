@@ -892,3 +892,58 @@ function generateAIStatsAnalysis() {
       '</div>';
   }, { maxOutputTokens: 2500, temperature: 0.5 });
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   VERIFICA AI PIANO GENERATO
+   - Usa solo dati di profilo e piano RIASSUNTI (anonimizzati)
+   - Non genera un nuovo piano, ma restituisce solo un giudizio sintetico
+══════════════════════════════════════════════════════════════════════════════ */
+function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
+  if (typeof callback !== 'function') callback = function () {};
+
+  var profile = userProfile || {};
+  var plan    = planSummary || {};
+
+  var payload = {
+    profile: {
+      sex: profile.sex || null,
+      age: profile.age || null,
+      weightKg: profile.weight || null,
+      heightCm: profile.height || null,
+      activity: profile.activity || null,
+      goal: profile.goal || null
+    },
+    plan: plan
+  };
+
+  var prompt =
+    'Agisci come nutrizionista esperto. Ti fornisco un profilo sintetico e il riepilogo di un piano alimentare già calcolato.\n' +
+    'Il tuo compito è SOLO verificare se, in linea di massima, il piano è coerente con il profilo (distribuzione dei pasti, calorie totali e proporzioni dei macronutrienti), ' +
+    'senza proporre un nuovo piano e senza aggiungere dettagli inutili.\n\n' +
+    'PROFILO E PIANO (JSON):\n' +
+    JSON.stringify(payload) + '\n\n' +
+    'RISPOSTA OBBLIGATORIA: restituisci SOLO un JSON con questa forma, senza testo aggiuntivo e senza markdown:\n' +
+    '{ "verified": true|false, "risk": "low|medium|high", "reason": "breve spiegazione in italiano (max 200 caratteri)" }';
+
+  _geminiCall(prompt, function (text, err) {
+    if (err || !text) {
+      callback({ verified: false, reason: err || 'no_response' });
+      return;
+    }
+    try {
+      var jsonStr = _extractBalancedJson(text) || _cleanMarkdownJson(text) || text.trim();
+      var res = JSON.parse(jsonStr);
+      if (typeof res.verified !== 'boolean') {
+        callback({ verified: false, reason: 'invalid_format' });
+        return;
+      }
+      callback({
+        verified: !!res.verified,
+        reason: res.reason || null,
+        risk: res.risk || null
+      });
+    } catch (e) {
+      callback({ verified: false, reason: 'parse_error' });
+    }
+  }, { maxOutputTokens: 512, temperature: 0.1 });
+}

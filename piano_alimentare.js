@@ -164,9 +164,14 @@ function renderPianoAlimentare() {
             ? 'Inserisci gli ingredienti pasto per pasto con la configurazione guidata'
             : 'Rivedi e modifica gli ingredienti di ogni pasto') +
         '</div>' +
-        '<button class="pa-wizard-invite-btn" onclick="openPAWizard()">' +
-          (isEmpty ? '✨ Inizia configurazione →' : '✏️ Modifica guidata →') +
-        '</button>' +
+        '<div class="pa-wizard-invite-actions">' +
+          '<button class="pa-wizard-invite-btn" onclick="openPAWizard()">' +
+            (isEmpty ? '✨ Configurazione guidata per categorie →' : '✏️ Modifica guidata per categorie →') +
+          '</button>' +
+          '<button class="pa-wizard-invite-btn pa-wizard-invite-btn-secondary" onclick="showOnboarding()">' +
+            '📄 Inserisci il piano che possiedi (wizard)' +
+          '</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
 

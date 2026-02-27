@@ -843,19 +843,30 @@ function updateAllUI() {
    RESET GIORNATA
 ══════════════════════════════════════════════════ */
 function resetDay() {
-  if (!confirm('Vuoi resettare il piano di oggi?')) return;
-  if (typeof pianoAlimentare !== 'undefined') {
-    ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk) {
-      if (pianoAlimentare[mk]) {
-        Object.keys(pianoAlimentare[mk]).forEach(function(cat) {
-          pianoAlimentare[mk][cat] = [];
-        });
-      }
-    });
+  if (!confirm('Vuoi resettare i dati di oggi (spuntati e sostituzioni) mantenendo invariato il piano alimentare?')) return;
+
+  var dk = (typeof selectedDateKey !== 'undefined' && selectedDateKey)
+    ? selectedDateKey
+    : (typeof getCurrentDateKey === 'function' ? getCurrentDateKey() : null);
+
+  if (!dk) return;
+
+  if (typeof appHistory !== 'undefined' && appHistory && appHistory[dk]) {
+    var day = appHistory[dk];
+    day.usedItems     = {};
+    day.substitutions = {};
+    if (day.ricette) day.ricette = {};
   }
+
   if (typeof saveData === 'function') saveData();
+
   if (typeof renderPiano === 'function') renderPiano();
-  showToast('🔄 Piano resettato', 'info');
+  if (typeof renderMealProgress === 'function') renderMealProgress();
+  if (typeof renderFridge === 'function') renderFridge();
+
+  if (typeof showToast === 'function') {
+    showToast('🔄 Dati di oggi resettati (piano alimentare invariato)', 'info');
+  }
 }
 
 /* ══════════════════════════════════════════════════
@@ -888,7 +899,6 @@ function startApp() {
 
   /* Pagina attiva di default */
   switchPage('piano');
-  if (typeof initSwipePages === 'function') initSwipePages();
 }
 
 /* Auto-start se non c'è landing page */
@@ -1033,6 +1043,7 @@ function goToPage(key) {
   var renders = {
     'piano':            function() { if (typeof renderPiano            === 'function') renderPiano(); },
     'piano-alimentare': function() { if (typeof renderPianoAlimentare  === 'function') renderPianoAlimentare(); },
+    'piano-gen':        function() { if (typeof renderPianoGenPage     === 'function') renderPianoGenPage(); },
     'dispensa':         function() { if (typeof renderFridge           === 'function') renderFridge(); },
     'ricette':          function() { if (typeof renderRicette          === 'function') renderRicette(); },
     'spesa':            function() { if (typeof renderSpesa            === 'function') renderSpesa(); },

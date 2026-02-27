@@ -73,12 +73,24 @@ function checkOnboarding() {
     return;
   }
 
-  showOnboarding();
+  showOnboardingChoice();
 }
 
 /* ══════════════════════════════════════════════════════
    SHOW
 ══════════════════════════════════════════════════════ */
+function showOnboardingChoice() {
+  _obData = {};
+  _obMealIndex = 0;
+  _obMeal = OB_MEAL_ORDER[0];
+  _obCurrentStep = 0; // step 0 = scelta iniziale
+  _obPendingIngredient = null;
+  var overlay = document.getElementById('onboardingOverlay');
+  if (!overlay) return;
+  overlay.classList.add('active');
+  _renderObStep();
+}
+
 function showOnboarding() {
   _obData = {};
   _obMealIndex = 0;
@@ -98,7 +110,9 @@ function _renderObStep() {
   _updateObHeader();
   _updateObProgress();
   
-  if (_obCurrentStep === 1) {
+  if (_obCurrentStep === 0) {
+    _renderStep0Choice();
+  } else if (_obCurrentStep === 1) {
     _renderStep1Meals();
   } else if (_obCurrentStep === 2) {
     _renderStep2Limits();
@@ -120,7 +134,11 @@ function _updateObHeader() {
   var title = header.querySelector('.onboarding-title');
   var sub = header.querySelector('.onboarding-sub');
   
-  if (_obCurrentStep === 1) {
+  if (_obCurrentStep === 0) {
+    stepLabel.textContent = 'Scelta iniziale';
+    title.innerHTML = '✨ Configura il tuo piano';
+    sub.textContent = 'Puoi inserire il piano che già possiedi oppure fartene generare uno automaticamente. Potrai sempre modificarlo in seguito dal Profilo.';
+  } else if (_obCurrentStep === 1) {
     var info = OB_MEAL_INFO[_obMeal];
     stepLabel.textContent = 'Pasto ' + (_obMealIndex + 1) + ' di ' + OB_MEAL_ORDER.length;
     title.innerHTML = info.emoji + ' ' + info.label;
@@ -142,9 +160,16 @@ function _updateObProgress() {
   
   // Progress bar: 5 pasti + limiti + review = 7 step totali
   var totalSteps = OB_MEAL_ORDER.length + 2;  // 5 pasti + limiti + review
-  var currentProgress = _obCurrentStep === 1 ? _obMealIndex + 1 : 
-                        _obCurrentStep === 2 ? OB_MEAL_ORDER.length + 1 :
-                        totalSteps;
+  var currentProgress;
+  if (_obCurrentStep === 0) {
+    currentProgress = 0;
+  } else if (_obCurrentStep === 1) {
+    currentProgress = _obMealIndex + 1;
+  } else if (_obCurrentStep === 2) {
+    currentProgress = OB_MEAL_ORDER.length + 1;
+  } else {
+    currentProgress = totalSteps;
+  }
   
   var dots = [];
   for (var i = 1; i <= totalSteps; i++) {
@@ -158,6 +183,63 @@ function _updateObProgress() {
     container.querySelector('.wizard-progress').outerHTML = progressHtml;
   } else {
     container.insertAdjacentHTML('afterbegin', progressHtml);
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   STEP 0 - SCELTA INIZIALE
+══════════════════════════════════════════════════════ */
+function _renderStep0Choice() {
+  var limitiSection = document.getElementById('obLimitiSection');
+  if (limitiSection) limitiSection.style.display = 'none';
+
+  var tabsEl = document.getElementById('obTabs');
+  if (tabsEl) tabsEl.style.display = 'none';
+
+  var contentEl = document.getElementById('obContent');
+  if (!contentEl) return;
+
+  var html =
+    '<div class="wizard-progress"></div>' +
+    '<div class="ob-step0-wrap">' +
+      '<p class="ob-step0-intro">Scegli come vuoi iniziare a configurare il tuo piano alimentare.</p>' +
+      '<div class="ob-step0-grid">' +
+        '<div class="rc-card ob-step0-card">' +
+          '<div class="ob-step0-icon">📄</div>' +
+          '<div class="ob-step0-title">Ho già un piano alimentare</div>' +
+          '<div class="ob-step0-sub">Inserisci rapidamente il piano che hai ricevuto (nutrizionista, medico, ecc.). Potrai sempre modificarlo.</div>' +
+          '<button class="btn btn-primary" onclick="obStartManualOnboarding()">Inserisci piano esistente</button>' +
+        '</div>' +
+        '<div class="rc-card ob-step0-card">' +
+          '<div class="ob-step0-icon">🤖</div>' +
+          '<div class="ob-step0-title">Genera il tuo piano alimentare</div>' +
+          '<div class="ob-step0-sub">Rispondi a poche domande: l\'app calcolerà fabbisogni e proporrà un piano di base, sempre modificabile.</div>' +
+          '<button class="btn btn-secondary" onclick="obStartGeneratedPlan()">Genera il piano</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  contentEl.innerHTML = html;
+  _updateObProgress();
+}
+
+function obStartManualOnboarding() {
+  _obData = {};
+  _obMealIndex = 0;
+  _obMeal = OB_MEAL_ORDER[0];
+  _obCurrentStep = 1;
+  _obPendingIngredient = null;
+  _renderObStep();
+  var content = document.querySelector('.ob-content');
+  if (content) content.scrollTop = 0;
+}
+
+function obStartGeneratedPlan() {
+  try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) {}
+  var overlay = document.getElementById('onboardingOverlay');
+  if (overlay) overlay.classList.remove('active');
+  if (typeof goToPage === 'function') {
+    goToPage('piano-gen');
   }
 }
 

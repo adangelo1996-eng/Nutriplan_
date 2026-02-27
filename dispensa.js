@@ -653,8 +653,8 @@ function openAddFridgeFromCat(cat) {
 }
 
 function selectAddByCatItem(name) {
-  closeAddByCatModal();
   var cat = _addByCatCurrent || '🧂 Altro';
+  closeAddByCatModal();
   var modal = document.getElementById('addFridgeModal');
   if (!modal) { openAddFridgeModal(); return; }
 

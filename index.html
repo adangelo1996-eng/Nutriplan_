@@ -95,6 +95,11 @@
           <span class="landing-nav-card-label">Statistiche</span>
           <span class="landing-nav-card-desc">Riepilogo settimanale</span>
         </button>
+        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('profilo')">
+          <span class="landing-nav-card-icon">👤</span>
+          <span class="landing-nav-card-label">Profilo</span>
+          <span class="landing-nav-card-desc">Impostazioni e dati personali</span>
+        </button>
       </div>
     </div>
 
@@ -193,8 +198,25 @@
         <div class="page-header-title">🌿 Piano Alimentare</div>
         <div class="page-header-sub">Imposta i tuoi pasti e i limiti</div>
       </div>
+      <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="startPageHelp && startPageHelp('piano-alimentare')">❓ Aiuto</button>
+      </div>
     </div>
     <div id="pianoAlimentarePage"></div>
+  </div>
+
+  <!-- ── GENERA PIANO ALIMENTARE ──────────── -->
+  <div class="page" id="page-piano-gen">
+    <div class="page-header">
+      <div>
+        <div class="page-header-title">⚙️ Genera il tuo piano alimentare</div>
+        <div class="page-header-sub">Inserisci i tuoi dati: il piano è sempre modificabile</div>
+      </div>
+      <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="startPageHelp && startPageHelp('piano-gen')">❓ Aiuto</button>
+      </div>
+    </div>
+    <div id="pianoGenContent"></div>
   </div>
 
   <!-- ── PIANO ────────────────────────── -->
@@ -205,6 +227,7 @@
         <div class="page-header-sub" id="selectedDateLabel">Oggi</div>
       </div>
       <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="startPageHelp && startPageHelp('piano')">❓ Aiuto</button>
         <button class="btn btn-secondary btn-small" onclick="resetPiano()">🔄 Reset</button>
       </div>
     </div>
@@ -268,6 +291,7 @@
         <div class="page-header-sub">Ingredienti disponibili</div>
       </div>
       <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="startPageHelp && startPageHelp('dispensa')">❓ Aiuto</button>
         <button class="btn btn-secondary btn-small" onclick="openSavedFridges()">📁 Salvati</button>
         <button class="btn btn-secondary btn-small" onclick="openBarcodeScanner()" title="Scansiona barcode prodotto">📷 Barcode</button>
         <button class="btn btn-primary btn-small" onclick="openAddFridge()">➕ Aggiungi</button>
@@ -294,6 +318,9 @@
       <div>
         <div class="page-header-title">📖 Ricette</div>
         <div class="page-header-sub">Catalogo e ricette personali</div>
+      </div>
+      <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="startPageHelp && startPageHelp('ricette')">❓ Aiuto</button>
       </div>
     </div>
 
@@ -350,6 +377,7 @@
         <div class="page-header-sub">Cosa comprare</div>
       </div>
       <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="startPageHelp && startPageHelp('spesa')">❓ Aiuto</button>
         <button class="btn btn-secondary btn-small" onclick="clearBoughtItems()">🗑 Pulisci</button>
         <button class="btn btn-primary btn-small" onclick="openSpesaItemModal()">➕ Aggiungi</button>
       </div>
@@ -364,6 +392,9 @@
         <div class="page-header-title">📊 Statistiche</div>
         <div class="page-header-sub">Riepilogo settimanale</div>
       </div>
+      <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="startPageHelp && startPageHelp('statistiche')">❓ Aiuto</button>
+      </div>
     </div>
     <div id="statisticheContent"></div>
   </div>
@@ -376,6 +407,7 @@
         <div class="page-header-sub">Impostazioni e piano personale</div>
       </div>
       <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="startPageHelp && startPageHelp('profilo')">❓ Aiuto</button>
         <button class="btn btn-secondary btn-small" onclick="exportPDF()">📄 PDF</button>
       </div>
     </div>
@@ -428,6 +460,10 @@
     <button class="nav-tab" id="bn-statistiche" onclick="goToPage('statistiche')">
       <span class="nav-icon">📊</span>
       <span class="nav-label">Stats</span>
+    </button>
+    <button class="nav-tab" id="bn-profilo" onclick="goToPage('profilo')">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Profilo</span>
     </button>
   </div>
 </nav>
@@ -874,14 +910,20 @@
       <p><em>Ultimo aggiornamento: febbraio 2026</em></p>
 
       <h3 style="margin-top:16px;">1. Dati raccolti</h3>
-      <p>NutriPlan raccoglie esclusivamente i dati che inserisci tu stesso: piano alimentare, ingredienti in dispensa, lista della spesa, storico dei pasti e limiti settimanali.</p>
-      <p>Se scegli di accedere con Google, raccogliamo il nome visualizzato, l'indirizzo email e la foto del profilo forniti da Google.</p>
+      <p>NutriPlan raccoglie esclusivamente i dati che inserisci tu stesso: piano alimentare, ingredienti in dispensa, lista della spesa, storico dei pasti, limiti settimanali e, se scegli di utilizzare il generatore di piano, alcuni dati di profilo (es. età, sesso, peso, altezza, livello di attività, obiettivo).</p>
+      <p>Questi dati di profilo sono utilizzati solo per calcolare il tuo piano alimentare e restano sempre modificabili. Se scegli di accedere con Google, raccogliamo anche il nome visualizzato, l'indirizzo email e la foto del profilo forniti da Google.</p>
 
       <h3 style="margin-top:16px;">2. Come usiamo i dati</h3>
-      <p>I dati vengono utilizzati esclusivamente per il funzionamento dell'app: sincronizzazione tra dispositivi, visualizzazione del piano e delle statistiche. Non vengono mai condivisi con terze parti né utilizzati per pubblicità.</p>
+      <p>I dati vengono utilizzati esclusivamente per il funzionamento dell'app: sincronizzazione tra dispositivi, generazione e visualizzazione del piano alimentare, gestione della dispensa, lista della spesa e statistiche di utilizzo. Non vengono mai condivisi con terze parti né utilizzati per pubblicità.</p>
 
       <h3 style="margin-top:16px;">3. Intelligenza Artificiale (Google Gemini)</h3>
-      <p>Alcune funzioni (generazione ricette, analisi abitudini) utilizzano le API Google Gemini. Per queste funzioni vengono inviati a Google esclusivamente dati aggregati e anonimi (statistiche d'uso, lista ingredienti disponibili): <strong>mai il tuo piano alimentare completo, dati personali identificativi o dati dell'account</strong>. Il trattamento avviene ai sensi della <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy Policy di Google</a>.</p>
+      <p>Alcune funzioni (generazione ricette, analisi abitudini e verifica del piano alimentare generato) utilizzano le API Google Gemini. Per queste funzioni vengono inviati a Google esclusivamente dati aggregati e/o anonimizzati, ad esempio:</p>
+      <ul>
+        <li>statistiche d'uso e lista di ingredienti disponibili;</li>
+        <li>dati di profilo sintetici (fasce di età, range di peso/altezza o BMI, livello di attività, obiettivo);</li>
+        <li>riepilogo numerico del piano alimentare (calorie totali, macronutrienti, numero di porzioni per gruppi alimentari).</li>
+      </ul>
+      <p><strong>Non inviamo mai a Gemini il tuo nome, la tua email, l'ID dell'account Firebase o altri identificativi diretti</strong>. La verifica del piano tramite AI serve solo a controllare coerenza e proporzioni generali; l'app non fornisce diagnosi né sostituisce il parere di un professionista della salute. Il trattamento avviene ai sensi della <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy Policy di Google</a>.</p>
 
       <h3 style="margin-top:16px;">4. Dove vengono salvati</h3>
       <p>I dati sono salvati localmente nel tuo browser (localStorage) e, se hai effettuato l'accesso con Google, sincronizzati sul tuo account personale tramite Firebase Realtime Database di Google (server in Europa).</p>
@@ -890,12 +932,22 @@
       <p>Ogni utente ha accesso esclusivamente ai propri dati. La sicurezza è gestita tramite le regole di Firebase Authentication.</p>
 
       <h3 style="margin-top:16px;">6. Cancellazione dei dati</h3>
-      <p>Puoi cancellare tutti i tuoi dati in qualsiasi momento dalla sezione Profilo → Impostazioni → Cancella tutti i dati. Per eliminare il tuo account Firebase, contattaci.</p>
+      <p>Puoi cancellare tutti i tuoi dati in qualsiasi momento dalla sezione Profilo → Impostazioni → Cancella tutti i dati. Per eliminare il tuo account Firebase, contattaci tramite i canali indicati sotto.</p>
 
-      <h3 style="margin-top:16px;">7. Cookie</h3>
-      <p>NutriPlan utilizza cookie tecnici essenziali per il funzionamento e, con il tuo consenso, cookie analitici anonimi per migliorare l'esperienza.</p>
+      <h3 style="margin-top:16px;">7. Diritti dell’utente</h3>
+      <p>In qualunque momento puoi:</p>
+      <ul>
+        <li><strong>accedere</strong> ai dati salvati ed esportarli in formato JSON dalla sezione Profilo → Impostazioni → “Scarica i miei dati (JSON)”; </li>
+        <li><strong>rettificare</strong> o aggiornare il piano alimentare e tutti i dati inseriti direttamente dall’interfaccia dell’app;</li>
+        <li><strong>cancellare</strong> tutti i dati tramite l’apposita funzione di cancellazione;</li>
+        <li><strong>limitare</strong> l’uso di cookie analitici scegliendo “Solo essenziali” nel banner cookie;</li>
+        <li>disinstallare la PWA dal dispositivo per rimuovere i dati salvati localmente nel browser.</li>
+      </ul>
 
-      <h3 style="margin-top:16px;">8. Contatti</h3>
+      <h3 style="margin-top:16px;">8. Cookie</h3>
+      <p>NutriPlan utilizza cookie tecnici essenziali per il funzionamento e, con il tuo consenso, cookie analitici anonimi per migliorare l'esperienza. I cookie analitici non vengono attivati finché non scegli esplicitamente “Accetta tutti ✓” nel banner.</p>
+
+      <h3 style="margin-top:16px;">9. Contatti</h3>
       <p>Per qualsiasi domanda sulla privacy scrivici tramite la pagina del progetto su GitHub.</p>
     </div>
     <div class="modal-footer">
@@ -1273,6 +1325,7 @@
 <script src="storage.js"></script>
 <script src="piano.js"></script>
 <script src="piano_alimentare.js"></script>
+<script src="piano_gen.js"></script>
 <script src="dispensa.js"></script>
 <script src="ricette.js"></script>
 <script src="ricette_custom.js"></script>
