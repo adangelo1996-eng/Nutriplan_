@@ -148,38 +148,70 @@ var defaultIngredients = [
 var defaultMealPlan = {
   colazione: {
     principale: [
-      { name:'Pane integrale',           quantity:50,  unit:'g'  },
-      { name:'Crema di frutta secca 100%',quantity:15, unit:'g'  }
+      { name:'Pane integrale',             quantity:50,  unit:'g'  },
+      { name:'Crema di frutta secca 100%', quantity:15,  unit:'g'  },
+      { name:'Fiocchi di avena',           quantity:40,  unit:'g'  }
     ],
-    contorno:[], frutta:[], extra:[
+    contorno:[],
+    frutta: [{ name:'Banana', quantity:1, unit:'pz' }],
+    extra: [
       { name:'Latte parzialmente scremato', quantity:150, unit:'ml' },
-      { name:'Marmellata',                  quantity:15,  unit:'g'  }
+      { name:'Marmellata',                  quantity:15,  unit:'g'  },
+      { name:'Miele',                      quantity:8,   unit:'g'  }
     ]
   },
   spuntino: {
-    principale:[{ name:'Frutta fresca', quantity:1, unit:'pz' }],
-    contorno:[], frutta:[], extra:[]
+    principale: [
+      { name:'Frutta fresca',   quantity:1, unit:'pz' },
+      { name:'Yogurt greco 0%', quantity:125, unit:'g' }
+    ],
+    contorno: [],
+    frutta: [],
+    extra: [{ name:'Mandorle', quantity:10, unit:'g' }]
   },
   pranzo: {
-    principale:[
-      { name:'Pasta integrale',    quantity:70,  unit:'g' },
-      { name:'Straccetti di pollo',quantity:130, unit:'g' }
+    principale: [
+      { name:'Pasta integrale',     quantity:80,  unit:'g' },
+      { name:'Petto di pollo',      quantity:120, unit:'g' },
+      { name:'Pomodoro',            quantity:80,  unit:'g' }
     ],
-    contorno:[{ name:'Verdure miste', quantity:200, unit:'g' }],
-    frutta:[], extra:[{ name:'Olio EVO', quantity:10, unit:'ml' }]
+    contorno: [
+      { name:'Verdure miste',       quantity:200, unit:'g' },
+      { name:'Insalata verde',      quantity:80,  unit:'g' }
+    ],
+    frutta: [{ name:'Mela', quantity:1, unit:'pz' }],
+    extra: [
+      { name:'Olio EVO',            quantity:10, unit:'ml' },
+      { name:'Grana Padano',        quantity:10, unit:'g' }
+    ]
   },
   merenda: {
-    principale:[{ name:'Skyr bianco', quantity:100, unit:'g' }],
-    contorno:[], frutta:[],
-    extra:[{ name:'Cioccolato fondente', quantity:10, unit:'g' }]
+    principale: [
+      { name:'Skyr bianco',         quantity:120, unit:'g' },
+      { name:'Gallette di riso',    quantity:2,   unit:'pz' }
+    ],
+    contorno: [],
+    frutta: [{ name:'Kiwi', quantity:1, unit:'pz' }],
+    extra: [
+      { name:'Cioccolato fondente', quantity:15, unit:'g' },
+      { name:'Crema di frutta secca 100%', quantity:10, unit:'g' }
+    ]
   },
   cena: {
-    principale:[
-      { name:'Pane integrale', quantity:60,  unit:'g' },
-      { name:'Merluzzo',       quantity:150, unit:'g' }
+    principale: [
+      { name:'Merluzzo',            quantity:160, unit:'g' },
+      { name:'Pane integrale',      quantity:50,  unit:'g' },
+      { name:'Patate',              quantity:120, unit:'g' }
     ],
-    contorno:[{ name:'Verdure miste', quantity:200, unit:'g' }],
-    frutta:[], extra:[{ name:'Olio EVO', quantity:10, unit:'ml' }]
+    contorno: [
+      { name:'Verdure miste',       quantity:180, unit:'g' },
+      { name:'Zucchine',            quantity:100, unit:'g' }
+    ],
+    frutta: [{ name:'Arancia', quantity:1, unit:'pz' }],
+    extra: [
+      { name:'Olio EVO',            quantity:10, unit:'ml' },
+      { name:'Limone',               quantity:10, unit:'g' }
+    ]
   }
 };
 

@@ -1957,6 +1957,61 @@
 }
 .pa-meal-body.open { display: block; }
 
+/* Generatore piano: validazione step 1 */
+input.invalid {
+  border-color: var(--danger, #dc2626) !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+}
+.pg-field-error {
+  display: block;
+  font-size: .75rem;
+  color: var(--danger, #dc2626);
+  margin-top: 4px;
+  min-height: 1.2em;
+}
+
+/* Step 2: distribuzione pasti — leggibile su mobile */
+.pg-step2-dist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: baseline;
+}
+.pg-step2-dist-item::after { content: ' · '; }
+.pg-step2-dist-item:last-child::after { content: ''; }
+@media (max-width: 380px) {
+  .pg-step2-dist { flex-direction: column; gap: 2px; }
+  .pg-step2-dist-item::after { content: ''; }
+}
+
+/* Step 3: CTA secondarie come link testuali */
+.pg-expand-collapse-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.pg-link-action {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: .85em;
+  color: var(--text-2, #64748b);
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+}
+.pg-link-action:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.pg-link-action-sep {
+  color: var(--text-3);
+  font-size: .8em;
+  user-select: none;
+}
+
 /* Sezione categoria dentro pasto */
 .pa-cat-section {
   border-bottom: 1px solid var(--border);

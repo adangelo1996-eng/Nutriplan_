@@ -71,10 +71,19 @@ function renderPianoGenPage() {
 
   if (s.step === 1) {
     el.innerHTML = buildPgStep1();
+    pgAttachStep1ValidationListeners();
   } else if (s.step === 2) {
     el.innerHTML = buildPgStep2();
   } else {
     el.innerHTML = buildPgStep3();
+    pgAttachStep3KeyboardListeners();
+  }
+
+  var sub = document.querySelector('#page-piano-gen .page-header-sub');
+  if (sub) {
+    if (s.step === 1) sub.textContent = 'Inserisci i tuoi dati per un piano personalizzato';
+    else if (s.step === 2) sub.textContent = 'Riepilogo del tuo fabbisogno';
+    else sub.textContent = 'Rivedi e applica il piano';
   }
 }
 
@@ -100,23 +109,26 @@ function buildPgStep1() {
           '</div>' +
           '<div class="form-group" style="width:120px;">' +
             '<label>Età</label>' +
-            '<input type="number" id="pgAge" min="14" max="90" placeholder="Anni" value="' + (p.age || '') + '">' +
+            '<input type="number" id="pgAge" min="14" max="90" placeholder="Anni" value="' + (p.age || '') + '" aria-describedby="pgAgeError">' +
+            '<span class="pg-field-error" id="pgAgeError" aria-live="polite"></span>' +
           '</div>' +
         '</div>' +
         '<div class="row gap-12" style="margin-bottom:10px;">' +
           '<div class="form-group" style="flex:1;min-width:120px;">' +
             '<label>Peso</label>' +
             '<div class="row gap-6">' +
-              '<input type="number" id="pgWeight" min="30" max="250" placeholder="es. 70" value="' + (p.weight || '') + '" style="flex:1;">' +
+              '<input type="number" id="pgWeight" min="30" max="250" placeholder="es. 70" value="' + (p.weight || '') + '" style="flex:1;" aria-describedby="pgWeightError">' +
               '<span style="align-self:center;font-size:.85em;color:var(--text-3);">kg</span>' +
             '</div>' +
+            '<span class="pg-field-error" id="pgWeightError" aria-live="polite"></span>' +
           '</div>' +
           '<div class="form-group" style="flex:1;min-width:120px;">' +
             '<label>Altezza</label>' +
             '<div class="row gap-6">' +
-              '<input type="number" id="pgHeight" min="130" max="220" placeholder="es. 170" value="' + (p.height || '') + '" style="flex:1;">' +
+              '<input type="number" id="pgHeight" min="130" max="220" placeholder="es. 170" value="' + (p.height || '') + '" style="flex:1;" aria-describedby="pgHeightError">' +
               '<span style="align-self:center;font-size:.85em;color:var(--text-3);">cm</span>' +
             '</div>' +
+            '<span class="pg-field-error" id="pgHeightError" aria-live="polite"></span>' +
           '</div>' +
         '</div>' +
         '<div class="form-group" style="margin-bottom:10px;">' +
@@ -144,6 +156,27 @@ function buildPgStep1() {
     '</div>';
 }
 
+function pgClearStep1Errors() {
+  ['pgAge', 'pgWeight', 'pgHeight'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('invalid');
+    var err = document.getElementById(id + 'Error');
+    if (err) err.textContent = '';
+  });
+}
+
+function pgAttachStep1ValidationListeners() {
+  ['pgAge', 'pgWeight', 'pgHeight'].forEach(function(id) {
+    var input = document.getElementById(id);
+    var errEl = document.getElementById(id + 'Error');
+    if (!input) return;
+    input.addEventListener('input', function() {
+      input.classList.remove('invalid');
+      if (errEl) errEl.textContent = '';
+    });
+  });
+}
+
 function pgNextFromStep1() {
   var sexEl     = document.getElementById('pgSex');
   var ageEl     = document.getElementById('pgAge');
@@ -161,9 +194,34 @@ function pgNextFromStep1() {
   var activity = actEl.value || 'moderato';
   var goal     = goalEl.value || 'mantenimento';
 
-  if (!age || age < 14 || age > 90 || !weight || weight < 30 || weight > 250 || !height || height < 130 || height > 220) {
+  pgClearStep1Errors();
+
+  var errAge = !age || age < 14 || age > 90;
+  var errWeight = !weight || weight < 30 || weight > 250;
+  var errHeight = !height || height < 130 || height > 220;
+
+  if (errAge || errWeight || errHeight) {
+    var messages = [];
+    if (errAge) {
+      ageEl.classList.add('invalid');
+      var ageErr = document.getElementById('pgAgeError');
+      if (ageErr) ageErr.textContent = 'Inserisci un\'età tra 14 e 90 anni';
+      messages.push('età (14–90)');
+    }
+    if (errWeight) {
+      weightEl.classList.add('invalid');
+      var weightErr = document.getElementById('pgWeightError');
+      if (weightErr) weightErr.textContent = 'Peso tra 30 e 250 kg';
+      messages.push('peso (30–250 kg)');
+    }
+    if (errHeight) {
+      heightEl.classList.add('invalid');
+      var heightErr = document.getElementById('pgHeightError');
+      if (heightErr) heightErr.textContent = 'Altezza tra 130 e 220 cm';
+      messages.push('altezza (130–220 cm)');
+    }
     if (typeof showToast === 'function') {
-      showToast('⚠️ Inserisci dati validi per età, peso e altezza', 'warning');
+      showToast('Correggi: ' + messages.join(', '), 'warning');
     }
     return;
   }
@@ -243,85 +301,26 @@ function buildPgStep2() {
   var carbsPct   = m.kcal ? Math.round(((m.carbsG   * 4) / m.kcal) * 100) : 0;
   var proteinPct = m.kcal ? Math.round(((m.proteinG * 4) / m.kcal) * 100) : 0;
   var fatPct     = 100 - carbsPct - proteinPct;
-
-  function mealK(label) {
-    return Math.round(m.kcal * dist[label]);
-  }
-
-  var macroMeals = ['☀️ Colazione','🍎 Spuntino','🍽 Pranzo','🥪 Merenda','🌙 Cena'];
-  var macroCardsHtml = macroMeals.map(function(lbl) {
-    return (
-      '<div class="pg-macro-card">' +
-        '<div class="pg-macro-title">' + lbl + '</div>' +
-        '<div class="pg-macro-pie" style="background:conic-gradient(' +
-          '#22c55e 0 ' + carbsPct + '%,' +
-          '#3b82f6 ' + carbsPct + '% ' + (carbsPct + proteinPct) + '%,' +
-          '#eab308 ' + (carbsPct + proteinPct) + '% 100%);"></div>' +
-        '<div class="pg-macro-legend">' +
-          '<span><span class="pg-dot" style="background:#22c55e;"></span>Carboidrati ' + carbsPct + '%</span>' +
-          '<span><span class="pg-dot" style="background:#3b82f6;"></span>Proteine ' + proteinPct + '%</span>' +
-          '<span><span class="pg-dot" style="background:#eab308;"></span>Grassi ' + fatPct + '%</span>' +
-        '</div>' +
-      '</div>'
-    );
-  }).join('');
+  var distHtml =
+    '<span class="pg-step2-dist-label">Distribuzione pasti:</span> ' +
+    '<span class="pg-step2-dist-item">Colazione ' + mealPerc.colazione + '%</span> ' +
+    '<span class="pg-step2-dist-item">Spuntino ' + mealPerc.spuntino + '%</span> ' +
+    '<span class="pg-step2-dist-item">Pranzo ' + mealPerc.pranzo + '%</span> ' +
+    '<span class="pg-step2-dist-item">Merenda ' + mealPerc.merenda + '%</span> ' +
+    '<span class="pg-step2-dist-item">Cena ' + mealPerc.cena + '%</span>';
 
   return '' +
     '<div class="rc-card" style="margin-bottom:16px;">' +
-      '<div style="padding:18px 18px 10px;">' +
-        '<div style="font-weight:700;font-size:1rem;margin-bottom:6px;">Il tuo fabbisogno</div>' +
-        '<p style="font-size:.84em;color:var(--text-3);margin-bottom:10px;">Valori indicativi per organizzare i pasti; per indicazioni personalizzate rivolgiti a un professionista.</p>' +
-        '<div class="row gap-12" style="margin-bottom:10px;">' +
-          '<div style="flex:1;min-width:120px;">' +
-            '<div style="font-size:.8em;color:var(--text-3);">Energia giornaliera stimata</div>' +
-            '<div style="font-weight:800;font-size:1.1em;">' + m.kcal + ' kcal</div>' +
-          '</div>' +
-          '<div style="flex:1;min-width:120px;">' +
-            '<div style="font-size:.8em;color:var(--text-3);">Obiettivo</div>' +
-            '<div style="font-weight:600;font-size:.95em;">' + goalLabel + '</div>' +
-          '</div>' +
+      '<div style="padding:18px 18px 14px;">' +
+        '<div style="font-weight:700;font-size:1rem;margin-bottom:8px;">Il tuo fabbisogno</div>' +
+        '<p style="font-size:.84em;color:var(--text-3);margin-bottom:12px;">Valori indicativi; per indicazioni personalizzate rivolgiti a un professionista.</p>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px 16px;">' +
+          '<div><div style="font-size:.72em;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;">Energia</div><div style="font-weight:800;font-size:1.15em;">' + m.kcal + ' kcal</div></div>' +
+          '<div><div style="font-size:.72em;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;">Obiettivo</div><div style="font-weight:600;font-size:.9em;">' + goalLabel + '</div></div>' +
+          '<div><div style="font-size:.72em;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;">Macro</div><div style="font-size:.88em;">Carb ' + carbsPct + '% · Prot ' + proteinPct + '% · Grassi ' + fatPct + '%</div></div>' +
+          '<div><div style="font-size:.72em;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;">Grammi/giorno</div><div style="font-size:.85em;">' + m.carbsG + ' g carb · ' + m.proteinG + ' g prot · ' + m.fatG + ' g grassi</div></div>' +
         '</div>' +
-        '<div class="row gap-12">' +
-          '<div style="flex:1;min-width:120px;">' +
-            '<div style="font-size:.8em;color:var(--text-3);">Carboidrati (circa metà energia)</div>' +
-            '<div style="font-weight:600;font-size:.95em;">' + m.carbsG + ' g/die</div>' +
-          '</div>' +
-          '<div style="flex:1;min-width:120px;">' +
-            '<div style="font-size:.8em;color:var(--text-3);">Proteine</div>' +
-            '<div style="font-weight:600;font-size:.95em;">' + m.proteinG + ' g/die</div>' +
-          '</div>' +
-          '<div style="flex:1;min-width:120px;">' +
-            '<div style="font-size:.8em;color:var(--text-3);">Grassi</div>' +
-            '<div style="font-weight:600;font-size:.95em;">' + m.fatG + ' g/die</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-    '<div class="rc-card" style="margin-bottom:16px;">' +
-      '<div style="padding:16px 18px 12px;">' +
-        '<div style="font-weight:700;font-size:.95em;margin-bottom:10px;">Come distribuiamo le calorie</div>' +
-        '<div class="pg-pie-row">' +
-          '<div class="pg-pie" style="background:conic-gradient(' +
-            '#22c55e 0 ' + mealPerc.colazione + '%,' +
-            '#f97316 ' + mealPerc.colazione + '% ' + (mealPerc.colazione + mealPerc.spuntino) + '%,' +
-            '#3b82f6 ' + (mealPerc.colazione + mealPerc.spuntino) + '% ' + (mealPerc.colazione + mealPerc.spuntino + mealPerc.pranzo) + '%,' +
-            '#eab308 ' + (mealPerc.colazione + mealPerc.spuntino + mealPerc.pranzo) + '% ' + (mealPerc.colazione + mealPerc.spuntino + mealPerc.pranzo + mealPerc.merenda) + '%,' +
-            '#a855f7 ' + (mealPerc.colazione + mealPerc.spuntino + mealPerc.pranzo + mealPerc.merenda) + '% 100%);"></div>' +
-          '<div class="pg-pie-legend">' +
-            '<span><span class="pg-dot" style="background:#22c55e;"></span>☀️ Colazione ~' + mealK('colazione') + ' kcal (' + mealPerc.colazione + '%)</span>' +
-            '<span><span class="pg-dot" style="background:#f97316;"></span>🍎 Spuntino ~'  + mealK('spuntino')  + ' kcal (' + mealPerc.spuntino  + '%)</span>' +
-            '<span><span class="pg-dot" style="background:#3b82f6;"></span>🍽 Pranzo ~'    + mealK('pranzo')    + ' kcal (' + mealPerc.pranzo    + '%)</span>' +
-            '<span><span class="pg-dot" style="background:#eab308;"></span>🥪 Merenda ~'   + mealK('merenda')   + ' kcal (' + mealPerc.merenda   + '%)</span>' +
-            '<span><span class="pg-dot" style="background:#a855f7;"></span>🌙 Cena ~'      + mealK('cena')      + ' kcal (' + mealPerc.cena      + '%)</span>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-    '<div class="rc-card" style="margin-bottom:16px;">' +
-      '<div style="padding:16px 18px 10px;">' +
-        '<div style="font-weight:700;font-size:.95em;margin-bottom:8px;">Macronutrienti per pasto (in %)</div>' +
-        '<div class="pg-macro-grid">' + macroCardsHtml + '</div>' +
-        '<p class="pg-charts-summary" style="font-size:.8em;color:var(--text-3);margin:10px 0 0;">Il pranzo è il pasto più ricco; colazione e cena sono bilanciate.</p>' +
+        '<p class="pg-step2-dist" style="font-size:.78em;color:var(--text-3);margin-top:12px;margin-bottom:0;">' + distHtml + '.</p>' +
       '</div>' +
     '</div>' +
     '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:6px;">' +
@@ -337,10 +336,9 @@ function pgBackToStep1() {
 
 function pgBuildPlanAndGo() {
   pgState.draftPlan = pgGeneratePlanFromDefault();
-  pgState.verification = { status: 'pending', reason: null, risk: null, autoAdjusted: false };
+  pgState.verification = { status: 'skipped', reason: null, risk: null, autoAdjusted: false };
   pgState.step = 3;
   renderPianoGenPage();
-  pgRequestVerification();
 }
 
 function pgGeneratePlanFromDefault() {
@@ -519,44 +517,6 @@ function buildPgStep3() {
         { key:'cena',      emoji:'🌙', label:'Cena'      }
       ];
 
-  var v = pgState.verification || { status:'idle' };
-  var badge;
-  if (v.status === 'pending') {
-    badge = '<span class="rc-badge" style="background:var(--bg-subtle);color:var(--text-2);font-size:.75em;">Verifica AI in corso…</span>';
-  } else if (v.status === 'ok') {
-    if (v.autoAdjusted) {
-      badge = '<span class="rc-badge" style="background:rgba(234,179,8,.12);color:#92400e;font-size:.75em;">⚠ AI ha suggerito correzioni — piano aggiornato automaticamente</span>';
-    } else {
-      badge = '<span class="rc-badge" style="background:rgba(34,197,94,.1);color:#16a34a;font-size:.75em;">✅ Piano verificato da AI</span>';
-    }
-  } else if (v.status === 'fail') {
-    var r = v.reason || '';
-    var msg;
-    if (r === 'not_available' || r === 'no_response' || r === 'parse_error' || /API key Gemini non configurata/.test(r)) {
-      msg = 'ℹ Verifica AI non attiva';
-      badge = '<span class="rc-badge" style="background:var(--bg-subtle);color:var(--text-3);font-size:.75em;">' + msg + '</span>';
-    } else {
-      msg = '⚠ Verifica AI non riuscita';
-      badge = '<span class="rc-badge" style="background:rgba(249,115,22,.08);color:#ea580c;font-size:.75em;">' + msg + '</span>';
-    }
-  } else {
-    badge = '<span class="rc-badge" style="background:var(--bg-subtle);color:var(--text-3);font-size:.75em;">Verifica AI opzionale</span>';
-  }
-
-  var reasonHtml = '';
-  var techCodes = ['parse_error', 'invalid_format', 'no_response'];
-  var isTechnicalReason = techCodes.indexOf(v.reason) !== -1 || (v.reason && /API key Gemini non configurata/i.test(v.reason));
-  if (v.reason && (v.status === 'ok' || v.status === 'fail') && !isTechnicalReason) {
-    var safeReason = String(v.reason)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-    reasonHtml =
-      '<p style="font-size:.78em;color:var(--text-3);margin-top:4px;margin-bottom:0;">' +
-        safeReason +
-      '</p>';
-  }
-
   var m = pgState.macros || {};
   var kcal = m.kcal || 0;
   var carbsPct = kcal ? Math.round(((m.carbsG || 0) * 4 / kcal) * 100) : 0;
@@ -572,24 +532,21 @@ function buildPgStep3() {
     '</div>';
   var headerCard =
     '<div class="rc-card" style="margin-bottom:14px;">' +
-      '<div style="padding:16px 18px 14px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">' +
-        '<div style="flex:1;min-width:0;">' +
-          '<div style="font-weight:700;font-size:1rem;margin-bottom:4px;">3. Piano proposto</div>' +
-          '<p style="font-size:.82em;color:var(--text-3);margin:0;">Base di partenza calcolata automaticamente; modificabile dal Piano Alimentare.</p>' +
-          microSummary +
-          reasonHtml +
-        '</div>' +
-        badge +
+      '<div style="padding:16px 18px 14px;">' +
+        '<div style="font-weight:700;font-size:1rem;margin-bottom:4px;">3. Piano proposto</div>' +
+        '<p style="font-size:.82em;color:var(--text-3);margin:0;">Base di partenza calcolata in base al tuo profilo; modificabile dal Piano Alimentare.</p>' +
+        microSummary +
       '</div>' +
     '</div>';
 
   var expandCollapseRow =
-    '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
-      '<button type="button" class="btn btn-secondary btn-small" onclick="pgExpandAllMeals()">Apri tutti i pasti</button>' +
-      '<button type="button" class="btn btn-secondary btn-small" onclick="pgCollapseAllMeals()">Chiudi tutti i pasti</button>' +
+    '<div class="pg-expand-collapse-row">' +
+      '<button type="button" class="pg-link-action" onclick="pgExpandAllMeals()">Apri tutti</button>' +
+      '<span class="pg-link-action-sep" aria-hidden="true">·</span>' +
+      '<button type="button" class="pg-link-action" onclick="pgCollapseAllMeals()">Chiudi tutti</button>' +
     '</div>';
-  var htmlMeals = meals.map(function(m) {
-    return pgBuildPreviewMealSection(m, plan);
+  var htmlMeals = meals.map(function(m, i) {
+    return pgBuildPreviewMealSection(m, plan, i);
   }).join('');
 
   var footer =
@@ -612,7 +569,8 @@ function pgPreviewMealCount(mealKey, plan) {
   return count;
 }
 
-function pgBuildPreviewMealSection(meal, plan) {
+function pgBuildPreviewMealSection(meal, plan, mealIndex) {
+  var isFirst = (mealIndex === 0);
   var count   = pgPreviewMealCount(meal.key, plan);
   var mealEsc = (typeof paEscQ === 'function') ? paEscQ(meal.key) : meal.key;
 
@@ -636,47 +594,68 @@ function pgBuildPreviewMealSection(meal, plan) {
     catSections += pgBuildPreviewCatSection(meal.key, altroCat, plan);
   }
 
+  var bodyClass = 'pa-meal-body' + (isFirst ? ' open' : '');
+  var chevron = isFirst ? '▾' : '▴';
+  var ariaExpanded = isFirst ? 'true' : 'false';
+
   return (
     '<div class="pa-meal-block pa-meal-preview" id="pg-meal-' + meal.key + '">' +
-      '<div class="pa-meal-header" onclick="(typeof pgToggleMealPreview===\'function\'?pgToggleMealPreview:typeof togglePAMeal===\'function\'&&togglePAMeal)(\'' + mealEsc + '\')">' +
+      '<div class="pa-meal-header" role="button" tabindex="0" aria-expanded="' + ariaExpanded + '" aria-controls="pg-body-' + meal.key + '" aria-label="Espandi o comprimi ' + (meal.label || meal.key) + '" data-meal-key="' + mealEsc + '" onclick="pgToggleMealPreview(\'' + mealEsc + '\')" onkeydown="pgMealHeaderKeydown(event, \'' + mealEsc + '\')">' +
         '<span class="pa-meal-emoji">' + (meal.emoji || '') + '</span>' +
         '<span class="pa-meal-label">' + (meal.label || meal.key) + '</span>' +
         (count > 0
           ? '<span class="pa-meal-count">' + count + ' ing.</span>'
           : '<span class="pa-meal-count" style="opacity:.4">Vuoto</span>') +
-        '<span class="pa-meal-chevron" id="pa-chev-' + meal.key + '">▴</span>' +
+        '<span class="pa-meal-chevron" id="pg-chev-' + meal.key + '">' + chevron + '</span>' +
       '</div>' +
-      '<div class="pa-meal-body" id="pa-body-' + meal.key + '">' +
+      '<div class="' + bodyClass + '" id="pg-body-' + meal.key + '">' +
         catSections +
       '</div>' +
     '</div>'
   );
 }
+
+function pgMealHeaderKeydown(event, mealKey) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    pgToggleMealPreview(mealKey);
+  }
+}
 function pgToggleMealPreview(mealKey) {
-  var body = document.getElementById('pa-body-' + mealKey);
-  var chev = document.getElementById('pa-chev-' + mealKey);
+  var body = document.getElementById('pg-body-' + mealKey);
+  var chev = document.getElementById('pg-chev-' + mealKey);
+  var header = document.querySelector('#pg-meal-' + mealKey + ' .pa-meal-header');
   if (!body) return;
   var isOpen = body.classList.contains('open');
   body.classList.toggle('open', !isOpen);
   if (chev) chev.textContent = isOpen ? '▴' : '▾';
+  if (header) header.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
 }
 function pgExpandAllMeals() {
   var keys = ['colazione','spuntino','pranzo','merenda','cena'];
   keys.forEach(function(k) {
-    var body = document.getElementById('pa-body-' + k);
-    var chev = document.getElementById('pa-chev-' + k);
+    var body = document.getElementById('pg-body-' + k);
+    var chev = document.getElementById('pg-chev-' + k);
+    var header = document.querySelector('#pg-meal-' + k + ' .pa-meal-header');
     if (body) { body.classList.add('open'); }
     if (chev) chev.textContent = '▾';
+    if (header) header.setAttribute('aria-expanded', 'true');
   });
 }
 function pgCollapseAllMeals() {
   var keys = ['colazione','spuntino','pranzo','merenda','cena'];
   keys.forEach(function(k) {
-    var body = document.getElementById('pa-body-' + k);
-    var chev = document.getElementById('pa-chev-' + k);
+    var body = document.getElementById('pg-body-' + k);
+    var chev = document.getElementById('pg-chev-' + k);
+    var header = document.querySelector('#pg-meal-' + k + ' .pa-meal-header');
     if (body) { body.classList.remove('open'); }
     if (chev) chev.textContent = '▴';
+    if (header) header.setAttribute('aria-expanded', 'false');
   });
+}
+
+function pgAttachStep3KeyboardListeners() {
+  /* Espansione pasti da tastiera gestita con onkeydown inline su ogni header */
 }
 
 function pgBuildPreviewCatSection(mealKey, catName, plan) {
