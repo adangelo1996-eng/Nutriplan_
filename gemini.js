@@ -116,8 +116,12 @@ function _extractBalancedJson(text) {
     partial = partial.replace(/,\s*$/, '');
     var closing = '';
     for (var d = 0; d < depth; d++) closing += '}';
+    var repaired = partial + closing;
     console.warn('[AI Parser] JSON troncato, repair applicato');
-    return partial + closing;
+    // #region agent log
+    fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c92f53'},body:JSON.stringify({sessionId:'c92f53',location:'gemini.js:_extractBalancedJson_repair',message:'JSON truncation repair applied',data:{hypothesisId:'H1',inputLength:(text&&text.length)||0,cleanLength:clean.length,depth:depth,partialLength:partial.length,repairedLength:repaired.length,repairedStart:repaired.substring(0,120),repairedEnd:repaired.length>80?repaired.substring(repaired.length-80):repaired},timestamp:Date.now()})}).catch(function(){});
+    // #endregion
+    return repaired;
   }
 
   return null;
@@ -962,6 +966,9 @@ function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
       console.debug('[AI verifica piano] Risposta ricevuta (lunghezza ' + (text ? text.length : 0) + '):', (text || '').substring(0, 350) + ((text && text.length > 350) ? '…' : ''));
     }
     var jsonStr = _extractVerifyResponseJson(text);
+    // #region agent log
+    fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c92f53'},body:JSON.stringify({sessionId:'c92f53',location:'gemini.js:verify_after_extract',message:'Verify response extracted',data:{hypothesisId:'H5',responseLength:(text&&text.length)||0,jsonStrLength:(jsonStr&&jsonStr.length)||0,jsonStrPreview:jsonStr?jsonStr.substring(0,180):null},timestamp:Date.now()})}).catch(function(){});
+    // #endregion
     if (!jsonStr) {
       try {
         var res = JSON.parse(text.trim());
@@ -979,6 +986,9 @@ function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
     try {
       var res = JSON.parse(jsonStr);
       if (typeof res.verified !== 'boolean') {
+        // #region agent log
+        fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c92f53'},body:JSON.stringify({sessionId:'c92f53',location:'gemini.js:verify_invalid_format',message:'Verified not boolean',data:{hypothesisId:'H4',jsonStrPreview:jsonStr.substring(0,200),hasVerified:res&&('verified'in res),verifiedType:res&&typeof res.verified},timestamp:Date.now()})}).catch(function(){});
+        // #endregion
         callback({ verified: false, reason: 'invalid_format' });
         return;
       }
@@ -992,6 +1002,9 @@ function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
       }
       callback(out);
     } catch (e) {
+      // #region agent log
+      fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c92f53'},body:JSON.stringify({sessionId:'c92f53',location:'gemini.js:verify_parse_catch',message:'JSON.parse failed in verify',data:{hypothesisId:'H2',errorMessage:(e&&e.message)||'',jsonStrLength:(jsonStr&&jsonStr.length)||0,jsonStrPreview:(jsonStr&&jsonStr.substring(0,220))||null},timestamp:Date.now()})}).catch(function(){});
+      // #endregion
       if (typeof console !== 'undefined' && console.debug) {
         console.debug('[AI verifica piano] JSON.parse fallito:', e && e.message);
       }
