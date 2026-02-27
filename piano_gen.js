@@ -583,6 +583,11 @@ function buildPgStep3() {
       '</div>' +
     '</div>';
 
+  var expandCollapseRow =
+    '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
+      '<button type="button" class="btn btn-secondary btn-small" onclick="pgExpandAllMeals()">Apri tutti i pasti</button>' +
+      '<button type="button" class="btn btn-secondary btn-small" onclick="pgCollapseAllMeals()">Chiudi tutti i pasti</button>' +
+    '</div>';
   var htmlMeals = meals.map(function(m) {
     return pgBuildPreviewMealSection(m, plan);
   }).join('');
@@ -593,7 +598,7 @@ function buildPgStep3() {
       '<button class="btn btn-primary" onclick="pgApplyPlan()">💾 Applica piano</button>' +
     '</div>';
 
-  return headerCard + htmlMeals + footer;
+  return headerCard + expandCollapseRow + htmlMeals + footer;
 }
 
 function pgPreviewMealCount(mealKey, plan) {
@@ -633,19 +638,45 @@ function pgBuildPreviewMealSection(meal, plan) {
 
   return (
     '<div class="pa-meal-block pa-meal-preview" id="pg-meal-' + meal.key + '">' +
-      '<div class="pa-meal-header" onclick="togglePAMeal && togglePAMeal(\'' + mealEsc + '\')">' +
+      '<div class="pa-meal-header" onclick="(typeof pgToggleMealPreview===\'function\'?pgToggleMealPreview:typeof togglePAMeal===\'function\'&&togglePAMeal)(\'' + mealEsc + '\')">' +
         '<span class="pa-meal-emoji">' + (meal.emoji || '') + '</span>' +
         '<span class="pa-meal-label">' + (meal.label || meal.key) + '</span>' +
         (count > 0
           ? '<span class="pa-meal-count">' + count + ' ing.</span>'
           : '<span class="pa-meal-count" style="opacity:.4">Vuoto</span>') +
-        '<span class="pa-meal-chevron" id="pa-chev-' + meal.key + '">▾</span>' +
+        '<span class="pa-meal-chevron" id="pa-chev-' + meal.key + '">▴</span>' +
       '</div>' +
-      '<div class="pa-meal-body open" id="pa-body-' + meal.key + '">' +
+      '<div class="pa-meal-body" id="pa-body-' + meal.key + '">' +
         catSections +
       '</div>' +
     '</div>'
   );
+}
+function pgToggleMealPreview(mealKey) {
+  var body = document.getElementById('pa-body-' + mealKey);
+  var chev = document.getElementById('pa-chev-' + mealKey);
+  if (!body) return;
+  var isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if (chev) chev.textContent = isOpen ? '▴' : '▾';
+}
+function pgExpandAllMeals() {
+  var keys = ['colazione','spuntino','pranzo','merenda','cena'];
+  keys.forEach(function(k) {
+    var body = document.getElementById('pa-body-' + k);
+    var chev = document.getElementById('pa-chev-' + k);
+    if (body) { body.classList.add('open'); }
+    if (chev) chev.textContent = '▾';
+  });
+}
+function pgCollapseAllMeals() {
+  var keys = ['colazione','spuntino','pranzo','merenda','cena'];
+  keys.forEach(function(k) {
+    var body = document.getElementById('pa-body-' + k);
+    var chev = document.getElementById('pa-chev-' + k);
+    if (body) { body.classList.remove('open'); }
+    if (chev) chev.textContent = '▴';
+  });
 }
 
 function pgBuildPreviewCatSection(mealKey, catName, plan) {
@@ -812,9 +843,12 @@ function pgRequestVerification() {
         autoAdjusted:false
       };
     } else {
-      var code = res.reason || '';
+      var code = String(res.reason || '').trim();
       var isHardError = (code === 'parse_error' || code === 'invalid_format' || code === 'no_response');
       if (isHardError) {
+        if (typeof console !== 'undefined' && console.debug) {
+          console.debug('[pg] Verifica AI: errore tecnico', code, '— messaggio generico mostrato all\'utente.');
+        }
         pgState.verification = {
           status:'fail',
           reason:'Non siamo riusciti a valutare automaticamente il piano. Puoi comunque salvarlo e farlo valutare al tuo professionista.',
@@ -825,10 +859,13 @@ function pgRequestVerification() {
         var adjusted = pgAutoAdjustPlanIfNeeded(res);
         pgState.verification = {
           status: adjusted ? 'ok' : 'fail',
-          reason: res.reason || 'Il piano potrebbe non essere ottimale; sono state applicate piccole correzioni automatiche.',
+          reason: res.reason || (adjusted ? 'Sono state applicate piccole correzioni automatiche in base al parere dell\'AI.' : 'Il piano potrebbe non essere ottimale. Puoi applicarlo comunque e modificarlo dal Piano Alimentare.'),
           risk: res.risk || null,
           autoAdjusted: adjusted
         };
+        if (adjusted && typeof console !== 'undefined' && console.debug) {
+          console.debug('[pg] Verifica AI: correzioni applicate (badge mostrato).');
+        }
       }
     }
     renderPianoGenPage();

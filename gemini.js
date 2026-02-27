@@ -908,6 +908,16 @@ function generateAIStatsAnalysis() {
      → trattare come verifica non disponibile, messaggio umano in piano_gen.js
    - "risk_high" non usato come reason; risk è in res.risk (low|medium|high).
 ══════════════════════════════════════════════════════════════════════════════ */
+function _extractVerifyResponseJson(text) {
+  if (!text || typeof text !== 'string') return null;
+  var clean = text.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
+  var out = _extractBalancedJson(clean);
+  if (out) return out;
+  out = _cleanMarkdownJson(clean);
+  if (out && out.indexOf('"verified"') !== -1) return out;
+  return null;
+}
+
 function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
   if (typeof callback !== 'function') callback = function () {};
 
@@ -916,24 +926,29 @@ function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
 
   var payload = {
     profile: {
-      sex: profile.sex || null,
-      age: profile.age || null,
-      weightKg: profile.weight || null,
-      heightCm: profile.height || null,
-      activity: profile.activity || null,
-      goal: profile.goal || null
+      sex: profile.sex != null ? profile.sex : null,
+      age: profile.age != null ? profile.age : null,
+      weightKg: profile.weight != null ? profile.weight : null,
+      heightCm: profile.height != null ? profile.height : null,
+      activity: profile.activity != null ? profile.activity : null,
+      goal: profile.goal != null ? profile.goal : null
     },
     plan: plan
   };
+  var payloadStr = JSON.stringify(payload);
+
+  if (typeof console !== 'undefined' && console.debug) {
+    console.debug('[AI verifica piano] Payload inviato (lunghezza ' + payloadStr.length + '):', payloadStr.substring(0, 300) + (payloadStr.length > 300 ? '…' : ''));
+  }
 
   var prompt =
     'Agisci come nutrizionista esperto. Ti fornisco un profilo sintetico e il riepilogo di un piano alimentare già calcolato.\n' +
     'Il tuo compito è SOLO verificare se, in linea di massima, il piano è coerente con il profilo (distribuzione dei pasti, calorie totali e proporzioni dei macronutrienti), ' +
     'senza proporre un nuovo piano e senza aggiungere dettagli inutili.\n\n' +
     'PROFILO E PIANO (JSON):\n' +
-    JSON.stringify(payload) + '\n\n' +
-    'RISPOSTA OBBLIGATORIA: restituisci SOLO un JSON con questa forma, senza testo aggiuntivo e senza markdown:\n' +
-    '{ "verified": true|false, "risk": "low|medium|high", "reason": "breve spiegazione in italiano (max 200 caratteri)" }';
+    payloadStr + '\n\n' +
+    'RISPOSTA OBBLIGATORIA: restituisci SOLO un JSON con questa forma, senza testo prima o dopo, senza markdown:\n' +
+    '{"verified": true o false, "risk": "low" o "medium" o "high", "reason": "breve spiegazione in italiano (max 200 caratteri)"}';
 
   _geminiCall(prompt, function (text, err) {
     if (err || !text) {
@@ -944,21 +959,42 @@ function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
       return;
     }
     if (typeof console !== 'undefined' && console.debug) {
-      console.debug('[AI verifica piano] Risposta (troncata):', text.substring(0, 200) + (text.length > 200 ? '…' : ''));
+      console.debug('[AI verifica piano] Risposta ricevuta (lunghezza ' + (text ? text.length : 0) + '):', (text || '').substring(0, 350) + ((text && text.length > 350) ? '…' : ''));
+    }
+    var jsonStr = _extractVerifyResponseJson(text);
+    if (!jsonStr) {
+      try {
+        var res = JSON.parse(text.trim());
+        if (res && typeof res.verified === 'boolean') {
+          callback({ verified: !!res.verified, reason: res.reason || null, risk: res.risk || null });
+          return;
+        }
+      } catch (e) {}
+      if (typeof console !== 'undefined' && console.debug) {
+        console.debug('[AI verifica piano] Impossibile estrarre JSON dalla risposta.');
+      }
+      callback({ verified: false, reason: 'parse_error' });
+      return;
     }
     try {
-      var jsonStr = _extractBalancedJson(text) || _cleanMarkdownJson(text) || text.trim();
       var res = JSON.parse(jsonStr);
       if (typeof res.verified !== 'boolean') {
         callback({ verified: false, reason: 'invalid_format' });
         return;
       }
-      callback({
+      var out = {
         verified: !!res.verified,
-        reason: res.reason || null,
+        reason: (res.reason != null && String(res.reason).trim()) ? String(res.reason).trim() : null,
         risk: res.risk || null
-      });
+      };
+      if (typeof console !== 'undefined' && console.debug) {
+        console.debug('[AI verifica piano] Parsing OK:', JSON.stringify(out));
+      }
+      callback(out);
     } catch (e) {
+      if (typeof console !== 'undefined' && console.debug) {
+        console.debug('[AI verifica piano] JSON.parse fallito:', e && e.message);
+      }
       callback({ verified: false, reason: 'parse_error' });
     }
   }, { maxOutputTokens: 512, temperature: 0.1 });
