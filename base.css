@@ -145,7 +145,7 @@ a:hover { text-decoration: underline; }
 :focus:not(:focus-visible) { outline: none; }
 
 /* ══════════════════════════════════════════════════
-   3. LANDING
+   3. LANDING — stile Metalab
 ══════════════════════════════════════════════════ */
 #landingPage {
   display: flex;
@@ -162,29 +162,70 @@ a:hover { text-decoration: underline; }
     linear-gradient(160deg, #0d2218 0%, #1a4a35 60%, #0d2218 100%);
 }
 
-#landingLogo {
-  width: 90px; height: 90px;
-  border-radius: var(--r-xl);
-  background: rgba(255,255,255,.1);
-  border: 1.5px solid rgba(255,255,255,.2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 2.6em;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px rgba(0,0,0,.3);
+#landingPage.landing-metalab {
+  justify-content: flex-start;
+  padding-top: 24px;
+  padding-bottom: 24px;
+  gap: 0;
 }
 
-.landing-title {
-  font-size: 2.6rem;
+/* Hero: headline spezzata + sottotitolo */
+.landing-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin: 16px 0;
+}
+
+.landing-hero-headline {
+  font-size: clamp(2.25rem, 8vw, 4rem);
   font-weight: 800;
   color: #fff;
-  letter-spacing: -.03em;
+  letter-spacing: -.04em;
+  line-height: 1.1;
+  margin: 0 0 16px;
+}
+
+.landing-hero-line {
+  display: block;
+  opacity: 0;
+  transform: translateY(14px);
+  animation: landing-hero-in 0.7s ease forwards;
+}
+
+.landing-hero-line-1 { animation-delay: 0.1s; }
+.landing-hero-line-2 { animation-delay: 0.25s; }
+
+@keyframes landing-hero-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.landing-hero .landing-sub {
+  margin: 0;
+  opacity: 0;
+  animation: landing-hero-in 0.6s ease 0.4s forwards;
 }
 
 .landing-sub {
   font-size: 1rem;
   color: rgba(255,255,255,.6);
-  max-width: 290px;
+  max-width: 320px;
   line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-line,
+  .landing-hero .landing-sub {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* ══════════════════════════════════════════════════

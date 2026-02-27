@@ -36,20 +36,66 @@
 <body>
 
 <!-- ═════════════════════════════════════════════════════════════════
-     LANDING PAGE
+     LANDING PAGE — stile Metalab
 ═════════════════════════════════════════════════════════════════ -->
-<div id="landingPage">
-  <div id="landingLogo">🌿</div>
-  <h1 class="landing-title">NutriPlan</h1>
-  <p class="landing-sub">Il tuo piano alimentare personale.<br>Accedi per iniziare e sincronizzare i tuoi dati.</p>
+<div id="landingPage" class="landing-metalab">
+  <!-- Striscia marquee logo: NutriPlan ripetuto -->
+  <div class="landing-marquee-wrap" aria-hidden="true">
+    <div class="landing-marquee-track">
+      <div class="landing-marquee-inner">
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+      </div>
+      <div class="landing-marquee-inner" aria-hidden="true">
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan</span>
+      </div>
+    </div>
+  </div>
 
+  <!-- Badge stile HoverDrag (visibile solo dopo login) -->
+  <span class="landing-badge" id="landingBadge" aria-hidden="true" style="display:none">Esplora</span>
+
+  <!-- Striscia numeri 1–24 -->
+  <div class="landing-numbers-wrap" aria-hidden="true">
+    <div class="landing-numbers-track">
+      <div class="landing-numbers-inner">
+        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span>
+        <span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span>
+      </div>
+      <div class="landing-numbers-inner" aria-hidden="true">
+        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span>
+        <span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero: headline spezzata + sottotitolo -->
+  <div class="landing-hero">
+    <h1 class="landing-hero-headline">
+      <span class="landing-hero-line landing-hero-line-1">Il tuo</span>
+      <span class="landing-hero-line landing-hero-line-2">piano alimentare</span>
+    </h1>
+    <p class="landing-sub">Accedi per iniziare e sincronizzare i tuoi dati.</p>
+  </div>
+
+  <!-- CTA: loading / Google / Nav grid / Offline (ID e onclick invariati) -->
   <div class="landing-cta-wrap">
-    <!-- Stato caricamento mentre Firebase controlla la sessione -->
     <div class="landing-auth-loading" id="landingAuthLoading">
       <span class="landing-auth-spinner"></span> Verifica accesso…
     </div>
-
-    <!-- Utente NON loggato: mostra Google sign-in -->
     <button class="btn-landing-google" id="landingGoogleBtn"
             onclick="landingSignIn()" style="display:none">
       <svg width="20" height="20" viewBox="0 0 18 18">
@@ -60,8 +106,6 @@
       </svg>
       Accedi con Google
     </button>
-
-    <!-- Utente GIÀ loggato: nav grandi con descrizioni -->
     <div class="landing-nav-logged" id="landingNavLogged" style="display:none;">
       <p class="landing-nav-logged-sub">Scegli dove andare</p>
       <div class="landing-nav-grid">
@@ -102,8 +146,6 @@
         </button>
       </div>
     </div>
-
-    <!-- Continua senza account -->
     <button class="landing-offline-btn" id="landingOfflineBtn"
             onclick="landingOffline()" style="display:none">
       Continua senza account →
@@ -379,7 +421,6 @@
       </div>
       <div class="page-header-actions">
         <button class="btn btn-secondary btn-small" onclick="startPageHelp && startPageHelp('spesa')">❓ Aiuto</button>
-        <button class="btn btn-secondary btn-small" onclick="clearBoughtItems()">🗑 Pulisci</button>
         <button class="btn btn-primary btn-small" onclick="openSpesaItemModal()">➕ Aggiungi</button>
       </div>
     </div>

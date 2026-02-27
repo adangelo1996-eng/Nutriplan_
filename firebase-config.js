@@ -264,17 +264,20 @@ function updateAuthUI(user) {
   var landingGoogle    = document.getElementById('landingGoogleBtn');
   var landingNavLogged = document.getElementById('landingNavLogged');
   var landingOffline   = document.getElementById('landingOfflineBtn');
+  var landingBadge    = document.getElementById('landingBadge');
 
   if (user) {
     if (landingLoading)   landingLoading.style.display = 'none';
     if (landingGoogle)   landingGoogle.style.display  = 'none';
     if (landingNavLogged) landingNavLogged.style.display = 'block';
     if (landingOffline)  landingOffline.style.display = 'none';
+    if (landingBadge)   landingBadge.style.display   = 'block';
   } else {
     if (landingLoading)   landingLoading.style.display = 'none';
     if (landingGoogle)   landingGoogle.style.display  = '';
     if (landingNavLogged) landingNavLogged.style.display = 'none';
-    if (landingOffline)  landingOffline.style.display = '';
+    if (landingOffline)  landingOffline.style.display  = '';
+    if (landingBadge)   landingBadge.style.display   = 'none';
   }
 
   /* Aggiorna icona profilo nel nav (bottom + sidebar) quando loggato */

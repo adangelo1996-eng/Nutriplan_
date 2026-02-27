@@ -91,13 +91,16 @@
 .meal-item-status.missing { color: var(--danger);  }
 .meal-item-actions { display: flex; gap: 5px; flex-shrink: 0; }
 
-/* Pagina Oggi — card ingrediente compatta (solo nome, + dispensa / + spesa) */
+/* Pagina Oggi — nome ingrediente e quantità sotto (mobile: nome intero, qty sotto) */
 .piano-item-card .piano-item-row {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 12px; flex-wrap: wrap;
 }
-.piano-item-card .piano-item-name {
+.piano-item-card .piano-item-name-block {
   flex: 1; min-width: 0;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.piano-item-card .piano-item-name {
   font-weight: 600; font-size: .9em;
   line-height: 1.35;
   display: -webkit-box;
@@ -106,7 +109,10 @@
   overflow: hidden;
   word-break: break-word;
 }
-.piano-item-card .piano-item-qty { font-size: .72em; }
+.piano-item-card .piano-item-qty-below {
+  font-size: .78em; color: var(--text-light);
+  font-weight: 500;
+}
 .piano-item-card .piano-item-sub { font-size: .7em; }
 .piano-item-card .piano-item-actions {
   display: flex; align-items: center; gap: 6px; flex-shrink: 0;
@@ -290,17 +296,20 @@
    19. RICETTE
 ══════════════════════════════════════════════════ */
 
-/* Filtri ricette: desktop = sempre visibili; mobile = menu a espansione */
+/* Filtri ricette: due voci a espansione (Pasto + Compatibilità), label = selezione corrente */
 .ricette-filter-row,
 #ricetteFilterRow {
   padding: 2px 0 14px;
   width: 100%;
   position: static;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-.ricette-filters-details {
+.ricette-filter-detail {
   width: 100%;
 }
-.ricette-filters-summary {
+.ricette-filter-summary {
   list-style: none;
   padding: 10px 14px;
   border: 1.5px solid var(--border);
@@ -314,45 +323,30 @@
   align-items: center;
   gap: 8px;
 }
-.ricette-filters-summary::-webkit-details-marker { display: none; }
-.ricette-filters-summary::after { content: ' ▾'; color: var(--text-light); }
-.ricette-filters-details[open] .ricette-filters-summary::after { content: ' ▴'; }
-.ricette-filters-inner {
+.ricette-filter-summary::-webkit-details-marker { display: none; }
+.ricette-filter-summary::after { content: ' ▾'; color: var(--text-light); }
+.ricette-filter-detail[open] .ricette-filter-summary::after { content: ' ▴'; }
+.ricette-filter-body {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 0 0;
-}
-.ricette-filters-group {
-  display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 6px;
+  padding: 10px 0 0;
 }
-.ricette-filters-label {
-  font-size: .75rem;
-  font-weight: 700;
-  color: var(--text-3);
-  margin-bottom: 2px;
-}
-.ricette-filters-pills,
+.ricette-filter-body .rf-pill { margin: 0; }
 .ricette-filters-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+  width: 100%;
+  margin-bottom: 6px;
 }
-.ricette-filters-row .ricette-filters-label { margin-right: 4px; margin-bottom: 0; }
-.ricette-filters-row { margin-bottom: 6px; }
+.ricette-filters-row .ricette-filters-label { font-size: .75rem; font-weight: 700; color: var(--text-3); margin-right: 4px; }
 .ricette-filters-row:last-child { margin-bottom: 0; }
 
 @media (min-width: 768px) {
-  .ricette-filters-summary { display: none; }
-  .ricette-filters-details .ricette-filters-inner { padding-top: 0; }
-  .ricette-filters-details[open] .ricette-filters-inner,
-  .ricette-filters-details .ricette-filters-inner { display: block; }
-  .ricette-filters-group { flex-direction: row; flex-wrap: wrap; align-items: center; }
-  .ricette-filters-group .ricette-filters-label { margin-right: 8px; margin-bottom: 0; }
-  .ricette-filters-group .ricette-filters-pills { flex: 1; }
+  .ricette-filter-detail .ricette-filter-body { padding-top: 8px; display: flex; }
+  #ricetteFilterRow { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
 }
 .ricette-filter-row::-webkit-scrollbar,
 #ricetteFilterRow::-webkit-scrollbar { display: none; }
@@ -1315,8 +1309,111 @@
 @media (min-width: 768px) { .stats-bar-wrap { height: 90px; } }
 
 /* ══════════════════════════════════════════════════
-   35. LANDING PAGE — CTA auth-aware
+   35. LANDING PAGE — Metalab (marquee, badge, CTA, card reveal)
 ══════════════════════════════════════════════════ */
+
+/* Striscia marquee logo */
+.landing-marquee-wrap {
+  width: 100%;
+  overflow: hidden;
+  flex-shrink: 0;
+  margin-bottom: 6px;
+  mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+}
+
+@keyframes landing-marquee {
+  to { transform: translateX(-50%); }
+}
+
+@keyframes landing-numbers {
+  to { transform: translateX(-50%); }
+}
+
+.landing-marquee-track {
+  display: flex;
+  width: 200%;
+  animation: landing-marquee 28s linear infinite;
+}
+
+.landing-marquee-inner {
+  flex: 0 0 50%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  white-space: nowrap;
+  gap: 0;
+}
+
+.landing-marquee-text {
+  font-size: clamp(1rem, 3.5vw, 1.35rem);
+  font-weight: 800;
+  color: rgba(255,255,255,.35);
+  letter-spacing: .02em;
+  padding-right: 1.2em;
+}
+
+/* Badge stile HoverDrag */
+.landing-badge {
+  display: inline-block;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.45);
+  padding: 6px 12px;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: var(--r-full);
+  margin-bottom: 10px;
+  transition: transform var(--t), color var(--t), border-color var(--t);
+}
+
+.landing-badge:hover {
+  color: rgba(255,255,255,.75);
+  border-color: rgba(255,255,255,.4);
+  transform: scale(1.04);
+}
+
+/* Striscia numeri */
+.landing-numbers-wrap {
+  width: 100%;
+  overflow: hidden;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+.landing-numbers-track {
+  display: flex;
+  width: 200%;
+  animation: landing-numbers 22s linear infinite;
+}
+
+.landing-numbers-inner {
+  flex: 0 0 50%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  white-space: nowrap;
+  gap: .6em;
+  padding: 0 0.5em;
+}
+
+.landing-numbers-inner span {
+  font-size: clamp(0.65rem, 2vw, 0.8rem);
+  font-weight: 700;
+  color: rgba(255,255,255,.25);
+  letter-spacing: .05em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-marquee-track,
+  .landing-numbers-track {
+    animation: none;
+  }
+}
+
 .landing-cta-wrap {
   display: flex; flex-direction: column; align-items: center;
   gap: 14px; margin-top: 8px; width: 100%; max-width: 340px;
@@ -1371,15 +1468,36 @@
   .landing-nav-grid { grid-template-columns: repeat(2, 1fr); }
 }
 .landing-nav-card {
+  position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   padding: 18px 14px; background: rgba(255,255,255,.12);
   border: 1.5px solid rgba(255,255,255,.2); border-radius: var(--r-xl);
   color: #fff; font-family: var(--font); text-align: center;
-  cursor: pointer; transition: all var(--t);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.32s ease, box-shadow 0.32s ease, background var(--t), border-color var(--t);
+  transform-origin: center bottom;
 }
+
+/* Reveal on hover (stile Metalab): scale + ombra + bordo */
 .landing-nav-card:hover {
-  background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.35);
-  transform: translateY(-2px);
+  background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.4);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(0,0,0,.25), 0 0 0 1px rgba(255,255,255,.08);
+}
+
+.landing-nav-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(255,255,255,.06) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.landing-nav-card:hover::before {
+  opacity: 1;
 }
 .landing-nav-card-icon { font-size: 2rem; line-height: 1; }
 .landing-nav-card-label { font-size: 1rem; font-weight: 800; }

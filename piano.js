@@ -253,9 +253,11 @@ function renderMealItems() {
 
     return '<div class="rc-card piano-item-card" style="margin-bottom:8px;">' +
       '<div class="piano-item-row">' +
-        '<span'+usedCls+' class="piano-item-name">'+display+'</span>' +
+        '<div class="piano-item-name-block">' +
+          '<span'+usedCls+' class="piano-item-name">'+display+'</span>' +
+          (qty ? '<span class="piano-item-qty-below">'+qty+'</span>' : '') +
+        '</div>' +
         alreadyBadge +
-        (qty ? '<span class="rc-badge piano-item-qty">'+qty+'</span>' : '') +
         (subName ? '<span class="rc-badge piano-item-sub">↔</span>' : '') +
         '<div class="piano-item-actions">' +
           actionBtns +
