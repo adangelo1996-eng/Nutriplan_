@@ -897,6 +897,16 @@ function generateAIStatsAnalysis() {
    VERIFICA AI PIANO GENERATO
    - Usa solo dati di profilo e piano RIASSUNTI (anonimizzati)
    - Non genera un nuovo piano, ma restituisce solo un giudizio sintetico
+
+   Callback riceve { verified, reason, risk }.
+   reason può essere:
+   - stringa descrittiva in italiano (dalla risposta API) → mostrabile all'utente
+   - "parse_error"   → errore parsing JSON risposta (non mostrare codice)
+   - "invalid_format"→ risposta API senza verified boolean (non mostrare codice)
+   - "no_response"   → nessun testo restituito (non mostrare codice)
+   - messaggio da _geminiCall (es. "API key Gemini non configurata (config.js)")
+     → trattare come verifica non disponibile, messaggio umano in piano_gen.js
+   - "risk_high" non usato come reason; risk è in res.risk (low|medium|high).
 ══════════════════════════════════════════════════════════════════════════════ */
 function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
   if (typeof callback !== 'function') callback = function () {};
@@ -927,8 +937,14 @@ function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
 
   _geminiCall(prompt, function (text, err) {
     if (err || !text) {
+      if (typeof console !== 'undefined' && console.debug) {
+        console.debug('[AI verifica piano] Errore o vuoto:', (err || 'no_response').substring(0, 80));
+      }
       callback({ verified: false, reason: err || 'no_response' });
       return;
+    }
+    if (typeof console !== 'undefined' && console.debug) {
+      console.debug('[AI verifica piano] Risposta (troncata):', text.substring(0, 200) + (text.length > 200 ? '…' : ''));
     }
     try {
       var jsonStr = _extractBalancedJson(text) || _cleanMarkdownJson(text) || text.trim();

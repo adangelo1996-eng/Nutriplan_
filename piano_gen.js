@@ -31,6 +31,38 @@ var pgState = {
 
 var PG_BASELINE_KCAL = 2000;
 
+function pgRoundQuantity(q, unit) {
+  if (!q) return 0;
+  var u = (unit || 'g').toLowerCase();
+  if (u === 'g' || u === 'ml') {
+    return Math.round(q / 10) * 10;
+  }
+  return Math.round(q);
+}
+
+function pgCaptureProfileFromInputs() {
+  if (pgState.step !== 1) return;
+  var sexEl    = document.getElementById('pgSex');
+  var ageEl    = document.getElementById('pgAge');
+  var weightEl = document.getElementById('pgWeight');
+  var heightEl = document.getElementById('pgHeight');
+  var actEl    = document.getElementById('pgActivity');
+  var goalEl   = document.getElementById('pgGoal');
+  if (!sexEl || !ageEl || !weightEl || !heightEl || !actEl || !goalEl) return;
+  var prev = pgState.profile || {};
+  var age    = parseInt(ageEl.value, 10);
+  var weight = parseFloat(weightEl.value);
+  var height = parseFloat(heightEl.value);
+  pgState.profile = {
+    sex: sexEl.value === 'M' ? 'M' : 'F',
+    age: isNaN(age)    ? (prev.age    || '') : age,
+    weight: isNaN(weight) ? (prev.weight || '') : weight,
+    height: isNaN(height) ? (prev.height || '') : height,
+    activity: actEl.value || prev.activity || 'moderato',
+    goal: goalEl.value || prev.goal || 'mantenimento'
+  };
+}
+
 function renderPianoGenPage() {
   var el = document.getElementById('pianoGenContent');
   if (!el) return;
@@ -56,10 +88,8 @@ function buildPgStep1() {
     '</div>' +
     '<div class="rc-card" style="margin-bottom:16px;">' +
       '<div style="padding:18px 18px 4px;">' +
-        '<div style="font-weight:700;font-size:1rem;margin-bottom:4px;">Raccontaci qualcosa di te</div>' +
-        '<p style="font-size:.85em;color:var(--text-3);margin-bottom:14px;">' +
-          'Useremo pochi dati essenziali per proporti un piano di base. Tutto resta privato e modificabile in qualsiasi momento.' +
-        '</p>' +
+        '<div style="font-weight:700;font-size:1rem;margin-bottom:4px;">Il tuo profilo</div>' +
+        '<p style="font-size:.85em;color:var(--text-3);margin-bottom:14px;">Useremo pochi dati essenziali per proporti un piano di base.</p>' +
         '<div class="row gap-12" style="margin-bottom:10px;">' +
           '<div class="form-group" style="flex:1;min-width:120px;">' +
             '<label>Sesso</label>' +
@@ -202,17 +232,45 @@ function buildPgStep2() {
     cena:      0.20
   };
 
+  var mealPerc = {
+    colazione: Math.round(dist.colazione * 100),
+    spuntino:  Math.round(dist.spuntino  * 100),
+    pranzo:    Math.round(dist.pranzo    * 100),
+    merenda:   Math.round(dist.merenda   * 100)
+  };
+  mealPerc.cena = 100 - mealPerc.colazione - mealPerc.spuntino - mealPerc.pranzo - mealPerc.merenda;
+
+  var carbsPct   = m.kcal ? Math.round(((m.carbsG   * 4) / m.kcal) * 100) : 0;
+  var proteinPct = m.kcal ? Math.round(((m.proteinG * 4) / m.kcal) * 100) : 0;
+  var fatPct     = 100 - carbsPct - proteinPct;
+
   function mealK(label) {
     return Math.round(m.kcal * dist[label]);
   }
 
+  var macroMeals = ['☀️ Colazione','🍎 Spuntino','🍽 Pranzo','🥪 Merenda','🌙 Cena'];
+  var macroCardsHtml = macroMeals.map(function(lbl) {
+    return (
+      '<div class="pg-macro-card">' +
+        '<div class="pg-macro-title">' + lbl + '</div>' +
+        '<div class="pg-macro-pie" style="background:conic-gradient(' +
+          '#22c55e 0 ' + carbsPct + '%,' +
+          '#3b82f6 ' + carbsPct + '% ' + (carbsPct + proteinPct) + '%,' +
+          '#eab308 ' + (carbsPct + proteinPct) + '% 100%);"></div>' +
+        '<div class="pg-macro-legend">' +
+          '<span><span class="pg-dot" style="background:#22c55e;"></span>Carboidrati ' + carbsPct + '%</span>' +
+          '<span><span class="pg-dot" style="background:#3b82f6;"></span>Proteine ' + proteinPct + '%</span>' +
+          '<span><span class="pg-dot" style="background:#eab308;"></span>Grassi ' + fatPct + '%</span>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+
   return '' +
     '<div class="rc-card" style="margin-bottom:16px;">' +
       '<div style="padding:18px 18px 10px;">' +
-        '<div style="font-weight:700;font-size:1rem;margin-bottom:6px;">Uno sguardo al tuo fabbisogno</div>' +
-        '<p style="font-size:.84em;color:var(--text-3);margin-bottom:10px;">' +
-          'Questi valori sono indicativi e servono solo come base per organizzare i pasti. Per indicazioni personalizzate rivolgiti sempre a un professionista.' +
-        '</p>' +
+        '<div style="font-weight:700;font-size:1rem;margin-bottom:6px;">Il tuo fabbisogno</div>' +
+        '<p style="font-size:.84em;color:var(--text-3);margin-bottom:10px;">Valori indicativi per organizzare i pasti; per indicazioni personalizzate rivolgiti a un professionista.</p>' +
         '<div class="row gap-12" style="margin-bottom:10px;">' +
           '<div style="flex:1;min-width:120px;">' +
             '<div style="font-size:.8em;color:var(--text-3);">Energia giornaliera stimata</div>' +
@@ -240,15 +298,30 @@ function buildPgStep2() {
       '</div>' +
     '</div>' +
     '<div class="rc-card" style="margin-bottom:16px;">' +
-      '<div style="padding:16px 18px 10px;">' +
-        '<div style="font-weight:700;font-size:.95em;margin-bottom:8px;">Distribuzione indicativa per pasto</div>' +
-        '<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:.82em;color:var(--text-2);">' +
-          '<span>☀️ Colazione: ~' + mealK('colazione') + ' kcal</span>' +
-          '<span>🍎 Spuntino: ~'  + mealK('spuntino')  + ' kcal</span>' +
-          '<span>🍽 Pranzo: ~'    + mealK('pranzo')    + ' kcal</span>' +
-          '<span>🥪 Merenda: ~'   + mealK('merenda')   + ' kcal</span>' +
-          '<span>🌙 Cena: ~'      + mealK('cena')      + ' kcal</span>' +
+      '<div style="padding:16px 18px 12px;">' +
+        '<div style="font-weight:700;font-size:.95em;margin-bottom:10px;">Come distribuiamo le calorie</div>' +
+        '<div class="pg-pie-row">' +
+          '<div class="pg-pie" style="background:conic-gradient(' +
+            '#22c55e 0 ' + mealPerc.colazione + '%,' +
+            '#f97316 ' + mealPerc.colazione + '% ' + (mealPerc.colazione + mealPerc.spuntino) + '%,' +
+            '#3b82f6 ' + (mealPerc.colazione + mealPerc.spuntino) + '% ' + (mealPerc.colazione + mealPerc.spuntino + mealPerc.pranzo) + '%,' +
+            '#eab308 ' + (mealPerc.colazione + mealPerc.spuntino + mealPerc.pranzo) + '% ' + (mealPerc.colazione + mealPerc.spuntino + mealPerc.pranzo + mealPerc.merenda) + '%,' +
+            '#a855f7 ' + (mealPerc.colazione + mealPerc.spuntino + mealPerc.pranzo + mealPerc.merenda) + '% 100%);"></div>' +
+          '<div class="pg-pie-legend">' +
+            '<span><span class="pg-dot" style="background:#22c55e;"></span>☀️ Colazione ~' + mealK('colazione') + ' kcal (' + mealPerc.colazione + '%)</span>' +
+            '<span><span class="pg-dot" style="background:#f97316;"></span>🍎 Spuntino ~'  + mealK('spuntino')  + ' kcal (' + mealPerc.spuntino  + '%)</span>' +
+            '<span><span class="pg-dot" style="background:#3b82f6;"></span>🍽 Pranzo ~'    + mealK('pranzo')    + ' kcal (' + mealPerc.pranzo    + '%)</span>' +
+            '<span><span class="pg-dot" style="background:#eab308;"></span>🥪 Merenda ~'   + mealK('merenda')   + ' kcal (' + mealPerc.merenda   + '%)</span>' +
+            '<span><span class="pg-dot" style="background:#a855f7;"></span>🌙 Cena ~'      + mealK('cena')      + ' kcal (' + mealPerc.cena      + '%)</span>' +
+          '</div>' +
         '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="rc-card" style="margin-bottom:16px;">' +
+      '<div style="padding:16px 18px 10px;">' +
+        '<div style="font-weight:700;font-size:.95em;margin-bottom:8px;">Macronutrienti per pasto (in %)</div>' +
+        '<div class="pg-macro-grid">' + macroCardsHtml + '</div>' +
+        '<p class="pg-charts-summary" style="font-size:.8em;color:var(--text-3);margin:10px 0 0;">Il pranzo è il pasto più ricco; colazione e cena sono bilanciate.</p>' +
       '</div>' +
     '</div>' +
     '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:6px;">' +
@@ -308,7 +381,11 @@ function pgGeneratePlanFromDefault() {
         if (seenByCatKey[key]) return;
         seenByCatKey[key] = true;
         if (!Array.isArray(altPoolByCat[cat])) altPoolByCat[cat] = [];
-        altPoolByCat[cat].push(item.name);
+        altPoolByCat[cat].push({
+          name: item.name,
+          baseQty: item.quantity != null ? item.quantity : 100,
+          unit: item.unit || 'g'
+        });
       });
     });
   });
@@ -323,7 +400,11 @@ function pgGeneratePlanFromDefault() {
       if (seenByCatKey[key]) return;
       seenByCatKey[key] = true;
       if (!Array.isArray(altPoolByCat[cat])) altPoolByCat[cat] = [];
-      altPoolByCat[cat].push(di.name);
+      altPoolByCat[cat].push({
+        name: di.name,
+        baseQty: di.quantity != null ? di.quantity : 100,
+        unit: di.unit || 'g'
+      });
     });
   }
 
@@ -337,21 +418,31 @@ function pgGeneratePlanFromDefault() {
         if (!pgIsIngredientAllowed(item.name)) return;
         var baseQty = item.quantity != null ? item.quantity : null;
         if (baseQty == null) return;
-        var scaled = Math.round(baseQty * factor);
+        var scaledRaw = baseQty * factor;
+        var scaled = pgRoundQuantity(scaledRaw, item.unit || 'g');
         if (!scaled || scaled <= 0) scaled = baseQty;
         var cat = getCat(item.name);
         if (!Array.isArray(newPlan[mk][cat])) newPlan[mk][cat] = [];
         var nameLower = item.name.toLowerCase();
         var alts = [];
         var pool = altPoolByCat[cat] || [];
-        for (var i = 0; i < pool.length && alts.length < 3; i++) {
-          var candName = pool[i];
-          if (!candName) continue;
-          if (candName.toLowerCase() === nameLower) continue;
+        var maxAlts = Math.min(3, Math.max(1, pool.length));
+        for (var i = 0; i < pool.length && alts.length < maxAlts; i++) {
+          var cand = pool[i];
+          if (!cand || !cand.name) continue;
+          var candLower = cand.name.toLowerCase();
+          if (candLower === nameLower) continue;
+          var already = alts.some(function(a) { return (a.name || '').toLowerCase() === candLower; });
+          if (already) continue;
+          var altBase = cand.baseQty != null ? cand.baseQty : baseQty;
+          var altUnit = cand.unit || item.unit || 'g';
+          var altRaw  = altBase * factor;
+          var altQty  = pgRoundQuantity(altRaw, altUnit);
+          if (!altQty || altQty <= 0) altQty = pgRoundQuantity(altBase, altUnit) || altBase;
           alts.push({
-            name: candName,
-            quantity: scaled,
-            unit: item.unit || 'g'
+            name: cand.name,
+            quantity: altQty,
+            unit: altUnit
           });
         }
         newPlan[mk][cat].push({
@@ -418,13 +509,15 @@ function pgIsIngredientAllowed(name) {
 
 function buildPgStep3() {
   var plan = pgState.draftPlan || {};
-  var meals = [
-    { key:'colazione', emoji:'☀️', label:'Colazione' },
-    { key:'spuntino',  emoji:'🍎', label:'Spuntino'  },
-    { key:'pranzo',    emoji:'🍽', label:'Pranzo'    },
-    { key:'merenda',   emoji:'🥪', label:'Merenda'   },
-    { key:'cena',      emoji:'🌙', label:'Cena'      }
-  ];
+  var meals = (typeof PA_MEALS !== 'undefined' && PA_MEALS && PA_MEALS.length)
+    ? PA_MEALS
+    : [
+        { key:'colazione', emoji:'☀️', label:'Colazione' },
+        { key:'spuntino',  emoji:'🍎', label:'Spuntino'  },
+        { key:'pranzo',    emoji:'🍽', label:'Pranzo'    },
+        { key:'merenda',   emoji:'🥪', label:'Merenda'   },
+        { key:'cena',      emoji:'🌙', label:'Cena'      }
+      ];
 
   var v = pgState.verification || { status:'idle' };
   var badge;
@@ -451,7 +544,9 @@ function buildPgStep3() {
   }
 
   var reasonHtml = '';
-  if (v.reason && (v.status === 'ok' || v.status === 'fail')) {
+  var techCodes = ['parse_error', 'invalid_format', 'no_response'];
+  var isTechnicalReason = techCodes.indexOf(v.reason) !== -1 || (v.reason && /API key Gemini non configurata/i.test(v.reason));
+  if (v.reason && (v.status === 'ok' || v.status === 'fail') && !isTechnicalReason) {
     var safeReason = String(v.reason)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -462,14 +557,26 @@ function buildPgStep3() {
       '</p>';
   }
 
+  var m = pgState.macros || {};
+  var kcal = m.kcal || 0;
+  var carbsPct = kcal ? Math.round(((m.carbsG || 0) * 4 / kcal) * 100) : 0;
+  var proteinPct = kcal ? Math.round(((m.proteinG || 0) * 4 / kcal) * 100) : 0;
+  var fatPct = 100 - carbsPct - proteinPct;
+  var goalKey = (pgState.profile || {}).goal || 'mantenimento';
+  var goalBadgeLabel = goalKey === 'dimagrimento' ? 'Perdita peso' : goalKey === 'massa' ? 'Massa muscolare' : 'Mantenimento';
+  var microSummary =
+    '<div style="display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-top:8px;font-size:.8em;color:var(--text-2);">' +
+      '<span><strong>' + kcal + '</strong> kcal</span>' +
+      '<span>Carb ' + carbsPct + '% · Prot ' + proteinPct + '% · Grassi ' + fatPct + '%</span>' +
+      '<span class="rc-badge" style="background:var(--bg-subtle);color:var(--text-2);font-size:.75em;">' + goalBadgeLabel + '</span>' +
+    '</div>';
   var headerCard =
     '<div class="rc-card" style="margin-bottom:14px;">' +
       '<div style="padding:16px 18px 14px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">' +
-        '<div>' +
+        '<div style="flex:1;min-width:0;">' +
           '<div style="font-weight:700;font-size:1rem;margin-bottom:4px;">3. Piano proposto</div>' +
-          '<p style="font-size:.82em;color:var(--text-3);margin:0;">' +
-            'Questa è una base di partenza calcolata automaticamente. Puoi modificarla in qualsiasi momento dal Piano Alimentare.' +
-          '</p>' +
+          '<p style="font-size:.82em;color:var(--text-3);margin:0;">Base di partenza calcolata automaticamente; modificabile dal Piano Alimentare.</p>' +
+          microSummary +
           reasonHtml +
         '</div>' +
         badge +
@@ -477,46 +584,7 @@ function buildPgStep3() {
     '</div>';
 
   var htmlMeals = meals.map(function(m) {
-    var mealData = plan[m.key] || {};
-    var cats = Object.keys(mealData || {});
-    var itemsCount = 0;
-    cats.forEach(function(cat) {
-      var arr = mealData[cat];
-      if (Array.isArray(arr)) itemsCount += arr.length;
-    });
-    if (!itemsCount) {
-      return '<div class="rc-card" style="margin-bottom:10px;">' +
-        '<div style="padding:12px 16px;font-size:.9em;color:var(--text-3);display:flex;align-items:center;gap:8px;">' +
-          '<span style="font-size:1.2em;">' + m.emoji + '</span>' +
-          '<span>' + m.label + ': nessun alimento impostato</span>' +
-        '</div>' +
-      '</div>';
-    }
-    var rows = '';
-    cats.forEach(function(cat) {
-      var arr = mealData[cat];
-      if (!Array.isArray(arr) || !arr.length) return;
-      var catLabel = cat.replace(/^[^\s]+\s/, '');
-      rows += '<div style="margin-bottom:6px;">' +
-        '<div style="font-size:.8em;font-weight:700;color:var(--text-2);margin-bottom:2px;">' + cat + ' — ' + catLabel + '</div>' +
-        '<ul style="margin:0;padding-left:18px;font-size:.83em;color:var(--text-2);line-height:1.6;">' +
-          arr.map(function(i) {
-            var qty = i.quantity != null ? (i.quantity + ' ' + (i.unit || 'g')) : '';
-            return '<li>' + i.name + (qty ? ' <span style="color:var(--text-3);">(' + qty + ')</span>' : '') + '</li>';
-          }).join('') +
-        '</ul>' +
-      '</div>';
-    });
-    return '<div class="rc-card" style="margin-bottom:10px;">' +
-      '<div style="padding:12px 16px 10px;">' +
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
-          '<span style="font-size:1.2em;">' + m.emoji + '</span>' +
-          '<span style="font-weight:700;font-size:.95em;">' + m.label + '</span>' +
-          '<span class="rc-badge" style="margin-left:auto;font-size:.75em;">' + itemsCount + ' alimenti</span>' +
-        '</div>' +
-        rows +
-      '</div>' +
-    '</div>';
+    return pgBuildPreviewMealSection(m, plan);
   }).join('');
 
   var footer =
@@ -526,6 +594,135 @@ function buildPgStep3() {
     '</div>';
 
   return headerCard + htmlMeals + footer;
+}
+
+function pgPreviewMealCount(mealKey, plan) {
+  var meal = plan[mealKey];
+  if (!meal) return 0;
+  var count = 0;
+  Object.keys(meal).forEach(function(cat) {
+    var arr = meal[cat];
+    if (Array.isArray(arr)) count += arr.length;
+  });
+  return count;
+}
+
+function pgBuildPreviewMealSection(meal, plan) {
+  var count   = pgPreviewMealCount(meal.key, plan);
+  var mealEsc = (typeof paEscQ === 'function') ? paEscQ(meal.key) : meal.key;
+
+  var catsList = (typeof PA_CATEGORIES !== 'undefined' && PA_CATEGORIES && PA_CATEGORIES.length)
+    ? PA_CATEGORIES.slice()
+    : [
+        '🥩 Carne','🐟 Pesce','🥛 Latticini e Uova','🌾 Cereali e Legumi',
+        '🥦 Verdure','🍎 Frutta','🥑 Grassi e Condimenti','🍫 Dolci e Snack'
+      ];
+
+  var catSections = '';
+  catsList.forEach(function(cat) {
+    catSections += pgBuildPreviewCatSection(meal.key, cat, plan);
+  });
+
+  // \"🧂 Altro\" solo se presente
+  var altroCat  = '🧂 Altro';
+  var mealData  = plan[meal.key] || {};
+  var altroItems = Array.isArray(mealData[altroCat]) ? mealData[altroCat] : [];
+  if (altroItems.length) {
+    catSections += pgBuildPreviewCatSection(meal.key, altroCat, plan);
+  }
+
+  return (
+    '<div class="pa-meal-block pa-meal-preview" id="pg-meal-' + meal.key + '">' +
+      '<div class="pa-meal-header" onclick="togglePAMeal && togglePAMeal(\'' + mealEsc + '\')">' +
+        '<span class="pa-meal-emoji">' + (meal.emoji || '') + '</span>' +
+        '<span class="pa-meal-label">' + (meal.label || meal.key) + '</span>' +
+        (count > 0
+          ? '<span class="pa-meal-count">' + count + ' ing.</span>'
+          : '<span class="pa-meal-count" style="opacity:.4">Vuoto</span>') +
+        '<span class="pa-meal-chevron" id="pa-chev-' + meal.key + '">▾</span>' +
+      '</div>' +
+      '<div class="pa-meal-body open" id="pa-body-' + meal.key + '">' +
+        catSections +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function pgBuildPreviewCatSection(mealKey, catName, plan) {
+  var meal = plan[mealKey] || {};
+  var items = Array.isArray(meal[catName]) ? meal[catName] : [];
+  if (!items.length) return '';
+
+  var color = (typeof paCatColor === 'function') ? paCatColor(catName) : '#64748b';
+  var icon  = (typeof paCatIcon === 'function')  ? paCatIcon(catName)  : '🧂';
+  var label = catName.replace(/^[^\\s]+\\s/, '');
+  var safeId  = mealKey + '-' + catName.replace(/[^a-z0-9]/gi, '_');
+
+  var itemsHtml = items.map(function(item, idx) {
+    return pgBuildPreviewIngredientRow(mealKey, catName, item, idx, safeId);
+  }).join('');
+
+  return (
+    '<div class="pa-cat-section" style="--pc:' + color + ';">' +
+      '<div class="pa-cat-header">' +
+        '<span class="pa-cat-icon">' + icon + '</span>' +
+        '<span class="pa-cat-label">' + label + '</span>' +
+        (items.length ? '<span class="pa-cat-count">' + items.length + '</span>' : '') +
+      '</div>' +
+      '<div class="pa-cat-items" id="pg-items-' + safeId + '">' +
+        itemsHtml +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function pgBuildPreviewIngredientRow(mealKey, catName, item, idx, safeIdBase) {
+  if (!item || !item.name) return '';
+  var alts = Array.isArray(item.alternatives) ? item.alternatives : [];
+  var hasAlts = alts.length > 0;
+  var qty     = (item.quantity !== null && item.quantity !== undefined)
+    ? item.quantity + ' ' + (item.unit || 'g')
+    : '';
+  var altId   = 'pg-alt-' + safeIdBase + '-' + idx;
+
+  var altsHtml = alts.map(function(alt) {
+    if (!alt || !alt.name) return '';
+    var altQty = (alt.quantity !== null && alt.quantity !== undefined)
+      ? alt.quantity + ' ' + (alt.unit || 'g')
+      : '';
+    return (
+      '<div class="pa-alt-row">' +
+        '<span class="pa-alt-bullet">↔</span>' +
+        '<div class="pa-alt-info">' +
+          '<span class="pa-alt-name">' + alt.name + '</span>' +
+          (altQty ? '<span class="pa-alt-qty">' + altQty + '</span>' : '') +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  return (
+    '<div class="pa-ing-row pa-ing-preview" id="pg-ing-' + safeIdBase + '-' + idx + '">' +
+      '<div class="pa-ing-main">' +
+        '<div class="pa-ing-info">' +
+          '<span class="pa-ing-name">' + item.name + '</span>' +
+          (qty ? '<span class="pa-ing-qty">' + qty + '</span>' : '') +
+        '</div>' +
+        (hasAlts
+          ? '<div class="pa-ing-actions">' +
+              '<button class="pa-alt-toggle active" ' +
+                      'title="Mostra/Nascondi alternative" ' +
+                      'onclick="togglePAAltSection && togglePAAltSection(\'' + altId + '\',this)">' +
+                '↔ ' + alts.length +
+              '</button>' +
+            '</div>'
+          : '') +
+      '</div>' +
+      (hasAlts
+        ? '<div class="pa-alt-section open" id="' + altId + '">' + altsHtml + '</div>'
+        : '') +
+    '</div>'
+  );
 }
 
 function pgBackToStep2() {
@@ -553,7 +750,12 @@ function pgApplyPlan() {
 
 function pgRequestVerification() {
   if (!pgState.draftPlan || typeof verifyGeneratedPlanWithAI !== 'function') {
-    pgState.verification = { status:'fail', reason:'not_available', risk:null, autoAdjusted:false };
+    pgState.verification = {
+      status:'fail',
+      reason:'La verifica automatica non è disponibile in questo momento.',
+      risk:null,
+      autoAdjusted:false
+    };
     renderPianoGenPage();
     return;
   }
@@ -590,24 +792,44 @@ function pgRequestVerification() {
     goal: p.goal || null
   };
 
+  if (typeof console !== 'undefined' && console.debug) {
+    console.debug('[pg] Verifica AI: profilo', JSON.stringify(profileSummary), 'riepilogo piano', JSON.stringify(summary).substring(0, 150) + '…');
+  }
+
   verifyGeneratedPlanWithAI(profileSummary, summary, function(res) {
     if (!res) {
-      pgState.verification = { status:'fail', reason:'no_response', risk:null, autoAdjusted:false };
+      pgState.verification = {
+        status:'fail',
+        reason:'La verifica automatica non ha restituito risposta, ma puoi usare comunque questo piano come base.',
+        risk:null,
+        autoAdjusted:false
+      };
     } else if (res.verified) {
       pgState.verification = {
         status:'ok',
-        reason:res.reason || null,
+        reason:res.reason || 'Il piano risulta globalmente coerente per un uso di base.',
         risk:res.risk || null,
         autoAdjusted:false
       };
     } else {
-      var adjusted = pgAutoAdjustPlanIfNeeded(res);
-      pgState.verification = {
-        status: adjusted ? 'ok' : 'fail',
-        reason: res.reason || null,
-        risk: res.risk || null,
-        autoAdjusted: adjusted
-      };
+      var code = res.reason || '';
+      var isHardError = (code === 'parse_error' || code === 'invalid_format' || code === 'no_response');
+      if (isHardError) {
+        pgState.verification = {
+          status:'fail',
+          reason:'Non siamo riusciti a valutare automaticamente il piano. Puoi comunque salvarlo e farlo valutare al tuo professionista.',
+          risk:res.risk || null,
+          autoAdjusted:false
+        };
+      } else {
+        var adjusted = pgAutoAdjustPlanIfNeeded(res);
+        pgState.verification = {
+          status: adjusted ? 'ok' : 'fail',
+          reason: res.reason || 'Il piano potrebbe non essere ottimale; sono state applicate piccole correzioni automatiche.',
+          risk: res.risk || null,
+          autoAdjusted: adjusted
+        };
+      }
     }
     renderPianoGenPage();
   });
@@ -735,6 +957,7 @@ function pgBuildDietPrefsCard() {
 }
 
 function pgToggleDietPref(key) {
+  pgCaptureProfileFromInputs();
   if (typeof dietProfile === 'undefined' || !dietProfile) dietProfile = {};
   dietProfile[key] = !Boolean(dietProfile[key]);
   // Vegano implica vegetariano
@@ -745,6 +968,7 @@ function pgToggleDietPref(key) {
 }
 
 function pgAddAllergen() {
+  pgCaptureProfileFromInputs();
   var inp = document.getElementById('pgAllergenInput');
   if (!inp) return;
   var val = inp.value.trim();
@@ -760,6 +984,7 @@ function pgAddAllergen() {
 }
 
 function pgRemoveAllergen(name) {
+  pgCaptureProfileFromInputs();
   if (typeof dietProfile === 'undefined' || !dietProfile || !Array.isArray(dietProfile.allergenici)) return;
   dietProfile.allergenici = dietProfile.allergenici.filter(function(a) { return a !== name; });
   if (typeof saveData === 'function') saveData();

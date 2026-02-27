@@ -202,19 +202,19 @@ function _renderStep0Choice() {
   var html =
     '<div class="wizard-progress"></div>' +
     '<div class="ob-step0-wrap">' +
-      '<p class="ob-step0-intro">Scegli come vuoi iniziare a configurare il tuo piano alimentare.</p>' +
+      '<p class="ob-step0-intro">Scegli da dove partire con il tuo piano alimentare.</p>' +
       '<div class="ob-step0-grid">' +
-        '<div class="rc-card ob-step0-card">' +
+        '<div class="ob-step0-card rc-card">' +
           '<div class="ob-step0-icon">📄</div>' +
-          '<div class="ob-step0-title">Ho già un piano alimentare</div>' +
-          '<div class="ob-step0-sub">Inserisci rapidamente il piano che hai ricevuto (nutrizionista, medico, ecc.). Potrai sempre modificarlo.</div>' +
-          '<button class="btn btn-primary" onclick="obStartManualOnboarding()">Inserisci piano esistente</button>' +
+          '<div class="ob-step0-title">Ho già un piano</div>' +
+          '<div class="ob-step0-sub">Trascrivi il piano che hai ricevuto (nutrizionista, medico, ecc.).</div>' +
+          '<button class="ob-step0-cta" onclick="obStartManualOnboarding()">Inserisci piano esistente</button>' +
         '</div>' +
-        '<div class="rc-card ob-step0-card">' +
+        '<div class="ob-step0-card rc-card">' +
           '<div class="ob-step0-icon">🤖</div>' +
-          '<div class="ob-step0-title">Genera il tuo piano alimentare</div>' +
-          '<div class="ob-step0-sub">Rispondi a poche domande: l\'app calcolerà fabbisogni e proporrà un piano di base, sempre modificabile.</div>' +
-          '<button class="btn btn-secondary" onclick="obStartGeneratedPlan()">Genera il piano</button>' +
+          '<div class="ob-step0-title">Genera il piano con l\'app</div>' +
+          '<div class="ob-step0-sub">Rispondi a poche domande: ti proponiamo una base già pronta, sempre modificabile.</div>' +
+          '<button class="ob-step0-cta" onclick="obStartGeneratedPlan()">Genera un nuovo piano</button>' +
         '</div>' +
       '</div>' +
     '</div>';

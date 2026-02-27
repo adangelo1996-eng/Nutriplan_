@@ -1,0 +1,13 @@
+{
+  "name": "nutriplan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Piano alimentare NutriPlan - E2E tests",
+  "scripts": {
+    "test:e2e": "node scripts/ensure-test-config.js && playwright test",
+    "test:e2e:ui": "node scripts/ensure-test-config.js && playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}
