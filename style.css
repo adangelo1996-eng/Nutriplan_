@@ -542,12 +542,13 @@ a:hover { text-decoration: underline; }
 .form-group > label,
 .form-group > .field-label {
   display: block;
-  font-size: .68rem;
+  font-size: .7rem;
   font-weight: 700;
   color: var(--text-light);
-  letter-spacing: .08em;
+  letter-spacing: .06em;
   text-transform: uppercase;
-  margin-bottom: 7px;
+  margin-bottom: 8px;
+  line-height: 1.3;
   transition: color var(--t);
 }
 .form-group:focus-within > label,
@@ -954,7 +955,7 @@ textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
   box-shadow: 0 4px 14px rgba(61,139,111,.3); transform: translateY(-1px);
 }
 .meal-btn-icon  { font-size: 1.4rem; }
-.meal-btn-label { font-size: .68rem; font-weight: 800; color: var(--text-mid); letter-spacing: .02em; }
+.meal-btn-label { font-size: .78rem; font-weight: 800; color: var(--text-mid); letter-spacing: .02em; text-align: center; line-height: 1.2; }
 .meal-btn.active .meal-btn-label { color: rgba(255,255,255,.9); }
 .meal-btn-count {
   font-size: .6rem; font-weight: 800;

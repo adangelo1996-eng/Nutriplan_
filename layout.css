@@ -14,28 +14,7 @@
   margin-bottom: var(--nav-h);
   overflow-x: hidden;
   position: relative;
-}
-
-/* Swipe come pagina di libro: transizione slide 3D */
-.app-main.swipe-book .page {
-  transition: transform .35s cubic-bezier(0.32, 0.72, 0, 1),
-              opacity .3s ease;
-}
-.app-main.swipe-book .page.swipe-out-left {
-  transform: translateX(-100%) scale(0.98);
-  opacity: 0.3;
-}
-.app-main.swipe-book .page.swipe-out-right {
-  transform: translateX(100%) scale(0.98);
-  opacity: 0.3;
-}
-.app-main.swipe-book .page.swipe-in-from-right {
-  transform: translateX(0);
-  display: block;
-}
-.app-main.swipe-book .page.swipe-in-from-left {
-  transform: translateX(0);
-  display: block;
+  touch-action: pan-y;
 }
 
 /* FIX contenimento pagine:
@@ -95,22 +74,33 @@
   margin-bottom: 22px;
   flex-wrap: wrap;
 }
+.page-header > div:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
 .page-header-title {
   font-size: 1.15rem;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.25;
+  word-wrap: break-word;
 }
 .page-header-sub {
   font-size: .74rem;
   color: var(--text-light);
   margin-top: 4px;
   font-weight: 600;
+  line-height: 1.3;
 }
 .page-header-actions {
   display: flex;
   gap: 8px;
   align-items: center;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+@media (max-width: 480px) {
+  .page-header-actions { gap: 6px; }
 }
 
 @media (min-width: 768px) {
@@ -169,12 +159,13 @@
 .form-group > label,
 .form-group > .field-label {
   display: block;
-  font-size: .68rem;
+  font-size: .7rem;
   font-weight: 700;
   color: var(--text-light);
-  letter-spacing: .08em;
+  letter-spacing: .06em;
   text-transform: uppercase;
-  margin-bottom: 7px;
+  margin-bottom: 8px;
+  line-height: 1.3;
   transition: color var(--t);
 }
 .form-group:focus-within > label,

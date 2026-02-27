@@ -1005,8 +1005,6 @@ function enterApp() {
   updateDateLabel();
   goToPage('piano-alimentare');
 
-  if (typeof initSwipePages === 'function') initSwipePages();
-
   /* Prima mostra onboarding (piano alimentare), poi tutorial */
   if (typeof checkOnboarding === 'function') {
     checkOnboarding();
@@ -1051,97 +1049,6 @@ function goToPage(key) {
     'profilo':          function() { if (typeof renderProfilo          === 'function') renderProfilo(); }
   };
   if (renders[key]) renders[key]();
-}
-
-/* ── Swipe tra pagine (effetto libro) ──────────────────── */
-var SWIPE_PAGE_ORDER = ['piano','piano-alimentare','dispensa','ricette','spesa','statistiche'];
-var _swipeStartX = 0;
-var _swipeAnimating = false;
-
-function initSwipePages() {
-  if (window._swipePagesInited) return;
-  window._swipePagesInited = true;
-  var container = document.getElementById('appMain') || document.querySelector('.app-inner') || document.body;
-  if (!container) return;
-  container.addEventListener('touchstart', function(e) {
-    if (e.touches.length === 1) _swipeStartX = e.touches[0].clientX;
-  }, { passive: true });
-  container.addEventListener('touchend', function(e) {
-    if (e.changedTouches.length !== 1 || _swipeAnimating) return;
-    var endX = e.changedTouches[0].clientX;
-    var delta = _swipeStartX - endX;
-    var threshold = 80;
-    var idx = SWIPE_PAGE_ORDER.indexOf(currentPage);
-    if (idx === -1) return;
-    var main = document.getElementById('appMain');
-    var currentEl = main ? main.querySelector('.page.active') : null;
-    if (!main || !currentEl) return;
-    if (delta > threshold && idx < SWIPE_PAGE_ORDER.length - 1) {
-      e.preventDefault();
-      _swipeAnimating = true;
-      var nextKey = SWIPE_PAGE_ORDER[idx + 1];
-      var nextEl = document.getElementById('page-' + nextKey);
-      if (!nextEl) { _swipeAnimating = false; return; }
-      main.classList.add('swipe-book');
-      nextEl.style.display = 'block';
-      nextEl.style.transform = 'translateX(100%)';
-      nextEl.classList.add('swipe-in-from-right');
-      currentEl.classList.add('swipe-out-left');
-      requestAnimationFrame(function() {
-        nextEl.style.transform = 'translateX(0)';
-        currentEl.style.transform = 'translateX(-100%) scale(0.98)';
-      });
-      setTimeout(function() {
-        currentEl.classList.remove('active', 'swipe-out-left');
-        currentEl.style.transform = '';
-        nextEl.classList.add('active');
-        nextEl.classList.remove('swipe-in-from-right');
-        nextEl.style.transform = '';
-        main.classList.remove('swipe-book');
-        currentPage = nextKey;
-        if (typeof goToPage === 'function') {
-          document.querySelectorAll('.page').forEach(function(p) { p.style.display = ''; });
-          nextEl.style.display = 'block';
-          var renders = { 'piano': function() { if (typeof renderPiano === 'function') renderPiano(); }, 'piano-alimentare': function() { if (typeof renderPianoAlimentare === 'function') renderPianoAlimentare(); }, 'dispensa': function() { if (typeof renderFridge === 'function') renderFridge(); }, 'ricette': function() { if (typeof renderRicette === 'function') renderRicette(); }, 'spesa': function() { if (typeof renderSpesa === 'function') renderSpesa(); }, 'statistiche': function() { if (typeof renderStats === 'function') renderStats(); } };
-          if (renders[nextKey]) renders[nextKey]();
-          document.querySelectorAll('.sidebar-nav .nav-tab').forEach(function(t) { t.classList.toggle('active', t.id === 'st-' + nextKey); });
-          document.querySelectorAll('.bottom-nav .nav-tab').forEach(function(t) { t.classList.toggle('active', t.id === 'bn-' + nextKey); });
-        }
-        _swipeAnimating = false;
-      }, 350);
-    } else if (delta < -threshold && idx > 0) {
-      e.preventDefault();
-      _swipeAnimating = true;
-      var prevKey = SWIPE_PAGE_ORDER[idx - 1];
-      var prevEl = document.getElementById('page-' + prevKey);
-      if (!prevEl) { _swipeAnimating = false; return; }
-      main.classList.add('swipe-book');
-      prevEl.style.display = 'block';
-      prevEl.style.transform = 'translateX(-100%)';
-      prevEl.classList.add('swipe-in-from-left');
-      currentEl.classList.add('swipe-out-right');
-      requestAnimationFrame(function() {
-        prevEl.style.transform = 'translateX(0)';
-        currentEl.style.transform = 'translateX(100%) scale(0.98)';
-      });
-      setTimeout(function() {
-        currentEl.classList.remove('active', 'swipe-out-right');
-        currentEl.style.transform = '';
-        prevEl.classList.add('active');
-        prevEl.classList.remove('swipe-in-from-left');
-        prevEl.style.transform = '';
-        main.classList.remove('swipe-book');
-        currentPage = prevKey;
-        document.querySelectorAll('.page').forEach(function(p) { p.style.display = ''; });
-        prevEl.style.display = 'block';
-        var renders = { 'piano': function() { if (typeof renderPiano === 'function') renderPiano(); }, 'piano-alimentare': function() { if (typeof renderPianoAlimentare === 'function') renderPianoAlimentare(); }, 'dispensa': function() { if (typeof renderFridge === 'function') renderFridge(); }, 'ricette': function() { if (typeof renderRicette === 'function') renderRicette(); }, 'spesa': function() { if (typeof renderSpesa === 'function') renderSpesa(); }, 'statistiche': function() { if (typeof renderStats === 'function') renderStats(); } };
-        if (renders[prevKey]) renders[prevKey]();
-        document.querySelectorAll('.sidebar-nav .nav-tab').forEach(function(t) { t.classList.toggle('active', t.id === 'st-' + prevKey); });
-        document.querySelectorAll('.bottom-nav .nav-tab').forEach(function(t) { t.classList.toggle('active', t.id === 'bn-' + prevKey); });
-        _swipeAnimating = false;
-      }, 350);
-    }
-  }, { passive: false });
 }
 
 /* ── switchPianoTab / switchRicetteTab ────────────────── */

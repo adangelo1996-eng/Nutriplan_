@@ -1,3 +1,112 @@
+/**
+ * Esporta il piano alimentare come pagina stampabile (PDF via Stampa → Salva come PDF).
+ * Layout minimal e ordinato, coerente con l'app, utilizzabile come supporto cartaceo.
+ */
+function exportPianoToPDF() {
+  var MEAL_LABELS = { colazione: 'Colazione', spuntino: 'Spuntino', pranzo: 'Pranzo', merenda: 'Merenda', cena: 'Cena' };
+  var MEALS_ORDER = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
+  var CAT_ORDER = [
+    '🥩 Carne', '🐟 Pesce', '🥛 Latticini e Uova', '🌾 Cereali e Legumi',
+    '🥦 Verdure', '🍎 Frutta', '🥑 Grassi e Condimenti', '🍫 Dolci e Snack', '🧂 Cucina', '🧂 Altro'
+  ];
+  var MONTHS_IT = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+
+  var dateLabel = 'Piano di riferimento';
+  if (typeof selectedDateKey !== 'undefined' && selectedDateKey) {
+    var d = new Date(selectedDateKey + 'T12:00:00');
+    if (!isNaN(d.getTime())) {
+      dateLabel = d.getDate() + ' ' + MONTHS_IT[d.getMonth()] + ' ' + d.getFullYear();
+    }
+  } else {
+    var today = new Date();
+    dateLabel = today.getDate() + ' ' + MONTHS_IT[today.getMonth()] + ' ' + today.getFullYear();
+  }
+
+  var hasAny = false;
+  var mealBlocks = '';
+  MEALS_ORDER.forEach(function(mealKey) {
+    var plan = (typeof pianoAlimentare !== 'undefined' && pianoAlimentare && pianoAlimentare[mealKey]) ? pianoAlimentare[mealKey] : {};
+    var catOrdered = [];
+    CAT_ORDER.forEach(function(cat) {
+      var arr = Array.isArray(plan[cat]) ? plan[cat] : [];
+      if (arr.length) catOrdered.push({ cat: cat, items: arr });
+    });
+    var restCats = Object.keys(plan).filter(function(c) { return CAT_ORDER.indexOf(c) === -1; });
+    restCats.forEach(function(c) {
+      var arr = Array.isArray(plan[c]) ? plan[c] : [];
+      if (arr.length) catOrdered.push({ cat: c, items: arr });
+    });
+    if (!catOrdered.length) return;
+
+    hasAny = true;
+    var catRows = '';
+    catOrdered.forEach(function(block) {
+      var catName = (block.cat && block.cat.replace) ? block.cat.replace(/^[^\s]+\s/, '') : block.cat;
+      block.items.forEach(function(i) {
+        if (!i || !i.name) return;
+        var qty = (i.quantity != null && i.quantity !== '') ? (i.quantity + ' ' + (i.unit || 'g')) : '—';
+        catRows += '<tr><td class="piano-pdf-ing">' + escapeHtml(i.name) + '</td><td class="piano-pdf-qty">' + escapeHtml(qty) + '</td></tr>';
+      });
+    });
+    mealBlocks +=
+      '<div class="piano-pdf-meal">' +
+        '<div class="piano-pdf-meal-title">' + MEAL_LABELS[mealKey] + '</div>' +
+        '<table class="piano-pdf-table"><tbody>' + catRows + '</tbody></table>' +
+      '</div>';
+  });
+
+  if (!hasAny) {
+    if (typeof showToast === 'function') showToast('Il piano è vuoto. Aggiungi ingredienti dal Piano alimentare.', 'warning');
+    return;
+  }
+
+  var css =
+    '*{box-sizing:border-box;margin:0;padding:0;}' +
+    'body{font-family:\'Poppins\',-apple-system,sans-serif;font-size:11pt;color:#182420;line-height:1.5;background:#fff;padding:28px 32px;max-width:720px;margin:0 auto;}' +
+    '.piano-pdf-head{text-align:center;padding-bottom:24px;border-bottom:2px solid #e2ece7;margin-bottom:28px;}' +
+    '.piano-pdf-head h1{font-size:1.35rem;font-weight:800;color:#182420;letter-spacing:-.02em;}' +
+    '.piano-pdf-head .sub{font-size:.9rem;color:#3d8b6f;font-weight:600;margin-top:4px;}' +
+    '.piano-pdf-head .date{font-size:.85rem;color:#475c53;margin-top:8px;}' +
+    '.piano-pdf-meal{page-break-inside:avoid;margin-bottom:24px;}' +
+    '.piano-pdf-meal-title{font-size:1rem;font-weight:700;color:#3d8b6f;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #e2ece7;}' +
+    '.piano-pdf-table{width:100%;border-collapse:collapse;font-size:10pt;}' +
+    '.piano-pdf-table td{padding:6px 10px 6px 0;border-bottom:1px solid #f0f4f2;vertical-align:top;}' +
+    '.piano-pdf-table tr:last-child td{border-bottom:none;}' +
+    '.piano-pdf-ing{color:#182420;}' +
+    '.piano-pdf-qty{text-align:right;white-space:nowrap;color:#475c53;font-weight:500;}' +
+    '.piano-pdf-footer{margin-top:32px;padding-top:16px;border-top:1px solid #e2ece7;font-size:.8rem;color:#8aa89e;text-align:center;}' +
+    '@media print{body{padding:20px 28px;} .piano-pdf-meal{page-break-inside:avoid;}}';
+
+  function escapeHtml(s) {
+    if (s == null) return '';
+    var t = String(s);
+    return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  var html =
+    '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>Piano alimentare — NutriPlan — ' + escapeHtml(dateLabel) + '</title>' +
+    '<style>' + css + '</style></head><body>' +
+    '<div class="piano-pdf-head">' +
+      '<h1>Piano alimentare</h1>' +
+      '<div class="sub">NutriPlan</div>' +
+      '<div class="date">' + escapeHtml(dateLabel) + '</div>' +
+    '</div>' +
+    mealBlocks +
+    '<div class="piano-pdf-footer">Esportato da NutriPlan · Stampa o Salva come PDF per conservare il foglio.</div>' +
+    '<script>window.onload=function(){setTimeout(function(){window.print();},300);}<\/script>' +
+    '</body></html>';
+
+  var win = window.open('', '_blank');
+  if (!win) {
+    if (typeof showToast === 'function') showToast('Abilita i popup per aprire la versione stampabile.', 'warning');
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
 function exportPDF() {
   var MEAL_LABELS  = { colazione:'Colazione', spuntino:'Spuntino', pranzo:'Pranzo', merenda:'Merenda', cena:'Cena' };
   var MEALS_ORDER  = ['colazione','spuntino','pranzo','merenda','cena'];
