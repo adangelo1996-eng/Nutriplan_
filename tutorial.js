@@ -310,6 +310,11 @@ function _positionStep(step) {
     return;
   }
 
+  // Assicura che l'elemento target sia visibile nello schermo
+  try {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+  } catch(e) {}
+
   var rect = el.getBoundingClientRect();
   var pad  = 10;
 

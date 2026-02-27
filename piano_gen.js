@@ -23,7 +23,9 @@ var pgState = {
   draftPlan: null,
   verification: {
     status: 'idle', // idle | pending | ok | fail
-    reason: null
+    reason: null,
+    risk: null,
+    autoAdjusted: false
   }
 };
 
@@ -47,11 +49,16 @@ function renderPianoGenPage() {
 function buildPgStep1() {
   var p = pgState.profile;
   return '' +
+    '<div style="margin-bottom:10px;display:flex;gap:8px;font-size:.78em;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;">' +
+      '<span style="color:var(--primary);">1 • Profilo</span>' +
+      '<span>2 • Fabbisogno</span>' +
+      '<span>3 • Piano</span>' +
+    '</div>' +
     '<div class="rc-card" style="margin-bottom:16px;">' +
       '<div style="padding:18px 18px 4px;">' +
-        '<div style="font-weight:700;font-size:1rem;margin-bottom:4px;">1. Dati di profilo</div>' +
+        '<div style="font-weight:700;font-size:1rem;margin-bottom:4px;">Raccontaci qualcosa di te</div>' +
         '<p style="font-size:.85em;color:var(--text-3);margin-bottom:14px;">' +
-          'Questi dati servono solo per calcolare un piano di base. Non vengono mai mostrati pubblicamente.' +
+          'Useremo pochi dati essenziali per proporti un piano di base. Tutto resta privato e modificabile in qualsiasi momento.' +
         '</p>' +
         '<div class="row gap-12" style="margin-bottom:10px;">' +
           '<div class="form-group" style="flex:1;min-width:120px;">' +
@@ -100,17 +107,7 @@ function buildPgStep1() {
         '</div>' +
       '</div>' +
     '</div>' +
-    '<div class="rc-card" style="margin-bottom:12px;">' +
-      '<div style="padding:16px 18px;">' +
-        '<div style="font-weight:700;font-size:.95em;margin-bottom:6px;">Vincoli dieta (opzionali)</div>' +
-        '<p style="font-size:.82em;color:var(--text-3);margin-bottom:6px;">' +
-          'Le preferenze che hai impostato nel Profilo (es. vegetariano, senza glutine, allergeni) verranno considerate per escludere ingredienti non compatibili.' +
-        '</p>' +
-        '<p style="font-size:.8em;color:var(--text-3);margin:0;">' +
-          'Puoi modificare i vincoli in qualsiasi momento dalla sezione Profilo.' +
-        '</p>' +
-      '</div>' +
-    '</div>' +
+    pgBuildDietPrefsCard() +
     '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:6px;">' +
       '<button class="btn btn-secondary" onclick="goToPage && goToPage(\'piano-alimentare\')">Annulla</button>' +
       '<button class="btn btn-primary" onclick="pgNextFromStep1()">Prosegui →</button>' +
@@ -192,6 +189,10 @@ function buildPgStep2() {
   var p = pgState.profile;
   var m = pgState.macros || { kcal: 0, carbsG: 0, proteinG: 0, fatG: 0 };
   var factor = pgState.factor || 1;
+  var goalLabel =
+    p.goal === 'dimagrimento' ? 'Perdita di peso' :
+    p.goal === 'massa'        ? 'Aumento massa muscolare' :
+    'Mantenimento';
 
   var dist = {
     colazione: 0.25,
@@ -208,23 +209,23 @@ function buildPgStep2() {
   return '' +
     '<div class="rc-card" style="margin-bottom:16px;">' +
       '<div style="padding:18px 18px 10px;">' +
-        '<div style="font-weight:700;font-size:1rem;margin-bottom:6px;">2. Riepilogo fabbisogno</div>' +
+        '<div style="font-weight:700;font-size:1rem;margin-bottom:6px;">Uno sguardo al tuo fabbisogno</div>' +
         '<p style="font-size:.84em;color:var(--text-3);margin-bottom:10px;">' +
-          'Calcoliamo un fabbisogno indicativo in base ai dati inseriti. Non sostituisce il parere di un professionista.' +
+          'Questi valori sono indicativi e servono solo come base per organizzare i pasti. Per indicazioni personalizzate rivolgiti sempre a un professionista.' +
         '</p>' +
         '<div class="row gap-12" style="margin-bottom:10px;">' +
           '<div style="flex:1;min-width:120px;">' +
-            '<div style="font-size:.8em;color:var(--text-3);">Calorie giornaliere stimate</div>' +
+            '<div style="font-size:.8em;color:var(--text-3);">Energia giornaliera stimata</div>' +
             '<div style="font-weight:800;font-size:1.1em;">' + m.kcal + ' kcal</div>' +
           '</div>' +
           '<div style="flex:1;min-width:120px;">' +
-            '<div style="font-size:.8em;color:var(--text-3);">Fattore rispetto al piano base</div>' +
-            '<div style="font-weight:800;font-size:1.1em;">× ' + factor.toFixed(2) + '</div>' +
+            '<div style="font-size:.8em;color:var(--text-3);">Obiettivo</div>' +
+            '<div style="font-weight:600;font-size:.95em;">' + goalLabel + '</div>' +
           '</div>' +
         '</div>' +
         '<div class="row gap-12">' +
           '<div style="flex:1;min-width:120px;">' +
-            '<div style="font-size:.8em;color:var(--text-3);">Carboidrati</div>' +
+            '<div style="font-size:.8em;color:var(--text-3);">Carboidrati (circa metà energia)</div>' +
             '<div style="font-weight:600;font-size:.95em;">' + m.carbsG + ' g/die</div>' +
           '</div>' +
           '<div style="flex:1;min-width:120px;">' +
@@ -263,7 +264,7 @@ function pgBackToStep1() {
 
 function pgBuildPlanAndGo() {
   pgState.draftPlan = pgGeneratePlanFromDefault();
-  pgState.verification = { status: 'pending', reason: null };
+  pgState.verification = { status: 'pending', reason: null, risk: null, autoAdjusted: false };
   pgState.step = 3;
   renderPianoGenPage();
   pgRequestVerification();
@@ -290,6 +291,42 @@ function pgGeneratePlanFromDefault() {
     return '🧂 Altro';
   }
 
+  // Costruisci un pool di ingredienti possibili per categoria (per alternative)
+  var altPoolByCat = {};
+  var seenByCatKey = {};
+
+  meals.forEach(function(mk) {
+    var src = defaultMealPlan[mk] || {};
+    ['principale','contorno','frutta','extra'].forEach(function(legacyCat) {
+      var arr = src[legacyCat];
+      if (!Array.isArray(arr)) return;
+      arr.forEach(function(item) {
+        if (!item || !item.name) return;
+        if (!pgIsIngredientAllowed(item.name)) return;
+        var cat = getCat(item.name);
+        var key = (cat || '🧂 Altro') + '|' + item.name.toLowerCase();
+        if (seenByCatKey[key]) return;
+        seenByCatKey[key] = true;
+        if (!Array.isArray(altPoolByCat[cat])) altPoolByCat[cat] = [];
+        altPoolByCat[cat].push(item.name);
+      });
+    });
+  });
+
+  // Estendi il pool con gli ingredienti di default, se presenti
+  if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
+    defaultIngredients.forEach(function(di) {
+      if (!di || !di.name) return;
+      if (!pgIsIngredientAllowed(di.name)) return;
+      var cat = di.category || getCat(di.name);
+      var key = (cat || '🧂 Altro') + '|' + di.name.toLowerCase();
+      if (seenByCatKey[key]) return;
+      seenByCatKey[key] = true;
+      if (!Array.isArray(altPoolByCat[cat])) altPoolByCat[cat] = [];
+      altPoolByCat[cat].push(di.name);
+    });
+  }
+
   meals.forEach(function(mk) {
     var src = defaultMealPlan[mk] || {};
     ['principale','contorno','frutta','extra'].forEach(function(legacyCat) {
@@ -304,11 +341,24 @@ function pgGeneratePlanFromDefault() {
         if (!scaled || scaled <= 0) scaled = baseQty;
         var cat = getCat(item.name);
         if (!Array.isArray(newPlan[mk][cat])) newPlan[mk][cat] = [];
+        var nameLower = item.name.toLowerCase();
+        var alts = [];
+        var pool = altPoolByCat[cat] || [];
+        for (var i = 0; i < pool.length && alts.length < 3; i++) {
+          var candName = pool[i];
+          if (!candName) continue;
+          if (candName.toLowerCase() === nameLower) continue;
+          alts.push({
+            name: candName,
+            quantity: scaled,
+            unit: item.unit || 'g'
+          });
+        }
         newPlan[mk][cat].push({
           name: item.name,
           quantity: scaled,
           unit: item.unit || 'g',
-          alternatives: []
+          alternatives: alts
         });
       });
     });
@@ -381,11 +431,35 @@ function buildPgStep3() {
   if (v.status === 'pending') {
     badge = '<span class="rc-badge" style="background:var(--bg-subtle);color:var(--text-2);font-size:.75em;">Verifica AI in corso…</span>';
   } else if (v.status === 'ok') {
-    badge = '<span class="rc-badge" style="background:rgba(34,197,94,.1);color:#16a34a;font-size:.75em;">✅ Piano verificato da AI</span>';
+    if (v.autoAdjusted) {
+      badge = '<span class="rc-badge" style="background:rgba(234,179,8,.12);color:#92400e;font-size:.75em;">⚠ AI ha suggerito correzioni — piano aggiornato automaticamente</span>';
+    } else {
+      badge = '<span class="rc-badge" style="background:rgba(34,197,94,.1);color:#16a34a;font-size:.75em;">✅ Piano verificato da AI</span>';
+    }
   } else if (v.status === 'fail') {
-    badge = '<span class="rc-badge" style="background:rgba(249,115,22,.08);color:#ea580c;font-size:.75em;">⚠ Verifica AI non disponibile</span>';
+    var r = v.reason || '';
+    var msg;
+    if (r === 'not_available' || r === 'no_response' || r === 'parse_error' || /API key Gemini non configurata/.test(r)) {
+      msg = 'ℹ Verifica AI non attiva';
+      badge = '<span class="rc-badge" style="background:var(--bg-subtle);color:var(--text-3);font-size:.75em;">' + msg + '</span>';
+    } else {
+      msg = '⚠ Verifica AI non riuscita';
+      badge = '<span class="rc-badge" style="background:rgba(249,115,22,.08);color:#ea580c;font-size:.75em;">' + msg + '</span>';
+    }
   } else {
     badge = '<span class="rc-badge" style="background:var(--bg-subtle);color:var(--text-3);font-size:.75em;">Verifica AI opzionale</span>';
+  }
+
+  var reasonHtml = '';
+  if (v.reason && (v.status === 'ok' || v.status === 'fail')) {
+    var safeReason = String(v.reason)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    reasonHtml =
+      '<p style="font-size:.78em;color:var(--text-3);margin-top:4px;margin-bottom:0;">' +
+        safeReason +
+      '</p>';
   }
 
   var headerCard =
@@ -396,6 +470,7 @@ function buildPgStep3() {
           '<p style="font-size:.82em;color:var(--text-3);margin:0;">' +
             'Questa è una base di partenza calcolata automaticamente. Puoi modificarla in qualsiasi momento dal Piano Alimentare.' +
           '</p>' +
+          reasonHtml +
         '</div>' +
         badge +
       '</div>' +
@@ -478,7 +553,7 @@ function pgApplyPlan() {
 
 function pgRequestVerification() {
   if (!pgState.draftPlan || typeof verifyGeneratedPlanWithAI !== 'function') {
-    pgState.verification = { status:'fail', reason:'not_available' };
+    pgState.verification = { status:'fail', reason:'not_available', risk:null, autoAdjusted:false };
     renderPianoGenPage();
     return;
   }
@@ -517,13 +592,176 @@ function pgRequestVerification() {
 
   verifyGeneratedPlanWithAI(profileSummary, summary, function(res) {
     if (!res) {
-      pgState.verification = { status:'fail', reason:'no_response' };
+      pgState.verification = { status:'fail', reason:'no_response', risk:null, autoAdjusted:false };
     } else if (res.verified) {
-      pgState.verification = { status:'ok', reason:res.reason || null };
+      pgState.verification = {
+        status:'ok',
+        reason:res.reason || null,
+        risk:res.risk || null,
+        autoAdjusted:false
+      };
     } else {
-      pgState.verification = { status:'fail', reason:res.reason || null };
+      var adjusted = pgAutoAdjustPlanIfNeeded(res);
+      pgState.verification = {
+        status: adjusted ? 'ok' : 'fail',
+        reason: res.reason || null,
+        risk: res.risk || null,
+        autoAdjusted: adjusted
+      };
     }
     renderPianoGenPage();
   });
 }
 
+function pgAutoAdjustPlanIfNeeded(aiRes) {
+  if (!aiRes || aiRes.verified) return false;
+  var risk = aiRes.risk || 'medium';
+  if (risk === 'low') return false;
+
+  var m = pgState.macros;
+  if (!m || !m.kcal) return false;
+
+  var origKcal = m.kcal;
+  var newKcal  = origKcal;
+
+  if (risk === 'high') {
+    var minK = 1400;
+    var maxK = 2800;
+    if (origKcal < minK) newKcal = minK;
+    else if (origKcal > maxK) newKcal = maxK;
+  } else {
+    var goal = (pgState.profile && pgState.profile.goal) || 'mantenimento';
+    if (goal === 'dimagrimento') {
+      newKcal = Math.round(origKcal * 1.05);
+    } else if (goal === 'massa') {
+      newKcal = Math.round(origKcal * 0.95);
+    } else {
+      newKcal = origKcal;
+    }
+  }
+
+  if (!newKcal || newKcal === origKcal) return false;
+
+  // Mantieni le proporzioni attuali tra macro
+  var totalKcal = origKcal;
+  var carbShare   = totalKcal ? (m.carbsG * 4)   / totalKcal : 0.5;
+  var proteinShare= totalKcal ? (m.proteinG * 4) / totalKcal : 0.25;
+  var fatShare    = totalKcal ? (m.fatG * 9)     / totalKcal : 0.25;
+
+  var carbsKcal   = Math.round(newKcal * carbShare);
+  var proteinKcal = Math.round(newKcal * proteinShare);
+  var fatKcal     = newKcal - carbsKcal - proteinKcal;
+
+  pgState.macros = {
+    kcal: newKcal,
+    carbsG: Math.round(carbsKcal / 4),
+    proteinG: Math.round(proteinKcal / 4),
+    fatG: Math.round(fatKcal / 9)
+  };
+
+  var factor = newKcal / PG_BASELINE_KCAL;
+  if (factor < 0.8) factor = 0.8;
+  if (factor > 1.4) factor = 1.4;
+  pgState.factor = factor;
+
+  pgState.draftPlan = pgGeneratePlanFromDefault();
+  return true;
+}
+
+/* ══════════════════════════════════════════════════
+   Vincoli dieta nel wizard (UI + handler)
+══════════════════════════════════════════════════ */
+function pgBuildDietPrefsCard() {
+  var dp = (typeof dietProfile !== 'undefined' && dietProfile) ? dietProfile : {};
+  var flags = [
+    { key:'vegetariano',  emoji:'🥦', label:'Vegetariano',    sub:'No carne, no pesce' },
+    { key:'vegano',       emoji:'🌱', label:'Vegano',          sub:'Nessun prodotto animale' },
+    { key:'senzaLattosio',emoji:'🥛', label:'Senza lattosio',  sub:'Evita latticini non specificati' },
+    { key:'senzaGlutine', emoji:'🌾', label:'Senza glutine',   sub:'Evita cereali con glutine' }
+  ];
+  var allergenici = Array.isArray(dp.allergenici) ? dp.allergenici : [];
+
+  var togglesHtml = flags.map(function(f) {
+    var on = Boolean(dp[f.key]);
+    return '' +
+      '<div class="settings-row" onclick="pgToggleDietPref(\'' + f.key + '\')" style="cursor:pointer;">' +
+        '<div class="settings-row-icon">' + f.emoji + '</div>' +
+        '<div class="settings-row-info">' +
+          '<div class="settings-row-label">' + f.label + '</div>' +
+          '<div class="settings-row-sub">' + f.sub + '</div>' +
+        '</div>' +
+        '<div class="diet-toggle' + (on ? ' diet-toggle-on' : '') + '">' +
+          '<div class="diet-toggle-knob"></div>' +
+        '</div>' +
+      '</div>';
+  }).join('');
+
+  var allergensHtml =
+    '<div style="padding:10px 16px 4px;border-top:1px solid var(--border);margin-top:4px;">' +
+      '<div style="font-size:.8em;font-weight:700;color:var(--text-2);margin-bottom:6px;">Allergie / ingredienti da evitare</div>' +
+      '<div id="pgAllergenTagsWrap" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">' +
+        (allergenici.length
+          ? allergenici.map(function(a) {
+              return '<span class="allergen-tag">' +
+                       a +
+                       '<button onclick="pgRemoveAllergen(\'' + a.replace(/'/g, "\\'") + '\')" aria-label="Rimuovi">✕</button>' +
+                     '</span>';
+            }).join('')
+          : '<span style="font-size:.8em;color:var(--text-3);font-style:italic;">Nessun ingrediente aggiunto</span>'
+        ) +
+      '</div>' +
+      '<div style="display:flex;gap:6px;">' +
+        '<input type="text" id="pgAllergenInput" placeholder="Es. arachidi, soia…" ' +
+               'style="flex:1;padding:7px 10px;border-radius:var(--r-md);border:1.5px solid var(--border);' +
+               'background:var(--bg-subtle);font-size:.86em;color:var(--text-1);outline:none;" ' +
+               'list="ingredientiAutocomplete" autocomplete="off" ' +
+               'oninput="if(typeof populateIngAutocomplete===\'function\')populateIngAutocomplete()" ' +
+               'onkeydown="if(event.key===\'Enter\')pgAddAllergen()">' +
+        '<button class="rc-btn rc-btn-primary" style="padding:7px 14px;font-size:.86em;" onclick="pgAddAllergen()">＋</button>' +
+      '</div>' +
+    '</div>';
+
+  return '' +
+    '<div class="rc-card" style="margin-bottom:12px;">' +
+      '<div style="padding:14px 16px 8px;">' +
+        '<div style="font-weight:700;font-size:.95em;margin-bottom:4px;">Preferenze alimentari per questo piano</div>' +
+        '<p style="font-size:.8em;color:var(--text-3);margin-bottom:8px;">' +
+          'Seleziona eventuali preferenze o allergie: il generatore terrà conto di queste informazioni per scegliere gli ingredienti.' +
+        '</p>' +
+      '</div>' +
+      togglesHtml +
+      allergensHtml +
+    '</div>';
+}
+
+function pgToggleDietPref(key) {
+  if (typeof dietProfile === 'undefined' || !dietProfile) dietProfile = {};
+  dietProfile[key] = !Boolean(dietProfile[key]);
+  // Vegano implica vegetariano
+  if (key === 'vegano' && dietProfile.vegano) dietProfile.vegetariano = true;
+  if (key === 'vegetariano' && !dietProfile.vegetariano) dietProfile.vegano = false;
+  if (typeof saveData === 'function') saveData();
+  renderPianoGenPage();
+}
+
+function pgAddAllergen() {
+  var inp = document.getElementById('pgAllergenInput');
+  if (!inp) return;
+  var val = inp.value.trim();
+  if (!val) return;
+  if (typeof dietProfile === 'undefined' || !dietProfile) dietProfile = {};
+  if (!Array.isArray(dietProfile.allergenici)) dietProfile.allergenici = [];
+  if (dietProfile.allergenici.indexOf(val) === -1) {
+    dietProfile.allergenici.push(val);
+    if (typeof saveData === 'function') saveData();
+    inp.value = '';
+    renderPianoGenPage();
+  }
+}
+
+function pgRemoveAllergen(name) {
+  if (typeof dietProfile === 'undefined' || !dietProfile || !Array.isArray(dietProfile.allergenici)) return;
+  dietProfile.allergenici = dietProfile.allergenici.filter(function(a) { return a !== name; });
+  if (typeof saveData === 'function') saveData();
+  renderPianoGenPage();
+}
