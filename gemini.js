@@ -922,6 +922,18 @@ function _extractVerifyResponseJson(text) {
   return null;
 }
 
+function _parseVerifyResponseFallback(str) {
+  if (!str || typeof str !== 'string') return null;
+  var verifiedMatch = str.match(/"verified"\s*:\s*(true|false)/i);
+  if (!verifiedMatch) return null;
+  var verified = verifiedMatch[1].toLowerCase() === 'true';
+  var riskMatch = str.match(/"risk"\s*:\s*"(low|medium|high)"/i);
+  var risk = riskMatch ? riskMatch[1] : null;
+  var reasonMatch = str.match(/"reason"\s*:\s*"((?:[^"\\]|\\.)*)/);
+  var reason = reasonMatch ? reasonMatch[1].replace(/\\"/g, '"').trim() : null;
+  return { verified: verified, reason: reason || null, risk: risk };
+}
+
 function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
   if (typeof callback !== 'function') callback = function () {};
 
@@ -1008,7 +1020,15 @@ function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
       if (typeof console !== 'undefined' && console.debug) {
         console.debug('[AI verifica piano] JSON.parse fallito:', e && e.message);
       }
-      callback({ verified: false, reason: 'parse_error' });
+      var fallback = _parseVerifyResponseFallback(jsonStr || text);
+      if (fallback) {
+        if (typeof console !== 'undefined' && console.debug) {
+          console.debug('[AI verifica piano] Fallback regex OK:', JSON.stringify(fallback));
+        }
+        callback(fallback);
+      } else {
+        callback({ verified: false, reason: 'parse_error' });
+      }
     }
-  }, { maxOutputTokens: 512, temperature: 0.1 });
+  }, { maxOutputTokens: 1024, temperature: 0.1 });
 }
