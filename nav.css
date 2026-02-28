@@ -294,6 +294,19 @@ body.app-visible .bottom-nav .nav-tab.active::after {
   min-width: 15px; height: 15px;
 }
 
+/* Mobile: nav scorrevole, label più grandi, nascondi Profilo */
+@media (max-width: 767px) {
+  .bottom-nav .nav-tab {
+    flex: 0 0 auto;
+    min-width: 64px;
+    max-width: 80px;
+  }
+  .bottom-nav .nav-label {
+    font-size: .72rem;
+  }
+  .bottom-nav #bn-profilo { display: none !important; }
+}
+
 /* Su schermi molto piccoli nasconde le label */
 @media (max-width: 359px) {
   .nav-label { display: none; }

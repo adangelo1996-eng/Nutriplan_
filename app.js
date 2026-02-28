@@ -9,7 +9,16 @@
 if ('serviceWorker' in navigator &&
     (location.protocol === 'https:' || location.protocol === 'http:')) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('sw.js').catch(function(e) {
+    navigator.serviceWorker.register('sw.js').then(function(reg) {
+      /* Controlla aggiornamenti SW al caricamento e quando l'utente torna alla tab */
+      function checkUpdate() {
+        if (reg && typeof reg.update === 'function') reg.update();
+      }
+      checkUpdate();
+      document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') checkUpdate();
+      });
+    }).catch(function(e) {
       console.warn('[NutriPlan] SW registration failed:', e);
     });
   });
@@ -1276,12 +1285,7 @@ function goToPage(key) {
     'piano':            function() { if (typeof renderPiano            === 'function') renderPiano(); },
     'piano-alimentare': function() { if (typeof renderPianoAlimentare  === 'function') renderPianoAlimentare(); },
     'piano-gen':        function() { if (typeof renderPianoGenPage     === 'function') renderPianoGenPage(); },
-    'dispensa':         function() {
-      // #region agent log
-      fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'0f4ae2'},body:JSON.stringify({sessionId:'0f4ae2',location:'app.js:goToPage',message:'dispensa render invoked',data:{key:key,hasRenderFridge:typeof renderFridge==='function'},timestamp:Date.now(),hypothesisId:'H1'})}).catch(function(){});
-      // #endregion
-      if (typeof renderFridge === 'function') renderFridge();
-    },
+    'dispensa':         function() { if (typeof renderFridge === 'function') renderFridge(); },
     'ricette':          function() { if (typeof renderRicette          === 'function') renderRicette(); },
     'spesa':            function() { if (typeof renderSpesa            === 'function') renderSpesa(); },
     'statistiche':      function() { if (typeof renderStats            === 'function') renderStats(); },

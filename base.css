@@ -610,6 +610,11 @@ body .landing-accedi-wrap * {
 }
 
 /* Responsive header */
+@media (max-width: 767px) {
+  .header-title           { display: none; }
+  .header-center,
+  .cloud-status           { display: none !important; }
+}
 @media (max-width: 480px) {
   .cloud-status           { padding: 3px 7px; max-width: 32px; }
   .cloud-status span      { display: none; }

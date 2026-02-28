@@ -16,6 +16,7 @@ var STATIC_ASSETS = [
   BASE_PATH + '/index.html',
   BASE_PATH + '/manifest.json',
   BASE_PATH + '/icon.svg',
+  BASE_PATH + '/icon-n.svg',
   BASE_PATH + '/base.css',
   BASE_PATH + '/nav.css',
   BASE_PATH + '/layout.css',
@@ -63,7 +64,16 @@ self.addEventListener('activate', function(e) {
         keys.filter(function(k) { return k !== CACHE_NAME && k.startsWith('nutriplan-v'); })
             .map(function(k) { console.log('[SW] Deleting old cache:', k); return caches.delete(k); })
       );
-    }).then(function() { self.clients.claim(); })
+    }).then(function() { return self.clients.claim(); })
+      .then(function() {
+        /* Forza reload di tutte le tab aperte per caricare la nuova versione */
+        return self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      })
+      .then(function(clients) {
+        clients.forEach(function(client) {
+          if (client.url && client.navigate) client.navigate(client.url);
+        });
+      })
   );
 });
 
