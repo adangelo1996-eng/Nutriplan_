@@ -1228,7 +1228,7 @@ function enterApp() {
 
   buildCalendarBar();
   updateDateLabel();
-  goToPage('piano-alimentare');
+  goToPage('casa');
 
   /* Onboarding: per utenti offline subito; per utenti loggati dopo loadFromCloud */
   if (typeof currentUser === 'undefined' || !currentUser) {
@@ -1262,7 +1262,7 @@ function goToHomepage() {
 
 /* ── goToPage() ── navigazione con i nuovi ID ─────────── */
 function goToPage(key) {
-  if (document.body.classList.contains('edit-day-mode') && key !== 'edit-day' && key !== 'piano' && key !== 'profilo') return;
+  if (document.body.classList.contains('edit-day-mode') && key !== 'edit-day' && key !== 'piano' && key !== 'profilo' && key !== 'casa') return;
   currentPage = key;
 
   /* Nasconde tutte le pagine */
@@ -1286,6 +1286,7 @@ function goToPage(key) {
 
   /* Render specifico per pagina */
   var renders = {
+    'casa':             function() { if (typeof renderCasa             === 'function') renderCasa(); },
     'piano':            function() { if (typeof renderPiano            === 'function') renderPiano(); },
     'piano-alimentare': function() { if (typeof renderPianoAlimentare  === 'function') renderPianoAlimentare(); },
     'piano-gen':        function() { if (typeof renderPianoGenPage     === 'function') renderPianoGenPage(); },

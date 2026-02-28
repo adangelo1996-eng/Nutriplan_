@@ -390,25 +390,22 @@ body .landing-accedi-wrap * {
 .landing-hero-line-1 { animation-delay: 0.1s; }
 .landing-hero-line-2 { animation-delay: 0.25s; }
 
-/* Nome utente: stesso giallo del cursore (#d4a84b) + animazione tabellone */
+/* Nome utente: stesso colore del titolo + animazione tabellone */
 .landing-hero-username {
   display: inline;
-  color: #d4a84b;
+  color: inherit;
   opacity: 0;
   transform: translateY(14px);
   animation: none;
 }
-#landingPage.landing-inverted .landing-hero-username {
-  color: #b8923f;
-}
 .landing-hero-username .landing-hero-n {
   color: transparent;
-  -webkit-text-stroke: 1.5px #d4a84b;
-  text-stroke: 1.5px #d4a84b;
+  -webkit-text-stroke: 1.5px #ffffff;
+  text-stroke: 1.5px #ffffff;
 }
 #landingPage.landing-inverted .landing-hero-username .landing-hero-n {
-  -webkit-text-stroke: 1.5px #b8923f;
-  text-stroke: 1.5px #b8923f;
+  -webkit-text-stroke: 1.5px #0d2218;
+  text-stroke: 1.5px #0d2218;
 }
 .landing-hero-username.landing-hero-username-visible {
   animation: landing-hero-in 0.7s ease 0.15s forwards;

@@ -102,6 +102,10 @@
   <div class="landing-cards-reveal" id="landingCardsReveal" aria-hidden="true">
     <p class="landing-cards-sub">Scegli dove andare</p>
     <div class="landing-nav-grid">
+      <button type="button" class="landing-nav-card landing-nav-card-casa" data-target-page="casa" onclick="openPageFromLanding('casa', event)">
+        <span class="landing-nav-card-label">Casa</span>
+        <span class="landing-nav-card-desc">Il tuo spazio, suggerimenti pasto</span>
+      </button>
       <button type="button" class="landing-nav-card" data-target-page="piano" onclick="openPageFromLanding('piano', event)">
         <span class="landing-nav-card-label">Oggi</span>
         <span class="landing-nav-card-desc">Ingredienti e ricette del giorno</span>
@@ -121,10 +125,6 @@
       <button type="button" class="landing-nav-card" data-target-page="spesa" onclick="openPageFromLanding('spesa', event)">
         <span class="landing-nav-card-label">Spesa</span>
         <span class="landing-nav-card-desc">Lista della spesa</span>
-      </button>
-      <button type="button" class="landing-nav-card" data-target-page="statistiche" onclick="openPageFromLanding('statistiche', event)">
-        <span class="landing-nav-card-label">Statistiche</span>
-        <span class="landing-nav-card-desc">Riepilogo settimanale</span>
       </button>
     </div>
   </div>
@@ -214,7 +214,10 @@
 
   <span class="sidebar-section-label">Oggi</span>
 
-  <button class="nav-tab active" id="st-piano" onclick="goToPage('piano')">
+  <button class="nav-tab nav-tab-casa active" id="st-casa" onclick="goToPage('casa')">
+    <span class="nav-label">Casa</span>
+  </button>
+  <button class="nav-tab" id="st-piano" onclick="goToPage('piano')">
     <span class="nav-label">Oggi</span>
   </button>
   <button class="nav-tab" id="st-piano-alimentare" onclick="goToPage('piano-alimentare')">
@@ -246,6 +249,20 @@
 ═════════════════════════════════════════════════════════════════ -->
 <main class="app-main" id="appMain" style="display:none">
 
+  <!-- ── CASA ────────────────────────────── -->
+  <div class="page active" id="page-casa">
+    <div class="page-header">
+      <div>
+        <div class="page-header-title">Casa</div>
+        <div class="page-header-sub">Il tuo spazio</div>
+      </div>
+      <div class="page-header-actions">
+        <button class="btn btn-secondary btn-small" onclick="startPageHelp && startPageHelp('casa')">❓ Aiuto</button>
+      </div>
+    </div>
+    <div id="casaContent"></div>
+  </div>
+
   <!-- ── PIANO ALIMENTARE ────────────────── -->
   <div class="page" id="page-piano-alimentare">
     <div class="page-header">
@@ -275,7 +292,7 @@
   </div>
 
   <!-- ── PIANO ────────────────────────── -->
-  <div class="page active" id="page-piano">
+  <div class="page" id="page-piano">
     <div class="page-header">
       <div>
         <div class="page-header-title">Cosa mangio oggi</div>
@@ -489,7 +506,11 @@
 ═════════════════════════════════════════════════════════════════ -->
 <nav class="bottom-nav" id="bottomNav" style="display:none">
   <div class="app-inner">
-    <button class="nav-tab active" id="bn-piano" onclick="goToPage('piano')">
+    <button class="nav-tab nav-tab-casa active" id="bn-casa" onclick="goToPage('casa')">
+      <span class="nav-icon"></span>
+      <span class="nav-label">Casa</span>
+    </button>
+    <button class="nav-tab" id="bn-piano" onclick="goToPage('piano')">
       <span class="nav-icon"></span>
       <span class="nav-label">Oggi</span>
     </button>
@@ -1376,6 +1397,7 @@
 <script src="firebase-config.js"></script>
 <script src="data.js"></script>
 <script src="storage.js"></script>
+<script src="casa.js"></script>
 <script src="piano.js"></script>
 <script src="piano_alimentare.js"></script>
 <script src="piano_gen.js"></script>

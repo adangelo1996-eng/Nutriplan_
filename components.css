@@ -1990,6 +1990,59 @@ body.app-visible .modal .modal-body .auth-modal-offline:hover {
 
 .landing-nav-card-icon { display: none; }
 
+/* Card Casa — giallo cursore + glassmorphism, prima tra tutte */
+.landing-nav-card-casa {
+  background: rgba(212, 168, 75, 0.25);
+  border: 1.5px solid rgba(212, 168, 75, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.landing-nav-card-casa:hover {
+  background: rgba(212, 168, 75, 0.4);
+  border-color: rgba(212, 168, 75, 0.7);
+}
+#landingPage.landing-inverted .landing-nav-card-casa {
+  background: rgba(212, 168, 75, 0.2);
+  border-color: rgba(212, 168, 75, 0.5);
+  color: #0d2218;
+}
+#landingPage.landing-inverted .landing-nav-card-casa:hover {
+  background: rgba(212, 168, 75, 0.35);
+}
+
+/* Tab Casa — giallo + glassmorphism, sempre */
+.nav-tab-casa {
+  color: #d4a84b;
+}
+.nav-tab-casa.active {
+  color: #d4a84b;
+  background: rgba(212, 168, 75, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-color: rgba(212, 168, 75, 0.4);
+}
+.nav-tab-casa.active .nav-icon { color: #d4a84b; }
+.nav-tab-casa.active::after { background: #d4a84b; }
+body.app-visible .bottom-nav .nav-tab-casa.active,
+body.app-visible .sidebar-nav .nav-tab-casa.active {
+  color: #d4a84b;
+  background: rgba(212, 168, 75, 0.25);
+  border-color: rgba(212, 168, 75, 0.5);
+}
+body.app-visible .bottom-nav .nav-tab-casa.active .nav-icon,
+body.app-visible .sidebar-nav .nav-tab-casa.active .nav-icon {
+  color: #d4a84b;
+}
+body.app-visible .bottom-nav .nav-tab-casa.active::after {
+  background: #d4a84b;
+}
+
+/* Pagina Casa */
+.casa-card { padding: 24px; }
+.casa-suggestion-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; color: var(--text); }
+.casa-suggestion-msg { font-size: 1rem; margin-bottom: 6px; color: var(--text-2); }
+.casa-suggestion-sub { font-size: .88rem; color: var(--text-light); margin-bottom: 18px; }
+
 .edit-day-picker {
   padding: 24px 20px;
   background: var(--bg-subtle);
