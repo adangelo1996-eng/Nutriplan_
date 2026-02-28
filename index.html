@@ -238,11 +238,6 @@
   </div>
 </div>
 
-<!-- Pulsante Menu/X: centro in alto, sempre primo piano (sopra overlay) -->
-<div class="app-page-top" id="appPageTop">
-  <button type="button" class="app-menu-btn" id="appMenuBtn" onclick="toggleAppMenu()" aria-label="Menu" aria-expanded="false" aria-controls="appMenuOverlay">Menu</button>
-</div>
-
 <!-- ═════════════════════════════════════════════════════════════════
      SIDEBAR (desktop) — nascosta, sostituita da overlay Menu
 ═════════════════════════════════════════════════════════════════ -->
@@ -284,6 +279,10 @@
      MAIN CONTENT
 ═════════════════════════════════════════════════════════════════ -->
 <main class="app-main" id="appMain" style="display:none">
+
+  <div class="app-page-top" id="appPageTop">
+    <button type="button" class="app-menu-btn" id="appMenuBtn" onclick="toggleAppMenu()" aria-label="Menu" aria-expanded="false" aria-controls="appMenuOverlay">Menu</button>
+  </div>
 
   <!-- ── CASA ────────────────────────────── -->
   <div class="page active" id="page-casa">
