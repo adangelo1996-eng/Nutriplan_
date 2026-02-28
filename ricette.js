@@ -120,6 +120,46 @@ function pastoColor(p) {
   return { colazione:'#f59e0b', spuntino:'#10b981', pranzo:'#3d8b6f',
            merenda:'#8b5cf6', cena:'#3b82f6' }[first] || 'var(--primary)';
 }
+/* Ingredienti di base (spezie, sale, olio, aceto, erbe...): sempre in dispensa, mai extra piano, salvo esclusi da profilo */
+var INGREDIENTI_BASE_KEYS = [
+  'sale', 'olio', 'aceto', 'prezzemolo', 'pepe', 'curcuma', 'paprika', 'origano', 'rosmarino', 'basilico',
+  'brodo', 'soia', 'aglio', 'cipolla', 'limone', 'miele', 'tahini', 'menta', 'salvia', 'timo', 'alloro',
+  'noce moscata', 'cannella', 'zenzero', 'chiodi di garofano', 'senape', 'vaniglia', 'spezie', 'erbe aromatiche'
+];
+
+function isIngredienteBase(ingName) {
+  if (!ingName) return false;
+  var nl = safeStr(ingName).toLowerCase().trim();
+  if (!nl) return false;
+  return INGREDIENTI_BASE_KEYS.some(function(key) {
+    return nl.indexOf(key) !== -1 || key.indexOf(nl) !== -1;
+  });
+}
+
+function isIngredienteBaseEsclusoDaProfilo(ingName) {
+  if (!isIngredienteBase(ingName)) return false;
+  var dp = (typeof dietProfile !== 'undefined' && dietProfile) ? dietProfile : {};
+  var allergenici = Array.isArray(dp.allergenici) ? dp.allergenici : [];
+  if (!allergenici.length) return false;
+  var nl = safeStr(ingName).toLowerCase().trim();
+  return allergenici.some(function(a) {
+    var al = (a || '').toLowerCase().trim();
+    return al && (nl.indexOf(al) !== -1 || al.indexOf(nl) !== -1);
+  });
+}
+
+function isIngredientAvailableInDispensa(ingName) {
+  if (!ingName) return false;
+  var name = safeStr(ingName).trim();
+  if (isIngredienteBase(name) && !isIngredienteBaseEsclusoDaProfilo(name)) return true;
+  if (typeof pantryItems === 'undefined' || !pantryItems) return false;
+  var nl = name.toLowerCase();
+  return Object.keys(pantryItems).some(function(k) {
+    return k && pantryItems[k] && (pantryItems[k].quantity || 0) > 0 &&
+      (k.toLowerCase().trim() === nl || k.toLowerCase().includes(nl) || nl.includes(k.toLowerCase().trim()));
+  });
+}
+
 function getFridgeKeys() {
   if (typeof pantryItems === 'undefined' || !pantryItems) return [];
   return Object.keys(pantryItems).filter(function(k){
@@ -186,6 +226,7 @@ function getPianoAlimentareIngNames() {
 
 function isIngExtraPiano(ingName) {
   if (!ingName) return false;
+  if (isIngredienteBase(ingName)) return false; /* ingredienti di base non sono mai extra piano */
   var pianoNames = getPianoAlimentareIngNames();
   if (!pianoNames.length) return false;
   var nl = ingName.toLowerCase().trim();
@@ -203,11 +244,14 @@ function countExtraPiano(ings) {
   }).length;
 }
 function countAvailable(ings) {
-  var keys = getFridgeKeys();
-  if (!keys.length || !Array.isArray(ings)) return 0;
+  if (!Array.isArray(ings)) return 0;
   return ings.filter(function(ing){
     var n = safeStr(ing.name||ing.nome).toLowerCase().trim();
-    return n && keys.some(function(k){
+    if (!n) return false;
+    if (isIngredienteBase(n) && !isIngredienteBaseEsclusoDaProfilo(n)) return true;
+    var keys = getFridgeKeys();
+    if (!keys.length) return false;
+    return keys.some(function(k){
       var kl = k.toLowerCase().trim();
       return kl===n || kl.includes(n) || n.includes(kl);
     });

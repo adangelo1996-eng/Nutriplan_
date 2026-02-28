@@ -130,20 +130,20 @@ function renderMealItems() {
     });
   }
 
-  /* Ordina per disponibilità in dispensa */
+  var isAvail = (typeof isIngredientAvailableInDispensa === 'function') ? isIngredientAvailableInDispensa : function(n) {
+    return typeof pantryItems !== 'undefined' && pantryItems && pantryItems[n] && (pantryItems[n].quantity || 0) > 0;
+  };
+  /* Ordina per disponibilità in dispensa (ingredienti base = sempre disponibili) */
   items.sort(function(a, b) {
     var aSubName = subsMap[a.name] || null;
     var bSubName = subsMap[b.name] || null;
     var aDisplay = aSubName || a.name;
     var bDisplay = bSubName || b.name;
-    var aInFridge = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[aDisplay] && (pantryItems[aDisplay].quantity||0) > 0);
-    var bInFridge = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[bDisplay] && (pantryItems[bDisplay].quantity||0) > 0);
-    
-    /* Prima gli ingredienti in dispensa */
+    var aInFridge = isAvail(aDisplay);
+    var bInFridge = isAvail(bDisplay);
+
     if (aInFridge && !bInFridge) return -1;
     if (!aInFridge && bInFridge) return 1;
-    
-    /* Poi per nome */
     return aDisplay.localeCompare(bDisplay, 'it');
   });
 
@@ -197,7 +197,7 @@ function renderMealItems() {
     var subName = subsMap[item.name] || null;
     var display = subName || item.name;
     var qty     = item.quantity ? item.quantity + ' ' + (item.unit||'g') : '';
-    var inFridge = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[display] && (pantryItems[display].quantity||0) > 0);
+    var inFridge = (typeof isIngredientAvailableInDispensa === 'function') ? isIngredientAvailableInDispensa(display) : (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[display] && (pantryItems[display].quantity||0) > 0);
     var usedCls = used ? ' style="opacity:.45;text-decoration:line-through;"' : '';
 
     var alreadyBadge = '';
@@ -485,68 +485,39 @@ function renderPianoRicette() {
   var container = document.getElementById(editDayActive ? 'editDay_ricetteWrap' : 'pianoRicetteWrap');
   if (!container) return;
 
-  /* Ottieni tutti gli ingredienti previsti per questo pasto */
-  var mealItems = getMealItems(selectedMeal);
-  var mealIngNames = mealItems.map(function(i) { return i.name.toLowerCase().trim(); });
-
   var allRicette = (typeof getAllRicette === 'function') ? getAllRicette() : [];
+  var countAvail = (typeof countAvailable === 'function') ? countAvailable : function() { return 0; };
 
-  /* Filtra ricette compatibili con il pasto corrente E che usano solo ingredienti previsti */
+  /* Mostra tutte le ricette per questo tipo di pasto per cui ho almeno un ingrediente disponibile */
   var compatibleRicette = allRicette.filter(function(r) {
     if (!r || !r.name) return false;
 
-    /* 1. La ricetta deve essere compatibile con il pasto */
     var ricettaPasti = Array.isArray(r.pasto) ? r.pasto : [r.pasto];
     if (!ricettaPasti.some(function(p) { return p === selectedMeal; })) return false;
 
-    /* 2. TUTTI gli ingredienti della ricetta devono essere nel piano per questo pasto */
     var ricettaIngs = Array.isArray(r.ingredienti) ? r.ingredienti : [];
-    if (!ricettaIngs.length) return true; /* Ricetta senza ingredienti: accettata */
+    if (!ricettaIngs.length) return true;
 
-    var allInPlan = ricettaIngs.every(function(ing) {
-      var ingName = (ing.name || ing.nome || '').toLowerCase().trim();
-      return mealIngNames.some(function(planName) {
-        return planName === ingName || planName.includes(ingName) || ingName.includes(planName);
-      });
-    });
-
-    return allInPlan;
+    var avail = countAvail(ricettaIngs);
+    return avail >= 1;
   });
 
   if (!compatibleRicette.length) {
     container.innerHTML =
       '<div class="rc-empty" style="padding:24px 16px;">' +
         '<div style="font-size:2rem;">🍽</div>' +
-        '<p>Nessuna ricetta disponibile con gli ingredienti previsti per questo pasto.</p>' +
+        '<p>Nessuna ricetta con almeno un ingrediente disponibile per questo pasto.</p>' +
       '</div>';
     return;
   }
 
-  /* Ordina per disponibilità */
+  /* Ordina per numero di ingredienti disponibili (decrescente) */
   compatibleRicette.sort(function(a, b) {
     var aIngs = Array.isArray(a.ingredienti) ? a.ingredienti : [];
     var bIngs = Array.isArray(b.ingredienti) ? b.ingredienti : [];
-    var aAvail = 0, bAvail = 0;
-
-    if (typeof pantryItems !== 'undefined' && pantryItems) {
-      aIngs.forEach(function(ing) {
-        var name = (ing.name || ing.nome || '').toLowerCase().trim();
-        if (Object.keys(pantryItems).some(function(k) {
-          return k.toLowerCase().trim() === name && (pantryItems[k].quantity || 0) > 0;
-        })) aAvail++;
-      });
-      bIngs.forEach(function(ing) {
-        var name = (ing.name || ing.nome || '').toLowerCase().trim();
-        if (Object.keys(pantryItems).some(function(k) {
-          return k.toLowerCase().trim() === name && (pantryItems[k].quantity || 0) > 0;
-        })) bAvail++;
-      });
-    }
-
-    var aPct = aIngs.length ? (aAvail / aIngs.length) : 0;
-    var bPct = bIngs.length ? (bAvail / bIngs.length) : 0;
-
-    if (aPct !== bPct) return bPct - aPct;
+    var aAvail = countAvail(aIngs);
+    var bAvail = countAvail(bIngs);
+    if (aAvail !== bAvail) return bAvail - aAvail;
     return (a.name || a.nome || '').localeCompare(b.name || b.nome || '', 'it');
   });
 
@@ -570,12 +541,13 @@ function renderPianoMissingAlert() {
   if (!wrap) return;
   var items = getMealItems(selectedMeal);
   if (!items.length) { wrap.innerHTML = ''; return; }
+  var isAvail = (typeof isIngredientAvailableInDispensa === 'function') ? isIngredientAvailableInDispensa : function(n) {
+    return typeof pantryItems !== 'undefined' && pantryItems && pantryItems[n] && (pantryItems[n].quantity || 0) > 0;
+  };
   var missing = [];
   items.forEach(function(item) {
     var name = item.name;
-    var inFridge = (typeof pantryItems !== 'undefined' && pantryItems &&
-      pantryItems[name] && (pantryItems[name].quantity || 0) > 0);
-    if (!inFridge) missing.push(name);
+    if (!isAvail(name)) missing.push(name);
   });
   if (!missing.length) {
     wrap.innerHTML = '';
@@ -599,13 +571,14 @@ function pianoAddMissingToSpesa() {
   if (typeof pianoAddToSpesa !== 'function') return;
   var items = getMealItems(selectedMeal);
   if (!items.length) return;
+  var isAvail = (typeof isIngredientAvailableInDispensa === 'function') ? isIngredientAvailableInDispensa : function(n) {
+    return typeof pantryItems !== 'undefined' && pantryItems && pantryItems[n] && (pantryItems[n].quantity || 0) > 0;
+  };
   var added = 0;
   items.forEach(function(item) {
     if (!item || !item.name) return;
     var name = item.name;
-    var inFridge = (typeof pantryItems !== 'undefined' && pantryItems &&
-      pantryItems[name] && (pantryItems[name].quantity || 0) > 0);
-    if (inFridge) return;
+    if (isAvail(name)) return;
     var qty  = item.quantity || null;
     var unit = item.unit || 'g';
     pianoAddToSpesa(name, qty, unit, true);

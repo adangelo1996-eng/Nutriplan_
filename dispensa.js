@@ -154,13 +154,13 @@ function getDeficitIngredients() {
     });
   });
   
-  /* Confronta con disponibilità in dispensa */
+  /* Confronta con disponibilità in dispensa (ingredienti base = sempre disponibili, esclusi da deficit) */
   Object.keys(needed).forEach(function(name) {
+    if (typeof isIngredienteBase === 'function' && isIngredienteBase(name) && !(typeof isIngredienteBaseEsclusoDaProfilo === 'function' && isIngredienteBaseEsclusoDaProfilo(name))) return;
     var required = needed[name].total;
     var available = (pantryItems[name] && pantryItems[name].quantity) || 0;
     var remaining = Math.max(0, available - required);
-    
-    /* Se rimane meno di una porzione, segnala deficit */
+
     if (available < required * 1.5) {
       deficits.push({
         name: name,
