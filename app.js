@@ -755,6 +755,9 @@ function confirmAddFridge() {
   closeAddFridgeModal();
   renderFridge();
   renderFridge('pianoFridgeContent');
+  /* Aggiorna pagina Oggi: disponibilità ingredienti e avviso mancanti */
+  if (typeof renderMealItems === 'function') renderMealItems();
+  if (typeof renderPianoMissingAlert === 'function') renderPianoMissingAlert();
   var msg = '✅ ' + name + (frozen ? ' ❄️ aggiunto al congelatore' : ' aggiunto alla dispensa');
   showToast(msg, 'success');
   if (typeof showCompletionCelebration === 'function') showCompletionCelebration();
@@ -1225,12 +1228,8 @@ function enterApp() {
   updateDateLabel();
   goToPage('piano-alimentare');
 
-  /* Prima mostra onboarding (piano alimentare), poi tutorial */
-  if (typeof checkOnboarding === 'function') {
-    checkOnboarding();
-  } else if (typeof checkTutorial === 'function') {
-    checkTutorial();
-  }
+  /* Solo onboarding se necessario; tutorial iniziale non mostrato (restano solo i tasti Aiuto) */
+  if (typeof checkOnboarding === 'function') checkOnboarding();
 }
 
 function goToHomepage() {

@@ -789,15 +789,27 @@ function _acceptAIRecipe() {
     aiRecipes.push(_aiPendingRecipe);
   }
 
+  /* Aggiungi sempre la ricetta anche alla sezione Oggi (pasto selezionato nel modal AI) */
+  var meal = _aiRecipeMealKey || 'pranzo';
+  var dateKey = (typeof selectedDateKey !== 'undefined' && selectedDateKey)
+    ? selectedDateKey
+    : (typeof getCurrentDateKey === 'function' ? getCurrentDateKey() : null);
+  if (dateKey && typeof appHistory !== 'undefined') {
+    if (!appHistory[dateKey]) appHistory[dateKey] = { usedItems: {}, substitutions: {}, ricette: {} };
+    if (!appHistory[dateKey].ricette) appHistory[dateKey].ricette = {};
+    if (!appHistory[dateKey].ricette[meal]) appHistory[dateKey].ricette[meal] = {};
+    appHistory[dateKey].ricette[meal][name] = true;
+  }
+
   if (typeof saveData         === 'function') saveData();
   closeAIRecipeModal();
-  if (typeof showToast        === 'function') showToast('✅ Ricetta "' + name + '" aggiunta alle ricette AI!', 'success');
+  if (typeof showToast        === 'function') showToast('✅ Ricetta "' + name + '" aggiunta a Ricette e a Oggi!', 'success');
   if (typeof renderRicetteGrid  === 'function') renderRicetteGrid();
   if (typeof renderAIRicetteTab === 'function') renderAIRicetteTab();
+  if (typeof renderMealItems    === 'function') renderMealItems();
+  if (typeof renderPianoRicette === 'function') renderPianoRicette();
 
-  if (_aiRecipeContext === 'oggi' || _aiRecipeContext === 'oggi_piano') {
-    if (typeof renderPianoRicette === 'function') renderPianoRicette();
-  } else {
+  if (_aiRecipeContext !== 'oggi' && _aiRecipeContext !== 'oggi_piano') {
     if (typeof goToPage === 'function') goToPage('ricette');
     setTimeout(function() {
       if (typeof switchRicetteTab === 'function') {

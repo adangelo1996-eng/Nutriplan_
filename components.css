@@ -830,6 +830,23 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 [data-theme="dark"] body.app-visible .modal .modal-body {
   color: var(--text);
 }
+[data-theme="dark"] body.app-visible .modal .modal-body p,
+[data-theme="dark"] body.app-visible .modal .modal-body li,
+[data-theme="dark"] body.app-visible .modal .modal-body label,
+[data-theme="dark"] body.app-visible .modal .modal-body .form-group > label {
+  color: var(--text);
+}
+[data-theme="dark"] body.app-visible .modal .modal-body input,
+[data-theme="dark"] body.app-visible .modal .modal-body select,
+[data-theme="dark"] body.app-visible .modal .modal-body textarea {
+  color: var(--text);
+  background: var(--bg-subtle);
+  border-color: var(--border-mid);
+}
+[data-theme="dark"] body.app-visible .modal .modal-body input::placeholder,
+[data-theme="dark"] body.app-visible .modal .modal-body textarea::placeholder {
+  color: var(--text-light);
+}
 [data-theme="dark"] body.app-visible .modal .modal-close {
   background: var(--bg-subtle);
   border-color: var(--border);
@@ -846,6 +863,35 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 [data-theme="dark"] body.app-visible .modal .modal-footer .btn-primary:hover {
   background: var(--bg-hover);
   border-color: var(--border-mid);
+}
+
+/* Modal Genera ricetta AI: testo leggibile in dark mode (override stili inline) */
+[data-theme="dark"] body.app-visible #aiRecipeModal .modal-body,
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult {
+  color: var(--text);
+}
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult p,
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult li,
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult span,
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult label,
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult .rm-ing-name,
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult .rm-section-label,
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult .rm-prep,
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult .ai-recipe-text,
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult .ai-h4,
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult summary,
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult pre {
+  color: var(--text) !important;
+}
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult .ai-meal-pill {
+  color: var(--text) !important;
+  border-color: var(--border-mid) !important;
+  background: var(--bg-subtle) !important;
+}
+[data-theme="dark"] body.app-visible #aiRecipeModal #aiRecipeResult .ai-meal-pill[style*="background:var(--primary)"] {
+  background: var(--primary) !important;
+  color: #fff !important;
+  border-color: var(--primary) !important;
 }
 
 /* Input quantità grande (es. modale frigo) */
@@ -2121,6 +2167,8 @@ body.app-visible .page .settings-section-title { color: #0d2218; }
 [data-theme="dark"] body.app-visible .page .fi-row:hover {
   background: var(--bg-hover);
 }
+[data-theme="dark"] body.app-visible .page .fi-row-name,
+[data-theme="dark"] body.app-visible .page .fi-row:hover .fi-row-name { color: var(--text); }
 [data-theme="dark"] body.app-visible .page .fi-row:hover .fi-row-unit,
 [data-theme="dark"] body.app-visible .page .fi-row:hover .fi-qty { color: var(--text-mid); }
 [data-theme="dark"] body.app-visible .page .fi-group-header,
@@ -2129,6 +2177,20 @@ body.app-visible .page .settings-section-title { color: #0d2218; }
 }
 [data-theme="dark"] body.app-visible .page .fi-group-name { color: var(--text); }
 [data-theme="dark"] body.app-visible .page .fi-group-header:hover .fi-group-name { color: var(--text); }
+[data-theme="dark"] body.app-visible .page .fi-empty-cat-text { color: var(--text-mid); }
+[data-theme="dark"] body.app-visible .page .fi-add-inline-btn {
+  color: var(--text);
+  border-color: var(--border-mid);
+  background: var(--bg-subtle);
+}
+[data-theme="dark"] body.app-visible .page .fi-add-inline-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+[data-theme="dark"] body.app-visible .page .fi-empty-cat .rc-btn,
+[data-theme="dark"] body.app-visible .page .fi-group .rc-btn { color: var(--text); border-color: var(--border-mid); background: var(--bg-subtle); }
+[data-theme="dark"] body.app-visible .page .fi-empty-cat .rc-btn:hover,
+[data-theme="dark"] body.app-visible .page .fi-group .rc-btn:hover { background: var(--bg-hover); color: var(--text); }
 [data-theme="dark"] body.app-visible .page .spesa-item:hover {
   background: var(--bg-hover);
 }

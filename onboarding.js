@@ -48,11 +48,7 @@ var _obPendingIngredient = null;  // ingrediente in attesa di quantità
 ══════════════════════════════════════════════════════ */
 function checkOnboarding() {
   if (localStorage.getItem(ONBOARDING_KEY)) {
-    /* Onboarding già fatto → avvia tutorial */
-    setTimeout(function() {
-      if (typeof checkTutorial === 'function') checkTutorial();
-    }, 300);
-    return;
+      return;
   }
 
   /* Se il piano ha già qualcosa → skip onboarding */
@@ -67,9 +63,6 @@ function checkOnboarding() {
   }
   if (hasPlan) {
     localStorage.setItem(ONBOARDING_KEY, '1');
-    setTimeout(function() {
-      if (typeof checkTutorial === 'function') checkTutorial();
-    }, 300);
     return;
   }
 
@@ -743,13 +736,8 @@ function saveOnboardingPlan() {
   /* Segna onboarding completato */
   localStorage.setItem(ONBOARDING_KEY, '1');
   
-  /* Chiudi overlay e avvia tutorial (che poi mostrerà welcome modal) */
   var overlay = document.getElementById('onboardingOverlay');
   if (overlay) overlay.classList.remove('active');
-  
-  setTimeout(function() {
-    if (typeof checkTutorial === 'function') checkTutorial();
-  }, 300);
 }
 
 function obSkip() {
@@ -760,10 +748,6 @@ function obSkip() {
   localStorage.setItem(ONBOARDING_KEY, '1');
   var overlay = document.getElementById('onboardingOverlay');
   if (overlay) overlay.classList.remove('active');
-  
-  setTimeout(function() {
-    if (typeof checkTutorial === 'function') checkTutorial();
-  }, 300);
 }
 
 /* ══════════════════════════════════════════════════════

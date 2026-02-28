@@ -625,3 +625,8 @@ body .landing-accedi-wrap * {
   .header-title           { font-size: .88rem; }
   .app-inner              { padding: 0 8px; gap: 4px; }
 }
+
+/* Mobile: caratteri leggermente più grandi per leggibilità */
+@media (max-width: 767px) {
+  html { font-size: 17px; }
+}
