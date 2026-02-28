@@ -73,15 +73,20 @@ function renderCasa() {
     if (typeof goToPage === 'function') goToPage('piano');
   };
 
-  /* Usa scena 3D se disponibile */
-  if (typeof window.mountCasaScene === 'function') {
+  /* Usa scena 3D se disponibile (IIFE espone mountCasaScene o CasaScene.default) */
+  var mountFn = typeof window.mountCasaScene === 'function'
+    ? window.mountCasaScene
+    : (window.CasaScene && typeof window.CasaScene.default === 'function')
+      ? window.CasaScene.default
+      : null;
+  if (mountFn) {
     if (_casaUnmount) _casaUnmount();
     el.innerHTML = '';
     var container = document.createElement('div');
     container.className = 'casa-scene-container';
     container.style.cssText = 'width:100%;height:100%;min-height:320px;flex:1;display:flex;';
     el.appendChild(container);
-    _casaUnmount = window.mountCasaScene(container, {
+    _casaUnmount = mountFn(container, {
       suggestedMeal: suggested,
       suggestedLabel: label || 'Riepilogo',
       msg: msg,
