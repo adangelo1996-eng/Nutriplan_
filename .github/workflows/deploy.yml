@@ -25,6 +25,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Genera config.js dai GitHub Secrets
         run: |
           cat > config.js << 'ENDOFCONFIG'
@@ -46,6 +51,16 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
+
+      - name: Build casa-scene (React Three Fiber)
+        run: |
+          cd casa-scene && npm install && npm run build
+
+      - name: Bump CACHE_VERSION e cache-bust (SW + icone + registrazione)
+        run: |
+          BUILD_TIME=$(date -u +%Y%m%d-%H%M)
+          sed -i "s/var CACHE_VERSION = '[^']*'/var CACHE_VERSION = '$BUILD_TIME'/" sw.js
+          sed -i "s/__BUILD_TIME__/$BUILD_TIME/g" index.html manifest.json app.js
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
