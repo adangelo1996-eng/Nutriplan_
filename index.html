@@ -86,7 +86,6 @@
       <span class="landing-hero-line landing-hero-line-1">Il tuo</span>
       <span class="landing-hero-line landing-hero-line-2">pia<span class="landing-hero-n">n</span>o alime<span class="landing-hero-n">n</span>tare<span id="landingHeroUserName" class="landing-hero-username"></span></span>
     </h1>
-    <p class="landing-sub">Scegli una sezione per iniziare.</p>
     <div class="landing-hero-actions">
       <button type="button" class="landing-badge landing-esplora-btn" id="landingEsploraBtn" onclick="toggleLandingCards()" aria-expanded="false">Esplora</button>
       <div class="landing-accedi-wrap" id="landingAccediWrap">
@@ -151,7 +150,27 @@
      HEADER (app) — con marquee stile homepage
 ═════════════════════════════════════════════════════════════════ -->
 <header class="app-header" id="appHeader" style="display:none">
-  <!-- Marquee logo + giorni mese corrente (solo app, non landing) -->
+  <!-- Logo n. espandibile in alto a sinistra -->
+  <div class="app-inner app-header-main">
+    <button type="button" class="header-left header-logo-wrap" id="headerIcon" onclick="goToHomepage()" aria-label="Torna alla homepage">
+      <span class="app-logo-mark">n</span>
+      <span class="app-logo-expand">utriplan.</span>
+    </button>
+    <div class="header-center">
+      <span class="cloud-status local" id="cloudStatus">☁ Locale</span>
+    </div>
+    <div class="header-right">
+      <button type="button" class="app-menu-btn" id="appMenuBtn" onclick="toggleAppMenu()" aria-label="Menu" aria-expanded="false" aria-controls="appMenuOverlay">Menu</button>
+      <button class="btn-icon-only" id="themeToggle" onclick="toggleTheme()" title="Tema">🌙</button>
+      <div class="auth-user-pill" id="authUserPill" style="display:none" onclick="handleAuthPillClick(event)">
+        <img class="auth-avatar" id="authAvatar" src="" alt="">
+        <span class="auth-info" id="authName">Utente</span>
+      </div>
+      <button class="btn-icon-only" id="loginBtn" onclick="openAuthModal()" title="Accedi">👤</button>
+    </div>
+  </div>
+
+  <!-- Marquee NutriPlan + numeri: sfumati ai bordi, flusso continuo infinito -->
   <div class="app-header-marquee">
     <div class="app-header-logo-track" aria-hidden="true">
       <div class="app-header-logo-runner">
@@ -184,38 +203,42 @@
       </div>
     </div>
   </div>
-
-  <div class="app-inner app-header-main">
-
-    <button type="button" class="header-left header-logo-wrap" id="headerIcon" onclick="goToHomepage()" aria-label="Torna alla homepage">
-      <span class="app-logo-mark">n</span>
-      <span class="app-logo-expand">utriplan.</span>
-    </button>
-
-    <div class="header-center">
-      <span class="cloud-status local" id="cloudStatus">☁ Locale</span>
-    </div>
-
-    <div class="header-right">
-      <button class="btn-icon-only" id="themeToggle" onclick="toggleTheme()" title="Tema">🌙</button>
-      <div class="auth-user-pill" id="authUserPill" style="display:none" onclick="handleAuthPillClick(event)">
-        <img class="auth-avatar" id="authAvatar" src="" alt="">
-        <span class="auth-info" id="authName">Utente</span>
-      </div>
-      <button class="btn-icon-only" id="loginBtn" onclick="openAuthModal()" title="Accedi">👤</button>
-    </div>
-
-  </div>
 </header>
 
 <!-- ═════════════════════════════════════════════════════════════════
-     SIDEBAR (desktop)
+     OVERLAY MENU — cornice con NutriPlan verticale, pagine a sinistra,
+     Profilo/Contatti/Casa a destra
+═════════════════════════════════════════════════════════════════ -->
+<div class="app-menu-overlay" id="appMenuOverlay" aria-hidden="true" role="dialog" aria-label="Menu di navigazione">
+  <div class="app-menu-backdrop" onclick="toggleAppMenu()"></div>
+  <div class="app-menu-frame">
+    <div class="app-menu-left">
+      <button type="button" class="app-menu-link" onclick="goToPage('piano');toggleAppMenu();">Oggi</button>
+      <button type="button" class="app-menu-link" onclick="goToPage('piano-alimentare');toggleAppMenu();">Piano</button>
+      <button type="button" class="app-menu-link" onclick="goToPage('dispensa');toggleAppMenu();">Dispensa</button>
+      <button type="button" class="app-menu-link" onclick="goToPage('ricette');toggleAppMenu();">Ricette</button>
+      <button type="button" class="app-menu-link" onclick="goToPage('spesa');toggleAppMenu();">Spesa</button>
+      <button type="button" class="app-menu-link" onclick="goToPage('statistiche');toggleAppMenu();">Stats</button>
+    </div>
+    <div class="app-menu-center">
+      <span class="app-menu-brand">NutriPlan</span>
+    </div>
+    <div class="app-menu-right">
+      <button type="button" class="app-menu-link" onclick="goToPage('profilo');toggleAppMenu();">Profilo</button>
+      <button type="button" class="app-menu-link" onclick="toggleAppMenu();openContattiModal();">Contatti</button>
+      <button type="button" class="app-menu-link" onclick="goToPage('casa');toggleAppMenu();">Casa</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════════════════════════════════════
+     SIDEBAR (desktop) — nascosta, sostituita da overlay Menu
 ═════════════════════════════════════════════════════════════════ -->
 <nav class="sidebar-nav" id="sidebarNav" style="display:none">
 
   <span class="sidebar-section-label">Oggi</span>
 
-  <button class="nav-tab nav-tab-casa nav-tab-casa-visible active" id="st-casa" onclick="goToPage('casa')">
+  <button class="nav-tab nav-tab-casa active" id="st-casa" onclick="goToPage('casa')">
     <span class="nav-label">Casa</span>
   </button>
   <button class="nav-tab" id="st-piano" onclick="goToPage('piano')">
@@ -300,8 +323,8 @@
         <div class="page-header-sub" id="selectedDateLabel">Oggi</div>
       </div>
       <div class="page-header-actions">
-        <button class="btn btn-secondary btn-small" onclick="exportPianoToPDF && exportPianoToPDF()" title="Esporta il piano in PDF per stampa o supporto cartaceo">📄 Esporta PDF</button>
         <button class="btn btn-secondary btn-small" onclick="startPageHelp && startPageHelp('piano')">❓ Aiuto</button>
+        <button class="btn btn-secondary btn-small" onclick="exportPianoToPDF && exportPianoToPDF()" title="Esporta il piano in PDF per stampa o supporto cartaceo">📄 Esporta PDF</button>
         <button class="btn btn-secondary btn-small" onclick="resetPiano()">🔄 Reset</button>
       </div>
     </div>
@@ -507,7 +530,7 @@
 ═════════════════════════════════════════════════════════════════ -->
 <nav class="bottom-nav" id="bottomNav" style="display:none">
   <div class="app-inner">
-    <button class="nav-tab nav-tab-casa nav-tab-casa-visible active" id="bn-casa" onclick="goToPage('casa')">
+    <button class="nav-tab nav-tab-casa active" id="bn-casa" onclick="goToPage('casa')">
       <span class="nav-icon"></span>
       <span class="nav-label">Casa</span>
     </button>
@@ -1180,6 +1203,24 @@
         Continua con Google
       </button>
       <button class="landing-offline-btn auth-modal-offline" onclick="closeAuthModal();landingOffline();">Continua senza account →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: Contatti -->
+<div class="modal" id="contattiModal">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">Contatti</h2>
+      <button class="modal-close" onclick="closeContattiModal()" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:12px;">Per supporto o informazioni su NutriPlan puoi contattarci tramite la pagina del progetto su GitHub.</p>
+      <p style="font-size:.85rem;color:var(--text-3);">Apri la repository del progetto per segnalare problemi, richiedere funzionalità o inviare un messaggio.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeContattiModal()">Chiudi</button>
     </div>
   </div>
 </div>

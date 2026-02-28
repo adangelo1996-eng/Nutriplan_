@@ -64,6 +64,51 @@ function getCasaDateString() {
   return new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'short' });
 }
 
+/**
+ * Ricetta suggerita per il pasto: quella con più ingredienti in scadenza;
+ * in assenza di ingredienti in scadenza, quella con più ingredienti disponibili in dispensa.
+ */
+function getCasaSuggestedRecipe(mealKey) {
+  if (!mealKey) return null;
+  var all = (typeof getAllRicette === 'function') ? getAllRicette() : [];
+  var forMeal = all.filter(function(r) {
+    var pasto = r.pasto;
+    var pasti = Array.isArray(pasto) ? pasto : (pasto ? [pasto] : []);
+    return pasti.indexOf(mealKey) !== -1;
+  });
+  if (!forMeal.length) return null;
+
+  var expiring = (typeof getExpiringSoon === 'function') ? getExpiringSoon(14) : [];
+  var expiringNames = expiring.map(function(e) { return (e.name || '').trim().toLowerCase(); });
+
+  function countExpiringInRecipe(recipe) {
+    var ings = Array.isArray(recipe.ingredienti) ? recipe.ingredienti : [];
+    return ings.filter(function(ing) {
+      var n = (ing.name || ing.nome || '').trim().toLowerCase();
+      return n && expiringNames.some(function(ex) { return ex === n || n.indexOf(ex) !== -1 || ex.indexOf(n) !== -1; });
+    }).length;
+  }
+
+  var withExpiring = forMeal.map(function(r) {
+    return { recipe: r, expiringCount: countExpiringInRecipe(r) };
+  }).filter(function(x) { return x.expiringCount > 0; });
+
+  if (withExpiring.length) {
+    withExpiring.sort(function(a, b) { return b.expiringCount - a.expiringCount; });
+    return withExpiring[0].recipe;
+  }
+
+  var countAvail = (typeof countAvailable === 'function') ? countAvailable : function() { return 0; };
+  forMeal.sort(function(a, b) {
+    var aIngs = Array.isArray(a.ingredienti) ? a.ingredienti : [];
+    var bIngs = Array.isArray(b.ingredienti) ? b.ingredienti : [];
+    var diff = countAvail(bIngs) - countAvail(aIngs);
+    if (diff !== 0) return diff;
+    return (b.ingredienti || []).length - (a.ingredienti || []).length;
+  });
+  return forMeal[0] || null;
+}
+
 function renderCasa() {
   var el = document.getElementById('casaContent');
   if (!el) return;
@@ -93,6 +138,17 @@ function renderCasa() {
   var consumedCount = getConsumedMealsCountToday();
   var dateStr = getCasaDateString();
 
+  var suggestedRecipe = getCasaSuggestedRecipe(suggested || 'colazione');
+  var recipeBlock = '';
+  if (suggestedRecipe && typeof buildCard === 'function') {
+    var recipeName = suggestedRecipe.name || suggestedRecipe.nome || '';
+    recipeBlock =
+      '<div class="casa-recipe-section">' +
+        '<div class="casa-recipe-section-title">📖 Ricetta consigliata per ' + escapeHtml(label || 'questo pasto') + '</div>' +
+        '<div class="casa-recipe-card-wrap">' + buildCard(suggestedRecipe) + '</div>' +
+      '</div>';
+  }
+
   var html =
     '<p class="casa-greeting">' + escapeHtml(greeting) + '</p>' +
     '<div class="casa-card rc-card">' +
@@ -105,6 +161,7 @@ function renderCasa() {
         '</button>' +
       '</div>' +
     '</div>' +
+    recipeBlock +
     '<p class="casa-meta">Oggi: ' + consumedCount + '/5 pasti · ' + escapeHtml(dateStr) + '</p>';
 
   el.innerHTML = html;

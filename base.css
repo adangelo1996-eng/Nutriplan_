@@ -498,6 +498,9 @@ body .landing-accedi-wrap * {
 .app-header-marquee .app-header-days-track {
   overflow: hidden;
   white-space: nowrap;
+  /* Sfumatura ai bordi — flusso continuo infinito */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 12%, black 88%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, black 12%, black 88%, transparent 100%);
 }
 .app-header-logo-runner,
 .app-header-days-runner {

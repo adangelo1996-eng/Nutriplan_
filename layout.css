@@ -17,6 +17,17 @@
   touch-action: pan-y;
 }
 
+/* Pagine a schermo intero quando in app (menu sostituisce sidebar/bottom nav) */
+body.app-visible .app-main {
+  margin-left: 0;
+  margin-bottom: 0;
+}
+body.app-visible .page {
+  max-width: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* FIX contenimento pagine:
    position:relative crea il containing block locale
    così nessun figlio absolute sfugge alla pagina */
@@ -70,8 +81,11 @@ body.app-visible .page {
 }
 
 @media (min-width: 768px) {
-  .app-main { margin-left: var(--sidebar-w); margin-bottom: 0; }
-  .page     { padding: 28px 32px; max-width: none; margin: 0; }
+  .app-main { margin-bottom: 0; }
+  .page     { padding: 28px 32px; margin: 0; }
+}
+body.app-visible .app-main {
+  margin-left: 0 !important;
 }
 @media (min-width: 1200px) {
   :root     { --sidebar-w: 270px; }
@@ -83,6 +97,8 @@ body.app-visible .page {
 
 /* ══════════════════════════════════════════════════
    8. INTESTAZIONI
+   Specchietto "Casa - Il tuo spazio" solo sulla pagina Casa;
+   sulle altre pagine il page-header è nascosto.
 ══════════════════════════════════════════════════ */
 .page-header {
   display: flex;
@@ -91,6 +107,13 @@ body.app-visible .page {
   gap: 12px;
   margin-bottom: 22px;
   flex-wrap: wrap;
+}
+/* Nascondi solo titolo/sottotitolo (specchietto) sulle pagine diverse da Casa; le azioni (Aiuto, ecc.) restano visibili */
+body.app-visible .page:not(#page-casa) .page-header > div:first-child {
+  display: none;
+}
+body.app-visible .page:not(#page-casa) .page-header {
+  justify-content: flex-end;
 }
 .page-header > div:first-child {
   min-width: 0;

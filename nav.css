@@ -4,8 +4,12 @@
 ══════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════
-   5. SIDEBAR
+   5. SIDEBAR — nascosta quando in app (navigazione da overlay Menu)
 ══════════════════════════════════════════════════ */
+body.app-visible .sidebar-nav,
+body.app-visible #sidebarNav {
+  display: none !important;
+}
 .sidebar-nav {
   display: none;
   position: fixed;
@@ -123,14 +127,19 @@ body.app-visible .sidebar-nav .nav-tab.active {
   margin-left: auto;
 }
 
-/* Attiva sidebar su desktop */
+/* Sidebar non più usata in app (menu overlay) */
 @media (min-width: 768px) {
-  .sidebar-nav { display: flex; }
+  .sidebar-nav { display: none; }
 }
+body.app-visible .sidebar-nav { display: none !important; }
 
 /* ══════════════════════════════════════════════════
-   6. BOTTOM NAV  (mobile)
+   6. BOTTOM NAV — nascosto quando in app (navigazione da overlay Menu)
 ══════════════════════════════════════════════════ */
+body.app-visible .bottom-nav,
+body.app-visible #bottomNav {
+  display: none !important;
+}
 .bottom-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
@@ -269,7 +278,8 @@ body.app-visible .bottom-nav .nav-tab.active::after {
   .nav-tab   { padding: 0 2px; min-width: 36px; }
 }
 
-/* Su desktop nasconde il bottom-nav */
+/* Bottom nav nascosto in app (menu overlay) */
+body.app-visible .bottom-nav { display: none !important; }
 @media (min-width: 768px) {
   .bottom-nav { display: none !important; }
 }

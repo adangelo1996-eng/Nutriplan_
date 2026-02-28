@@ -1682,6 +1682,180 @@ body.app-visible .modal .modal-body .auth-modal-offline:hover {
   margin: 0;
 }
 
+/* Pulsante Menu in header app — stile Esplora, testo a contrasto */
+.app-menu-btn {
+  display: inline-block;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.9);
+  padding: 6px 12px;
+  border: 1px solid rgba(255,255,255,.4);
+  border-radius: var(--r-full);
+  background: none;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
+  font-family: var(--font);
+  transition: transform var(--t), color var(--t), border-color var(--t);
+  margin: 0;
+}
+.app-menu-btn:hover {
+  color: #fff;
+  border-color: rgba(255,255,255,.6);
+  transform: scale(1.04);
+}
+[data-theme="dark"] .app-menu-btn {
+  color: rgba(255,255,255,.9);
+  border-color: rgba(255,255,255,.35);
+}
+[data-theme="dark"] .app-menu-btn:hover {
+  color: #fff;
+  border-color: rgba(255,255,255,.55);
+}
+
+/* ══════════════════════════════════════════════════
+   OVERLAY MENU — cornice, NutriPlan verticale, pagine / Profilo Contatti Casa
+══════════════════════════════════════════════════ */
+body.app-menu-open {
+  overflow: hidden;
+}
+.app-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility .25s ease, opacity .25s ease;
+  pointer-events: none;
+}
+.app-menu-overlay.active {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+.app-menu-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  cursor: pointer;
+}
+[data-theme="dark"] .app-menu-backdrop {
+  background: rgba(0,0,0,.6);
+}
+.app-menu-frame {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 85%;
+  min-height: 70vh;
+  background: #0d2218;
+  border-radius: var(--r-xl);
+  box-shadow: 0 24px 64px rgba(0,0,0,.35);
+  overflow: hidden;
+  transition: max-width .35s ease, transform .35s ease;
+}
+.app-menu-overlay.active .app-menu-frame {
+  max-width: 75%;
+}
+[data-theme="dark"] .app-menu-frame {
+  background: #e8f5f0;
+  box-shadow: 0 24px 64px rgba(0,0,0,.5);
+}
+.app-menu-left,
+.app-menu-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 28px;
+  min-width: 140px;
+}
+.app-menu-left { align-items: flex-start; }
+.app-menu-right { align-items: flex-end; }
+.app-menu-link {
+  font-family: var(--font);
+  font-size: .9rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: rgba(255,255,255,.9);
+  background: none;
+  border: none;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
+  padding: 8px 12px;
+  border-radius: var(--r);
+  transition: color var(--t), background var(--t);
+  white-space: nowrap;
+}
+.app-menu-link:hover {
+  color: #fff;
+  background: rgba(255,255,255,.12);
+}
+[data-theme="dark"] .app-menu-link {
+  color: #0d2218;
+}
+[data-theme="dark"] .app-menu-link:hover {
+  color: #0d2218;
+  background: rgba(13,34,24,.12);
+}
+.app-menu-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 40px;
+  flex-shrink: 0;
+}
+.app-menu-brand {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  font-size: clamp(2.5rem, 12vw, 6rem);
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: rgba(255,255,255,.92);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+[data-theme="dark"] .app-menu-brand {
+  color: #0d2218;
+}
+@media (max-width: 767px) {
+  .app-menu-frame {
+    flex-direction: column;
+    max-width: 95%;
+    min-height: 60vh;
+  }
+  .app-menu-overlay.active .app-menu-frame {
+    max-width: 92%;
+  }
+  .app-menu-left,
+  .app-menu-right {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    min-width: auto;
+    padding: 20px 16px;
+  }
+  .app-menu-left { align-items: center; }
+  .app-menu-right { align-items: center; }
+  .app-menu-center {
+    padding: 16px;
+  }
+  .app-menu-brand {
+    writing-mode: horizontal-tb;
+    transform: none;
+    font-size: clamp(2rem, 10vw, 3.5rem);
+  }
+}
+
 /* Accedi: sotto Esplora, dentro hero (no più fixed top-right) */
 .landing-hero-actions .landing-accedi-wrap {
   position: relative;
@@ -2012,10 +2186,7 @@ body.app-visible .modal .modal-body .auth-modal-offline:hover {
   background: rgba(212, 168, 75, 0.35);
 }
 
-/* Tab Casa — visibile solo sulla pagina Casa */
-.nav-tab-casa:not(.nav-tab-casa-visible) {
-  display: none !important;
-}
+/* Tab Casa — sempre visibile su tutte le pagine */
 .nav-tab-casa {
   color: #d4a84b;
 }
@@ -2071,6 +2242,11 @@ body.app-visible .bottom-nav .nav-tab-casa.active::after {
 .casa-suggestion-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 12px; color: var(--text); }
 .casa-suggestion-msg { font-size: 1rem; margin-bottom: 6px; color: var(--text-2); }
 .casa-suggestion-sub { font-size: .88rem; color: var(--text-light); margin-bottom: 18px; }
+
+.casa-recipe-section { margin-top: 20px; }
+.casa-recipe-section-title { font-size: .9rem; font-weight: 700; color: var(--text-2); margin-bottom: 12px; }
+.casa-recipe-card-wrap { max-width: 320px; }
+.casa-recipe-card-wrap .rc-card { cursor: pointer; }
 
 .edit-day-picker {
   padding: 24px 20px;

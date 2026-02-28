@@ -1295,11 +1295,6 @@ function goToPage(key) {
     t.classList.toggle('active', t.id === 'bn-' + key);
   });
 
-  /* Scheda Casa visibile solo quando si è sulla pagina Casa */
-  document.querySelectorAll('.nav-tab-casa').forEach(function(t) {
-    t.classList.toggle('nav-tab-casa-visible', key === 'casa');
-  });
-
   /* Render specifico per pagina */
   var renders = {
     'casa':             function() { if (typeof renderCasa             === 'function') renderCasa(); },
@@ -1360,6 +1355,29 @@ function openPrivacyModal() {
 }
 function closePrivacyModal() {
   var m = document.getElementById('privacyModal');
+  if (m) m.classList.remove('active');
+}
+
+/* ── Overlay Menu (cornice NutriPlan) ───────────────────── */
+function toggleAppMenu() {
+  var overlay = document.getElementById('appMenuOverlay');
+  var btn = document.getElementById('appMenuBtn');
+  if (!overlay) return;
+  var isOpen = overlay.classList.toggle('active');
+  document.body.classList.toggle('app-menu-open', isOpen);
+  if (btn) {
+    btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  }
+  overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+}
+
+/* ── Modale Contatti ─────────────────────────────── */
+function openContattiModal() {
+  var m = document.getElementById('contattiModal');
+  if (m) m.classList.add('active');
+}
+function closeContattiModal() {
+  var m = document.getElementById('contattiModal');
   if (m) m.classList.remove('active');
 }
 
