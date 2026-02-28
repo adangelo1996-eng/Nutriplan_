@@ -153,7 +153,6 @@
   <!-- Logo n. espandibile in alto a sinistra -->
   <div class="app-inner app-header-main">
     <div class="header-left">
-      <button type="button" class="app-menu-btn" id="appMenuBtn" onclick="toggleAppMenu()" aria-label="Menu" aria-expanded="false" aria-controls="appMenuOverlay">Menu</button>
       <button type="button" class="header-logo-wrap" id="headerIcon" onclick="goToHomepage()" aria-label="Torna alla homepage">
         <span class="app-logo-mark">n</span>
         <span class="app-logo-expand">utriplan.</span>
@@ -216,21 +215,23 @@
   <div class="app-menu-border" onclick="toggleAppMenu()"></div>
   <!-- Cornice interna con glassmorphism; si restringe dall'esterno -->
   <div class="app-menu-frame">
-    <div class="app-menu-left app-menu-glass">
-      <button type="button" class="app-menu-link" onclick="goToPage('piano');toggleAppMenu();">Oggi</button>
-      <button type="button" class="app-menu-link" onclick="goToPage('piano-alimentare');toggleAppMenu();">Piano</button>
-      <button type="button" class="app-menu-link" onclick="goToPage('dispensa');toggleAppMenu();">Dispensa</button>
-      <button type="button" class="app-menu-link" onclick="goToPage('ricette');toggleAppMenu();">Ricette</button>
-      <button type="button" class="app-menu-link" onclick="goToPage('spesa');toggleAppMenu();">Spesa</button>
-      <button type="button" class="app-menu-link" onclick="goToPage('statistiche');toggleAppMenu();">Stats</button>
+    <div class="app-menu-left">
+      <button type="button" class="app-menu-link" data-menu-hint="Vedi e segna i pasti di oggi" onclick="goToPage('piano');toggleAppMenu();">Oggi</button>
+      <button type="button" class="app-menu-link" data-menu-hint="Configura i pasti e i limiti settimanali" onclick="goToPage('piano-alimentare');toggleAppMenu();">Piano</button>
+      <button type="button" class="app-menu-link" data-menu-hint="Ingredienti disponibili in dispensa" onclick="goToPage('dispensa');toggleAppMenu();">Dispensa</button>
+      <button type="button" class="app-menu-link" data-menu-hint="Catalogo e le tue ricette" onclick="goToPage('ricette');toggleAppMenu();">Ricette</button>
+      <button type="button" class="app-menu-link" data-menu-hint="Lista della spesa" onclick="goToPage('spesa');toggleAppMenu();">Spesa</button>
+      <button type="button" class="app-menu-link" data-menu-hint="Riepilogo settimanale" onclick="goToPage('statistiche');toggleAppMenu();">Stats</button>
     </div>
-    <div class="app-menu-center app-menu-glass">
-      <span class="app-menu-brand">NutriPlan</span>
+    <div class="app-menu-center">
+      <div class="app-menu-brand-wrap">
+        <span class="app-menu-brand">NutriPlan</span>
+      </div>
     </div>
-    <div class="app-menu-right app-menu-glass">
-      <button type="button" class="app-menu-link" onclick="goToPage('profilo');toggleAppMenu();">Profilo</button>
-      <button type="button" class="app-menu-link" onclick="toggleAppMenu();openContattiModal();">Contatti</button>
-      <button type="button" class="app-menu-link" onclick="goToPage('casa');toggleAppMenu();">Casa</button>
+    <div class="app-menu-right">
+      <button type="button" class="app-menu-link" data-menu-hint="Impostazioni e piano personale" onclick="goToPage('profilo');toggleAppMenu();">Profilo</button>
+      <button type="button" class="app-menu-link" data-menu-hint="Supporto e informazioni" onclick="toggleAppMenu();openContattiModal();">Contatti</button>
+      <button type="button" class="app-menu-link" data-menu-hint="Il tuo spazio e suggerimenti pasto" onclick="goToPage('casa');toggleAppMenu();">Casa</button>
     </div>
   </div>
 </div>
@@ -276,6 +277,10 @@
      MAIN CONTENT
 ═════════════════════════════════════════════════════════════════ -->
 <main class="app-main" id="appMain" style="display:none">
+
+  <div class="app-page-top">
+    <button type="button" class="app-menu-btn" id="appMenuBtn" onclick="toggleAppMenu()" aria-label="Menu" aria-expanded="false" aria-controls="appMenuOverlay">Menu</button>
+  </div>
 
   <!-- ── CASA ────────────────────────────── -->
   <div class="page active" id="page-casa">

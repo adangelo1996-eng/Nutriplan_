@@ -1367,6 +1367,8 @@ function toggleAppMenu() {
   document.body.classList.toggle('app-menu-open', isOpen);
   if (btn) {
     btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    btn.setAttribute('aria-label', isOpen ? 'Chiudi' : 'Menu');
+    btn.textContent = isOpen ? '\u2715' : 'Menu';
   }
   overlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
 }

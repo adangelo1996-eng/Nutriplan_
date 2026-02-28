@@ -1714,8 +1714,19 @@ body.app-visible .modal .modal-body .auth-modal-offline:hover {
   border-color: #d4a84b;
 }
 
+/* Tasto Menu sopra il titolo di pagina (in app-main) */
+.app-page-top {
+  display: flex;
+  align-items: center;
+  padding: 0 0 12px 0;
+  margin-bottom: 4px;
+}
+.app-page-top .app-menu-btn {
+  margin-right: 0;
+}
+
 /* ══════════════════════════════════════════════════
-   OVERLAY MENU — bordo PC che si restringe, centro NutriPlan, glassmorphism
+   OVERLAY MENU — bordo PC, centro NutriPlan su vetro, solo etichette con glass
 ══════════════════════════════════════════════════ */
 body.app-menu-open {
   overflow: hidden;
@@ -1735,18 +1746,22 @@ body.app-menu-open {
   opacity: 1;
   pointer-events: auto;
 }
-/* Bordo del PC (colore opposto): copre la pagina, si "restringe" quando il frame anima */
+/* Bordo del PC (colore opposto): espansione dal bordo con transizione */
 .app-menu-border {
   position: absolute;
   inset: 0;
   background: #0d2218;
   cursor: pointer;
-  transition: opacity .25s ease;
+  opacity: 0;
+  transition: opacity .35s ease .1s;
+}
+.app-menu-overlay.active .app-menu-border {
+  opacity: 1;
 }
 [data-theme="dark"] .app-menu-border {
   background: #e8f5f0;
 }
-/* Cornice interna: si restringe dai bordi (inset 0 → inset 32px), stile vetro */
+/* Cornice interna: si restringe dai bordi (inset 0 → inset 32px) */
 .app-menu-frame {
   position: absolute;
   inset: 0;
@@ -1755,9 +1770,7 @@ body.app-menu-open {
   align-items: stretch;
   justify-content: space-between;
   margin: 0;
-  background: rgba(13,34,24,.25);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: transparent;
   overflow: hidden;
   transition: inset .4s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: auto;
@@ -1766,19 +1779,9 @@ body.app-menu-open {
   inset: 32px;
 }
 [data-theme="dark"] .app-menu-frame {
-  background: rgba(232,245,240,.2);
+  background: transparent;
 }
-/* Pannelli laterali e centro con glassmorphism */
-.app-menu-glass {
-  background: rgba(255,255,255,.06);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,.08);
-}
-[data-theme="dark"] .app-menu-glass {
-  background: rgba(13,34,24,.15);
-  border-color: rgba(255,255,255,.12);
-}
+/* Pannelli senza glass: solo le etichette (link e brand) hanno vetro */
 .app-menu-left,
 .app-menu-right {
   display: flex;
@@ -1787,33 +1790,76 @@ body.app-menu-open {
   gap: 8px;
   padding: 32px 28px;
   min-width: 140px;
+  background: transparent;
 }
 .app-menu-left { align-items: flex-start; }
 .app-menu-right { align-items: flex-end; }
+/* Singole etichette bottoni: glassmorphism */
 .app-menu-link {
+  position: relative;
   font-family: var(--font);
   font-size: .9rem;
   font-weight: 700;
   letter-spacing: .02em;
   color: rgba(255,255,255,.92);
-  background: none;
-  border: none;
+  background: rgba(255,255,255,.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.08);
   cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   padding: 8px 12px;
   border-radius: var(--r);
-  transition: color var(--t), background var(--t);
+  transition: color var(--t), background var(--t), border-color var(--t), opacity var(--t);
   white-space: nowrap;
 }
 .app-menu-link:hover {
   color: #fff;
   background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.14);
+}
+.app-menu-link::after {
+  content: attr(data-menu-hint);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  padding: 6px 10px;
+  font-size: .76rem;
+  font-weight: 600;
+  color: #0d2218;
+  background: rgba(255,255,255,.95);
+  border-radius: var(--r-sm);
+  box-shadow: 0 2px 12px rgba(0,0,0,.15);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+  z-index: 10;
+}
+.app-menu-left .app-menu-link::after {
+  left: 100%;
+  margin-left: 10px;
+}
+.app-menu-right .app-menu-link::after {
+  right: 100%;
+  margin-right: 10px;
+  left: auto;
+}
+.app-menu-link:hover::after {
+  opacity: 1;
 }
 [data-theme="dark"] .app-menu-link {
   color: #0d2218;
+  background: rgba(13,34,24,.15);
+  border-color: rgba(255,255,255,.12);
 }
 [data-theme="dark"] .app-menu-link:hover {
   color: #0d2218;
-  background: rgba(13,34,24,.2);
+  background: rgba(13,34,24,.25);
+  border-color: rgba(255,255,255,.18);
+}
+[data-theme="dark"] .app-menu-link::after {
+  color: #0d2218;
+  background: #e8f5f0;
 }
 .app-menu-center {
   display: flex;
@@ -1821,6 +1867,20 @@ body.app-menu-open {
   justify-content: center;
   padding: 32px 48px;
   flex-shrink: 0;
+  background: transparent;
+}
+/* Solo la scritta NutriPlan su lastra di vetro */
+.app-menu-brand-wrap {
+  background: rgba(255,255,255,.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: var(--r-lg);
+  padding: 20px 24px;
+}
+[data-theme="dark"] .app-menu-brand-wrap {
+  background: rgba(13,34,24,.2);
+  border-color: rgba(255,255,255,.12);
 }
 .app-menu-brand {
   writing-mode: vertical-rl;
@@ -1857,10 +1917,16 @@ body.app-menu-open {
   .app-menu-center {
     padding: 16px;
   }
+  .app-menu-brand-wrap {
+    padding: 14px 20px;
+  }
   .app-menu-brand {
     writing-mode: horizontal-tb;
     transform: none;
     font-size: clamp(2.5rem, 12vw, 4rem);
+  }
+  .app-menu-link::after {
+    display: none;
   }
 }
 
