@@ -105,8 +105,8 @@ function scaleIngredientiForPorzioni(ingredienti, basePorzioni, targetPorzioni) 
 var currentRecipePorzioni = 1; /* porzioni selezionate nel modale ricetta */
 
 function pastoLabel(p) {
-  var map = { colazione:'☀️ Colazione', spuntino:'🍎 Spuntino',
-              pranzo:'🍽 Pranzo', merenda:'🥪 Merenda', cena:'🌙 Cena' };
+  var map = { colazione:'Colazione', spuntino:'Spuntino',
+              pranzo:'Pranzo', merenda:'Merenda', cena:'Cena' };
   if (!p) return '';
   if (Array.isArray(p)) return p.filter(Boolean).map(function(k){ return map[k]||k; }).join(' · ');
   return map[p] || p;
@@ -444,9 +444,9 @@ function renderRicetteGrid() {
 
 function buildGroupedGrid(list) {
   var order  = ['colazione','spuntino','pranzo','merenda','cena'];
-  var meta   = {colazione:{icon:'☀️',name:'Colazione'},spuntino:{icon:'🍎',name:'Spuntino'},
-                pranzo:{icon:'🍽',name:'Pranzo'},merenda:{icon:'🥪',name:'Merenda'},
-                cena:{icon:'🌙',name:'Cena'},_altro:{icon:'🧂',name:'Altro'}};
+  var meta   = {colazione:{name:'Colazione'},spuntino:{name:'Spuntino'},
+                pranzo:{name:'Pranzo'},merenda:{name:'Merenda'},
+                cena:{name:'Cena'},_altro:{name:'Altro'}};
   var groups = {}; var placed = {};
   order.forEach(function(p){ groups[p]=[]; }); groups._altro=[];
   list.forEach(function(r){
@@ -464,15 +464,13 @@ function buildGroupedGrid(list) {
   order.concat(['_altro']).forEach(function(p){
     var items=groups[p]; if(!items||!items.length) return;
     var m=meta[p]||meta._altro;
-    var color=pastoColor(p==='_altro'?'':p);
-    html+='<details class="fi-group fi-group-collapsible" style="--gc:'+color+'">'+
-            '<summary class="fi-group-header">'+
-              '<span class="fi-group-icon">'+m.icon+'</span>'+
-              '<span class="fi-group-name">'+m.name+'</span>'+
-              '<span class="fi-group-count">'+items.length+'</span>'+
-            '</summary>'+
-            '<div class="fi-list" style="padding:12px 16px;"><div class="rc-grid">'+items.map(buildCard).join('')+'</div></div>'+
-          '</details>';
+    html+='<div class="rc-meal-group">'+
+            '<div class="rc-meal-group-header">'+
+              '<span class="rc-meal-group-name">'+m.name+'</span>'+
+              '<span class="rc-meal-group-count">'+items.length+'</span>'+
+            '</div>'+
+            '<div class="rc-meal-group-body"><div class="rc-grid">'+items.map(buildCard).join('')+'</div></div>'+
+          '</div>';
   });
   return html;
 }

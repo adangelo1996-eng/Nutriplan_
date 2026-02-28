@@ -138,10 +138,11 @@ function signInWithGoogle() {
     .then(function(result) {
       if (typeof closeAuthModal === 'function') closeAuthModal();
 
+      currentUser = result.user;
       var name = result.user.displayName || result.user.email || 'Utente';
       if (typeof showToast === 'function') showToast('👋 Benvenuto, ' + name + '!', 'success');
 
-      /* Se la landing è ancora visibile, entra nell'app */
+      /* Se la landing è ancora visibile, entra nell'app e vai alla homepage */
       var landing = document.getElementById('landingPage');
       if (landing && landing.style.display !== 'none' && typeof enterApp === 'function') {
         if (typeof window !== 'undefined') window.NP_READONLY = false;
@@ -267,11 +268,19 @@ function updateAuthUI(user) {
     if (landingGoogle)      landingGoogle.style.display  = 'none';
     if (landingOffline)     landingOffline.style.display = 'none';
     if (landingAccediWrap)  landingAccediWrap.style.display = 'none';
+    /* Titolo landing: "Il tuo piano alimentare, [nome]" */
+    var heroName = document.getElementById('landingHeroUserName');
+    if (heroName) {
+      var firstName = (user.displayName && user.displayName.split(' ')[0]) || user.email || 'Utente';
+      heroName.textContent = ', ' + firstName;
+    }
   } else {
     if (landingLoading)     landingLoading.style.display = 'none';
     if (landingGoogle)      landingGoogle.style.display  = 'none';
     if (landingOffline)     landingOffline.style.display = 'none';
     if (landingAccediWrap)  landingAccediWrap.style.display = '';
+    var heroName = document.getElementById('landingHeroUserName');
+    if (heroName) heroName.textContent = '';
   }
 
   /* Aggiorna icona profilo nel nav (bottom + sidebar) quando loggato */

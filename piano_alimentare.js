@@ -151,14 +151,21 @@ function renderPianoAlimentare() {
   PA_MEALS.forEach(function(m) { totalCount += paGetMealCount(m.key); });
   var isEmpty = totalCount === 0;
 
+  /* Nome utente se loggato (es. "il tuo piano alimentare, Mario") */
+  var userNameSuffix = '';
+  if (typeof currentUser !== 'undefined' && currentUser) {
+    var name = (currentUser.displayName && currentUser.displayName.split(' ')[0]) || currentUser.email || 'Utente';
+    userNameSuffix = ', ' + name;
+  }
+
   /* Card invito wizard */
   var wizardCard =
     '<div class="pa-wizard-invite' + (isEmpty ? ' pa-wizard-invite-empty' : '') + '">' +
       '<div class="pa-wizard-invite-body">' +
         '<div class="pa-wizard-invite-title">' +
           (isEmpty
-            ? 'Configura il tuo pia<span class=\"page-title-n\">n</span>o alime<span class=\"page-title-n\">n</span>tare'
-            : 'Modifica il tuo pia<span class=\"page-title-n\">n</span>o alime<span class=\"page-title-n\">n</span>tare') +
+            ? 'Configura il tuo pia<span class=\"page-title-n\">n</span>o alime<span class=\"page-title-n\">n</span>tare' + userNameSuffix
+            : 'Modifica il tuo pia<span class=\"page-title-n\">n</span>o alime<span class=\"page-title-n\">n</span>tare' + userNameSuffix) +
         '</div>' +
         '<div class="pa-wizard-invite-sub">' +
           (isEmpty

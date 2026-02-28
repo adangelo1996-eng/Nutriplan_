@@ -1250,7 +1250,8 @@ function goToHomepage() {
     landing.style.display = '';
     landing.classList.remove('landing-transition-to-app');
   }
-  if (accediWrap) accediWrap.style.display = '';
+  /* Mostra Accedi solo se l'utente non è loggato */
+  if (accediWrap) accediWrap.style.display = (typeof currentUser !== 'undefined' && currentUser) ? 'none' : '';
   if (header)  header.style.display  = 'none';
   if (sidebar) sidebar.style.display = 'none';
   if (bottom)  bottom.style.display  = 'none';
