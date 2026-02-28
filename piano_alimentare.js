@@ -169,8 +169,8 @@ function renderPianoAlimentare() {
           '<button class="pa-wizard-invite-btn" onclick="openPAWizard()">' +
             (isEmpty ? 'Configurazione guidata' : 'Modifica guidata') +
           '</button>' +
-          '<button class="pa-wizard-invite-btn pa-wizard-invite-btn-secondary" onclick="showOnboarding()">' +
-            'Ho già un piano' +
+          '<button class="pa-wizard-invite-btn pa-wizard-invite-btn-secondary" onclick="goToPianoGenFromPianoPage()">' +
+            (totalCount > 0 ? 'Genera piano sostitutivo' : 'Genera piano') +
           '</button>' +
         '</div>' +
       '</div>' +
@@ -199,6 +199,25 @@ function _showPAEmptyPrompt() {
     card.classList.add('pa-wizard-invite-pulse');
     setTimeout(function() { card.classList.remove('pa-wizard-invite-pulse'); }, 1200);
   }
+}
+
+/* Apre il generatore piano (piano-gen: sesso, peso, età, ecc.). Se esiste già un piano chiede conferma. */
+function goToPianoGenFromPianoPage() {
+  var hasPlan = false;
+  if (pianoAlimentare && typeof pianoAlimentare === 'object') {
+    hasPlan = Object.keys(pianoAlimentare).some(function(mk) {
+      var meal = pianoAlimentare[mk];
+      if (!meal || typeof meal !== 'object') return false;
+      return Object.keys(meal).some(function(cat) {
+        return Array.isArray(meal[cat]) && meal[cat].length > 0;
+      });
+    });
+  }
+  if (hasPlan) {
+    var msg = 'Esiste già un piano alimentare.\nVuoi generarne uno nuovo che potrebbe sostituire quello attuale?';
+    if (!window.confirm(msg)) return;
+  }
+  if (typeof goToPage === 'function') goToPage('piano-gen');
 }
 
 /* ──────────────────────────────────────────────────────────
