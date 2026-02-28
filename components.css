@@ -3941,50 +3941,75 @@ div > .ai-powered-label {
   box-shadow: 0 8px 32px rgba(61, 139, 111, .5);
 }
 
-/* ── Mobile: pagine meno affollate ── */
+/* ── Mobile: dimensioni carattere precedenti, riquadri più compatti ── */
 @media (max-width: 768px) {
+  body.app-visible .page {
+    font-size: .9rem;
+  }
   .page {
-    padding: 12px 14px 24px;
-    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    padding: 10px 12px 20px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
   }
   .page-header {
-    margin-bottom: 14px;
+    margin-bottom: 10px;
     padding-right: 0;
   }
-  .page-header-title { font-size: 1.15rem; }
-  .page-header-sub { font-size: .82rem; }
+  .page-header-title { font-size: 1.02rem; }
+  .page-header-sub { font-size: .75rem; }
   .app-main .rc-card,
   .app-main .fi-group,
   .app-main .fi-group-collapsible {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
   .rc-card {
-    padding: 14px 16px;
+    padding: 10px 12px;
+    border-radius: var(--r-md);
+  }
+  .rc-card-head {
+    padding: 10px 12px;
+  }
+  .rc-card.open .rc-card-body {
+    padding: 0 12px 12px;
   }
   .fi-group-header {
-    padding: 14px 16px;
+    padding: 10px 12px;
   }
   .fi-list {
-    padding: 4px 8px 12px;
+    padding: 4px 6px 10px;
+  }
+  .fi-row {
+    padding: 8px 12px;
+  }
+  .piano-item-card,
+  .spesa-item,
+  .settings-row {
+    padding: 10px 12px;
   }
   .section-header,
   .ricette-filter-row,
   #ricetteFilterRow {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
   .modal-box {
-    margin: 12px;
-    max-height: calc(100vh - 24px);
-    border-radius: var(--r-xl);
+    margin: 10px;
+    max-height: calc(100vh - 20px);
+    border-radius: var(--r-lg);
   }
   .modal-header {
-    padding: 14px 18px;
+    padding: 10px 14px;
   }
   .modal-body {
-    padding: 14px 18px;
+    padding: 10px 14px;
   }
   .modal-footer {
-    padding: 14px 18px;
-    gap: 10px;
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .meal-btn {
+    padding: 8px 12px;
+  }
+  .meal-btn-label { font-size: .72rem; }
+  .bottom-nav .nav-label {
+    font-size: .64rem;
   }
 }

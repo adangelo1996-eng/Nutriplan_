@@ -375,23 +375,6 @@ a:hover { text-decoration: underline; }
   position: relative;
 }
 
-/* Icona quadrata */
-.sidebar-nav .nav-tab .nav-icon {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  border-radius: var(--r-sm);
-  background: var(--bg-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1em;
-  flex-shrink: 0;
-  transition: all var(--t);
-  /* annulla transform dal bottom-nav active */
-  transform: none !important;
-}
-
 /* FIX PRINCIPALE: sovrascrive overflow:hidden + text-overflow:ellipsis
    che il .nav-label base (bottom-nav) imposta */
 .sidebar-nav .nav-tab .nav-label {
@@ -410,20 +393,11 @@ a:hover { text-decoration: underline; }
   background: var(--bg-hover);
   color: var(--primary);
 }
-.sidebar-nav .nav-tab:hover .nav-icon {
-  background: var(--primary-light);
-}
-
 /* Attivo */
 .sidebar-nav .nav-tab.active {
   background: var(--primary-light);
   color: var(--primary);
   border-color: var(--primary-mid);
-}
-.sidebar-nav .nav-tab.active .nav-icon {
-  background: var(--primary);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(61,139,111,.3);
 }
 
 /* Nasconde il pallino/linea attiva che serve solo al bottom-nav */

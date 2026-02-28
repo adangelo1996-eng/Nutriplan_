@@ -183,9 +183,9 @@ a:hover { text-decoration: underline; }
     linear-gradient(160deg, #0d2218 0%, #1a4a35 60%, #0d2218 100%);
 }
 
-/* Cursore oro fisso su tutta l'app (homepage e resto delle pagine) */
+/* Cursori: default = cerchio giallo pieno, pointer = cerchio giallo vuoto */
 body {
-  cursor: url('cursor-gold-ring.svg') 12 12, default;
+  cursor: url('cursor-gold.svg') 12 12, default;
 }
 body a,
 body button,
