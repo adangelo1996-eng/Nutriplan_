@@ -16,19 +16,17 @@ concurrency:
 
 jobs:
   deploy:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
 
       - name: Genera config.js dai GitHub Secrets
         run: |
@@ -49,13 +47,6 @@ jobs:
           };
           ENDOFCONFIG
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Build casa-scene (React Three Fiber)
-        run: |
-          cd casa-scene && npm install && npm run build
-
       - name: Bump CACHE_VERSION e cache-bust (SW + icone + registrazione)
         run: |
           BUILD_TIME=$(date -u +%Y%m%d-%H%M)
@@ -63,9 +54,9 @@ jobs:
           sed -i "s/__BUILD_TIME__/$BUILD_TIME/g" index.html manifest.json app.js
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
-          path: '.'
+          path: .
 
       - name: Deploy to GitHub Pages
         id: deployment
