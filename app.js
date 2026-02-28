@@ -9,8 +9,9 @@
 if ('serviceWorker' in navigator &&
     (location.protocol === 'https:' || location.protocol === 'http:')) {
   window.addEventListener('load', function() {
-    navigator.serviceWorker.register('sw.js').then(function(reg) {
-      /* Controlla aggiornamenti SW al caricamento e quando l'utente torna alla tab */
+    /* ?v=__BUILD_TIME__ sostituito in deploy: nuova URL = browser scarica sempre sw.js aggiornato */
+    navigator.serviceWorker.register('sw.js?v=__BUILD_TIME__').then(function(reg) {
+      /* Controlla aggiornamenti: al load, al ritorno in tab, e periodicamente (come hard refresh automatico) */
       function checkUpdate() {
         if (reg && typeof reg.update === 'function') reg.update();
       }
@@ -18,6 +19,7 @@ if ('serviceWorker' in navigator &&
       document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'visible') checkUpdate();
       });
+      setInterval(checkUpdate, 5 * 60 * 1000); /* ogni 5 minuti se l'app è aperta */
     }).catch(function(e) {
       console.warn('[NutriPlan] SW registration failed:', e);
     });
