@@ -4,6 +4,9 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production'),
+  },
   build: {
     outDir: 'dist',
     lib: {
@@ -16,6 +19,7 @@ export default defineConfig({
       output: {
         inlineDynamicImports: true,
         assetFileNames: 'casa-scene.[ext]',
+        banner: "(function(g){g.process=g.process||{env:{NODE_ENV:'production'}};})(typeof globalThis!=='undefined'?globalThis:typeof window!=='undefined'?window:this);",
       },
     },
   },
