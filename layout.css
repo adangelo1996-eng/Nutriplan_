@@ -17,10 +17,13 @@
   touch-action: pan-y;
 }
 
-/* Pagine a schermo intero quando in app (menu sostituisce sidebar/bottom nav) */
+/* Pagine a schermo intero con margine dal bordo quando in app */
 body.app-visible .app-main {
   margin-left: 0;
   margin-bottom: 0;
+  margin: 12px;
+  margin-top: calc(var(--header-h) + 12px);
+  margin-bottom: 12px;
 }
 body.app-visible .page {
   max-width: none;

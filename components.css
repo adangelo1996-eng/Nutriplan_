@@ -1689,32 +1689,33 @@ body.app-visible .modal .modal-body .auth-modal-offline:hover {
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
-  color: rgba(255,255,255,.9);
+  color: #d4a84b;
   padding: 6px 12px;
-  border: 1px solid rgba(255,255,255,.4);
+  border: 1px solid rgba(212,168,75,.6);
   border-radius: var(--r-full);
   background: none;
   cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   font-family: var(--font);
   transition: transform var(--t), color var(--t), border-color var(--t);
   margin: 0;
+  margin-right: 8px;
 }
 .app-menu-btn:hover {
-  color: #fff;
-  border-color: rgba(255,255,255,.6);
+  color: #e8c068;
+  border-color: #d4a84b;
   transform: scale(1.04);
 }
 [data-theme="dark"] .app-menu-btn {
-  color: rgba(255,255,255,.9);
-  border-color: rgba(255,255,255,.35);
+  color: #d4a84b;
+  border-color: rgba(212,168,75,.5);
 }
 [data-theme="dark"] .app-menu-btn:hover {
-  color: #fff;
-  border-color: rgba(255,255,255,.55);
+  color: #e8c068;
+  border-color: #d4a84b;
 }
 
 /* ══════════════════════════════════════════════════
-   OVERLAY MENU — cornice, NutriPlan verticale, pagine / Profilo Contatti Casa
+   OVERLAY MENU — bordo PC che si restringe, centro NutriPlan, glassmorphism
 ══════════════════════════════════════════════════ */
 body.app-menu-open {
   overflow: hidden;
@@ -1723,14 +1724,10 @@ body.app-menu-open {
   position: fixed;
   inset: 0;
   z-index: 400;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
   box-sizing: border-box;
   visibility: hidden;
   opacity: 0;
-  transition: visibility .25s ease, opacity .25s ease;
+  transition: visibility .3s ease, opacity .3s ease;
   pointer-events: none;
 }
 .app-menu-overlay.active {
@@ -1738,36 +1735,49 @@ body.app-menu-open {
   opacity: 1;
   pointer-events: auto;
 }
-.app-menu-backdrop {
+/* Bordo del PC (colore opposto): copre la pagina, si "restringe" quando il frame anima */
+.app-menu-border {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,.4);
+  background: #0d2218;
   cursor: pointer;
+  transition: opacity .25s ease;
 }
-[data-theme="dark"] .app-menu-backdrop {
-  background: rgba(0,0,0,.6);
+[data-theme="dark"] .app-menu-border {
+  background: #e8f5f0;
 }
+/* Cornice interna: si restringe dai bordi (inset 0 → inset 32px), stile vetro */
 .app-menu-frame {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
   display: flex;
   align-items: stretch;
   justify-content: space-between;
-  width: 100%;
-  max-width: 85%;
-  min-height: 70vh;
-  background: #0d2218;
-  border-radius: var(--r-xl);
-  box-shadow: 0 24px 64px rgba(0,0,0,.35);
+  margin: 0;
+  background: rgba(13,34,24,.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
-  transition: max-width .35s ease, transform .35s ease;
+  transition: inset .4s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
 }
 .app-menu-overlay.active .app-menu-frame {
-  max-width: 75%;
+  inset: 32px;
 }
 [data-theme="dark"] .app-menu-frame {
-  background: #e8f5f0;
-  box-shadow: 0 24px 64px rgba(0,0,0,.5);
+  background: rgba(232,245,240,.2);
+}
+/* Pannelli laterali e centro con glassmorphism */
+.app-menu-glass {
+  background: rgba(255,255,255,.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.08);
+}
+[data-theme="dark"] .app-menu-glass {
+  background: rgba(13,34,24,.15);
+  border-color: rgba(255,255,255,.12);
 }
 .app-menu-left,
 .app-menu-right {
@@ -1785,7 +1795,7 @@ body.app-menu-open {
   font-size: .9rem;
   font-weight: 700;
   letter-spacing: .02em;
-  color: rgba(255,255,255,.9);
+  color: rgba(255,255,255,.92);
   background: none;
   border: none;
   cursor: url('cursor-gold-ring.svg') 12 12, pointer;
@@ -1803,23 +1813,23 @@ body.app-menu-open {
 }
 [data-theme="dark"] .app-menu-link:hover {
   color: #0d2218;
-  background: rgba(13,34,24,.12);
+  background: rgba(13,34,24,.2);
 }
 .app-menu-center {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 40px;
+  padding: 32px 48px;
   flex-shrink: 0;
 }
 .app-menu-brand {
   writing-mode: vertical-rl;
   text-orientation: mixed;
   transform: rotate(180deg);
-  font-size: clamp(2.5rem, 12vw, 6rem);
+  font-size: clamp(3.5rem, 16vw, 8rem);
   font-weight: 800;
   letter-spacing: -.02em;
-  color: rgba(255,255,255,.92);
+  color: rgba(255,255,255,.95);
   line-height: 1.1;
   white-space: nowrap;
 }
@@ -1827,13 +1837,11 @@ body.app-menu-open {
   color: #0d2218;
 }
 @media (max-width: 767px) {
+  .app-menu-overlay.active .app-menu-frame {
+    inset: 16px;
+  }
   .app-menu-frame {
     flex-direction: column;
-    max-width: 95%;
-    min-height: 60vh;
-  }
-  .app-menu-overlay.active .app-menu-frame {
-    max-width: 92%;
   }
   .app-menu-left,
   .app-menu-right {
@@ -1852,7 +1860,7 @@ body.app-menu-open {
   .app-menu-brand {
     writing-mode: horizontal-tb;
     transform: none;
-    font-size: clamp(2rem, 10vw, 3.5rem);
+    font-size: clamp(2.5rem, 12vw, 4rem);
   }
 }
 

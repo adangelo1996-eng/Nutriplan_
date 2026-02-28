@@ -152,15 +152,17 @@
 <header class="app-header" id="appHeader" style="display:none">
   <!-- Logo n. espandibile in alto a sinistra -->
   <div class="app-inner app-header-main">
-    <button type="button" class="header-left header-logo-wrap" id="headerIcon" onclick="goToHomepage()" aria-label="Torna alla homepage">
-      <span class="app-logo-mark">n</span>
-      <span class="app-logo-expand">utriplan.</span>
-    </button>
+    <div class="header-left">
+      <button type="button" class="app-menu-btn" id="appMenuBtn" onclick="toggleAppMenu()" aria-label="Menu" aria-expanded="false" aria-controls="appMenuOverlay">Menu</button>
+      <button type="button" class="header-logo-wrap" id="headerIcon" onclick="goToHomepage()" aria-label="Torna alla homepage">
+        <span class="app-logo-mark">n</span>
+        <span class="app-logo-expand">utriplan.</span>
+      </button>
+    </div>
     <div class="header-center">
       <span class="cloud-status local" id="cloudStatus">☁ Locale</span>
     </div>
     <div class="header-right">
-      <button type="button" class="app-menu-btn" id="appMenuBtn" onclick="toggleAppMenu()" aria-label="Menu" aria-expanded="false" aria-controls="appMenuOverlay">Menu</button>
       <button class="btn-icon-only" id="themeToggle" onclick="toggleTheme()" title="Tema">🌙</button>
       <div class="auth-user-pill" id="authUserPill" style="display:none" onclick="handleAuthPillClick(event)">
         <img class="auth-avatar" id="authAvatar" src="" alt="">
@@ -210,9 +212,11 @@
      Profilo/Contatti/Casa a destra
 ═════════════════════════════════════════════════════════════════ -->
 <div class="app-menu-overlay" id="appMenuOverlay" aria-hidden="true" role="dialog" aria-label="Menu di navigazione">
-  <div class="app-menu-backdrop" onclick="toggleAppMenu()"></div>
+  <!-- Bordo del PC (colore opposto) che si restringe coprendo la pagina -->
+  <div class="app-menu-border" onclick="toggleAppMenu()"></div>
+  <!-- Cornice interna con glassmorphism; si restringe dall'esterno -->
   <div class="app-menu-frame">
-    <div class="app-menu-left">
+    <div class="app-menu-left app-menu-glass">
       <button type="button" class="app-menu-link" onclick="goToPage('piano');toggleAppMenu();">Oggi</button>
       <button type="button" class="app-menu-link" onclick="goToPage('piano-alimentare');toggleAppMenu();">Piano</button>
       <button type="button" class="app-menu-link" onclick="goToPage('dispensa');toggleAppMenu();">Dispensa</button>
@@ -220,10 +224,10 @@
       <button type="button" class="app-menu-link" onclick="goToPage('spesa');toggleAppMenu();">Spesa</button>
       <button type="button" class="app-menu-link" onclick="goToPage('statistiche');toggleAppMenu();">Stats</button>
     </div>
-    <div class="app-menu-center">
+    <div class="app-menu-center app-menu-glass">
       <span class="app-menu-brand">NutriPlan</span>
     </div>
-    <div class="app-menu-right">
+    <div class="app-menu-right app-menu-glass">
       <button type="button" class="app-menu-link" onclick="goToPage('profilo');toggleAppMenu();">Profilo</button>
       <button type="button" class="app-menu-link" onclick="toggleAppMenu();openContattiModal();">Contatti</button>
       <button type="button" class="app-menu-link" onclick="goToPage('casa');toggleAppMenu();">Casa</button>
