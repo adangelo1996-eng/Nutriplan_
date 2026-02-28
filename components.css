@@ -2423,6 +2423,29 @@ body.app-visible .page .settings-section-title { color: #0d2218; }
   overflow: hidden;
   animation: obBoxIn .3s ease;
 }
+body.app-visible .onboarding-box {
+  background: linear-gradient(160deg, #e8f5f0 0%, #f3fbf7 50%, #e8f5f0 100%);
+}
+body.app-visible .onboarding-title,
+body.app-visible .onboarding-sub,
+body.app-visible .ob-step0-intro,
+body.app-visible .ob-step0-title,
+body.app-visible .ob-step0-sub {
+  color: #0d2218 !important;
+}
+body.app-visible .onboarding-step-label { color: var(--primary) !important; }
+body.app-visible .ob-step0-cta { color: #0d2218 !important; }
+[data-theme="dark"] body.app-visible .onboarding-box {
+  background: linear-gradient(160deg, #142a20 0%, #1b3429 50%, #142a20 100%);
+}
+[data-theme="dark"] body.app-visible .onboarding-title,
+[data-theme="dark"] body.app-visible .onboarding-sub,
+[data-theme="dark"] body.app-visible .ob-step0-intro,
+[data-theme="dark"] body.app-visible .ob-step0-title,
+[data-theme="dark"] body.app-visible .ob-step0-sub,
+[data-theme="dark"] body.app-visible .ob-step0-cta {
+  color: var(--text) !important;
+}
 @keyframes obBoxIn {
   from { opacity: 0; transform: scale(.96) translateY(16px); }
   to   { opacity: 1; transform: none; }
@@ -2439,9 +2462,10 @@ body.app-visible .page .settings-section-title { color: #0d2218; }
 }
 .onboarding-title {
   font-size: 1.15rem; font-weight: 800; margin-bottom: 6px;
+  color: var(--text);
 }
 .onboarding-sub {
-  font-size: .8rem; color: var(--text-mid); line-height: 1.5;
+  font-size: .8rem; color: var(--text-2); line-height: 1.5;
 }
 
 /* Tabs pasto */
@@ -2587,7 +2611,7 @@ body.app-visible .page .ob-tab.active .ob-tab-badge {
 }
 .ob-step0-intro {
   font-size: .86rem;
-  color: var(--text-mid);
+  color: var(--text-2);
   text-align: left;
   margin: 0 0 4px;
 }
@@ -2633,10 +2657,11 @@ body.app-visible .page .ob-tab.active .ob-tab-badge {
   font-size: 1rem;
   font-weight: 800;
   margin-bottom: 4px;
+  color: var(--text);
 }
 .ob-step0-sub {
   font-size: .82rem;
-  color: var(--text-light);
+  color: var(--text-2);
   line-height: 1.5;
   margin-bottom: 14px;
 }

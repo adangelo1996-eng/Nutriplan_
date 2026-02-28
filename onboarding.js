@@ -46,26 +46,30 @@ var _obPendingIngredient = null;  // ingrediente in attesa di quantità
 /* ══════════════════════════════════════════════════════
    CHECK
 ══════════════════════════════════════════════════════ */
-function checkOnboarding() {
-  if (localStorage.getItem(ONBOARDING_KEY)) {
-      return;
+function hasPlanIngredients() {
+  if (typeof pianoAlimentare === 'undefined' || !pianoAlimentare) return false;
+  for (var i = 0; i < OB_MEAL_ORDER.length; i++) {
+    var m = pianoAlimentare[OB_MEAL_ORDER[i]] || {};
+    for (var cat in m) {
+      if (Array.isArray(m[cat]) && m[cat].length > 0) return true;
+    }
   }
+  return false;
+}
 
-  /* Se il piano ha già qualcosa → skip onboarding */
-  var hasPlan = false;
-  if (typeof pianoAlimentare !== 'undefined' && pianoAlimentare) {
-    OB_MEAL_ORDER.forEach(function(mk) {
-      var m = pianoAlimentare[mk] || {};
-      Object.keys(m).forEach(function(cat) {
-        if (Array.isArray(m[cat]) && m[cat].length > 0) hasPlan = true;
-      });
-    });
-  }
-  if (hasPlan) {
+function hideOnboardingIfPlanExists() {
+  if (!hasPlanIngredients()) return;
+  try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) {}
+  var overlay = document.getElementById('onboardingOverlay');
+  if (overlay) overlay.classList.remove('active');
+}
+
+function checkOnboarding() {
+  if (localStorage.getItem(ONBOARDING_KEY)) return;
+  if (hasPlanIngredients()) {
     localStorage.setItem(ONBOARDING_KEY, '1');
     return;
   }
-
   showOnboardingChoice();
 }
 

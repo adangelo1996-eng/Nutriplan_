@@ -251,7 +251,11 @@ function loadFromCloud(uid) {
         console.log('[Storage] Sincronizzazione iniziale su Firebase...');
         syncToCloud();
       }
-      
+
+      /* Se il piano ha ingredienti, nascondi onboarding; altrimenti mostra scelta iniziale (utente loggato) */
+      if (typeof hideOnboardingIfPlanExists === 'function') hideOnboardingIfPlanExists();
+      if (typeof checkOnboarding === 'function') checkOnboarding();
+
       refreshAllAppViews();
       showCloudStatus('synced');
     })

@@ -444,8 +444,9 @@ function renderRicetteGrid() {
 
 function buildGroupedGrid(list) {
   var order  = ['colazione','spuntino','pranzo','merenda','cena'];
-  var labels = {colazione:'☀️ Colazione',spuntino:'🍎 Spuntino',
-                pranzo:'🍽 Pranzo',merenda:'🥪 Merenda',cena:'🌙 Cena'};
+  var meta   = {colazione:{icon:'☀️',name:'Colazione'},spuntino:{icon:'🍎',name:'Spuntino'},
+                pranzo:{icon:'🍽',name:'Pranzo'},merenda:{icon:'🥪',name:'Merenda'},
+                cena:{icon:'🌙',name:'Cena'},_altro:{icon:'🧂',name:'Altro'}};
   var groups = {}; var placed = {};
   order.forEach(function(p){ groups[p]=[]; }); groups._altro=[];
   list.forEach(function(r){
@@ -462,13 +463,15 @@ function buildGroupedGrid(list) {
   var html='';
   order.concat(['_altro']).forEach(function(p){
     var items=groups[p]; if(!items||!items.length) return;
-    var lbl=labels[p]||'Altro';
+    var m=meta[p]||meta._altro;
     var color=pastoColor(p==='_altro'?'':p);
-    html+='<details class="rc-group rc-group-collapsible">'+
-            '<summary class="rc-group-title" style="--gc:'+color+'">'+
-              lbl+'<span class="rc-group-count">'+items.length+'</span>'+
+    html+='<details class="fi-group fi-group-collapsible" style="--gc:'+color+'">'+
+            '<summary class="fi-group-header">'+
+              '<span class="fi-group-icon">'+m.icon+'</span>'+
+              '<span class="fi-group-name">'+m.name+'</span>'+
+              '<span class="fi-group-count">'+items.length+'</span>'+
             '</summary>'+
-            '<div class="rc-grid">'+items.map(buildCard).join('')+'</div>'+
+            '<div class="fi-list" style="padding:12px 16px;"><div class="rc-grid">'+items.map(buildCard).join('')+'</div></div>'+
           '</details>';
   });
   return html;

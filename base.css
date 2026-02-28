@@ -461,25 +461,25 @@ body .landing-accedi-wrap * {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  animation: appHeaderMarquee 26s linear infinite;
+  animation: appHeaderMarquee 28s linear infinite;
 }
 .app-header-days-runner { animation-duration: 20s; }
 .app-header-logo-inner,
 .app-header-days-inner {
   display: inline-flex;
   align-items: center;
-  gap: 18px;
+  gap: 0;
   flex-shrink: 0;
 }
 .app-header-logo-track {
-  font-size: .78rem;
   font-weight: 800;
-  letter-spacing: .16em;
-  text-transform: uppercase;
   opacity: .9;
 }
 .app-header-logo-text {
-  color: rgba(255,255,255,.85);
+  font-size: clamp(1rem, 3.5vw, 1.35rem);
+  letter-spacing: .02em;
+  color: rgba(255,255,255,.82);
+  padding-right: 1.2em;
 }
 .app-header-days-track {
   margin-top: 2px;
@@ -516,32 +516,37 @@ body .landing-accedi-wrap * {
   min-width: 0;
 }
 .header-logo-wrap {
-  overflow: hidden;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
-  font-family: var(--font);
-}
-.header-logo-wrap:hover .app-logo-expand {
-  max-width: 120px;
-  opacity: 1;
-}
-/* Logo tipografico minimal n. */
-.app-logo-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   width: 32px;
   height: 32px;
+  padding: 0;
   border-radius: var(--r-full);
   background: rgba(255,255,255,.12);
   border: 1px solid rgba(255,255,255,.25);
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
+  font-family: var(--font);
+  transition: width .25s ease, border-radius .25s ease, padding .25s ease, justify-content .25s ease;
+}
+.header-logo-wrap:hover {
+  justify-content: flex-start;
+  width: auto;
+  min-width: 32px;
+  padding: 0 12px 0 10px;
+  border-radius: var(--r-full);
+}
+.header-logo-wrap:hover .app-logo-expand {
+  max-width: 88px;
+  opacity: 1;
+}
+.app-logo-mark {
+  flex-shrink: 0;
   font-size: .9rem;
   font-weight: 800;
   letter-spacing: -0.04em;
   color: rgba(255,255,255,.95);
-  flex-shrink: 0;
   font-family: var(--font);
 }
 .app-logo-expand {
@@ -550,10 +555,10 @@ body .landing-accedi-wrap * {
   overflow: hidden;
   opacity: 0;
   white-space: nowrap;
-  font-size: 1rem;
+  font-size: .9rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #fff;
+  color: rgba(255,255,255,.95);
   transition: max-width .25s ease, opacity .2s ease;
 }
 .header-title    {
@@ -649,6 +654,7 @@ body .landing-accedi-wrap * {
   .header-title           { display: none; }
   .header-center,
   .cloud-status           { display: none !important; }
+  .header-logo-wrap:hover { width: 32px; padding: 0; }
   .header-logo-wrap:hover .app-logo-expand { max-width: 0; opacity: 0; }
 }
 @media (max-width: 480px) {

@@ -1230,8 +1230,10 @@ function enterApp() {
   updateDateLabel();
   goToPage('piano-alimentare');
 
-  /* Solo onboarding se necessario; tutorial iniziale non mostrato (restano solo i tasti Aiuto) */
-  if (typeof checkOnboarding === 'function') checkOnboarding();
+  /* Onboarding: per utenti offline subito; per utenti loggati dopo loadFromCloud */
+  if (typeof currentUser === 'undefined' || !currentUser) {
+    if (typeof checkOnboarding === 'function') checkOnboarding();
+  }
 }
 
 function goToHomepage() {
