@@ -26,6 +26,7 @@ var STATIC_ASSETS = [
   BASE_PATH + '/app.js',
   BASE_PATH + '/data.js',
   BASE_PATH + '/storage.js',
+  BASE_PATH + '/casa-scene/dist/casa-scene.iife.js',
   BASE_PATH + '/casa.js',
   BASE_PATH + '/piano.js',
   BASE_PATH + '/piano_alimentare.js',

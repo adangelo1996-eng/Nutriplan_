@@ -1,6 +1,7 @@
 /* ============================================================
    CASA.JS — Pagina Home/Casa
-   Suggerimento pasto in base all'ora o ai pasti consumati oggi
+   Suggerimento pasto in base all'ora o ai pasti consumati oggi.
+   Usa la scena 3D React Three Fiber se disponibile.
    ============================================================ */
 
 var CASA_MEAL_LABELS = {
@@ -10,6 +11,8 @@ var CASA_MEAL_LABELS = {
   merenda:    'Merenda',
   cena:       'Cena'
 };
+
+var _casaUnmount = null;
 
 function getSuggestedMeal() {
   var now = new Date().getHours();
@@ -64,6 +67,32 @@ function renderCasa() {
     subMsg = 'Rivedi il piano o prepara qualcosa in più.';
   }
 
+  var userName = (typeof currentUser !== 'undefined' && currentUser && currentUser.displayName) ? currentUser.displayName : '';
+  var onVaiOggi = function() {
+    if (typeof selectedMeal !== 'undefined') window.selectedMeal = suggested || 'colazione';
+    if (typeof goToPage === 'function') goToPage('piano');
+  };
+
+  /* Usa scena 3D se disponibile */
+  if (typeof window.mountCasaScene === 'function') {
+    if (_casaUnmount) _casaUnmount();
+    el.innerHTML = '';
+    var container = document.createElement('div');
+    container.className = 'casa-scene-container';
+    container.style.cssText = 'width:100%;height:100%;min-height:320px;flex:1;display:flex;';
+    el.appendChild(container);
+    _casaUnmount = window.mountCasaScene(container, {
+      suggestedMeal: suggested,
+      suggestedLabel: label || 'Riepilogo',
+      msg: msg,
+      subMsg: subMsg,
+      userName: userName,
+      onVaiOggi: onVaiOggi
+    });
+    return;
+  }
+
+  /* Fallback: card HTML classica */
   var html =
     '<div class="casa-card rc-card">' +
       '<div class="casa-suggestion">' +
