@@ -874,7 +874,7 @@ function generateAIStatsAnalysis() {
     'In italiano, positivo, max 250 parole. Frasi sempre complete.';
 
   _geminiCall(prompt, function(text, err) {
-    if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = '🤖 Analisi AI <span class="ai-powered-label">Powered by Gemini</span>'; }
+    if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = 'Analisi AI <span class=\"ai-powered-label\">Powered by Gemini</span>'; }
     if (!resultEl) return;
     if (err || !text) {
       resultEl.innerHTML = '<p style="color:var(--danger);font-size:.9em;">Errore: ' + (err||'risposta vuota') + '</p>';

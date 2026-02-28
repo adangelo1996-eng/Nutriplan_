@@ -9,11 +9,11 @@
    COSTANTI
 ────────────────────────────────────────────────────────── */
 var PA_MEALS = [
-  { key: 'colazione', emoji: '☀️',  label: 'Colazione' },
-  { key: 'spuntino',  emoji: '🍎',  label: 'Spuntino'  },
-  { key: 'pranzo',    emoji: '🍽',  label: 'Pranzo'    },
-  { key: 'merenda',   emoji: '🥪',  label: 'Merenda'   },
-  { key: 'cena',      emoji: '🌙',  label: 'Cena'      }
+  { key: 'colazione', label: 'Colazione' },
+  { key: 'spuntino',  label: 'Spuntino'  },
+  { key: 'pranzo',    label: 'Pranzo'    },
+  { key: 'merenda',   label: 'Merenda'   },
+  { key: 'cena',      label: 'Cena'      }
 ];
 
 /* "🧂 Altro" NON è inclusa — viene aggiunta solo se ci sono ingredienti */
@@ -154,10 +154,11 @@ function renderPianoAlimentare() {
   /* Card invito wizard */
   var wizardCard =
     '<div class="pa-wizard-invite' + (isEmpty ? ' pa-wizard-invite-empty' : '') + '">' +
-      '<div class="pa-wizard-invite-icon">🧙</div>' +
       '<div class="pa-wizard-invite-body">' +
         '<div class="pa-wizard-invite-title">' +
-          (isEmpty ? 'Configura il tuo piano alimentare' : 'Modifica piano guidato') +
+          (isEmpty
+            ? 'Configura il tuo pia<span class=\"page-title-n\">n</span>o alime<span class=\"page-title-n\">n</span>tare'
+            : 'Modifica il tuo pia<span class=\"page-title-n\">n</span>o alime<span class=\"page-title-n\">n</span>tare') +
         '</div>' +
         '<div class="pa-wizard-invite-sub">' +
           (isEmpty
@@ -166,10 +167,10 @@ function renderPianoAlimentare() {
         '</div>' +
         '<div class="pa-wizard-invite-actions">' +
           '<button class="pa-wizard-invite-btn" onclick="openPAWizard()">' +
-            (isEmpty ? '✨ Configurazione guidata per categorie →' : '✏️ Modifica guidata per categorie →') +
+            (isEmpty ? 'Configurazione guidata' : 'Modifica guidata') +
           '</button>' +
           '<button class="pa-wizard-invite-btn pa-wizard-invite-btn-secondary" onclick="showOnboarding()">' +
-            '📄 Inserisci il piano che possiedi (wizard)' +
+            'Ho già un piano' +
           '</button>' +
         '</div>' +
       '</div>' +
@@ -224,7 +225,6 @@ function buildPAMealSection(meal) {
   return (
     '<div class="pa-meal-block" id="pa-meal-' + meal.key + '">' +
       '<div class="pa-meal-header" onclick="togglePAMeal(\'' + mealEsc + '\')">' +
-        '<span class="pa-meal-emoji">' + meal.emoji + '</span>' +
         '<span class="pa-meal-label">' + meal.label + '</span>' +
         (count > 0
           ? '<span class="pa-meal-count">' + count + ' ing.</span>'
@@ -1049,10 +1049,10 @@ function _renderWizardStep() {
     headerTitle = '👁 Revisione piano';
     headerSub   = 'Controlla i tuoi pasti prima di salvare';
   } else if (isLimits) {
-    headerTitle = '📊 Limiti settimanali';
+    headerTitle = 'Limiti settimanali';
     headerSub   = 'Facoltativo — puoi saltare';
   } else {
-    headerTitle = meal.emoji + ' ' + meal.label;
+    headerTitle = meal.label;
     headerSub   = 'Pasto ' + (_wizStep + 1) + ' di ' + PA_MEALS.length;
   }
 
@@ -1215,7 +1215,7 @@ function _buildWizardReviewBody() {
     html +=
       '<div class="wiz-review-meal">' +
         '<div class="wiz-review-meal-header">' +
-          '<span>' + meal.emoji + ' ' + meal.label + '</span>' +
+          '<span>' + meal.label + '</span>' +
           '<span class="wiz-review-count">' +
             (count > 0 ? count + ' ingredienti' : 'Vuoto') +
           '</span>' +

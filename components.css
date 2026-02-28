@@ -372,11 +372,51 @@
   box-shadow: 0 3px 12px rgba(61,139,111,.28);
 }
 
+body.app-visible .page .rf-pill {
+  padding: 10px 18px;
+  font-size: .86rem;
+  letter-spacing: .06em;
+  background: transparent;
+  border-radius: var(--r-full);
+  border-color: rgba(13,34,24,.25);
+  color: rgba(13,34,24,.75);
+}
+body.app-visible .page .rf-pill:hover {
+  background: rgba(13,34,24,.08);
+  border-color: rgba(13,34,24,.4);
+  color: #0d2218;
+}
+body.app-visible .page .rf-pill.active {
+  background: rgba(13,34,24,.12);
+  border-color: rgba(13,34,24,.5);
+  color: #0d2218;
+  box-shadow: none;
+}
+
+[data-theme="dark"] body.app-visible .page .rf-pill {
+  background: transparent;
+  border-color: rgba(255,255,255,.35);
+  color: rgba(255,255,255,.85);
+}
+[data-theme="dark"] body.app-visible .page .rf-pill:hover {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.55);
+  color: #f9fafb;
+}
+[data-theme="dark"] body.app-visible .page .rf-pill.active {
+  background: rgba(255,255,255,.16);
+  border-color: rgba(255,255,255,.7);
+  color: #0f172a;
+}
+
 /* Gruppo ricette */
 .rc-group {
   position: static;     /* FIX: mai absolute */
   width: 100%;
   margin-bottom: 32px;
+}
+.rc-group.rc-group-collapsible {
+  margin-bottom: 24px;
 }
 .rc-group-title {
   display: flex; align-items: center; gap: 10px;
@@ -393,6 +433,36 @@
   font-size: .82em; border-radius: var(--r-full);
   padding: 1px 10px; font-weight: 800;
   border: 1.5px solid var(--border);
+}
+
+/* Sezioni ricette collassabili (per pasto) */
+.rc-group-collapsible > .rc-group-title {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 6px 0;
+}
+.rc-group-collapsible > .rc-group-title::-webkit-details-marker {
+  display: none;
+}
+.rc-group-collapsible > .rc-group-title::before {
+  content: '▶';
+  font-size: .75em;
+  opacity: .9;
+  margin-right: 6px;
+  transition: transform .2s ease;
+  display: inline-block;
+}
+.rc-group-collapsible[open] > .rc-group-title::before {
+  transform: rotate(90deg);
+}
+.rc-group-collapsible > .rc-group-title:hover {
+  background: var(--bg-subtle);
+  border-radius: var(--r-md);
+}
+.rc-group-collapsible > .rc-group-title:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 /* FIX griglia ricette — mai position absolute/fixed */
@@ -568,12 +638,12 @@
 
 /* Etichette sezione nella tab Piano */
 .piano-section-label {
-  font-size: .72rem; font-weight: 800;
-  text-transform: uppercase; letter-spacing: .06em;
+  font-size: .96rem; font-weight: 800;
   color: var(--text-light);
   padding: 14px 0 10px;
   border-top: 1px solid var(--border);
   margin-top: 8px;
+  margin-bottom: 4px;
   line-height: 1.3;
   display: block;
 }
@@ -591,6 +661,35 @@
 .rc-ing-status        { font-size: .72rem; font-weight: 700; white-space: nowrap; }
 .rc-ing-status.ok     { color: var(--success); }
 .rc-ing-status.ko     { color: var(--danger); }
+
+/* App visibile: ingredienti fusi con il pannello principale */
+body.app-visible .page .rc-ing-list {
+  margin: 12px 12px 10px;
+  gap: 3px;
+  padding: 0 6px;
+}
+body.app-visible .page .rc-ing-row {
+  background: transparent;
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  margin: 0 0 2px;
+  border: 1px solid transparent;
+  border-bottom-color: rgba(13,34,24,.08);
+}
+body.app-visible .page .rc-ing-row:first-child { padding-top: 4px; }
+body.app-visible .page .rc-ing-row:last-child {
+  border-bottom-color: transparent;
+  padding-bottom: 4px;
+  margin-bottom: 0;
+}
+body.app-visible .page .rc-ing-name { color: #0d2218; }
+body.app-visible .page .rc-ing-qty  { color: rgba(13,34,24,.6); }
+
+[data-theme="dark"] body.app-visible .page .rc-ing-row {
+  border-bottom-color: var(--border);
+}
+[data-theme="dark"] body.app-visible .page .rc-ing-name { color: var(--text); }
+[data-theme="dark"] body.app-visible .page .rc-ing-qty  { color: var(--text-mid); }
 
 .rc-macros-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 4px; }
 .rc-macro-chip {
@@ -674,6 +773,80 @@
 .modal-footer { display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end; flex-shrink: 0; }
 .modal-footer-rc { flex-wrap: wrap; gap: 8px; }
 .modal-box-rc .modal-footer .rc-btn { flex-shrink: 0; }
+
+/* Tutti i modali in app: stile coerente con homepage (come Privacy) */
+body.app-visible .modal.active {
+  background: rgba(13,34,24,.35);
+}
+body.app-visible .modal .modal-box {
+  background: linear-gradient(160deg, #e8f5f0 0%, #f3fbf7 50%, #e8f5f0 100%);
+  border: 1px solid rgba(13,34,24,.15);
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+}
+body.app-visible .modal .modal-handle {
+  background: rgba(13,34,24,.25);
+}
+body.app-visible .modal .modal-title {
+  color: #0d2218;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+body.app-visible .modal .modal-close {
+  background: rgba(13,34,24,.08);
+  border: 1px solid rgba(13,34,24,.2);
+  color: #0d2218;
+}
+body.app-visible .modal .modal-close:hover {
+  background: rgba(13,34,24,.15);
+  border-color: rgba(13,34,24,.35);
+  color: #0d2218;
+}
+body.app-visible .modal .modal-body {
+  color: #0d2218;
+}
+body.app-visible .modal .modal-body p,
+body.app-visible .modal .modal-body li,
+body.app-visible .modal .modal-body label {
+  color: rgba(13,34,24,.85);
+}
+body.app-visible .modal .modal-footer .btn-primary {
+  background: transparent;
+  color: rgba(13,34,24,.8);
+  border: 1px solid rgba(13,34,24,.3);
+  border-radius: var(--r-full);
+}
+body.app-visible .modal .modal-footer .btn-primary:hover {
+  background: rgba(13,34,24,.1);
+  color: #0d2218;
+  border-color: rgba(13,34,24,.5);
+}
+
+[data-theme="dark"] body.app-visible .modal .modal-box {
+  background: linear-gradient(160deg, #142a20 0%, #1b3429 50%, #142a20 100%);
+  border-color: var(--border);
+}
+[data-theme="dark"] body.app-visible .modal .modal-title,
+[data-theme="dark"] body.app-visible .modal .modal-close,
+[data-theme="dark"] body.app-visible .modal .modal-body {
+  color: var(--text);
+}
+[data-theme="dark"] body.app-visible .modal .modal-close {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+}
+[data-theme="dark"] body.app-visible .modal .modal-close:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-mid);
+}
+[data-theme="dark"] body.app-visible .modal .modal-footer .btn-primary {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--bg-subtle);
+}
+[data-theme="dark"] body.app-visible .modal .modal-footer .btn-primary:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-mid);
+}
 
 /* Input quantità grande (es. modale frigo) */
 .qty-modal-wrap {
@@ -1405,13 +1578,13 @@
   align-items: flex-end;
   opacity: 0;
   animation: landing-accedi-in 0.5s ease 0.3s forwards;
-  cursor: url('cursor-gold.svg') 12 12, default;
+  cursor: url('cursor-gold-ring.svg') 12 12, default;
 }
 .landing-accedi-wrap .landing-badge.landing-accedi-btn,
 .landing-accedi-wrap .landing-accedi-btn,
 .landing-accedi-wrap .landing-nav-card.landing-accedi-option,
 .landing-accedi-wrap .landing-accedi-option {
-  cursor: url('cursor-gold.svg') 12 12, pointer;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
 }
 
 /* Contrasto invertito su Accedi (come Esplora) quando card o opzioni sono aperte */
@@ -1777,6 +1950,241 @@
   border-color: rgba(13,34,24,.5);
 }
 
+/* Card e liste in app: hover contrasto come landing */
+body.app-visible .page .rc-card {
+  background: rgba(13,34,24,.04);
+  border-width: 2px;
+  border-color: rgba(13,34,24,.22);
+  box-shadow: var(--shadow-sm);
+  transition: background var(--t), color var(--t), border-color var(--t), box-shadow var(--t), backdrop-filter var(--t), -webkit-backdrop-filter var(--t);
+}
+body.app-visible .page .rc-card .rc-name,
+body.app-visible .page .rc-card .rc-meta { color: #0d2218; }
+body.app-visible .page .rc-card:hover {
+  background: rgba(255,255,255,.65);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-color: rgba(13,34,24,.6);
+  box-shadow: var(--shadow);
+}
+body.app-visible .page .rc-card:hover .rc-name,
+body.app-visible .page .rc-card:hover .rc-meta,
+body.app-visible .page .rc-card:hover .rc-chevron { color: #0d2218; }
+body.app-visible .page .rc-card:hover .rc-icon-wrap {
+  background: rgba(232,245,240,.4);
+}
+
+body.app-visible .page .fi-row {
+  border-bottom-width: 2px;
+  border-bottom-color: rgba(13,34,24,.18);
+}
+body.app-visible .page .fi-row:hover {
+  background: rgba(255,255,255,.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+body.app-visible .page .fi-row-name,
+body.app-visible .page .fi-row:hover .fi-row-name { color: #0d2218; }
+body.app-visible .page .fi-row:hover .fi-row-unit,
+body.app-visible .page .fi-row:hover .fi-qty { color: rgba(13,34,24,.75); }
+
+body.app-visible .page .spesa-item:hover {
+  background: rgba(255,255,255,.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+body.app-visible .page .spesa-item:hover .spesa-item-name,
+body.app-visible .page .spesa-item:hover .spesa-item-qty { color: #0d2218; }
+
+body.app-visible .page .settings-row:hover .settings-row-label,
+body.app-visible .page .settings-row:hover .settings-row-sublabel { color: #0d2218; }
+
+body.app-visible .page .fi-group-header:hover .fi-group-name,
+body.app-visible .page .fi-group-name { color: #0d2218; }
+body.app-visible .page .fi-group-header { background: rgba(13,34,24,.05); }
+body.app-visible .page .fi-group-header:hover { background: rgba(13,34,24,.08); }
+
+body.app-visible .page .piano-item-card {
+  border-width: 2px;
+  border-color: rgba(13,34,24,.16);
+}
+body.app-visible .page .piano-item-card:hover {
+  background: rgba(255,255,255,.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(13,34,24,.6);
+}
+body.app-visible .page .piano-item-card:hover .piano-item-name,
+body.app-visible .page .piano-item-card:hover .piano-item-qty-below {
+  color: #0d2218;
+}
+
+body.app-visible .page .rc-ing-row:hover .rc-ing-name,
+body.app-visible .page .rc-ing-row:hover .rc-ing-qty { color: #0d2218; }
+body.app-visible .page .rc-ing-row:hover {
+  background: rgba(255,255,255,.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+body.app-visible .page .stat-card {
+  background: rgba(13,34,24,.05);
+  border-width: 2px;
+  border-color: rgba(13,34,24,.22);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--t), box-shadow var(--t), background var(--t), backdrop-filter var(--t), -webkit-backdrop-filter var(--t);
+}
+body.app-visible .page .stat-card:hover {
+  background: rgba(255,255,255,.6);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-color: rgba(13,34,24,.35);
+  box-shadow: var(--shadow);
+}
+body.app-visible .page .stat-val { color: #0d2218; }
+body.app-visible .page .stat-label { color: rgba(13,34,24,.7); }
+
+body.app-visible .page .fi-row-unit { color: rgba(13,34,24,.65); }
+/* Filtri pasto e tab: stile trasparente come Esplora, più grandi */
+body.app-visible .page .meal-btn {
+  padding: 12px 20px;
+  min-width: 88px;
+  font-size: .88rem;
+  background: transparent;
+  border: 1px solid rgba(13,34,24,.25);
+  color: rgba(13,34,24,.75);
+  letter-spacing: .06em;
+}
+body.app-visible .page .meal-btn:hover {
+  background: rgba(255,255,255,.35);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(13,34,24,.45);
+  color: #0d2218;
+}
+body.app-visible .page .meal-btn.active {
+  background: rgba(255,255,255,.55);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-color: rgba(13,34,24,.5);
+  color: #0d2218;
+}
+body.app-visible .page .meal-btn.active .meal-btn-label { color: #0d2218; }
+body.app-visible .page .meal-btn.active .meal-btn-count {
+  background: rgba(13,34,24,.2);
+  color: #0d2218;
+}
+body.app-visible .page .meal-btn .meal-btn-label { color: inherit; }
+
+body.app-visible .page .spesa-item-name { color: #0d2218; }
+body.app-visible .page .spesa-item.checked .spesa-item-name { color: rgba(13,34,24,.5); }
+body.app-visible .page .profilo-name { color: #0d2218; }
+body.app-visible .page .settings-section-title { color: #0d2218; }
+
+[data-theme="dark"] body.app-visible .page .meal-btn,
+[data-theme="dark"] body.app-visible .page .meal-btn .meal-btn-label {
+  color: rgba(255,255,255,.9);
+}
+[data-theme="dark"] body.app-visible .page .meal-btn {
+  background: transparent;
+  border-color: rgba(255,255,255,.35);
+}
+[data-theme="dark"] body.app-visible .page .meal-btn:hover {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.5);
+}
+[data-theme="dark"] body.app-visible .page .meal-btn.active {
+  background: rgba(255,255,255,.14);
+  border-color: rgba(255,255,255,.65);
+}
+[data-theme="dark"] body.app-visible .page .meal-btn .meal-btn-count {
+  background: rgba(255,255,255,.12);
+  color: rgba(15,23,42,.9);
+}
+[data-theme="dark"] body.app-visible .page .meal-btn.active .meal-btn-count {
+  background: #facc15;
+  color: #1e293b;
+}
+
+[data-theme="dark"] body.app-visible .page .rc-card {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+}
+[data-theme="dark"] body.app-visible .page .rc-card .rc-name,
+[data-theme="dark"] body.app-visible .page .rc-card .rc-meta { color: var(--text); }
+[data-theme="dark"] body.app-visible .page .rc-card:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-mid);
+}
+[data-theme="dark"] body.app-visible .page .rc-card:hover .rc-name,
+[data-theme="dark"] body.app-visible .page .rc-card:hover .rc-meta,
+[data-theme="dark"] body.app-visible .page .rc-card:hover .rc-chevron { color: #e8f5f0; }
+[data-theme="dark"] body.app-visible .page .fi-row:hover {
+  background: var(--bg-hover);
+}
+[data-theme="dark"] body.app-visible .page .fi-row:hover .fi-row-unit,
+[data-theme="dark"] body.app-visible .page .fi-row:hover .fi-qty { color: var(--text-mid); }
+[data-theme="dark"] body.app-visible .page .fi-group-header,
+[data-theme="dark"] body.app-visible .page .fi-group-header:hover {
+  background: var(--bg-subtle);
+}
+[data-theme="dark"] body.app-visible .page .fi-group-name { color: var(--text); }
+[data-theme="dark"] body.app-visible .page .fi-group-header:hover .fi-group-name { color: var(--text); }
+[data-theme="dark"] body.app-visible .page .spesa-item:hover {
+  background: var(--bg-hover);
+}
+[data-theme="dark"] body.app-visible .page .spesa-item:hover .spesa-item-name,
+[data-theme="dark"] body.app-visible .page .spesa-item:hover .spesa-item-qty { color: var(--text); }
+[data-theme="dark"] body.app-visible .page .rc-ing-row:hover {
+  background: rgba(255,255,255,.04);
+}
+[data-theme="dark"] body.app-visible .page .rc-ing-row:hover .rc-ing-name,
+[data-theme="dark"] body.app-visible .page .rc-ing-row:hover .rc-ing-qty { color: var(--text); }
+[data-theme="dark"] body.app-visible .page .stat-card {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+}
+[data-theme="dark"] body.app-visible .page .stat-card:hover {
+  border-color: var(--primary-mid);
+}
+[data-theme="dark"] body.app-visible .page .stat-val { color: var(--text); }
+[data-theme="dark"] body.app-visible .page .stat-label { color: var(--text-mid); }
+[data-theme="dark"] body.app-visible .page .fi-row-unit { color: var(--text-mid); }
+[data-theme="dark"] body.app-visible .page .meal-btn,
+[data-theme="dark"] body.app-visible .page .meal-btn .meal-btn-label { color: var(--text); }
+[data-theme="dark"] body.app-visible .page .meal-btn {
+  border-color: var(--border);
+  background: transparent;
+}
+[data-theme="dark"] body.app-visible .page .meal-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-mid);
+}
+[data-theme="dark"] body.app-visible .page .meal-btn.active {
+  background: var(--bg-hover);
+  border-color: var(--primary-mid);
+}
+[data-theme="dark"] body.app-visible .page .meal-btn .meal-btn-count {
+  background: var(--bg-subtle);
+  color: var(--text-mid);
+}
+[data-theme="dark"] body.app-visible .page .meal-btn.active .meal-btn-count {
+  background: var(--primary);
+  color: #ffffff;
+}
+[data-theme="dark"] body.app-visible .page .ob-tab { border-color: var(--border); color: var(--text-mid); }
+[data-theme="dark"] body.app-visible .page .ob-tab:hover,
+[data-theme="dark"] body.app-visible .page .ob-tab.active { color: var(--text); background: var(--bg-hover); border-color: var(--border-mid); }
+[data-theme="dark"] body.app-visible .page .spesa-item-name { color: var(--text); }
+[data-theme="dark"] body.app-visible .page .spesa-item.checked .spesa-item-name { color: var(--text-light); }
+[data-theme="dark"] body.app-visible .page .settings-row:hover .settings-row-label,
+[data-theme="dark"] body.app-visible .page .settings-row:hover .settings-row-sublabel { color: var(--text); }
+[data-theme="dark"] body.app-visible .page .profilo-name,
+[data-theme="dark"] body.app-visible .page .settings-section-title { color: var(--text); }
+[data-theme="dark"] body.app-visible .page .piano-section-label {
+  color: var(--text-mid);
+  border-top-color: var(--border);
+}
+
 /* Continua senza account nel modale Accedi */
 .auth-modal-offline {
   display: block;
@@ -1975,6 +2383,31 @@
 .ob-tab.active {
   background: var(--primary); border-color: var(--primary-dark); color: #fff;
   box-shadow: 0 2px 10px rgba(61,139,111,.3);
+}
+
+/* App: ob-tab stile trasparente come Esplora */
+body.app-visible .page .ob-tab {
+  padding: 12px 20px;
+  font-size: .88rem;
+  letter-spacing: .06em;
+  background: transparent;
+  border: 1px solid rgba(13,34,24,.25);
+  color: rgba(13,34,24,.75);
+}
+body.app-visible .page .ob-tab:hover {
+  background: rgba(13,34,24,.08);
+  border-color: rgba(13,34,24,.4);
+  color: #0d2218;
+}
+body.app-visible .page .ob-tab.active {
+  background: rgba(13,34,24,.12);
+  border-color: rgba(13,34,24,.4);
+  color: #0d2218;
+  box-shadow: none;
+}
+body.app-visible .page .ob-tab.active .ob-tab-badge {
+  background: rgba(13,34,24,.2);
+  color: #0d2218;
 }
 .ob-tab-badge {
   background: rgba(255,255,255,.3);
@@ -2925,7 +3358,7 @@ input.invalid {
 ══════════════════════════════════════════════════ */
 .ai-recipe-btn {
   width: 100%; padding: 10px 14px;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, #d4a84b 100%);
   color: #fff; border: none; border-radius: var(--r-lg);
   font-weight: 700; font-size: .82rem; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
@@ -2967,7 +3400,7 @@ input.invalid {
 .ai-powered-label {
   display: block;
   font-size: .65rem; font-weight: 500;
-  color: rgba(255,255,255,.75);
+  color: #ffffff;
   letter-spacing: .03em;
   margin-top: 2px;
   line-height: 1;
@@ -2976,7 +3409,7 @@ input.invalid {
 .section-title + .ai-powered-label,
 .modal-title + .ai-powered-label,
 div > .ai-powered-label {
-  color: var(--text-3);
+  color: #0d2218;
   font-size: .7rem;
 }
 /* Pulsante stats: label non blocco ma inline */
@@ -2985,6 +3418,12 @@ div > .ai-powered-label {
   font-size: .68rem;
   margin-left: 6px;
   opacity: .8;
+}
+
+[data-theme="dark"] .section-title + .ai-powered-label,
+[data-theme="dark"] .modal-title + .ai-powered-label,
+[data-theme="dark"] div > .ai-powered-label {
+  color: rgba(255,255,255,.9);
 }
 
 /* AI substitute suggestions */
@@ -3329,17 +3768,18 @@ div > .ai-powered-label {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: #fff8e1;
+  background: #fff4d0;
   border: 1.5px solid #f59e0b;
   border-radius: var(--r-lg);
   padding: 12px 14px;
   margin-bottom: 12px;
   font-size: .88rem;
-  color: var(--text-1);
+  color: #78350f;
 }
 [data-theme="dark"] .piano-missing-banner {
   background: color-mix(in srgb, #f59e0b 12%, var(--bg-card));
   border-color: #f59e0b;
+  color: rgba(255,255,255,.9);
 }
 .piano-missing-icon {
   font-size: 1.2em;

@@ -21,7 +21,7 @@ function renderStatistiche() {
         '</div>' +
         '<p style="font-size:.82em;color:var(--text-3);margin-bottom:14px;">Gemini analizzerà le tue statistiche e ti darà suggerimenti personalizzati (i dati del piano alimentare non vengono condivisi).</p>' +
         '<button id="aiStatsBtn" class="btn btn-primary btn-small" onclick="generateAIStatsAnalysis()">' +
-          '🤖 Analisi AI <span class="ai-powered-label">Powered by Gemini</span>' +
+          'Analisi AI <span class="ai-powered-label">Powered by Gemini</span>' +
         '</button>' +
         '<div id="aiStatsResult" style="display:none;margin-top:14px;"></div>' +
       '</div>' +
@@ -31,12 +31,12 @@ function renderStatistiche() {
      STAT CARDS RIEPILOGO
   ══════════════════════════════════════════ */
   var statItems = [
-    { emoji:'📅', label:'Giorni registrati',  value: stats.totalDays },
-    { emoji:'✅', label:'Pasti completati',   value: stats.totalMeals },
-    { emoji:'🌿', label:'Ingredienti unici',  value: stats.uniqueIngredients },
-    { emoji:'🔄', label:'Sostituzioni',       value: stats.totalSubs },
-    { emoji:'⏭', label:'Giorni saltati (14gg)', value: stats.skippedDays },
-    { emoji:'🎨', label:'Varietà media/giorno', value: stats.varietyScore }
+    { emoji:'', label:'Giorni registrati',  value: stats.totalDays },
+    { emoji:'', label:'Pasti completati',   value: stats.totalMeals },
+    { emoji:'', label:'Ingredienti unici',  value: stats.uniqueIngredients },
+    { emoji:'', label:'Sostituzioni',       value: stats.totalSubs },
+    { emoji:'', label:'Giorni saltati (14gg)', value: stats.skippedDays },
+    { emoji:'', label:'Varietà media/giorno', value: stats.varietyScore }
   ];
 
   html +=
@@ -44,8 +44,7 @@ function renderStatistiche() {
     statItems.map(function(s){
       return (
         '<div class="rc-card" style="padding:18px 16px;text-align:center;">' +
-          '<div style="font-size:1.8rem;margin-bottom:6px;">'+s.emoji+'</div>' +
-          '<div style="font-size:1.6rem;font-weight:800;color:var(--primary);">'+s.value+'</div>' +
+          '<div style="font-size:1.6rem;font-weight:800;color:var(--primary);margin-bottom:2px;">'+s.value+'</div>' +
           '<div style="font-size:.78em;color:var(--text-3);margin-top:4px;">'+s.label+'</div>' +
         '</div>'
       );
@@ -56,7 +55,7 @@ function renderStatistiche() {
      ALIMENTI PIÙ CONSUMATI
   ══════════════════════════════════════════ */
   html += buildStatSection(
-    '🏆 Alimenti più consumati',
+    'Alimenti più consumati',
     stats.topIngredients,
     function(item){
       var pct = stats.topIngredients.length ? Math.round((item.count / stats.topIngredients[0].count) * 100) : 0;

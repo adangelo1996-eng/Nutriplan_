@@ -144,6 +144,7 @@ function signInWithGoogle() {
       /* Se la landing è ancora visibile, entra nell'app */
       var landing = document.getElementById('landingPage');
       if (landing && landing.style.display !== 'none' && typeof enterApp === 'function') {
+        if (typeof window !== 'undefined') window.NP_READONLY = false;
         enterApp();
       }
     })

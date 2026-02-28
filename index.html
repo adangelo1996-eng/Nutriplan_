@@ -49,39 +49,33 @@
   <div class="landing-marquee-wrap" aria-hidden="true">
     <div class="landing-marquee-track">
       <div class="landing-marquee-inner">
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
       </div>
       <div class="landing-marquee-inner" aria-hidden="true">
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
-        <span class="landing-marquee-text">NutriPlan</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
+        <span class="landing-marquee-text">NutriPlan&nbsp;</span>
       </div>
     </div>
   </div>
 
-  <!-- Striscia numeri 1–24 -->
+  <!-- Striscia numeri 1–giorno corrente -->
   <div class="landing-numbers-wrap" aria-hidden="true">
     <div class="landing-numbers-track">
-      <div class="landing-numbers-inner">
-        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span>
-        <span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span>
-      </div>
-      <div class="landing-numbers-inner" aria-hidden="true">
-        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span>
-        <span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span>24</span>
-      </div>
+      <div class="landing-numbers-inner" id="landingNumbersInner"></div>
+      <div class="landing-numbers-inner" id="landingNumbersInnerClone" aria-hidden="true"></div>
     </div>
   </div>
 
@@ -89,7 +83,7 @@
   <div class="landing-hero">
     <h1 class="landing-hero-headline">
       <span class="landing-hero-line landing-hero-line-1">Il tuo</span>
-      <span class="landing-hero-line landing-hero-line-2">piano alimentare</span>
+      <span class="landing-hero-line landing-hero-line-2">pia<span class="landing-hero-n">n</span>o alime<span class="landing-hero-n">n</span>tare</span>
     </h1>
     <p class="landing-sub">Scegli una sezione per iniziare.</p>
     <button type="button" class="landing-badge landing-esplora-btn" id="landingEsploraBtn" onclick="toggleLandingCards()" aria-expanded="false">Esplora</button>
@@ -99,27 +93,27 @@
   <div class="landing-cards-reveal" id="landingCardsReveal" aria-hidden="true">
     <p class="landing-cards-sub">Scegli dove andare</p>
     <div class="landing-nav-grid">
-      <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('piano')">
+      <button type="button" class="landing-nav-card" data-target-page="piano" onclick="openPageFromLanding('piano', event)">
         <span class="landing-nav-card-label">Oggi</span>
         <span class="landing-nav-card-desc">Ingredienti e ricette del giorno</span>
       </button>
-      <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('piano-alimentare')">
+      <button type="button" class="landing-nav-card" data-target-page="piano-alimentare" onclick="openPageFromLanding('piano-alimentare', event)">
         <span class="landing-nav-card-label">Piano</span>
         <span class="landing-nav-card-desc">Configura il piano alimentare</span>
       </button>
-      <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('dispensa')">
+      <button type="button" class="landing-nav-card" data-target-page="dispensa" onclick="openPageFromLanding('dispensa', event)">
         <span class="landing-nav-card-label">Dispensa</span>
         <span class="landing-nav-card-desc">Ingredienti disponibili</span>
       </button>
-      <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('ricette')">
+      <button type="button" class="landing-nav-card" data-target-page="ricette" onclick="openPageFromLanding('ricette', event)">
         <span class="landing-nav-card-label">Ricette</span>
         <span class="landing-nav-card-desc">Catalogo e le tue ricette</span>
       </button>
-      <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('spesa')">
+      <button type="button" class="landing-nav-card" data-target-page="spesa" onclick="openPageFromLanding('spesa', event)">
         <span class="landing-nav-card-label">Spesa</span>
         <span class="landing-nav-card-desc">Lista della spesa</span>
       </button>
-      <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('statistiche')">
+      <button type="button" class="landing-nav-card" data-target-page="statistiche" onclick="openPageFromLanding('statistiche', event)">
         <span class="landing-nav-card-label">Statistiche</span>
         <span class="landing-nav-card-desc">Riepilogo settimanale</span>
       </button>
@@ -152,13 +146,49 @@
 </div>
 
 <!-- ═════════════════════════════════════════════════════════════════
-     HEADER
+     HEADER (app) — con marquee stile homepage
 ═════════════════════════════════════════════════════════════════ -->
 <header class="app-header" id="appHeader" style="display:none">
-  <div class="app-inner">
+  <!-- Marquee logo + giorni mese corrente (solo app, non landing) -->
+  <div class="app-header-marquee">
+    <div class="app-header-logo-track" aria-hidden="true">
+      <div class="app-header-logo-runner">
+        <div class="app-header-logo-inner">
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+        </div>
+        <div class="app-header-logo-inner" aria-hidden="true">
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+          <span class="app-header-logo-text">NutriPlan</span>
+        </div>
+      </div>
+    </div>
+    <div class="app-header-days-track" aria-hidden="true">
+      <div class="app-header-days-runner">
+        <div class="app-header-days-inner" id="appHeaderDaysInner"></div>
+        <div class="app-header-days-inner" id="appHeaderDaysInnerClone"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-inner app-header-main">
 
     <div class="header-left">
-      <canvas id="headerIcon" width="32" height="32" style="border-radius:8px;vertical-align:middle;"></canvas>
+      <button type="button" class="app-logo-mark" id="headerIcon" onclick="goToHomepage()" aria-label="Torna alla homepage">
+        n.
+      </button>
       <span class="header-title">NutriPlan</span>
     </div>
 
@@ -187,34 +217,34 @@
   <span class="sidebar-section-label">Oggi</span>
 
   <button class="nav-tab active" id="st-piano" onclick="goToPage('piano')">
-    <span class="nav-icon">🍽</span>
+    <span class="nav-icon"></span>
     <span class="nav-label">Oggi</span>
   </button>
   <button class="nav-tab" id="st-piano-alimentare" onclick="goToPage('piano-alimentare')">
-    <span class="nav-icon">🌿</span>
+    <span class="nav-icon"></span>
     <span class="nav-label">Piano</span>
   </button>
   <button class="nav-tab" id="st-dispensa" onclick="goToPage('dispensa')">
-    <span class="nav-icon">🗄️</span>
+    <span class="nav-icon"></span>
     <span class="nav-label">Dispensa</span>
   </button>
   <button class="nav-tab" id="st-ricette" onclick="goToPage('ricette')">
-    <span class="nav-icon">📖</span>
+    <span class="nav-icon"></span>
     <span class="nav-label">Ricette</span>
   </button>
 
   <span class="sidebar-section-label">Gestione</span>
 
   <button class="nav-tab" id="st-spesa" onclick="goToPage('spesa')">
-    <span class="nav-icon">🛒</span>
+    <span class="nav-icon"></span>
     <span class="nav-label">Spesa</span>
   </button>
   <button class="nav-tab" id="st-statistiche" onclick="goToPage('statistiche')">
-    <span class="nav-icon">📊</span>
+    <span class="nav-icon"></span>
     <span class="nav-label">Stats</span>
   </button>
   <button class="nav-tab" id="st-profilo" onclick="goToPage('profilo')">
-    <span class="nav-icon">👤</span>
+    <span class="nav-icon"></span>
     <span class="nav-label">Profilo</span>
   </button>
 
@@ -229,7 +259,7 @@
   <div class="page" id="page-piano-alimentare">
     <div class="page-header">
       <div>
-        <div class="page-header-title">🌿 Piano Alimentare</div>
+        <div class="page-header-title">Piano Alimentare</div>
         <div class="page-header-sub">Imposta i tuoi pasti e i limiti</div>
       </div>
       <div class="page-header-actions">
@@ -243,7 +273,7 @@
   <div class="page" id="page-piano-gen">
     <div class="page-header">
       <div>
-        <div class="page-header-title">⚙️ Genera il tuo piano alimentare</div>
+        <div class="page-header-title">Ge<span class="page-title-n">n</span>era il tuo pia<span class="page-title-n">n</span>o alime<span class="page-title-n">n</span>tare</div>
         <div class="page-header-sub">Inserisci i tuoi dati: il piano è sempre modificabile</div>
       </div>
       <div class="page-header-actions">
@@ -257,7 +287,7 @@
   <div class="page active" id="page-piano">
     <div class="page-header">
       <div>
-        <div class="page-header-title">🍽 Cosa mangio oggi</div>
+        <div class="page-header-title">Cosa mangio oggi</div>
         <div class="page-header-sub" id="selectedDateLabel">Oggi</div>
       </div>
       <div class="page-header-actions">
@@ -269,27 +299,22 @@
 
     <div class="meal-selector" id="mealSelector">
       <button class="meal-btn active" onclick="selectMeal('colazione',this)">
-        <span class="meal-btn-icon">☀️</span>
         <span class="meal-btn-label">Colazione</span>
         <span class="meal-btn-count" id="cnt-colazione">0</span>
       </button>
       <button class="meal-btn" onclick="selectMeal('spuntino',this)">
-        <span class="meal-btn-icon">🍎</span>
         <span class="meal-btn-label">Spuntino</span>
         <span class="meal-btn-count" id="cnt-spuntino">0</span>
       </button>
       <button class="meal-btn" onclick="selectMeal('pranzo',this)">
-        <span class="meal-btn-icon">🍽</span>
         <span class="meal-btn-label">Pranzo</span>
         <span class="meal-btn-count" id="cnt-pranzo">0</span>
       </button>
       <button class="meal-btn" onclick="selectMeal('merenda',this)">
-        <span class="meal-btn-icon">🥪</span>
         <span class="meal-btn-label">Merenda</span>
         <span class="meal-btn-count" id="cnt-merenda">0</span>
       </button>
       <button class="meal-btn" onclick="selectMeal('cena',this)">
-        <span class="meal-btn-icon">🌙</span>
         <span class="meal-btn-label">Cena</span>
         <span class="meal-btn-count" id="cnt-cena">0</span>
       </button>
@@ -322,7 +347,7 @@
   <div class="page" id="page-dispensa">
     <div class="page-header">
       <div>
-        <div class="page-header-title">🗄️ Dispensa</div>
+        <div class="page-header-title">Dispensa</div>
         <div class="page-header-sub">Ingredienti disponibili</div>
       </div>
       <div class="page-header-actions">
@@ -351,7 +376,7 @@
   <div class="page" id="page-ricette">
     <div class="page-header">
       <div>
-        <div class="page-header-title">📖 Ricette</div>
+        <div class="page-header-title">Ricette</div>
         <div class="page-header-sub">Catalogo e ricette personali</div>
       </div>
       <div class="page-header-actions">
@@ -360,9 +385,9 @@
     </div>
 
     <div class="page-tabs">
-      <button class="page-tab active" onclick="switchRicetteTab('catalogo',this)">📖 Catalogo</button>
-      <button class="page-tab" onclick="switchRicetteTab('mie',this)">⭐ Le mie</button>
-      <button class="page-tab" onclick="switchRicetteTab('ai',this)">🤖 AI</button>
+      <button class="page-tab active" onclick="switchRicetteTab('catalogo',this)">Catalogo</button>
+      <button class="page-tab" onclick="switchRicetteTab('mie',this)">Le mie</button>
+      <button class="page-tab" onclick="switchRicetteTab('ai',this)">AI</button>
     </div>
 
     <!-- Tab: Catalogo -->
@@ -408,7 +433,7 @@
   <div class="page" id="page-spesa">
     <div class="page-header">
       <div>
-        <div class="page-header-title">🛒 Lista spesa</div>
+        <div class="page-header-title">Lista spesa</div>
         <div class="page-header-sub">Cosa comprare</div>
       </div>
       <div class="page-header-actions">
@@ -423,7 +448,7 @@
   <div class="page" id="page-statistiche">
     <div class="page-header">
       <div>
-        <div class="page-header-title">📊 Statistiche</div>
+        <div class="page-header-title">Statistiche</div>
         <div class="page-header-sub">Riepilogo settimanale</div>
       </div>
       <div class="page-header-actions">
@@ -437,7 +462,7 @@
   <div class="page" id="page-profilo">
     <div class="page-header">
       <div>
-        <div class="page-header-title">👤 Profilo</div>
+        <div class="page-header-title">Profilo</div>
         <div class="page-header-sub">Impostazioni e piano personale</div>
       </div>
       <div class="page-header-actions">
@@ -452,7 +477,7 @@
   <div class="page" id="page-edit-day">
     <div class="page-header">
       <div>
-        <div class="page-header-title">📅 Modifica giorno</div>
+        <div class="page-header-title">Modifica giorno</div>
         <div class="page-header-sub" id="editDayDateLabel">Seleziona una data</div>
       </div>
       <div class="page-header-actions">
@@ -472,31 +497,31 @@
 <nav class="bottom-nav" id="bottomNav" style="display:none">
   <div class="app-inner">
     <button class="nav-tab active" id="bn-piano" onclick="goToPage('piano')">
-      <span class="nav-icon">🍽</span>
+      <span class="nav-icon"></span>
       <span class="nav-label">Oggi</span>
     </button>
     <button class="nav-tab" id="bn-piano-alimentare" onclick="goToPage('piano-alimentare')">
-      <span class="nav-icon">🌿</span>
+      <span class="nav-icon"></span>
       <span class="nav-label">Piano</span>
     </button>
     <button class="nav-tab" id="bn-dispensa" onclick="goToPage('dispensa')">
-      <span class="nav-icon">🗄️</span>
+      <span class="nav-icon"></span>
       <span class="nav-label">Dispensa</span>
     </button>
     <button class="nav-tab" id="bn-ricette" onclick="goToPage('ricette')">
-      <span class="nav-icon">📖</span>
+      <span class="nav-icon"></span>
       <span class="nav-label">Ricette</span>
     </button>
     <button class="nav-tab" id="bn-spesa" onclick="goToPage('spesa')">
-      <span class="nav-icon">🛒</span>
+      <span class="nav-icon"></span>
       <span class="nav-label">Spesa</span>
     </button>
     <button class="nav-tab" id="bn-statistiche" onclick="goToPage('statistiche')">
-      <span class="nav-icon">📊</span>
+      <span class="nav-icon"></span>
       <span class="nav-label">Stats</span>
     </button>
     <button class="nav-tab" id="bn-profilo" onclick="goToPage('profilo')">
-      <span class="nav-icon">👤</span>
+      <span class="nav-icon"></span>
       <span class="nav-label">Profilo</span>
     </button>
   </div>

@@ -896,6 +896,9 @@ function startApp() {
   var shell   = document.getElementById('appShell');
   if (landing) landing.style.display = 'none';
   if (shell)   shell.style.display   = 'block';
+  document.body.classList.add('app-visible');
+
+  _buildHeaderDaysTrack();
 
   initDarkMode();
   initIcons();
@@ -920,6 +923,43 @@ function startApp() {
   switchPage('piano');
 }
 
+/* Marquee header: genera numeri da 1 al giorno corrente del mese */
+function _buildHeaderDaysTrack() {
+  var inner1 = document.getElementById('appHeaderDaysInner');
+  var inner2 = document.getElementById('appHeaderDaysInnerClone');
+  if (!inner1 || !inner2) return;
+
+  var now = new Date();
+  var day = now.getDate();
+  if (!day || day < 1 || day > 31) return;
+
+  var spans = [];
+  for (var d = 1; d <= day; d++) {
+    spans.push('<span>' + d + '</span>');
+  }
+  var html = spans.join('');
+  inner1.innerHTML = html;
+  inner2.innerHTML = html;
+}
+
+function _buildLandingDaysTrack() {
+  var inner1 = document.getElementById('landingNumbersInner');
+  var inner2 = document.getElementById('landingNumbersInnerClone');
+  if (!inner1 || !inner2) return;
+
+  var now = new Date();
+  var day = now.getDate();
+  if (!day || day < 1 || day > 31) return;
+
+  var spans = [];
+  for (var d = 1; d <= day; d++) {
+    spans.push('<span>' + d + '</span>');
+  }
+  var html = spans.join('');
+  inner1.innerHTML = html;
+  inner2.innerHTML = html;
+}
+
 /* Auto-start se non c'è landing page */
 document.addEventListener('DOMContentLoaded', function() {
   _wireInstallPwaBtn();
@@ -933,6 +973,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   initDarkMode();
+  _buildLandingDaysTrack();
 
   /* Aggiorna icona tema nell'header (data-theme-toggle) */
   var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -991,6 +1032,7 @@ function landingSignIn() {
 
 function landingOffline() {
   if (!confirm('Senza accesso i dati non vengono sincronizzati tra dispositivi.\nContinuare in modalità offline?')) return;
+  if (typeof window !== 'undefined') window.NP_READONLY = true;
   enterApp();
 }
 
@@ -1072,6 +1114,73 @@ function updateLandingInverted() {
   }
 }
 
+/* Transizione case-study: overlay si espande dalla card cliccata, poi la card \"diventa\" la pagina */
+function openPageFromLanding(pageKey, ev) {
+  if (!ev || !ev.currentTarget) return;
+  var btn = ev.currentTarget;
+  var page = document.getElementById('landingPage');
+  var overlay = document.getElementById('landingInvertedOverlay');
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var cardOverlay = null;
+
+  if (prefersReduced || !page || !overlay) {
+    enterApp();
+    goToPage(pageKey);
+    return;
+  }
+
+  var done = false;
+  function finishTransition() {
+    if (done) return;
+    done = true;
+    page.removeEventListener('transitionend', onEnd);
+    overlay.removeEventListener('transitionend', onEnd);
+    if (cardOverlay && cardOverlay.parentNode) {
+      cardOverlay.parentNode.removeChild(cardOverlay);
+    }
+    page.classList.remove('landing-transition-to-app');
+    enterApp();
+    goToPage(pageKey);
+  }
+
+  function onEnd(e) {
+    if (e.target === overlay && e.propertyName === 'clip-path') finishTransition();
+  }
+
+  setLandingInvertedOrigin(btn);
+
+  /* Crea un clone della card che si espande a tutto schermo durante la transizione */
+  var rect = btn.getBoundingClientRect();
+  cardOverlay = document.createElement('div');
+  cardOverlay.className = 'landing-card-transition';
+  cardOverlay.style.left = rect.left + 'px';
+  cardOverlay.style.top = rect.top + 'px';
+  cardOverlay.style.width = rect.width + 'px';
+  cardOverlay.style.height = rect.height + 'px';
+
+  var labelEl = btn.querySelector('.landing-nav-card-label');
+  var descEl  = btn.querySelector('.landing-nav-card-desc');
+  var title   = labelEl ? labelEl.textContent : '';
+  var sub     = descEl  ? descEl.textContent  : '';
+
+  cardOverlay.innerHTML =
+    '<div class="landing-card-transition-inner">' +
+      (title ? '<div class="landing-card-transition-title">' + title + '</div>' : '') +
+      (sub   ? '<div class="landing-card-transition-sub">'   + sub   + '</div>' : '') +
+    '</div>';
+
+  document.body.appendChild(cardOverlay);
+
+  requestAnimationFrame(function() {
+    cardOverlay.classList.add('landing-card-transition-active');
+  });
+
+  page.classList.add('landing-transition-to-app');
+  page.addEventListener('transitionend', onEnd);
+  overlay.addEventListener('transitionend', onEnd);
+  setTimeout(finishTransition, 1200);
+}
+
 /* ── enterApp() ── chiamata dopo login o scelta offline ── */
 function enterApp() {
   var landing = document.getElementById('landingPage');
@@ -1083,10 +1192,12 @@ function enterApp() {
 
   if (landing) landing.style.display = 'none';
   if (accediWrap) accediWrap.style.display = 'none';
+  document.body.classList.add('app-visible');
+  _buildHeaderDaysTrack();
   if (header)  header.style.display  = '';
-  if (sidebar) sidebar.style.display = '';
-  if (bottom)  bottom.style.display  = '';
-  if (main)    main.style.display    = '';
+  if (sidebar) sidebar.style.display  = '';
+  if (bottom)  bottom.style.display   = '';
+  if (main)    main.style.display     = '';
 
   initDarkMode();
   initIcons();
@@ -1111,6 +1222,29 @@ function enterApp() {
   } else if (typeof checkTutorial === 'function') {
     checkTutorial();
   }
+}
+
+function goToHomepage() {
+  var landing   = document.getElementById('landingPage');
+  var accediWrap = document.getElementById('landingAccediWrap');
+  var header    = document.getElementById('appHeader');
+  var sidebar   = document.getElementById('sidebarNav');
+  var bottom    = document.getElementById('bottomNav');
+  var main      = document.getElementById('appMain');
+
+  document.body.classList.remove('app-visible');
+
+  if (landing) {
+    landing.style.display = '';
+    landing.classList.remove('landing-transition-to-app');
+  }
+  if (accediWrap) accediWrap.style.display = '';
+  if (header)  header.style.display  = 'none';
+  if (sidebar) sidebar.style.display = 'none';
+  if (bottom)  bottom.style.display  = 'none';
+  if (main)    main.style.display    = 'none';
+
+  currentPage = null;
 }
 
 /* ── goToPage() ── navigazione con i nuovi ID ─────────── */
@@ -1142,7 +1276,12 @@ function goToPage(key) {
     'piano':            function() { if (typeof renderPiano            === 'function') renderPiano(); },
     'piano-alimentare': function() { if (typeof renderPianoAlimentare  === 'function') renderPianoAlimentare(); },
     'piano-gen':        function() { if (typeof renderPianoGenPage     === 'function') renderPianoGenPage(); },
-    'dispensa':         function() { if (typeof renderFridge           === 'function') renderFridge(); },
+    'dispensa':         function() {
+      // #region agent log
+      fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'0f4ae2'},body:JSON.stringify({sessionId:'0f4ae2',location:'app.js:goToPage',message:'dispensa render invoked',data:{key:key,hasRenderFridge:typeof renderFridge==='function'},timestamp:Date.now(),hypothesisId:'H1'})}).catch(function(){});
+      // #endregion
+      if (typeof renderFridge === 'function') renderFridge();
+    },
     'ricette':          function() { if (typeof renderRicette          === 'function') renderRicette(); },
     'spesa':            function() { if (typeof renderSpesa            === 'function') renderSpesa(); },
     'statistiche':      function() { if (typeof renderStats            === 'function') renderStats(); },
@@ -1345,11 +1484,11 @@ function loadEditDayContent() {
   }
 
   var meals = [
-    { key: 'colazione', emoji: '☀️', label: 'Colazione' },
-    { key: 'spuntino', emoji: '🍎', label: 'Spuntino' },
-    { key: 'pranzo', emoji: '🍽', label: 'Pranzo' },
-    { key: 'merenda', emoji: '🥪', label: 'Merenda' },
-    { key: 'cena', emoji: '🌙', label: 'Cena' }
+    { key: 'colazione', label: 'Colazione' },
+    { key: 'spuntino',  label: 'Spuntino'  },
+    { key: 'pranzo',    label: 'Pranzo'    },
+    { key: 'merenda',   label: 'Merenda'   },
+    { key: 'cena',      label: 'Cena'      }
   ];
   var content = document.getElementById('editDayContent');
   if (!content) return;
@@ -1358,7 +1497,6 @@ function loadEditDayContent() {
     meals.map(function(m) {
       var active = m.key === 'colazione' ? ' active' : '';
       return '<button class="meal-btn' + active + '" onclick="selectMeal(\'' + m.key + '\',this);if(typeof renderPianoRicette===\'function\')renderPianoRicette();">' +
-        '<span class="meal-btn-icon">' + m.emoji + '</span>' +
         '<span class="meal-btn-label">' + m.label + '</span>' +
         '</button>';
     }).join('') +

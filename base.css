@@ -51,7 +51,7 @@
   --r-full: 999px;
 
   /* Layout */
-  --header-h:  60px;
+  --header-h:  92px;
   --nav-h:     64px;
   --sidebar-w: 240px;
   --content-w: 1440px;
@@ -118,6 +118,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* App attiva: sfondo come homepage (gradiente verde) */
+body.app-visible {
+  background:
+    radial-gradient(ellipse at 30% 60%, rgba(61,139,111,.4) 0%, transparent 65%),
+    linear-gradient(160deg, #0d2218 0%, #1a4a35 60%, #0d2218 100%);
+  color: rgba(255,255,255,.9);
+}
+
+[data-theme="dark"] body.app-visible {
+  background:
+    radial-gradient(ellipse at 30% 60%, rgba(61,139,111,.25) 0%, transparent 65%),
+    linear-gradient(160deg, #061510 0%, #0d2218 60%, #061510 100%);
+  color: rgba(226,237,232,.92);
+}
+
 button, input, select, textarea {
   font-family: inherit;
   font-size: inherit;
@@ -164,7 +179,7 @@ a:hover { text-decoration: underline; }
 
 /* Cursore oro fisso su tutta l'app (homepage e resto delle pagine) */
 body {
-  cursor: url('cursor-gold.svg') 12 12, default;
+  cursor: url('cursor-gold-ring.svg') 12 12, default;
 }
 body a,
 body button,
@@ -177,7 +192,7 @@ body .landing-badge,
 body .landing-nav-card,
 body .landing-accedi-wrap,
 body .landing-accedi-wrap * {
-  cursor: url('cursor-gold.svg') 12 12, pointer;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
 }
 
 #landingPage.landing-metalab {
@@ -230,6 +245,11 @@ body .landing-accedi-wrap * {
   --landing-spread: 150vmax;
 }
 
+/* Transizione da card a pagina app (case-study style): overlay si espande dalla card */
+#landingPage.landing-transition-to-app .landing-inverted-overlay {
+  --landing-spread: 150vmax;
+}
+
 /* Transizione fluida su testi ed elementi (in sync con overlay) */
 #landingPage .landing-hero-headline,
 #landingPage .landing-sub,
@@ -270,6 +290,59 @@ body .landing-accedi-wrap * {
   border-color: rgba(13,34,24,.5);
 }
 
+/* Card che \"diventa\" la pagina durante la transizione verso l'app */
+.landing-card-transition {
+  position: fixed;
+  z-index: 160;
+  border-radius: 24px;
+  background: rgba(10,24,18,0.96);
+  color: #e8f5f0;
+  box-shadow: 0 28px 80px rgba(0,0,0,.65);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transform-origin: center center;
+  transition:
+    left .7s cubic-bezier(0.33, 1, 0.68, 1),
+    top .7s cubic-bezier(0.33, 1, 0.68, 1),
+    width .7s cubic-bezier(0.33, 1, 0.68, 1),
+    height .7s cubic-bezier(0.33, 1, 0.68, 1),
+    border-radius .7s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity .4s ease-out;
+}
+.landing-card-transition-inner {
+  padding: 32px 28px;
+  text-align: left;
+  max-width: 520px;
+}
+.landing-card-transition-title {
+  font-size: clamp(1.6rem, 4vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+}
+.landing-card-transition-sub {
+  font-size: .9rem;
+  opacity: .8;
+  max-width: 360px;
+  line-height: 1.5;
+}
+.landing-card-transition-active {
+  left: 0 !important;
+  top: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-card-transition {
+    transition: none;
+  }
+}
+
 /* Hero: headline spezzata + sottotitolo */
 .landing-hero {
   flex: 1;
@@ -288,6 +361,17 @@ body .landing-accedi-wrap * {
   letter-spacing: -.04em;
   line-height: 1.1;
   margin: 0 0 16px;
+}
+
+.landing-hero-n {
+  color: transparent;
+  -webkit-text-stroke: 1.5px #ffffff;
+  text-stroke: 1.5px #ffffff;
+}
+#landingPage.landing-inverted .landing-hero-n {
+  color: transparent;
+  -webkit-text-stroke: 1.5px #0d2218;
+  text-stroke: 1.5px #0d2218;
 }
 
 .landing-hero-line {
@@ -337,21 +421,84 @@ body .landing-accedi-wrap * {
   top: 0; left: 0; right: 0;
   z-index: 300;
   height: var(--header-h);
-  background: linear-gradient(135deg, #1c4434 0%, #285e4e 100%);
+  background: linear-gradient(160deg, #0d2218 0%, #1a4a35 60%, #0d2218 100%);
   box-shadow: 0 1px 0 rgba(255,255,255,.06),
               0 2px 12px rgba(0,0,0,.18);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-inner {
   max-width: var(--content-w);
   margin: 0 auto;
-  height: 100%;
   display: flex;
   align-items: center;
   padding: 0 10px;
   gap: 6px;
   min-width: 0;
+}
+
+/* Marquee superiore dell'header app (solo app, non landing) */
+.app-header-marquee {
+  padding: 4px 10px 2px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  flex-shrink: 0;
+}
+.app-header-marquee .app-header-logo-track,
+.app-header-marquee .app-header-days-track {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.app-header-logo-runner,
+.app-header-days-runner {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  animation: appHeaderMarquee 26s linear infinite;
+}
+.app-header-days-runner { animation-duration: 20s; }
+.app-header-logo-inner,
+.app-header-days-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+}
+.app-header-logo-track {
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  opacity: .9;
+}
+.app-header-logo-text {
+  color: rgba(255,255,255,.85);
+}
+.app-header-days-track {
+  margin-top: 2px;
+  font-size: .66rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  opacity: .75;
+}
+.app-header-days-inner span {
+  color: rgba(255,255,255,.7);
+}
+
+@keyframes appHeaderMarquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-header-logo-runner,
+  .app-header-days-runner { animation: none; }
+}
+
+/* Riga principale dell'header (logo, cloud, azioni) */
+.app-header-main {
+  flex: 1;
+  height: auto;
 }
 
 /* Sinistra: logo + titolo */
@@ -362,9 +509,26 @@ body .landing-accedi-wrap * {
   flex-shrink: 0;
   min-width: 0;
 }
-#headerIcon      { border-radius: var(--r-sm); flex-shrink: 0; }
+/* Logo tipografico minimal n. (sostituisce icona canvas) */
+.app-logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-full);
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.25);
+  font-size: .9rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: rgba(255,255,255,.95);
+  flex-shrink: 0;
+  font-family: var(--font);
+}
 .header-title    {
   font-size: 1rem; font-weight: 800;
+  letter-spacing: -0.02em;
   color: #fff; white-space: nowrap;
 }
 
@@ -414,7 +578,7 @@ body .landing-accedi-wrap * {
   width: 32px; height: 32px;
   border-radius: var(--r-sm);
   background: rgba(255,255,255,.1);
-  border: 1px solid rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.2);
   cursor: pointer;
   color: rgba(255,255,255,.88);
   display: flex; align-items: center; justify-content: center;
@@ -429,7 +593,7 @@ body .landing-accedi-wrap * {
 .auth-user-pill {
   display: flex; align-items: center; gap: 5px;
   background: rgba(255,255,255,.1);
-  border: 1px solid rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.2);
   border-radius: var(--r-full);
   padding: 3px 8px 3px 3px;
   max-width: 120px; min-width: 0;

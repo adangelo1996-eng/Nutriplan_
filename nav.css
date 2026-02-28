@@ -21,6 +21,11 @@
   overflow-y: auto;
 }
 
+body.app-visible .sidebar-nav {
+  background: linear-gradient(180deg, #0d2218 0%, #1a4a35 100%);
+  border-right-color: rgba(255,255,255,.08);
+}
+
 /* Etichetta sezione (es. "Piano", "Gestione") */
 .sidebar-section-label {
   font-size: .66rem;
@@ -32,6 +37,10 @@
   margin-top: 8px;
   white-space: nowrap;
   line-height: 1.3;
+}
+
+body.app-visible .sidebar-section-label {
+  color: rgba(255,255,255,.4);
 }
 
 /* ── Tab in sidebar ────────────────────────────── */
@@ -63,6 +72,10 @@
   position: relative;
 }
 
+body.app-visible .sidebar-nav .nav-tab {
+  color: rgba(255,255,255,.7);
+}
+
 /* Icona quadrata */
 .sidebar-nav .nav-tab .nav-icon {
   width: 30px;
@@ -77,6 +90,11 @@
   flex-shrink: 0;
   transition: all var(--t);
   transform: none !important;  /* annulla translateY del bottom-nav */
+}
+
+body.app-visible .sidebar-nav .nav-tab .nav-icon {
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.8);
 }
 
 /* FIX PRINCIPALE — sovrascrive overflow:hidden
@@ -97,6 +115,17 @@
   background: var(--bg-hover);
   color: var(--primary);
 }
+
+body.app-visible .sidebar-nav .nav-tab:hover {
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.95);
+  border-color: rgba(255,255,255,.15);
+}
+body.app-visible .sidebar-nav .nav-tab:hover .nav-icon {
+  background: rgba(255,255,255,.18);
+  color: #fff;
+}
+
 .sidebar-nav .nav-tab:hover .nav-icon {
   background: var(--primary-light);
 }
@@ -107,6 +136,18 @@
   color: var(--primary);
   border-color: var(--primary-mid);
 }
+
+body.app-visible .sidebar-nav .nav-tab.active {
+  background: #e8f5f0;
+  color: #0d2218;
+  border-color: rgba(13,34,24,.25);
+}
+body.app-visible .sidebar-nav .nav-tab.active .nav-icon {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(61,139,111,.3);
+}
+
 .sidebar-nav .nav-tab.active .nav-icon {
   background: var(--primary);
   color: #fff;
@@ -144,6 +185,12 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+body.app-visible .bottom-nav {
+  background: linear-gradient(0deg, #0d2218 0%, #1a4a35 100%);
+  border-top-color: rgba(255,255,255,.08);
+  box-shadow: 0 -2px 16px rgba(0,0,0,.25);
+}
+
 .bottom-nav .app-inner {
   display: flex;
   align-items: stretch;
@@ -174,6 +221,10 @@
   color: var(--text-light);
   position: relative;
   transition: color var(--t);
+}
+
+body.app-visible .bottom-nav .nav-tab {
+  color: rgba(255,255,255,.65);
 }
 
 .nav-icon {
@@ -207,6 +258,31 @@
   width: 24px; height: 3px;
   background: var(--primary);
   border-radius: 3px 3px 0 0;
+}
+
+body.app-visible .bottom-nav .nav-tab.active {
+  color: #86efac;
+}
+body.app-visible .bottom-nav .nav-tab.active .nav-icon {
+  color: #86efac;
+}
+body.app-visible .bottom-nav .nav-tab.active::after {
+  background: #86efac;
+}
+
+[data-theme="dark"] body.app-visible .sidebar-nav {
+  background: linear-gradient(180deg, #061510 0%, #0d2218 100%);
+}
+[data-theme="dark"] body.app-visible .bottom-nav {
+  background: linear-gradient(0deg, #061510 0%, #0d2218 100%);
+}
+[data-theme="dark"] body.app-visible .sidebar-nav .nav-tab.active {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary-mid);
+}
+[data-theme="dark"] body.app-visible .sidebar-nav .nav-tab.active .nav-icon {
+  color: #fff;
 }
 
 /* Badge su tab bottom-nav */

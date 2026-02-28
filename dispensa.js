@@ -335,12 +335,37 @@ function buildExpiringSection() {
 
 function renderFridge(targetId) {
   var el = document.getElementById(targetId || 'pantryContent');
+  // #region agent log
+  fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'0f4ae2'},body:JSON.stringify({sessionId:'0f4ae2',location:'dispensa.js:renderFridge',message:'renderFridge entry',data:{hasEl:!!el,targetId:targetId||'pantryContent'},timestamp:Date.now(),hypothesisId:'H2'})}).catch(function(){});
+  // #endregion
   if (!el) return;
 
-  var allItems = getAllPantryItems();
-  var active = allItems.filter(function(i) {
-    return isValidItem(i) && (i.quantity || 0) > 0;
-  });
+  var allItems, active, fallbackUsed = false;
+  try {
+    allItems = getAllPantryItems();
+    active = allItems.filter(function(i) {
+      return isValidItem(i) && (i.quantity || 0) > 0;
+    });
+
+    /* Fallback: se la dispensa ha ingredienti salvati ma tutte le quantità sono 0,
+       mostra comunque gli elementi presenti in pantryItems (evita pagina \"vuota\"). */
+    if (!pantrySearchQuery && !active.length &&
+        typeof pantryItems !== 'undefined' && pantryItems &&
+        Object.keys(pantryItems).some(isValidPantryKey)) {
+      active = allItems.filter(function(i) {
+        return isValidItem(i) && pantryItems[i.name];
+      });
+      fallbackUsed = true;
+    }
+  } catch (e) {
+    // #region agent log
+    fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'0f4ae2'},body:JSON.stringify({sessionId:'0f4ae2',location:'dispensa.js:renderFridge',message:'getAllPantryItems/active error',data:{error:String(e&&e.message)},timestamp:Date.now(),hypothesisId:'H4'})}).catch(function(){});
+    // #endregion
+    throw e;
+  }
+  // #region agent log
+  fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'0f4ae2'},body:JSON.stringify({sessionId:'0f4ae2',location:'dispensa.js:renderFridge',message:'after getAllPantryItems',data:{allItemsCount:allItems?allItems.length:0,activeCount:active?active.length:0,fallbackUsed:fallbackUsed,pantryKeysCount:typeof pantryItems!=='undefined'&&pantryItems?Object.keys(pantryItems).length:0},timestamp:Date.now(),hypothesisId:'H3'})}).catch(function(){});
+  // #endregion
 
   var searchActive = false;
   if (pantrySearchQuery) {
@@ -499,7 +524,7 @@ function renderFridge(targetId) {
       var aiHtml =
         '<div style="margin-bottom:14px;">' +
           '<button class="ai-recipe-btn" onclick="openAIRecipeModal(\'dispensa\')">' +
-            '🤖 Genera ricetta AI con gli ingredienti disponibili' +
+            'Genera ricetta AI con gli ingredienti disponibili' +
             '<span class="ai-powered-label">Powered by Gemini</span>' +
           '</button>' +
         '</div>';
@@ -507,6 +532,9 @@ function renderFridge(targetId) {
     }
   }
 
+  // #region agent log
+  fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'0f4ae2'},body:JSON.stringify({sessionId:'0f4ae2',location:'dispensa.js:renderFridge',message:'before innerHTML',data:{htmlLength:(html||'').length},timestamp:Date.now(),hypothesisId:'H3'})}).catch(function(){});
+  // #endregion
   el.innerHTML = html;
 }
 

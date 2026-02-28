@@ -11,18 +11,18 @@ var _savedDateKeyBeforeEdit = null;
 /* ── INIT ── */
 function initMealSelector() {
   var meals = [
-    { key:'colazione', emoji:'☀️', label:'Colazione' },
-    { key:'spuntino',  emoji:'🍎', label:'Spuntino'  },
-    { key:'pranzo',    emoji:'🍽', label:'Pranzo'    },
-    { key:'merenda',   emoji:'🥪', label:'Merenda'   },
-    { key:'cena',      emoji:'🌙', label:'Cena'      }
+    { key:'colazione', label:'Colazione' },
+    { key:'spuntino',  label:'Spuntino'  },
+    { key:'pranzo',    label:'Pranzo'    },
+    { key:'merenda',   label:'Merenda'   },
+    { key:'cena',      label:'Cena'      }
   ];
   var wrap = document.getElementById('mealSelector');
   if (!wrap) return;
   wrap.innerHTML = meals.map(function(m){
     var a = m.key === selectedMeal ? ' active' : '';
     return '<button class="rf-pill'+a+'" onclick="selectMeal(\''+m.key+'\',this)">'+
-           m.emoji+' '+m.label+'</button>';
+           m.label+'</button>';
   }).join('');
 }
 
@@ -187,7 +187,7 @@ function renderMealItems() {
   var aiBtn =
     '<div style="margin-bottom:10px;">' +
       '<button class="ai-recipe-btn" onclick="openAIRecipeModal(\'oggi\')">' +
-        '🤖 Genera ricetta AI con questi ingredienti' +
+        'Genera ricetta AI con questi ingredienti' +
         '<span class="ai-powered-label">Powered by Gemini</span>' +
       '</button>' +
     '</div>';

@@ -20,6 +20,10 @@ var weeklyLimitsCustom = {};  /* limiti personalizzati nel piano alimentare */
 var preferiti         = [];   /* nomi ricette preferite */
 var dietProfile       = {};   /* vincoli dieta: { vegetariano, vegano, senzaLattosio, senzaGlutine, allergenici:[] } */
 
+function isReadOnlyMode() {
+  return typeof window !== 'undefined' && window.NP_READONLY;
+}
+
 /* ============================================================
    INIT STORAGE (chiamata da enterApp prima di tutto)
    ============================================================ */
@@ -82,6 +86,10 @@ function ensurePlanStructure() {
    LOAD / SAVE
    ============================================================ */
 function loadData() {
+  if (isReadOnlyMode()) {
+    ensurePlanStructure();
+    return;
+  }
   try {
     var raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
@@ -166,6 +174,7 @@ function buildSaveObject() {
 }
 
 function saveData() {
+  if (isReadOnlyMode()) return;
   try {
     /* SEMPRE salva anche su localStorage come backup, anche per utenti loggati.
        Questo previene perdita dati se Firebase fallisce. */

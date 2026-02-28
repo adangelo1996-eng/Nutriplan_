@@ -82,9 +82,9 @@ function buildSpesaGeneratePanel() {
   }
   var tabsHtml =
     '<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">' +
-      '<button style="'+_tabStyle('pasto')+'" onclick="_spesaRecipeFilter=\'pasto\';renderSpesa()">🍽 Per pasto</button>' +
-      '<button style="'+_tabStyle('preferiti')+'" onclick="_spesaRecipeFilter=\'preferiti\';renderSpesa()">⭐ Preferiti</button>' +
-      '<button style="'+_tabStyle('ai')+'" onclick="_spesaRecipeFilter=\'ai\';renderSpesa()">🤖 AI</button>' +
+      '<button style="'+_tabStyle('pasto')+'" onclick="_spesaRecipeFilter=\'pasto\';renderSpesa()">Per pasto</button>' +
+      '<button style="'+_tabStyle('preferiti')+'" onclick="_spesaRecipeFilter=\'preferiti\';renderSpesa()">Preferiti</button>' +
+      '<button style="'+_tabStyle('ai')+'" onclick="_spesaRecipeFilter=\'ai\';renderSpesa()">AI</button>' +
     '</div>';
 
   var selectorHtml = spesaRecipeSelectorOpen
@@ -126,7 +126,7 @@ function buildSpesaGeneratePanel() {
 
       /* Genera da ricette */
       '<button class="rc-btn rc-btn-outline rc-btn-sm" onclick="spesaRecipeSelectorOpen=!spesaRecipeSelectorOpen;renderSpesa()">'+
-        '🍽 Da ricette selezionate'+(selCount?' ('+selCount+')':'')+' ▾' +
+        'Da ricette selezionate'+(selCount?' ('+selCount+')':'')+' ▾' +
       '</button>' +
       selectorHtml +
     '</div>'
@@ -252,7 +252,7 @@ function renderSpesa() {
     var icon  = (typeof getCategoryIcon === 'function') ? getCategoryIcon(cat) : '🧂';
     var catName = (cat && cat.replace) ? cat.replace(/^[^\s]+\s/, '') : cat;
     html +=
-      '<details class="fi-group fi-group-collapsible" style="--gc:' + color + ';" open>' +
+      '<details class="fi-group fi-group-collapsible" style="--gc:' + color + ';">' +
         '<summary class="fi-group-header">' +
           '<span class="fi-group-icon">' + icon + '</span>' +
           '<span class="fi-group-name">' + catName + '</span>' +

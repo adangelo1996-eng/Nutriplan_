@@ -290,12 +290,12 @@ function buildFilterRow() {
   if (!row) return;
   if (ricetteFilterExtra === 'preferiti' || ricetteFilterExtra === 'disponibili') ricetteFilterExtra = '';
   var filters = [
-    {key:'all',emoji:'🍴',label:'Tutti'},
-    {key:'colazione',emoji:'☀️',label:'Colazione'},
-    {key:'spuntino',emoji:'🍎',label:'Spuntino'},
-    {key:'pranzo',emoji:'🍽',label:'Pranzo'},
-    {key:'merenda',emoji:'🥪',label:'Merenda'},
-    {key:'cena',emoji:'🌙',label:'Cena'}
+    {key:'all',        label:'Tutti'},
+    {key:'colazione',  label:'Colazione'},
+    {key:'spuntino',   label:'Spuntino'},
+    {key:'pranzo',     label:'Pranzo'},
+    {key:'merenda',    label:'Merenda'},
+    {key:'cena',       label:'Cena'}
   ];
   var hasDiet = typeof dietProfile !== 'undefined' && dietProfile && Object.keys(dietProfile).some(function(k){ return k !== 'allergenici' && dietProfile[k]; });
   var pastoLabel = ricetteFilterPasto === 'all' ? 'Pasto' : (filters.find(function(f){ return f.key === ricetteFilterPasto; }) || {}).label || 'Pasto';
@@ -305,7 +305,7 @@ function buildFilterRow() {
   var pastoPills = filters.map(function(f){
     return '<button class="rf-pill'+(f.key===ricetteFilterPasto?' active':'')+'" '+
            'onclick="setRicetteFilter(\''+f.key+'\',this)">'+
-           f.emoji+' '+f.label+'</button>';
+           f.label+'</button>';
   }).join('');
 
   var compatPills = ['all','compatibili','non_compatibili'].map(function(k){
@@ -322,7 +322,7 @@ function buildFilterRow() {
       '</div>';
   }
   var dietaPill = hasDiet
-    ? '<button class="rf-pill rf-pill-extra'+(ricetteFilterExtra==='dieta'?' active':'')+'" onclick="setRicetteFilterExtra(\'dieta\',this)">🌿 Dieta mia</button>'
+    ? '<button class="rf-pill rf-pill-extra'+(ricetteFilterExtra==='dieta'?' active':'')+'" onclick="setRicetteFilterExtra(\'dieta\',this)">Dieta mia</button>'
     : '';
 
   row.innerHTML =
@@ -448,14 +448,14 @@ function buildGroupedGrid(list) {
   var html='';
   order.concat(['_altro']).forEach(function(p){
     var items=groups[p]; if(!items||!items.length) return;
-    var lbl=labels[p]||'🍴 Altro';
+    var lbl=labels[p]||'Altro';
     var color=pastoColor(p==='_altro'?'':p);
-    html+='<div class="rc-group">'+
-            '<div class="rc-group-title" style="--gc:'+color+'">'+
+    html+='<details class="rc-group rc-group-collapsible">'+
+            '<summary class="rc-group-title" style="--gc:'+color+'">'+
               lbl+'<span class="rc-group-count">'+items.length+'</span>'+
-            '</div>'+
+            '</summary>'+
             '<div class="rc-grid">'+items.map(buildCard).join('')+'</div>'+
-          '</div>';
+          '</details>';
   });
   return html;
 }
