@@ -1353,7 +1353,18 @@
   padding-right: 1.2em;
 }
 
-/* Badge stile HoverDrag */
+/* Preload animazioni: esegue keyframe una volta (durata 0) per fluidità al primo trigger */
+.landing-anim-preload {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  animation: landing-card-emerge 0.001s ease both, landing-accedi-in 0.001s ease both;
+}
+
+/* Badge stile HoverDrag (Esplora sotto hero) */
 .landing-badge {
   display: inline-block;
   font-size: .7rem;
@@ -1366,12 +1377,108 @@
   border-radius: var(--r-full);
   margin-bottom: 10px;
   transition: transform var(--t), color var(--t), border-color var(--t);
+  background: none;
+  cursor: pointer;
+  font-family: var(--font);
 }
 
 .landing-badge:hover {
   color: rgba(255,255,255,.75);
   border-color: rgba(255,255,255,.4);
   transform: scale(1.04);
+}
+
+/* Esplora dentro hero: margine sopra */
+.landing-hero .landing-esplora-btn {
+  margin-top: 14px;
+}
+
+/* Accedi: sempre in alto a destra viewport (fixed, fuori da #landingPage) */
+.landing-accedi-wrap {
+  position: fixed;
+  top: 0;
+  right: 0;
+  margin: 20px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  opacity: 0;
+  animation: landing-accedi-in 0.5s ease 0.3s forwards;
+  cursor: url('cursor-gold.svg') 12 12, default;
+}
+.landing-accedi-wrap .landing-badge.landing-accedi-btn,
+.landing-accedi-wrap .landing-accedi-btn,
+.landing-accedi-wrap .landing-nav-card.landing-accedi-option,
+.landing-accedi-wrap .landing-accedi-option {
+  cursor: url('cursor-gold.svg') 12 12, pointer;
+}
+
+/* Contrasto invertito su Accedi (come Esplora) quando card o opzioni sono aperte */
+.landing-accedi-wrap.landing-inverted .landing-accedi-btn {
+  color: rgba(13,34,24,.6);
+  border-color: rgba(13,34,24,.25);
+}
+.landing-accedi-wrap.landing-inverted .landing-accedi-btn:hover {
+  color: #0d2218;
+  border-color: rgba(13,34,24,.5);
+}
+.landing-accedi-wrap.landing-inverted .landing-accedi-option {
+  background: rgba(13,34,24,.1);
+  color: #0d2218;
+  border-color: rgba(13,34,24,.25);
+}
+.landing-accedi-wrap.landing-inverted .landing-accedi-option:hover {
+  background: #0d2218;
+  color: #e8f5f0;
+  border-color: rgba(13,34,24,.5);
+}
+
+@keyframes landing-accedi-in {
+  to { opacity: 1; }
+}
+
+.landing-accedi-wrap .landing-accedi-btn {
+  margin: 0;
+  position: relative;
+  transition: color 1s cubic-bezier(0.33, 1, 0.68, 1), border-color 1s cubic-bezier(0.33, 1, 0.68, 1), background 1s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.landing-accedi-wrap .landing-accedi-option {
+  transition: color 1s cubic-bezier(0.33, 1, 0.68, 1), border-color 1s cubic-bezier(0.33, 1, 0.68, 1), background 1s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.landing-accedi-reveal {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+  opacity: 0;
+  visibility: hidden;
+  transform: scaleY(0);
+  transform-origin: top center;
+  transition: opacity 0.28s ease, visibility 0.28s ease, transform 0.28s ease;
+}
+
+.landing-accedi-reveal.landing-accedi-open {
+  opacity: 1;
+  visibility: visible;
+  transform: scaleY(1);
+}
+
+.landing-accedi-option {
+  white-space: nowrap;
+  padding: 10px 16px;
+  font-size: .85rem;
+}
+.landing-accedi-option .landing-nav-card-desc { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-accedi-wrap { animation: none; opacity: 1; }
+  .landing-accedi-reveal { transition: none; }
 }
 
 /* Striscia numeri */
@@ -1455,55 +1562,145 @@
 }
 .landing-offline-btn:hover { color: rgba(255,255,255,.85); }
 
+/* Card reveal: escono dall'etichetta Esplora, due righe (3 colonne), rientrano al secondo click */
+.landing-cards-reveal {
+  width: 100%;
+  max-width: 480px;
+  margin-top: 2px;
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform-origin: top center;
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.landing-cards-reveal.landing-cards-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.landing-cards-reveal.landing-cards-closing .landing-nav-card {
+  transform: scale(0);
+  opacity: 0;
+}
+
+.landing-cards-sub {
+  font-size: .82rem;
+  color: rgba(255,255,255,.6);
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.landing-nav-grid {
+  transform-origin: top center;
+}
+
+.landing-cards-visible .landing-nav-card {
+  animation: landing-card-emerge 0.45s ease forwards;
+  opacity: 0;
+  transform: scale(0);
+  transform-origin: top center;
+}
+
+.landing-cards-visible .landing-nav-card:nth-child(1) { animation-delay: 0.04s; }
+.landing-cards-visible .landing-nav-card:nth-child(2) { animation-delay: 0.08s; }
+.landing-cards-visible .landing-nav-card:nth-child(3) { animation-delay: 0.12s; }
+.landing-cards-visible .landing-nav-card:nth-child(4) { animation-delay: 0.16s; }
+.landing-cards-visible .landing-nav-card:nth-child(5) { animation-delay: 0.2s; }
+.landing-cards-visible .landing-nav-card:nth-child(6) { animation-delay: 0.24s; }
+
+.landing-cards-reveal.landing-cards-closing .landing-nav-card {
+  transition: transform 0.28s ease, opacity 0.28s ease;
+}
+
+@keyframes landing-card-emerge {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-cards-visible .landing-nav-card {
+    animation: none;
+    opacity: 1;
+    transform: scale(1);
+  }
+  .landing-cards-reveal.landing-cards-closing .landing-nav-card { transition: none; }
+}
+
 .landing-nav-logged { width: 100%; max-width: 420px; margin-top: 8px; }
 .landing-nav-logged-sub {
   font-size: .82rem; color: rgba(255,255,255,.6);
   margin-bottom: 14px; text-align: center;
 }
-.landing-nav-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+.landing-cards-reveal .landing-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
-@media (min-width: 480px) {
-  .landing-nav-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 380px) {
+  .landing-cards-reveal .landing-nav-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Card: solo testo; hover = descrizione + sfondo contrasto negativo */
 .landing-nav-card {
   position: relative;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 18px 14px; background: rgba(255,255,255,.12);
-  border: 1.5px solid rgba(255,255,255,.2); border-radius: var(--r-xl);
-  color: #fff; font-family: var(--font); text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 18px 14px;
+  background: rgba(255,255,255,.12);
+  border: 1.5px solid rgba(255,255,255,.2);
+  border-radius: var(--r-xl);
+  color: #fff;
+  font-family: var(--font);
+  text-align: center;
   cursor: pointer;
   overflow: hidden;
-  transition: transform 0.32s ease, box-shadow 0.32s ease, background var(--t), border-color var(--t);
+  transition: background 0.28s ease, color 0.28s ease, border-color 0.28s ease, transform 0.28s ease, box-shadow 0.28s ease;
   transform-origin: center bottom;
 }
 
-/* Reveal on hover (stile Metalab): scale + ombra + bordo */
 .landing-nav-card:hover {
-  background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.4);
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 0 12px 32px rgba(0,0,0,.25), 0 0 0 1px rgba(255,255,255,.08);
+  background: #fff;
+  color: #0d2218;
+  border-color: rgba(255,255,255,.5);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0,0,0,.2);
 }
 
-.landing-nav-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 40%, rgba(255,255,255,.06) 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
+.landing-nav-card-label {
+  font-size: 1rem;
+  font-weight: 800;
 }
 
-.landing-nav-card:hover::before {
-  opacity: 1;
-}
-.landing-nav-card-icon { font-size: 2rem; line-height: 1; }
-.landing-nav-card-label { font-size: 1rem; font-weight: 800; }
 .landing-nav-card-desc {
-  font-size: .7rem; opacity: .85; line-height: 1.3;
+  font-size: .7rem;
+  line-height: 1.35;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.25s ease, margin 0.25s ease;
+  color: inherit;
 }
+
+.landing-nav-card:hover .landing-nav-card-desc {
+  max-height: 3em;
+  opacity: 1;
+  margin-top: 4px;
+}
+
+.landing-nav-card-icon { display: none; }
 
 .edit-day-picker {
   padding: 24px 20px;
@@ -1518,6 +1715,75 @@
   margin-top: 8px;
 }
 .landing-privacy-note a { color: rgba(255,255,255,.55); text-decoration: underline; }
+
+/* Modale Privacy Policy — stile coerente con homepage (verde, tipografia, badge) */
+.modal--landing.active {
+  background: rgba(13,34,24,.35);
+}
+.modal--landing .modal-box--landing {
+  background: linear-gradient(160deg, #e8f5f0 0%, #f3fbf7 50%, #e8f5f0 100%);
+  border: 1px solid rgba(13,34,24,.15);
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+}
+.modal--landing .modal-handle {
+  background: rgba(13,34,24,.25);
+}
+.modal--landing .modal-title {
+  color: #0d2218;
+  font-family: var(--font);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.modal--landing .modal-close--landing {
+  background: rgba(13,34,24,.08);
+  border: 1px solid rgba(13,34,24,.2);
+  color: #0d2218;
+}
+.modal--landing .modal-close--landing:hover {
+  background: rgba(13,34,24,.15);
+  border-color: rgba(13,34,24,.35);
+  color: #0d2218;
+}
+.modal--landing .modal-body--landing {
+  color: #0d2218;
+}
+.modal--landing .modal-body--landing p,
+.modal--landing .modal-body--landing li {
+  color: rgba(13,34,24,.85);
+}
+.modal--landing .modal-body--landing h3 {
+  color: #0d2218;
+  font-weight: 700;
+}
+.modal--landing .modal-body--landing a {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+.modal--landing .modal-body--landing a:hover {
+  color: #0d2218;
+}
+.modal--landing .modal-footer--landing {
+  justify-content: center;
+  margin-top: 24px;
+}
+.modal--landing .modal-cta--landing {
+  color: rgba(13,34,24,.7);
+  border-color: rgba(13,34,24,.3);
+  background: transparent;
+  margin: 0;
+}
+.modal--landing .modal-cta--landing:hover {
+  color: #0d2218;
+  border-color: rgba(13,34,24,.5);
+}
+
+/* Continua senza account nel modale Accedi */
+.auth-modal-offline {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  text-align: center;
+}
 
 /* ══════════════════════════════════════════════════
    36. COOKIE CONSENT BANNER

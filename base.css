@@ -162,11 +162,112 @@ a:hover { text-decoration: underline; }
     linear-gradient(160deg, #0d2218 0%, #1a4a35 60%, #0d2218 100%);
 }
 
+/* Cursore oro fisso su tutta l'app (homepage e resto delle pagine) */
+body {
+  cursor: url('cursor-gold.svg') 12 12, default;
+}
+body a,
+body button,
+body [role="button"],
+body input[type="submit"],
+body input[type="button"],
+body select,
+body label[for],
+body .landing-badge,
+body .landing-nav-card,
+body .landing-accedi-wrap,
+body .landing-accedi-wrap * {
+  cursor: url('cursor-gold.svg') 12 12, pointer;
+}
+
 #landingPage.landing-metalab {
   justify-content: flex-start;
   padding-top: 24px;
   padding-bottom: 24px;
   gap: 0;
+  position: relative;
+  contain: paint;
+}
+
+#landingPage > *:not(.landing-inverted-overlay) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Overlay inversione: dissolvenza dal punto di click (bordo sfumato) */
+.landing-inverted-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  --landing-spread: 0;
+  --landing-origin-x: 50%;
+  --landing-origin-y: 50%;
+  background:
+    radial-gradient(ellipse at 30% 60%, rgba(13,34,24,.12) 0%, transparent 65%),
+    linear-gradient(160deg, #e8f5f0 0%, #f3fbf7 50%, #e8f5f0 100%);
+  clip-path: circle(var(--landing-spread) at var(--landing-origin-x) var(--landing-origin-y));
+  mask-image: radial-gradient(
+    circle 150vmax at var(--landing-origin-x) var(--landing-origin-y),
+    black 0%,
+    transparent 72%
+  );
+  -webkit-mask-image: radial-gradient(
+    circle 150vmax at var(--landing-origin-x) var(--landing-origin-y),
+    black 0%,
+    transparent 72%
+  );
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+  transition: clip-path 1.1s cubic-bezier(0.33, 1, 0.68, 1);
+  /* Riduce lag: layer GPU per animazione clip-path */
+  will-change: clip-path;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+#landingPage.landing-inverted .landing-inverted-overlay {
+  --landing-spread: 150vmax;
+}
+
+/* Transizione fluida su testi ed elementi (in sync con overlay) */
+#landingPage .landing-hero-headline,
+#landingPage .landing-sub,
+#landingPage .landing-marquee-text,
+#landingPage .landing-numbers-inner span,
+#landingPage .landing-badge,
+#landingPage .landing-cards-sub,
+#landingPage .landing-privacy-note,
+#landingPage .landing-privacy-note a,
+#landingPage .landing-nav-card {
+  transition: color 1s cubic-bezier(0.33, 1, 0.68, 1), border-color 1s cubic-bezier(0.33, 1, 0.68, 1), background 1s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+/* Colori invertiti (come prima) quando card o Accedi sono aperte */
+#landingPage.landing-inverted .landing-hero-headline,
+#landingPage.landing-inverted .landing-sub { color: #0d2218; }
+#landingPage.landing-inverted .landing-marquee-text { color: rgba(13,34,24,.4); }
+#landingPage.landing-inverted .landing-numbers-inner span { color: rgba(13,34,24,.3); }
+#landingPage.landing-inverted .landing-badge {
+  color: rgba(13,34,24,.6);
+  border-color: rgba(13,34,24,.25);
+}
+#landingPage.landing-inverted .landing-badge:hover {
+  color: #0d2218;
+  border-color: rgba(13,34,24,.5);
+}
+#landingPage.landing-inverted .landing-cards-sub,
+#landingPage.landing-inverted .landing-privacy-note { color: rgba(13,34,24,.5); }
+#landingPage.landing-inverted .landing-privacy-note a { color: rgba(13,34,24,.7); }
+#landingPage.landing-inverted .landing-nav-card {
+  background: rgba(13,34,24,.1);
+  color: #0d2218;
+  border-color: rgba(13,34,24,.25);
+}
+#landingPage.landing-inverted .landing-nav-card:hover {
+  background: #0d2218;
+  color: #e8f5f0;
+  border-color: rgba(13,34,24,.5);
 }
 
 /* Hero: headline spezzata + sottotitolo */

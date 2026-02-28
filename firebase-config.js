@@ -259,25 +259,22 @@ function updateAuthUI(user) {
     }
   }
 
-  /* Aggiorna CTA della landing in base allo stato auth */
-  var landingLoading   = document.getElementById('landingAuthLoading');
-  var landingGoogle    = document.getElementById('landingGoogleBtn');
-  var landingNavLogged = document.getElementById('landingNavLogged');
-  var landingOffline   = document.getElementById('landingOfflineBtn');
-  var landingBadge    = document.getElementById('landingBadge');
+  /* Aggiorna CTA della landing in base allo stato auth (elementi nascosti per modale) */
+  var landingLoading = document.getElementById('landingAuthLoading');
+  var landingGoogle  = document.getElementById('landingGoogleBtn');
+  var landingOffline = document.getElementById('landingOfflineBtn');
+  var landingAccediWrap = document.getElementById('landingAccediWrap');
 
   if (user) {
-    if (landingLoading)   landingLoading.style.display = 'none';
-    if (landingGoogle)   landingGoogle.style.display  = 'none';
-    if (landingNavLogged) landingNavLogged.style.display = 'block';
-    if (landingOffline)  landingOffline.style.display = 'none';
-    if (landingBadge)   landingBadge.style.display   = 'block';
+    if (landingLoading)     landingLoading.style.display = 'none';
+    if (landingGoogle)      landingGoogle.style.display  = 'none';
+    if (landingOffline)     landingOffline.style.display = 'none';
+    if (landingAccediWrap)  landingAccediWrap.style.display = 'none';
   } else {
-    if (landingLoading)   landingLoading.style.display = 'none';
-    if (landingGoogle)   landingGoogle.style.display  = '';
-    if (landingNavLogged) landingNavLogged.style.display = 'none';
-    if (landingOffline)  landingOffline.style.display  = '';
-    if (landingBadge)   landingBadge.style.display   = 'none';
+    if (landingLoading)     landingLoading.style.display = 'none';
+    if (landingGoogle)      landingGoogle.style.display  = 'none';
+    if (landingOffline)     landingOffline.style.display = 'none';
+    if (landingAccediWrap)  landingAccediWrap.style.display = '';
   }
 
   /* Aggiorna icona profilo nel nav (bottom + sidebar) quando loggato */

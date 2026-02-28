@@ -39,6 +39,12 @@
      LANDING PAGE — stile Metalab
 ═════════════════════════════════════════════════════════════════ -->
 <div id="landingPage" class="landing-metalab">
+  <!-- Preload animazioni (nascosto, esegue keyframe una volta per fluidità) -->
+  <div class="landing-anim-preload" aria-hidden="true"></div>
+
+  <!-- Overlay inversione: si espande dal pulsante cliccato -->
+  <div class="landing-inverted-overlay" id="landingInvertedOverlay" aria-hidden="true"></div>
+
   <!-- Striscia marquee logo: NutriPlan ripetuto -->
   <div class="landing-marquee-wrap" aria-hidden="true">
     <div class="landing-marquee-track">
@@ -65,9 +71,6 @@
     </div>
   </div>
 
-  <!-- Badge stile HoverDrag (visibile solo dopo login) -->
-  <span class="landing-badge" id="landingBadge" aria-hidden="true" style="display:none">Esplora</span>
-
   <!-- Striscia numeri 1–24 -->
   <div class="landing-numbers-wrap" aria-hidden="true">
     <div class="landing-numbers-track">
@@ -82,74 +85,54 @@
     </div>
   </div>
 
-  <!-- Hero: headline spezzata + sottotitolo -->
+  <!-- Hero: headline + sottotitolo + Esplora sotto -->
   <div class="landing-hero">
     <h1 class="landing-hero-headline">
       <span class="landing-hero-line landing-hero-line-1">Il tuo</span>
       <span class="landing-hero-line landing-hero-line-2">piano alimentare</span>
     </h1>
-    <p class="landing-sub">Accedi per iniziare e sincronizzare i tuoi dati.</p>
+    <p class="landing-sub">Scegli una sezione per iniziare.</p>
+    <button type="button" class="landing-badge landing-esplora-btn" id="landingEsploraBtn" onclick="toggleLandingCards()" aria-expanded="false">Esplora</button>
   </div>
 
-  <!-- CTA: loading / Google / Nav grid / Offline (ID e onclick invariati) -->
-  <div class="landing-cta-wrap">
+  <!-- Card: nascoste di default, rivelate al click Esplora (solo testo, hover = desc + contrasto negativo) -->
+  <div class="landing-cards-reveal" id="landingCardsReveal" aria-hidden="true">
+    <p class="landing-cards-sub">Scegli dove andare</p>
+    <div class="landing-nav-grid">
+      <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('piano')">
+        <span class="landing-nav-card-label">Oggi</span>
+        <span class="landing-nav-card-desc">Ingredienti e ricette del giorno</span>
+      </button>
+      <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('piano-alimentare')">
+        <span class="landing-nav-card-label">Piano</span>
+        <span class="landing-nav-card-desc">Configura il piano alimentare</span>
+      </button>
+      <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('dispensa')">
+        <span class="landing-nav-card-label">Dispensa</span>
+        <span class="landing-nav-card-desc">Ingredienti disponibili</span>
+      </button>
+      <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('ricette')">
+        <span class="landing-nav-card-label">Ricette</span>
+        <span class="landing-nav-card-desc">Catalogo e le tue ricette</span>
+      </button>
+      <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('spesa')">
+        <span class="landing-nav-card-label">Spesa</span>
+        <span class="landing-nav-card-desc">Lista della spesa</span>
+      </button>
+      <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('statistiche')">
+        <span class="landing-nav-card-label">Statistiche</span>
+        <span class="landing-nav-card-desc">Riepilogo settimanale</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- CTA auth: nascosti, usati da Firebase / modale -->
+  <div class="landing-cta-hidden" aria-hidden="true" style="display:none">
     <div class="landing-auth-loading" id="landingAuthLoading">
       <span class="landing-auth-spinner"></span> Verifica accesso…
     </div>
-    <button class="btn-landing-google" id="landingGoogleBtn"
-            onclick="landingSignIn()" style="display:none">
-      <svg width="20" height="20" viewBox="0 0 18 18">
-        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
-        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
-        <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
-        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/>
-      </svg>
-      Accedi con Google
-    </button>
-    <div class="landing-nav-logged" id="landingNavLogged" style="display:none;">
-      <p class="landing-nav-logged-sub">Scegli dove andare</p>
-      <div class="landing-nav-grid">
-        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('piano')">
-          <span class="landing-nav-card-icon">🍽</span>
-          <span class="landing-nav-card-label">Oggi</span>
-          <span class="landing-nav-card-desc">Ingredienti e ricette del giorno</span>
-        </button>
-        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('piano-alimentare')">
-          <span class="landing-nav-card-icon">🌿</span>
-          <span class="landing-nav-card-label">Piano</span>
-          <span class="landing-nav-card-desc">Configura il piano alimentare</span>
-        </button>
-        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('dispensa')">
-          <span class="landing-nav-card-icon">🗄️</span>
-          <span class="landing-nav-card-label">Dispensa</span>
-          <span class="landing-nav-card-desc">Ingredienti disponibili</span>
-        </button>
-        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('ricette')">
-          <span class="landing-nav-card-icon">📖</span>
-          <span class="landing-nav-card-label">Ricette</span>
-          <span class="landing-nav-card-desc">Catalogo e le tue ricette</span>
-        </button>
-        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('spesa')">
-          <span class="landing-nav-card-icon">🛒</span>
-          <span class="landing-nav-card-label">Spesa</span>
-          <span class="landing-nav-card-desc">Lista della spesa</span>
-        </button>
-        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('statistiche')">
-          <span class="landing-nav-card-icon">📊</span>
-          <span class="landing-nav-card-label">Statistiche</span>
-          <span class="landing-nav-card-desc">Riepilogo settimanale</span>
-        </button>
-        <button type="button" class="landing-nav-card" onclick="enterApp();goToPage('profilo')">
-          <span class="landing-nav-card-icon">👤</span>
-          <span class="landing-nav-card-label">Profilo</span>
-          <span class="landing-nav-card-desc">Impostazioni e dati personali</span>
-        </button>
-      </div>
-    </div>
-    <button class="landing-offline-btn" id="landingOfflineBtn"
-            onclick="landingOffline()" style="display:none">
-      Continua senza account →
-    </button>
+    <button class="btn-landing-google" id="landingGoogleBtn" onclick="landingSignIn()">Accedi con Google</button>
+    <button class="landing-offline-btn" id="landingOfflineBtn" onclick="landingOffline()">Continua senza account</button>
   </div>
 
   <p class="landing-privacy-note">
@@ -157,6 +140,15 @@
     <a href="#" onclick="event.preventDefault();openPrivacyModal()">Privacy Policy</a>.
     I tuoi dati alimentari restano privati e sincronizzati solo sul tuo account.
   </p>
+</div>
+
+<!-- Accedi: fuori da #landingPage per ancoraggio viewport (sempre in alto a destra) -->
+<div class="landing-accedi-wrap" id="landingAccediWrap">
+  <button type="button" class="landing-badge landing-accedi-btn" id="landingAccediBtn" onclick="toggleAccediOptions()" aria-label="Accedi" aria-expanded="false">Accedi</button>
+  <div class="landing-accedi-reveal" id="landingAccediReveal" aria-hidden="true">
+    <button type="button" class="landing-nav-card landing-accedi-option" onclick="closeAccediOptions(); openAuthModal();">Login</button>
+    <button type="button" class="landing-nav-card landing-accedi-option" onclick="closeAccediOptions(); landingOffline();">Continua senza accedere</button>
+  </div>
 </div>
 
 <!-- ═════════════════════════════════════════════════════════════════
@@ -939,15 +931,15 @@
   </div>
 </div>
 
-<!-- Modale: Privacy Policy -->
-<div class="modal" id="privacyModal">
-  <div class="modal-box" style="max-height:85vh;overflow-y:auto;">
+<!-- Modale: Privacy Policy (stile coerente con homepage) -->
+<div class="modal modal--landing" id="privacyModal">
+  <div class="modal-box modal-box--landing" style="max-height:85vh;overflow-y:auto;">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <h2 class="modal-title">📄 Privacy Policy</h2>
-      <button class="modal-close" onclick="closePrivacyModal()">✕</button>
+      <h2 class="modal-title">Privacy Policy</h2>
+      <button type="button" class="modal-close modal-close--landing" onclick="closePrivacyModal()" aria-label="Chiudi">×</button>
     </div>
-    <div class="modal-body" style="font-size:.9em;line-height:1.6;">
+    <div class="modal-body modal-body--landing" style="font-size:.9em;line-height:1.6;">
       <p><strong>NutriPlan</strong> — Informativa sulla privacy</p>
       <p><em>Ultimo aggiornamento: febbraio 2026</em></p>
 
@@ -992,8 +984,8 @@
       <h3 style="margin-top:16px;">9. Contatti</h3>
       <p>Per qualsiasi domanda sulla privacy scrivici tramite la pagina del progetto su GitHub.</p>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-primary" onclick="closePrivacyModal()">Ho capito ✓</button>
+    <div class="modal-footer modal-footer--landing">
+      <button type="button" class="landing-badge modal-cta--landing" onclick="closePrivacyModal()">Ho capito</button>
     </div>
   </div>
 </div>
@@ -1146,6 +1138,7 @@
              width="20" height="20" alt="Google">
         Continua con Google
       </button>
+      <button class="landing-offline-btn auth-modal-offline" onclick="closeAuthModal();landingOffline();">Continua senza account →</button>
     </div>
   </div>
 </div>

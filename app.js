@@ -994,15 +994,95 @@ function landingOffline() {
   enterApp();
 }
 
+function setLandingInvertedOrigin(btnEl) {
+  var page = document.getElementById('landingPage');
+  if (!page || !btnEl) return;
+  var r = btnEl.getBoundingClientRect();
+  var x = r.left + r.width / 2;
+  var y = r.top + r.height / 2;
+  page.style.setProperty('--landing-origin-x', x + 'px');
+  page.style.setProperty('--landing-origin-y', y + 'px');
+}
+
+function toggleLandingCards() {
+  var wrap = document.getElementById('landingCardsReveal');
+  var btn = document.getElementById('landingEsploraBtn');
+  var page = document.getElementById('landingPage');
+  if (!wrap || !page) return;
+  var isOpen = wrap.classList.contains('landing-cards-visible');
+  if (isOpen) {
+    wrap.classList.add('landing-cards-closing');
+    setTimeout(function() {
+      wrap.classList.remove('landing-cards-visible', 'landing-cards-closing');
+      wrap.setAttribute('aria-hidden', 'true');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+      updateLandingInverted();
+    }, 280);
+  } else {
+    setLandingInvertedOrigin(btn);
+    wrap.classList.add('landing-cards-visible');
+    wrap.setAttribute('aria-hidden', 'false');
+    if (btn) btn.setAttribute('aria-expanded', 'true');
+    updateLandingInverted();
+  }
+}
+
+function toggleAccediOptions() {
+  var reveal = document.getElementById('landingAccediReveal');
+  var btn = document.getElementById('landingAccediBtn');
+  if (!reveal || !btn) return;
+  var isOpen = reveal.classList.contains('landing-accedi-open');
+  if (isOpen) {
+    reveal.classList.remove('landing-accedi-open');
+    reveal.setAttribute('aria-hidden', 'true');
+    btn.setAttribute('aria-expanded', 'false');
+  } else {
+    setLandingInvertedOrigin(btn);
+    reveal.classList.add('landing-accedi-open');
+    reveal.setAttribute('aria-hidden', 'false');
+    btn.setAttribute('aria-expanded', 'true');
+  }
+  updateLandingInverted();
+}
+
+function closeAccediOptions() {
+  var reveal = document.getElementById('landingAccediReveal');
+  var btn = document.getElementById('landingAccediBtn');
+  if (reveal) {
+    reveal.classList.remove('landing-accedi-open');
+    reveal.setAttribute('aria-hidden', 'true');
+  }
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+  updateLandingInverted();
+}
+
+function updateLandingInverted() {
+  var page = document.getElementById('landingPage');
+  var accediWrap = document.getElementById('landingAccediWrap');
+  var cardsOpen = document.getElementById('landingCardsReveal') && document.getElementById('landingCardsReveal').classList.contains('landing-cards-visible');
+  var accediOpen = document.getElementById('landingAccediReveal') && document.getElementById('landingAccediReveal').classList.contains('landing-accedi-open');
+  var inverted = cardsOpen || accediOpen;
+  if (page) {
+    if (inverted) page.classList.add('landing-inverted');
+    else page.classList.remove('landing-inverted');
+  }
+  if (accediWrap) {
+    if (inverted) accediWrap.classList.add('landing-inverted');
+    else accediWrap.classList.remove('landing-inverted');
+  }
+}
+
 /* ── enterApp() ── chiamata dopo login o scelta offline ── */
 function enterApp() {
   var landing = document.getElementById('landingPage');
+  var accediWrap = document.getElementById('landingAccediWrap');
   var header  = document.getElementById('appHeader');
   var sidebar = document.getElementById('sidebarNav');
   var bottom  = document.getElementById('bottomNav');
   var main    = document.getElementById('appMain');
 
   if (landing) landing.style.display = 'none';
+  if (accediWrap) accediWrap.style.display = 'none';
   if (header)  header.style.display  = '';
   if (sidebar) sidebar.style.display = '';
   if (bottom)  bottom.style.display  = '';
