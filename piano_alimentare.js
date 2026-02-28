@@ -151,11 +151,12 @@ function renderPianoAlimentare() {
   PA_MEALS.forEach(function(m) { totalCount += paGetMealCount(m.key); });
   var isEmpty = totalCount === 0;
 
-  /* Nome utente se loggato (es. "il tuo piano alimentare, Mario") */
+  /* Nome utente se loggato (es. "il tuo piano alimentare, Mario") — con formattazione n come nel titolo */
   var userNameSuffix = '';
   if (typeof currentUser !== 'undefined' && currentUser) {
     var name = (currentUser.displayName && currentUser.displayName.split(' ')[0]) || currentUser.email || 'Utente';
-    userNameSuffix = ', ' + name;
+    var suffix = ', ' + name;
+    userNameSuffix = suffix.replace(/n/g, '<span class="page-title-n">n</span>');
   }
 
   /* Card invito wizard */

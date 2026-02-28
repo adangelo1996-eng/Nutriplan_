@@ -390,6 +390,34 @@ body .landing-accedi-wrap * {
 .landing-hero-line-1 { animation-delay: 0.1s; }
 .landing-hero-line-2 { animation-delay: 0.25s; }
 
+/* Nome utente: stesso giallo del cursore (#d4a84b) + animazione tabellone */
+.landing-hero-username {
+  display: inline;
+  color: #d4a84b;
+  opacity: 0;
+  transform: translateY(14px);
+  animation: none;
+}
+#landingPage.landing-inverted .landing-hero-username {
+  color: #b8923f;
+}
+.landing-hero-username .landing-hero-n {
+  color: transparent;
+  -webkit-text-stroke: 1.5px #d4a84b;
+  text-stroke: 1.5px #d4a84b;
+}
+#landingPage.landing-inverted .landing-hero-username .landing-hero-n {
+  -webkit-text-stroke: 1.5px #b8923f;
+  text-stroke: 1.5px #b8923f;
+}
+.landing-hero-username.landing-hero-username-visible {
+  animation: landing-hero-in 0.7s ease 0.15s forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-username { opacity: 1; transform: none; }
+  .landing-hero-username.landing-hero-username-visible { animation: none; opacity: 1; }
+}
+
 @keyframes landing-hero-in {
   to {
     opacity: 1;

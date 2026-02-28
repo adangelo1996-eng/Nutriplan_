@@ -142,12 +142,8 @@ function signInWithGoogle() {
       var name = result.user.displayName || result.user.email || 'Utente';
       if (typeof showToast === 'function') showToast('👋 Benvenuto, ' + name + '!', 'success');
 
-      /* Se la landing è ancora visibile, entra nell'app e vai alla homepage */
-      var landing = document.getElementById('landingPage');
-      if (landing && landing.style.display !== 'none' && typeof enterApp === 'function') {
-        if (typeof window !== 'undefined') window.NP_READONLY = false;
-        enterApp();
-      }
+      /* Resta sulla homepage (landing) con il titolo personalizzato; l'utente entra nell'app cliccando Esplora o le card */
+      if (typeof window !== 'undefined') window.NP_READONLY = false;
     })
     .catch(function(e) {
       console.warn('[NutriPlan] Errore login:', e);
@@ -268,11 +264,13 @@ function updateAuthUI(user) {
     if (landingGoogle)      landingGoogle.style.display  = 'none';
     if (landingOffline)     landingOffline.style.display = 'none';
     if (landingAccediWrap)  landingAccediWrap.style.display = 'none';
-    /* Titolo landing: "Il tuo piano alimentare, [nome]" */
+    /* Titolo landing: "Il tuo piano alimentare, [nome]" — animazione tabellone + formattazione n */
     var heroName = document.getElementById('landingHeroUserName');
     if (heroName) {
       var firstName = (user.displayName && user.displayName.split(' ')[0]) || user.email || 'Utente';
-      heroName.textContent = ', ' + firstName;
+      var suffix = ', ' + firstName;
+      heroName.innerHTML = suffix.replace(/n/g, '<span class="landing-hero-n">n</span>');
+      heroName.classList.add('landing-hero-username-visible');
     }
   } else {
     if (landingLoading)     landingLoading.style.display = 'none';
@@ -280,7 +278,10 @@ function updateAuthUI(user) {
     if (landingOffline)     landingOffline.style.display = 'none';
     if (landingAccediWrap)  landingAccediWrap.style.display = '';
     var heroName = document.getElementById('landingHeroUserName');
-    if (heroName) heroName.textContent = '';
+    if (heroName) {
+      heroName.innerHTML = '';
+      heroName.classList.remove('landing-hero-username-visible');
+    }
   }
 
   /* Aggiorna icona profilo nel nav (bottom + sidebar) quando loggato */
