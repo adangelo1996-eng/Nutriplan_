@@ -436,7 +436,6 @@ function _renderStep2Limits() {
     '<div class="wizard-progress"></div>' +
     '<div class="ob-limiti-wrap">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
-        '<span style="font-size:1.3em;">📊</span>' +
         '<span style="font-weight:700;font-size:1rem;">Limiti settimanali</span>' +
         '<span style="font-size:.76em;color:var(--text-3);background:var(--bg-subtle);' +
                'border:1px solid var(--border);border-radius:99px;padding:2px 10px;margin-left:4px;">opzionali</span>' +
@@ -520,7 +519,7 @@ function _renderStep3Review() {
       hasLimits = true;
       limitsHtml = 
         '<div style="background:var(--bg-subtle);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;margin-top:16px;">' +
-          '<div style="font-weight:700;font-size:.92em;margin-bottom:8px;">📊 Limiti settimanali</div>' +
+          '<div style="font-weight:700;font-size:.92em;margin-bottom:8px;">Limiti settimanali</div>' +
           '<ul style="margin:0;padding-left:20px;font-size:.85em;line-height:1.8;">' +
             limitsList.join('') +
           '</ul>' +

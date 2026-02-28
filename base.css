@@ -468,8 +468,12 @@ body .landing-accedi-wrap * {
 .app-header-days-inner {
   display: inline-flex;
   align-items: center;
-  gap: 0;
   flex-shrink: 0;
+}
+.app-header-logo-inner { gap: 0; }
+.app-header-days-inner {
+  gap: .6em;
+  padding: 0 .5em 0 0;
 }
 .app-header-logo-track {
   font-weight: 800;

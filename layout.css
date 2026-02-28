@@ -697,7 +697,7 @@ body.app-visible .page .page-tab.active {
   background: var(--bg-hover); border-color: var(--border-mid); color: var(--text);
 }
 [data-theme="dark"] body.app-visible .page .page-tab.active {
-  background: var(--bg-hover); border-color: var(--primary-mid); color: var(--primary);
+  background: transparent; border-color: rgba(255,255,255,.6); color: var(--text);
 }
 
 /* Tabs underline (variante) */

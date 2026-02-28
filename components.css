@@ -404,9 +404,9 @@ body.app-visible .page .rf-pill.active {
   color: #f9fafb;
 }
 [data-theme="dark"] body.app-visible .page .rf-pill.active {
-  background: rgba(255,255,255,.16);
+  background: transparent;
   border-color: rgba(255,255,255,.7);
-  color: #0f172a;
+  color: rgba(255,255,255,.95);
 }
 
 /* Gruppo ricette */
@@ -649,6 +649,13 @@ body.app-visible .page .rf-pill.active {
 }
 .piano-section-label:first-child { border-top: none; margin-top: 0; padding-top: 0; }
 
+.piano-ricette-section { margin-bottom: 20px; }
+.piano-ricette-title {
+  font-size: .96rem; font-weight: 800;
+  color: var(--text-light);
+  margin-bottom: 14px;
+}
+
 .rc-ing-list   { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; }
 .rc-ing-row    {
   display: flex; align-items: center; gap: 8px;
@@ -774,66 +781,64 @@ body.app-visible .page .rc-ing-qty  { color: rgba(13,34,24,.78); }
 .modal-footer-rc { flex-wrap: wrap; gap: 8px; }
 .modal-box-rc .modal-footer .rc-btn { flex-shrink: 0; }
 
-/* Tutti i modali in app: stile coerente con homepage (come Privacy) */
+/* Modali in app: stesso stile del resto dell'app (tema coerente) */
 body.app-visible .modal.active {
-  background: rgba(13,34,24,.35);
+  background: rgba(0,0,0,.45);
 }
 body.app-visible .modal .modal-box {
-  background: linear-gradient(160deg, #e8f5f0 0%, #f3fbf7 50%, #e8f5f0 100%);
-  border: 1px solid rgba(13,34,24,.15);
-  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  box-shadow: var(--shadow-lg);
 }
 body.app-visible .modal .modal-handle {
-  background: rgba(13,34,24,.25);
+  background: var(--border-mid);
 }
 body.app-visible .modal .modal-title {
-  color: #0d2218;
+  color: var(--text);
   font-weight: 800;
-  letter-spacing: -0.02em;
 }
 body.app-visible .modal .modal-close {
-  background: rgba(13,34,24,.08);
-  border: 1px solid rgba(13,34,24,.2);
-  color: #0d2218;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text);
 }
 body.app-visible .modal .modal-close:hover {
-  background: rgba(13,34,24,.15);
-  border-color: rgba(13,34,24,.35);
-  color: #0d2218;
+  background: var(--bg-hover);
+  border-color: var(--border-mid);
+  color: var(--text);
 }
 body.app-visible .modal .modal-body {
-  color: #0d2218;
+  color: var(--text);
 }
 body.app-visible .modal .modal-body p,
 body.app-visible .modal .modal-body li,
 body.app-visible .modal .modal-body label {
-  color: rgba(13,34,24,.85);
+  color: var(--text-2);
 }
 body.app-visible .modal .modal-footer .btn-primary {
-  background: transparent;
-  color: rgba(13,34,24,.8);
-  border: 1px solid rgba(13,34,24,.3);
+  background: var(--primary);
+  color: #fff;
+  border: 1px solid var(--primary-dark);
   border-radius: var(--r-full);
 }
 body.app-visible .modal .modal-footer .btn-primary:hover {
-  background: rgba(13,34,24,.1);
-  color: #0d2218;
-  border-color: rgba(13,34,24,.5);
+  background: var(--primary-dark);
+  color: #fff;
+  border-color: var(--primary-dark);
 }
-
-[data-theme="dark"] body.app-visible .modal .modal-box {
-  background: linear-gradient(160deg, #142a20 0%, #1b3429 50%, #142a20 100%);
+body.app-visible .modal .modal-body .btn-google {
+  background: var(--bg-subtle);
   border-color: var(--border);
-}
-[data-theme="dark"] body.app-visible .modal .modal-title,
-[data-theme="dark"] body.app-visible .modal .modal-close,
-[data-theme="dark"] body.app-visible .modal .modal-body {
   color: var(--text);
 }
-[data-theme="dark"] body.app-visible .modal .modal-body p,
-[data-theme="dark"] body.app-visible .modal .modal-body li,
-[data-theme="dark"] body.app-visible .modal .modal-body label,
-[data-theme="dark"] body.app-visible .modal .modal-body .form-group > label {
+body.app-visible .modal .modal-body .btn-google:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-mid);
+}
+body.app-visible .modal .modal-body .auth-modal-offline {
+  color: var(--text-2);
+}
+body.app-visible .modal .modal-body .auth-modal-offline:hover {
   color: var(--text);
 }
 [data-theme="dark"] body.app-visible .modal .modal-body input,
@@ -856,13 +861,13 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
   border-color: var(--border-mid);
 }
 [data-theme="dark"] body.app-visible .modal .modal-footer .btn-primary {
-  color: var(--text);
-  border-color: var(--border);
-  background: var(--bg-subtle);
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary-dark);
 }
 [data-theme="dark"] body.app-visible .modal .modal-footer .btn-primary:hover {
-  background: var(--bg-hover);
-  border-color: var(--border-mid);
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
 }
 
 /* Modal Genera ricetta AI: testo leggibile in dark mode (override stili inline) */
@@ -1625,23 +1630,29 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
   transform: scale(1.04);
 }
 
-/* Esplora dentro hero: margine sopra */
-.landing-hero .landing-esplora-btn {
-  margin-top: 14px;
-}
-
-/* Accedi: sempre in alto a destra viewport (fixed, fuori da #landingPage) */
-.landing-accedi-wrap {
-  position: fixed;
-  top: 0;
-  right: 0;
-  margin: 20px;
-  z-index: 200;
+/* Esplora + Accedi sotto hero */
+.landing-hero-actions {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  opacity: 0;
-  animation: landing-accedi-in 0.5s ease 0.3s forwards;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.landing-hero .landing-esplora-btn {
+  margin-top: 0;
+}
+.landing-hero-actions .landing-esplora-btn {
+  margin: 0;
+}
+
+/* Accedi: sotto Esplora, dentro hero (no più fixed top-right) */
+.landing-hero-actions .landing-accedi-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 1;
+  animation: none;
   cursor: url('cursor-gold-ring.svg') 12 12, default;
 }
 .landing-accedi-wrap .landing-badge.landing-accedi-btn,
@@ -1687,23 +1698,28 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 .landing-accedi-reveal {
   position: absolute;
   top: 100%;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%) scaleY(0);
   margin-top: 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 180px;
+  z-index: 250;
   opacity: 0;
   visibility: hidden;
-  transform: scaleY(0);
   transform-origin: top center;
   transition: opacity 0.28s ease, visibility 0.28s ease, transform 0.28s ease;
+}
+.landing-hero-actions .landing-accedi-reveal {
+  left: 50%;
+  right: auto;
 }
 
 .landing-accedi-reveal.landing-accedi-open {
   opacity: 1;
   visibility: visible;
-  transform: scaleY(1);
+  transform: translateX(-50%) scaleY(1);
 }
 
 .landing-accedi-option {
@@ -2176,12 +2192,19 @@ body.app-visible .page .settings-section-title { color: #0d2218; }
 [data-theme="dark"] body.app-visible .page .rc-card .rc-name,
 [data-theme="dark"] body.app-visible .page .rc-card .rc-meta { color: var(--text); }
 [data-theme="dark"] body.app-visible .page .rc-card:hover {
-  background: var(--primary-dark);
-  border-color: var(--primary-mid);
+  background: var(--bg-hover);
+  border-color: rgba(255,255,255,.5);
 }
 [data-theme="dark"] body.app-visible .page .rc-card:hover .rc-name,
 [data-theme="dark"] body.app-visible .page .rc-card:hover .rc-meta,
-[data-theme="dark"] body.app-visible .page .rc-card:hover .rc-chevron { color: #e8f5f0; }
+[data-theme="dark"] body.app-visible .page .rc-card:hover .rc-chevron { color: var(--text); }
+[data-theme="dark"] body.app-visible .page .rc-card.open {
+  background: var(--bg-subtle);
+  border-color: rgba(255,255,255,.6);
+}
+[data-theme="dark"] body.app-visible .page .rc-card.open .rc-name,
+[data-theme="dark"] body.app-visible .page .rc-card.open .rc-meta,
+[data-theme="dark"] body.app-visible .page .rc-card.open .rc-chevron { color: var(--text); }
 [data-theme="dark"] body.app-visible .page .fi-row:hover {
   background: var(--bg-hover);
 }
@@ -2240,20 +2263,23 @@ body.app-visible .page .settings-section-title { color: #0d2218; }
   border-color: var(--border-mid);
 }
 [data-theme="dark"] body.app-visible .page .meal-btn.active {
-  background: var(--bg-hover);
-  border-color: var(--primary-mid);
+  background: transparent;
+  border-color: rgba(255,255,255,.6);
+}
+[data-theme="dark"] body.app-visible .page .meal-btn.active .meal-btn-label {
+  color: var(--text);
 }
 [data-theme="dark"] body.app-visible .page .meal-btn .meal-btn-count {
   background: var(--bg-subtle);
   color: var(--text-mid);
 }
 [data-theme="dark"] body.app-visible .page .meal-btn.active .meal-btn-count {
-  background: var(--primary);
-  color: #ffffff;
+  background: rgba(255,255,255,.15);
+  color: rgba(255,255,255,.95);
 }
 [data-theme="dark"] body.app-visible .page .ob-tab { border-color: var(--border); color: var(--text-mid); }
-[data-theme="dark"] body.app-visible .page .ob-tab:hover,
-[data-theme="dark"] body.app-visible .page .ob-tab.active { color: var(--text); background: var(--bg-hover); border-color: var(--border-mid); }
+[data-theme="dark"] body.app-visible .page .ob-tab:hover { color: var(--text); background: var(--bg-hover); border-color: var(--border-mid); }
+[data-theme="dark"] body.app-visible .page .ob-tab.active { color: var(--text); background: transparent; border-color: rgba(255,255,255,.6); }
 [data-theme="dark"] body.app-visible .page .spesa-item-name { color: var(--text); }
 [data-theme="dark"] body.app-visible .page .spesa-item.checked .spesa-item-name { color: var(--text-light); }
 [data-theme="dark"] body.app-visible .page .settings-row:hover .settings-row-label,
@@ -2715,6 +2741,11 @@ body.app-visible .page .ob-tab.active .ob-tab-badge {
 .ob-chip.on {
   background: var(--primary-light); border-color: var(--primary-mid);
   color: var(--primary); font-weight: 700;
+}
+[data-theme="dark"] .ob-chip.on {
+  background: var(--bg-subtle);
+  border-color: rgba(255,255,255,.6);
+  color: var(--text);
 }
 
 .ob-custom-row {
@@ -3643,6 +3674,15 @@ div > .ai-powered-label {
   overflow: hidden;
 }
 
+/* Indicatore pasto attuale nel wizard */
+.wiz-meal-indicator {
+  font-size: 1rem; font-weight: 800; color: var(--primary);
+  padding: 10px 14px; margin-bottom: 14px;
+  background: var(--primary-xl); border: 1.5px solid var(--primary-mid);
+  border-radius: var(--r-lg); text-align: center;
+}
+[data-theme="dark"] .wiz-meal-indicator { color: var(--primary-light); }
+
 /* Sezioni categoria nel wizard (simile al piano finale) */
 .wiz-cat-section {
   border: 1.5px solid var(--border); border-radius: var(--r-lg);
@@ -3756,6 +3796,11 @@ div > .ai-powered-label {
 }
 .rf-pill-extra:hover { border-color: var(--primary-mid); color: var(--primary); }
 .rf-pill-extra.active { background: var(--primary); color: #fff; border-color: var(--primary-dark); }
+[data-theme="dark"] .rf-pill-extra.active {
+  background: transparent;
+  border-color: rgba(255,255,255,.6);
+  color: var(--text);
+}
 
 /* ══════════════════════════════════════════════════
    VINCOLI DIETA — toggle nel profilo

@@ -869,7 +869,6 @@ function buildPALimitiSection() {
     return (
       '<div class="pa-limiti-section">' +
         '<div class="pa-limiti-header">' +
-          '<span class="pa-limiti-icon">📊</span>' +
           '<span class="pa-limiti-title">Limiti settimanali</span>' +
         '</div>' +
         '<div class="pa-limiti-body">' +
@@ -910,9 +909,7 @@ function buildPALimitiSection() {
   return (
     '<div class="pa-limiti-section">' +
       '<div class="pa-limiti-header">' +
-        '<span class="pa-limiti-icon">📊</span>' +
         '<span class="pa-limiti-title">Limiti settimanali</span>' +
-        '<span class="pa-limiti-sub">Imposta i valori massimi (inclusi personalizzati)</span>' +
       '</div>' +
       '<div class="pa-limiti-body">' +
         rows +
@@ -1105,7 +1102,7 @@ function _renderWizardStep() {
 
 /* ── BODY: pasto ── */
 function _buildWizardMealBody(meal) {
-  var html = '';
+  var html = '<div class="wiz-meal-indicator">' + meal.label + '</div>';
 
   /* Categorie come sezioni espandibili (simili alla visualizzazione finale) */
   var allCats = PA_CATEGORIES.concat(['🧂 Altro']);

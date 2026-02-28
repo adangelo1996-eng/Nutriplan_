@@ -174,7 +174,7 @@ function buildProfiloLimitiSection() {
     '<div class="rc-card" style="margin-bottom:16px;">' +
       '<div style="padding:20px;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">' +
-          '<span style="font-weight:700;font-size:1em;">📊 Limiti settimanali</span>' +
+          '<span style="font-weight:700;font-size:1em;">Limiti settimanali</span>' +
           '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">'+items.length+' voci</span>' +
         '</div>' +
         rows +

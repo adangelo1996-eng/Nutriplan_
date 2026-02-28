@@ -79,14 +79,23 @@
     </div>
   </div>
 
-  <!-- Hero: headline + sottotitolo + Esplora sotto -->
+  <!-- Hero: headline + sottotitolo + Esplora + Accedi -->
   <div class="landing-hero">
     <h1 class="landing-hero-headline">
       <span class="landing-hero-line landing-hero-line-1">Il tuo</span>
       <span class="landing-hero-line landing-hero-line-2">pia<span class="landing-hero-n">n</span>o alime<span class="landing-hero-n">n</span>tare</span>
     </h1>
     <p class="landing-sub">Scegli una sezione per iniziare.</p>
-    <button type="button" class="landing-badge landing-esplora-btn" id="landingEsploraBtn" onclick="toggleLandingCards()" aria-expanded="false">Esplora</button>
+    <div class="landing-hero-actions">
+      <button type="button" class="landing-badge landing-esplora-btn" id="landingEsploraBtn" onclick="toggleLandingCards()" aria-expanded="false">Esplora</button>
+      <div class="landing-accedi-wrap" id="landingAccediWrap">
+        <button type="button" class="landing-badge landing-accedi-btn" id="landingAccediBtn" onclick="toggleAccediOptions()" aria-label="Accedi" aria-expanded="false">Accedi</button>
+        <div class="landing-accedi-reveal" id="landingAccediReveal" aria-hidden="true">
+          <button type="button" class="landing-nav-card landing-accedi-option" onclick="closeAccediOptions(); openAuthModal();">Login</button>
+          <button type="button" class="landing-nav-card landing-accedi-option" onclick="closeAccediOptions(); landingOffline();">Continua senza account</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Card: nascoste di default, rivelate al click Esplora (solo testo, hover = desc + contrasto negativo) -->
@@ -136,14 +145,6 @@
   </p>
 </div>
 
-<!-- Accedi: fuori da #landingPage per ancoraggio viewport (sempre in alto a destra) -->
-<div class="landing-accedi-wrap" id="landingAccediWrap">
-  <button type="button" class="landing-badge landing-accedi-btn" id="landingAccediBtn" onclick="toggleAccediOptions()" aria-label="Accedi" aria-expanded="false">Accedi</button>
-  <div class="landing-accedi-reveal" id="landingAccediReveal" aria-hidden="true">
-    <button type="button" class="landing-nav-card landing-accedi-option" onclick="closeAccediOptions(); openAuthModal();">Login</button>
-    <button type="button" class="landing-nav-card landing-accedi-option" onclick="closeAccediOptions(); landingOffline();">Continua senza accedere</button>
-  </div>
-</div>
 
 <!-- ═════════════════════════════════════════════════════════════════
      HEADER (app) — con marquee stile homepage
