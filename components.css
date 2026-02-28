@@ -2339,9 +2339,9 @@ body.app-visible .bottom-nav .nav-tab-casa.active::after {
   background: #d4a84b;
 }
 
-/* Pagina Casa — saluto, card suggerimento pasto, meta */
+/* Pagina Casa — saluto, card suggerimento pasto, meta; nascosta come le altre .page se non active */
 #page-casa {
-  display: flex;
+  display: none;
   flex-direction: column;
 }
 #page-casa.active {
