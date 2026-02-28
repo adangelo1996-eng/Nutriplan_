@@ -242,6 +242,7 @@
 .fi-row-name  { font-size: .88rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fi-row-unit  { font-size: .7rem; color: var(--text-light); font-weight: 600; margin-top: 2px; }
 .fi-row-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.fi-qty-undefined { color: var(--text-3); font-weight: 600; min-width: 1.5em; }
 
 .fi-btn {
   width: 30px; height: 30px;
@@ -979,7 +980,8 @@ body.app-visible .modal .modal-body .auth-modal-offline:hover {
   font-size: .85rem; margin-bottom: 12px;
   padding-bottom: 10px; border-bottom: 1px solid var(--border);
 }
-.barcode-macro-label {
+.barcode-macro-label,
+.eqm-nutri-label {
   font-size: .7rem; font-weight: 800; text-transform: uppercase;
   letter-spacing: .07em; color: var(--text-3); margin-bottom: 8px;
 }

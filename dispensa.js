@@ -229,9 +229,11 @@ function getAllPantryItems() {
         if (seen[name]) return;
         seen[name] = true;
         var pd = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) ? pantryItems[name] : {};
+        var isBase = typeof isIngredienteBase === 'function' && isIngredienteBase(name) && !(typeof isIngredienteBaseEsclusoDaProfilo === 'function' && isIngredienteBaseEsclusoDaProfilo(name));
+        var qty = typeof pd.quantity === 'number' ? pd.quantity : (isBase ? undefined : 0);
         result.push({
           name:     name,
-          quantity: typeof pd.quantity === 'number' ? pd.quantity : 0,
+          quantity: qty,
           unit:     pd.unit || item.unit || 'g',
           category: pd.category || '🧂 Altro',
           icon:     pd.icon || getCategoryIcon(pd.category || '🧂 Altro'),
@@ -248,9 +250,11 @@ function getAllPantryItems() {
       if (seen[name]) return;
       seen[name] = true;
       var pd = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) ? pantryItems[name] : {};
+      var isBase = typeof isIngredienteBase === 'function' && isIngredienteBase(name) && !(typeof isIngredienteBaseEsclusoDaProfilo === 'function' && isIngredienteBaseEsclusoDaProfilo(name));
+      var qty = typeof pd.quantity === 'number' ? pd.quantity : (isBase ? undefined : 0);
       result.push({
         name:     name,
-        quantity: typeof pd.quantity === 'number' ? pd.quantity : 0,
+        quantity: qty,
         unit:     pd.unit || item.unit || 'g',
         category: item.category || '🧂 Altro',
         icon:     item.icon || getCategoryIcon(item.category),
@@ -266,12 +270,15 @@ function getAllPantryItems() {
       if (seen[name]) return;
       seen[name] = true;
       var pd = (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) ? pantryItems[name] : {};
+      var catUsed = (pd && pd.category) ? pd.category : (item.category || '🧂 Altro');
+      var isBase = typeof isIngredienteBase === 'function' && isIngredienteBase(name) && !(typeof isIngredienteBaseEsclusoDaProfilo === 'function' && isIngredienteBaseEsclusoDaProfilo(name));
+      var qty = typeof pd.quantity === 'number' ? pd.quantity : (isBase ? undefined : 0);
       result.push({
         name:     name,
-        quantity: typeof pd.quantity === 'number' ? pd.quantity : 0,
+        quantity: qty,
         unit:     pd.unit || item.unit || 'g',
-        category: item.category || '🧂 Altro',
-        icon:     item.icon || getCategoryIcon(item.category),
+        category: catUsed,
+        icon:     (pd && pd.icon) ? pd.icon : (item.icon || getCategoryIcon(catUsed)),
         isCustom: true
       });
     });
@@ -283,13 +290,36 @@ function getAllPantryItems() {
       seen[name] = true;
       var pd = pantryItems[name];
       if (!pd || typeof pd !== 'object') return;
+      var isBase = typeof isIngredienteBase === 'function' && isIngredienteBase(name) && !(typeof isIngredienteBaseEsclusoDaProfilo === 'function' && isIngredienteBaseEsclusoDaProfilo(name));
+      var qty = typeof pd.quantity === 'number' ? pd.quantity : (isBase ? undefined : 0);
       result.push({
         name:     name,
-        quantity: typeof pd.quantity === 'number' ? pd.quantity : 0,
+        quantity: qty,
         unit:     pd.unit || 'g',
         category: pd.category || '🧂 Altro',
         icon:     pd.icon || '🧂',
         isCustom: pd.isCustom || false
+      });
+    });
+  }
+
+  /* Ingredienti base sempre disponibili: aggiungi in dispensa con quantità non definita se non già presenti */
+  if (typeof INGREDIENTI_BASE_KEYS !== 'undefined' && Array.isArray(INGREDIENTI_BASE_KEYS)) {
+    var seenLower = {};
+    result.forEach(function(r) { if (r && r.name) seenLower[r.name.toLowerCase()] = true; });
+    INGREDIENTI_BASE_KEYS.forEach(function(key) {
+      if (typeof isIngredienteBaseEsclusoDaProfilo === 'function' && isIngredienteBaseEsclusoDaProfilo(key)) return;
+      var displayName = key.charAt(0).toUpperCase() + key.slice(1);
+      if (seenLower[key] || seen[displayName]) return;
+      seen[displayName] = true;
+      seenLower[key] = true;
+      result.push({
+        name:     displayName,
+        quantity: undefined,
+        unit:     'g',
+        category: '🧂 Cucina',
+        icon:     getCategoryIcon('🧂 Cucina'),
+        isCustom: false
       });
     });
   }
@@ -339,7 +369,10 @@ function renderFridge(targetId) {
 
   var allItems = getAllPantryItems();
   var active = allItems.filter(function(i) {
-    return isValidItem(i) && (i.quantity || 0) > 0;
+    if (!isValidItem(i)) return false;
+    var isBase = typeof isIngredienteBase === 'function' && isIngredienteBase(i.name) && !(typeof isIngredienteBaseEsclusoDaProfilo === 'function' && isIngredienteBaseEsclusoDaProfilo(i.name));
+    if (isBase && (i.quantity === undefined || i.quantity === null)) return true;
+    return (i.quantity || 0) > 0;
   });
 
   /* Fallback: se la dispensa ha ingredienti salvati ma tutte le quantità sono 0,
@@ -348,7 +381,7 @@ function renderFridge(targetId) {
       typeof pantryItems !== 'undefined' && pantryItems &&
       Object.keys(pantryItems).some(isValidPantryKey)) {
     active = allItems.filter(function(i) {
-      return isValidItem(i) && pantryItems[i.name];
+      return isValidItem(i) && (pantryItems[i.name] || (typeof isIngredienteBase === 'function' && isIngredienteBase(i.name) && !(typeof isIngredienteBaseEsclusoDaProfilo === 'function' && isIngredienteBaseEsclusoDaProfilo(i.name))));
     });
   }
 
@@ -722,13 +755,14 @@ function getExpiringSoon(maxDays) {
 
 function buildFridgeRow(item) {
   var sid   = safeid(item.name);
+  var name  = item.name;
+  var isBaseUndef = typeof isIngredienteBase === 'function' && isIngredienteBase(name) && !(typeof isIngredienteBaseEsclusoDaProfilo === 'function' && isIngredienteBaseEsclusoDaProfilo(name)) && (item.quantity === undefined || item.quantity === null);
   var qty   = typeof item.quantity === 'number' ? item.quantity : 0;
   var unit  = item.unit || 'g';
   var icon  = item.icon || getCategoryIcon(item.category);
-  var name  = item.name;
   var color = getCategoryColor(item.category);
 
-  var qtyDisplay = (qty % 1 === 0) ? qty : parseFloat(qty.toFixed(2));
+  var qtyDisplay = isBaseUndef ? '—' : ((qty % 1 === 0) ? qty : parseFloat(qty.toFixed(2)));
   var expiryBadge = buildExpiryBadge(item.scadenza);
 
   var daysToExp = getDaysToExpiry(item.scadenza);
@@ -748,6 +782,14 @@ function buildFridgeRow(item) {
     expiryRowStyle += 'border-left:3px solid #3b82f6;';
   }
 
+  var qtyBlock = '<div class="fi-row-right" onclick="event.stopPropagation();">' +
+    (isBaseUndef
+      ? '<span class="fi-qty fi-qty-undefined" id="fi-qty-' + sid + '">—</span>'
+      : '<button class="fi-btn fi-btn-minus" onclick="fridgeAdjust(\'' + escQ(name) + '\',-1)" aria-label="Riduci">−</button>' +
+        '<span class="fi-qty" id="fi-qty-' + sid + '">' + qtyDisplay + '</span>' +
+        '<button class="fi-btn fi-btn-plus" onclick="fridgeAdjust(\'' + escQ(name) + '\',1)" aria-label="Aumenta">+</button>') +
+    '</div>';
+
   return (
     '<div class="fi-row" id="fi-row-' + sid + '" ' +
          'onclick="openQtyModal(\'' + escQ(name) + '\')" ' +
@@ -759,13 +801,7 @@ function buildFridgeRow(item) {
           (expiryBadge ? ' ' + expiryBadge : '') +
         '</div>' +
       '</div>' +
-      '<div class="fi-row-right" onclick="event.stopPropagation();">' +
-        '<button class="fi-btn fi-btn-minus" onclick="fridgeAdjust(\'' + escQ(name) + '\',-1)"' +
-                ' aria-label="Riduci">−</button>' +
-        '<span class="fi-qty" id="fi-qty-' + sid + '">' + qtyDisplay + '</span>' +
-        '<button class="fi-btn fi-btn-plus" onclick="fridgeAdjust(\'' + escQ(name) + '\',1)"' +
-                ' aria-label="Aumenta">+</button>' +
-      '</div>' +
+      qtyBlock +
       '<button class="fi-row-del" onclick="event.stopPropagation();fridgeRemove(\'' + escQ(name) + '\')" ' +
               'aria-label="Rimuovi">✕</button>' +
     '</div>'
@@ -805,8 +841,21 @@ function fridgeAdjust(name, direction) {
 }
 
 function fridgeRemove(name) {
-  if (!pantryItems || !pantryItems[name]) return;
-  pantryItems[name].quantity = 0;
+  if (!pantryItems) return;
+  var isBase = typeof isIngredienteBase === 'function' && isIngredienteBase(name) && !(typeof isIngredienteBaseEsclusoDaProfilo === 'function' && isIngredienteBaseEsclusoDaProfilo(name));
+  var pd = pantryItems[name];
+  if (isBase && (!pd || pd.quantity === undefined || pd.quantity === null)) {
+    if (typeof showToast === 'function') showToast('🧂 ' + name + ' è un ingrediente sempre disponibile', 'info');
+    return;
+  }
+  if (isBase && pd) {
+    delete pd.quantity;
+    if (Object.keys(pd).length <= 0) delete pantryItems[name];
+  } else if (pd) {
+    pd.quantity = 0;
+  } else {
+    return;
+  }
   saveData();
   renderFridge();
   renderFridge('pianoFridgeContent');
@@ -819,7 +868,8 @@ function fridgeRemove(name) {
 ══════════════════════════════════════════════════ */
 function openQtyModal(name) {
   var pd   = (pantryItems && pantryItems[name]) ? pantryItems[name] : {};
-  var qty  = typeof pd.quantity === 'number' ? pd.quantity : 0;
+  var isBase = typeof isIngredienteBase === 'function' && isIngredienteBase(name) && !(typeof isIngredienteBaseEsclusoDaProfilo === 'function' && isIngredienteBaseEsclusoDaProfilo(name));
+  var qty  = typeof pd.quantity === 'number' ? pd.quantity : (isBase ? undefined : 0);
   var unit = pd.unit || 'g';
   var icon = pd.icon || getCategoryIcon(pd.category);
   var cat  = pd.category || '🧂 Altro';
@@ -830,8 +880,33 @@ function openQtyModal(name) {
   document.getElementById('eqmIcon').textContent   = icon;
   document.getElementById('eqmName').textContent   = name;
   document.getElementById('eqmUnit').textContent   = unit;
-  document.getElementById('eqmInput').value        = (qty % 1 === 0) ? qty : parseFloat(qty.toFixed(2));
-  document.getElementById('eqmInput').dataset.name = name;
+  var inp = document.getElementById('eqmInput');
+  inp.dataset.name = name;
+  if (isBase && (qty === undefined || qty === null)) {
+    inp.placeholder = '—';
+    inp.value = '';
+  } else {
+    inp.placeholder = '0';
+    inp.value = (qty % 1 === 0) ? qty : parseFloat(Number(qty).toFixed(2));
+  }
+
+  var nutEl = document.getElementById('eqmNutriments');
+  if (nutEl) {
+    if (pd.nutriments && (pd.nutriments.kcal != null || pd.nutriments.proteins != null || pd.nutriments.carbs != null || pd.nutriments.fat != null || pd.nutriments.fiber != null)) {
+      var n = pd.nutriments;
+      var chips = '';
+      if (n.kcal != null) chips += '<div class="barcode-macro-chip"><span>Energia</span><strong>' + n.kcal + ' kcal</strong></div>';
+      if (n.proteins != null) chips += '<div class="barcode-macro-chip"><span>Proteine</span><strong>' + n.proteins + 'g</strong></div>';
+      if (n.carbs != null) chips += '<div class="barcode-macro-chip"><span>Carboidrati</span><strong>' + n.carbs + 'g</strong></div>';
+      if (n.fat != null) chips += '<div class="barcode-macro-chip"><span>Grassi</span><strong>' + n.fat + 'g</strong></div>';
+      if (n.fiber != null) chips += '<div class="barcode-macro-chip"><span>Fibre</span><strong>' + n.fiber + 'g</strong></div>';
+      nutEl.innerHTML = '<div class="eqm-nutri-label">Valori nutrizionali (per 100g)</div><div class="barcode-macro-grid">' + chips + '</div>';
+      nutEl.style.display = 'block';
+    } else {
+      nutEl.innerHTML = '';
+      nutEl.style.display = 'none';
+    }
+  }
   
   /* Aggiungi select per categoria */
   var catSelect = document.getElementById('eqmCategory');
@@ -890,8 +965,12 @@ function confirmQtyModal() {
   var inp  = document.getElementById('eqmInput');
   if (!inp) return;
   var name = inp.dataset.name;
-  var val  = parseFloat(inp.value);
-  if (!name || isNaN(val) || val < 0) {
+  if (!name) return;
+  var isBase = typeof isIngredienteBase === 'function' && isIngredienteBase(name) && !(typeof isIngredienteBaseEsclusoDaProfilo === 'function' && isIngredienteBaseEsclusoDaProfilo(name));
+  var rawVal = (inp.value || '').trim();
+  var val = parseFloat(rawVal);
+  var quantitySet = !isNaN(val) && val >= 0;
+  if (!isBase && (!quantitySet || val < 0)) {
     if (typeof showToast === 'function') showToast('⚠️ Quantità non valida', 'warning');
     return;
   }
@@ -904,21 +983,27 @@ function confirmQtyModal() {
   var frozen    = freezerEl ? freezerEl.checked : (pd.freezer || false);
   var newCat    = catSelect ? catSelect.value : (pd.category || '🧂 Altro');
   var newIcon   = getCategoryIcon(newCat);
-  
-  var updated   = Object.assign({}, pd, { 
-    quantity: val,
-    category: newCat,
-    icon: newIcon
-  });
+
+  var updated   = Object.assign({}, pd, { category: newCat, icon: newIcon });
+  if (quantitySet) updated.quantity = val; else if (isBase) delete updated.quantity;
   if (scadenza) { updated.scadenza = scadenza; } else { delete updated.scadenza; }
   if (frozen)   { updated.freezer = true; }     else { delete updated.freezer; }
   pantryItems[name] = updated;
+  /* Aggiorna anche customIngredients così la lista dispensa usa la nuova categoria */
+  if (typeof customIngredients !== 'undefined' && Array.isArray(customIngredients)) {
+    var ciEntry = customIngredients.find(function(i) { return i && i.name === name; });
+    if (ciEntry) {
+      ciEntry.category = newCat;
+      ciEntry.icon = newIcon;
+    }
+  }
   saveData();
   closeQtyModal();
   renderFridge();
   renderFridge('pianoFridgeContent');
   if (typeof updateAllUI === 'function') updateAllUI();
-  if (typeof showToast === 'function') showToast('✅ ' + name + ': ' + val + ' ' + (pd.unit || 'g'), 'success');
+  var msg = quantitySet ? ('✅ ' + name + ': ' + val + ' ' + (pd.unit || 'g')) : ('✅ ' + name + ' aggiornato');
+  if (typeof showToast === 'function') showToast(msg, 'success');
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1147,13 +1232,15 @@ function _showBarcodeResult(product, barcode) {
   var brand     = (product.brands || '').trim();
   var n         = product.nutriments || {};
 
-  _barcodeResult = { name: name, category: category, brand: brand, barcode: barcode };
-
   var kcal     = n['energy-kcal_100g']    != null ? Math.round(n['energy-kcal_100g'])            : null;
   var proteins = n['proteins_100g']       != null ? parseFloat(n['proteins_100g']).toFixed(1)     : null;
   var carbs    = n['carbohydrates_100g']  != null ? parseFloat(n['carbohydrates_100g']).toFixed(1): null;
   var fat      = n['fat_100g']            != null ? parseFloat(n['fat_100g']).toFixed(1)          : null;
   var fiber    = n['fiber_100g']          != null ? parseFloat(n['fiber_100g']).toFixed(1)        : null;
+  var nutriments = (kcal != null || proteins != null || carbs != null || fat != null || fiber != null)
+    ? { kcal: kcal, proteins: proteins, carbs: carbs, fat: fat, fiber: fiber } : null;
+
+  _barcodeResult = { name: name, category: category, brand: brand, barcode: barcode, nutriments: nutriments };
 
   var hasDetails = brand || kcal !== null || proteins !== null || carbs !== null || fat !== null;
   var detailsHtml = '';
@@ -1315,6 +1402,7 @@ function confirmBarcodeAdd() {
   });
   if (scadenza) entry.scadenza = scadenza;
   if (frozen)   entry.freezer  = true;
+  if (_barcodeResult && _barcodeResult.nutriments) entry.nutriments = _barcodeResult.nutriments;
 
   pantryItems[name] = entry;
 
