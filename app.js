@@ -83,8 +83,8 @@ function initIcons() {
 ══════════════════════════════════════════════════ */
 function initDarkMode() {
   var saved = localStorage.getItem('nutriplanDark');
-  var prefersDark = window.matchMedia('(prefers-color-scheme:dark)').matches;
-  applyDarkMode(saved !== null ? saved === '1' : prefersDark, false);
+  /* Default modalità chiara; salva sempre le preferenze utente al toggle */
+  applyDarkMode(saved !== null ? saved === '1' : false, false);
 }
 
 function applyDarkMode(isDark, save) {

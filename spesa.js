@@ -94,7 +94,7 @@ function buildSpesaGeneratePanel() {
           '<button class="rc-btn-icon" onclick="spesaRecipeSelectorOpen=false;renderSpesa()">✕</button>' +
         '</div>' +
         tabsHtml +
-        '<div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">' +
+        '<div class="spesa-recipe-list" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">' +
           (recipeRows || '<p style="color:var(--text-3);font-size:.85em;">Nessuna ricetta in questa categoria.</p>') +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
@@ -138,20 +138,19 @@ function _escSpesa(str) {
 }
 
 function toggleSpesaRecipe(name) {
-  /* selectedSpesaRecipes ora memorizza il numero di volte (0 = non selezionata, N≥1 = selezionata) */
   selectedSpesaRecipes[name] = selectedSpesaRecipes[name] ? 0 : 1;
-  renderSpesa();
+  renderSpesa(true);
 }
 
 function incrementSpesaRecipe(name) {
   selectedSpesaRecipes[name] = (selectedSpesaRecipes[name] || 0) + 1;
-  renderSpesa();
+  renderSpesa(true);
 }
 
 function decrementSpesaRecipe(name) {
   var cur = selectedSpesaRecipes[name] || 0;
   selectedSpesaRecipes[name] = Math.max(0, cur - 1);
-  renderSpesa();
+  renderSpesa(true);
 }
 
 function toggleAllSpesaRecipes() {
@@ -206,9 +205,15 @@ function getSpesaItemCategory(item) {
 /* ══════════════════════════════════════════════
    RENDER PRINCIPALE
 ══════════════════════════════════════════════ */
-function renderSpesa() {
+function renderSpesa(preserveRecipeSelectorScroll) {
   var el = document.getElementById('spesaContent');
   if (!el) return;
+
+  var recipePanelScroll = 0;
+  if (preserveRecipeSelectorScroll && spesaRecipeSelectorOpen) {
+    var recipeDiv = el.querySelector('.spesa-recipe-list');
+    if (recipeDiv) recipePanelScroll = recipeDiv.scrollTop;
+  }
 
   var items  = typeof spesaItems !== 'undefined' ? spesaItems : [];
 
@@ -228,6 +233,10 @@ function renderSpesa() {
         '<div style="font-size:2.5rem;">🛒</div>' +
         '<p>Premi <strong>⚡ Genera</strong> per creare automaticamente la lista dagli ingredienti mancanti nel tuo piano.</p>' +
       '</div>';
+    if (preserveRecipeSelectorScroll && recipePanelScroll > 0) {
+      var newRecipeDiv = el.querySelector('.spesa-recipe-list');
+      if (newRecipeDiv) newRecipeDiv.scrollTop = recipePanelScroll;
+    }
     return;
   }
 
@@ -265,6 +274,10 @@ function renderSpesa() {
   });
 
   el.innerHTML = html;
+  if (preserveRecipeSelectorScroll && recipePanelScroll > 0) {
+    var newRecipeDiv = el.querySelector('.spesa-recipe-list');
+    if (newRecipeDiv) newRecipeDiv.scrollTop = recipePanelScroll;
+  }
 }
 
 /* ── CARD SINGOLO ITEM ── */

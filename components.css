@@ -39,7 +39,7 @@
   gap: 6px;
   padding: 10px 14px; min-width: 72px; flex-shrink: 0;
   background: var(--bg-card); border: 1.5px solid var(--border);
-  border-radius: var(--r-xl); cursor: pointer; transition: all var(--t);
+  border-radius: var(--r-xl); cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: all var(--t);
 }
 .meal-btn:hover {
   border-color: var(--primary-mid);
@@ -128,7 +128,7 @@
 .meal-item-btn {
   width: 30px; height: 30px;
   background: var(--bg-subtle); border: 1.5px solid var(--border);
-  border-radius: var(--r-sm); cursor: pointer; font-size: .88rem;
+  border-radius: var(--r-sm); cursor: url('cursor-gold-ring.svg') 12 12, pointer; font-size: .88rem;
   display: flex; align-items: center; justify-content: center;
   color: var(--text-mid); transition: all var(--t);
 }
@@ -202,7 +202,7 @@
 }
 .fi-group-collapsible .fi-group-header {
   list-style: none;
-  cursor: pointer;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   user-select: none;
 }
 .fi-group-collapsible .fi-group-header::-webkit-details-marker { display: none; }
@@ -225,7 +225,7 @@
 .fi-row {
   display: flex; align-items: center; gap: 12px;
   padding: 12px 16px; border-bottom: 1px solid var(--border);
-  cursor: pointer; transition: background var(--t); position: relative;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: background var(--t); position: relative;
 }
 .fi-row:last-child { border-bottom: none; }
 .fi-row:hover      { background: var(--bg-hover); }
@@ -247,7 +247,7 @@
   width: 30px; height: 30px;
   background: var(--bg-subtle); border: 1.5px solid var(--border);
   border-radius: var(--r-sm); font-size: 1.05rem; font-weight: 800;
-  line-height: 1; cursor: pointer; transition: all var(--t);
+  line-height: 1; cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: all var(--t);
   display: flex; align-items: center; justify-content: center;
   color: var(--text-mid); flex-shrink: 0;
 }
@@ -270,7 +270,7 @@
 
 .fi-row-del {
   width: 26px; height: 26px; flex-shrink: 0;
-  background: none; border: none; cursor: pointer;
+  background: none; border: none; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   font-size: .72rem; color: var(--text-light);
   border-radius: var(--r-xs);
   display: flex; align-items: center; justify-content: center;
@@ -318,7 +318,7 @@
   font-size: .88rem;
   font-weight: 700;
   color: var(--text-mid);
-  cursor: pointer;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -359,7 +359,7 @@
   background: var(--bg-card); color: var(--text-mid);
   font-size: .78rem; font-weight: 700;
   line-height: 1.2;
-  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; white-space: nowrap; flex-shrink: 0;
   transition: all var(--t);
 }
 .rf-pill:hover  {
@@ -438,7 +438,7 @@ body.app-visible .page .rf-pill.active {
 /* Sezioni ricette collassabili (per pasto) */
 .rc-group-collapsible > .rc-group-title {
   list-style: none;
-  cursor: pointer;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   user-select: none;
   padding: 6px 0;
 }
@@ -500,7 +500,7 @@ body.app-visible .page .rf-pill.active {
 }
 .ing-added-item span   { flex: 1; min-width: 0; font-weight: 600; }
 .ing-added-item .remove-ing {
-  background: none; border: none; cursor: pointer;
+  background: none; border: none; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   font-size: .8rem; color: var(--text-light);
   padding: 2px 4px; border-radius: var(--r-xs);
   transition: all var(--t);
@@ -517,7 +517,7 @@ body.app-visible .page .rf-pill.active {
   border-radius: var(--r-xl);
   border: 1.5px solid var(--border);
   overflow: hidden;
-  cursor: pointer;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   transition: border-color var(--t), box-shadow var(--t), transform var(--t);
 }
 .rc-card:hover {
@@ -628,7 +628,7 @@ body.app-visible .page .rf-pill.active {
   border: 1.5px solid var(--primary-mid);
   border-radius: var(--r-lg);
   color: var(--primary); font-weight: 700; font-size: .8rem;
-  cursor: pointer; transition: all var(--t); white-space: nowrap;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: all var(--t); white-space: nowrap;
 }
 .rc-detail-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
 .rc-detail-btn.btn-choose {
@@ -758,7 +758,7 @@ body.app-visible .page .rc-ing-qty  { color: rgba(13,34,24,.78); }
 .modal-close {
   width: 36px; height: 36px; flex-shrink: 0;
   background: var(--bg-subtle); border: 1px solid var(--border);
-  border-radius: var(--r-full); cursor: pointer;
+  border-radius: var(--r-full); cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   font-size: 1.1rem; font-weight: 700;
   color: var(--text-1);
   display: flex; align-items: center; justify-content: center;
@@ -923,7 +923,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
   overflow: hidden;
 }
 .barcode-details summary {
-  cursor: pointer; padding: 10px 14px;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; padding: 10px 14px;
   font-size: .82rem; font-weight: 700; color: var(--text-2);
   background: var(--bg-subtle);
   user-select: none; list-style: none;
@@ -1028,7 +1028,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 .spesa-item {
   display: flex; align-items: center; gap: 12px;
   padding: 12px 16px; border-bottom: 1px solid var(--border);
-  transition: background var(--t); cursor: pointer;
+  transition: background var(--t); cursor: url('cursor-gold-ring.svg') 12 12, pointer;
 }
 .spesa-item:last-child { border-bottom: none; }
 .spesa-item:hover      { background: var(--bg-hover); }
@@ -1038,7 +1038,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
   width: 20px; height: 20px; flex-shrink: 0;
   border: 2px solid var(--border-mid);
   border-radius: var(--r-xs); background: none;
-  cursor: pointer; transition: all var(--t);
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: all var(--t);
   display: flex; align-items: center; justify-content: center;
 }
 .spesa-item.checked .spesa-check {
@@ -1178,7 +1178,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 .settings-row {
   display: flex; align-items: center; gap: 12px;
   padding: 13px 16px; border-bottom: 1px solid var(--border);
-  cursor: pointer; transition: background var(--t);
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: background var(--t);
 }
 .settings-row:last-child { border-bottom: none; }
 .settings-row:hover      { background: var(--bg-hover); }
@@ -1352,7 +1352,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 .cal-nav-btn {
   width: 32px; height: 32px; flex-shrink: 0;
   background: var(--bg-card); border: 1.5px solid var(--border);
-  border-radius: var(--r-sm); cursor: pointer;
+  border-radius: var(--r-sm); cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   font-size: 1.1rem; color: var(--text-mid);
   display: flex; align-items: center; justify-content: center;
   transition: all var(--t);
@@ -1367,7 +1367,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   min-width: 46px; padding: 7px 5px;
   background: var(--bg-card); border: 1.5px solid var(--border);
-  border-radius: var(--r-lg); cursor: pointer; flex-shrink: 0;
+  border-radius: var(--r-lg); cursor: url('cursor-gold-ring.svg') 12 12, pointer; flex-shrink: 0;
   transition: all var(--t); position: relative;
 }
 .cal-day:hover { border-color: var(--primary-mid); background: var(--primary-xl); }
@@ -1510,7 +1510,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 }
 .tut-no-show-wrap label {
   display: flex; align-items: center; justify-content: center;
-  gap: 6px; cursor: pointer;
+  gap: 6px; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
 }
 
 /* ══════════════════════════════════════════════════
@@ -1615,7 +1615,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
   margin-bottom: 10px;
   transition: transform var(--t), color var(--t), border-color var(--t);
   background: none;
-  cursor: pointer;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   font-family: var(--font);
 }
 
@@ -1781,7 +1781,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
   background: #fff; color: #1a1a1a;
   border: none; border-radius: var(--r-lg);
   font-family: var(--font); font-size: .96rem; font-weight: 700;
-  cursor: pointer; letter-spacing: .01em;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; letter-spacing: .01em;
   box-shadow: 0 4px 24px rgba(0,0,0,.25);
   transition: all var(--t);
 }
@@ -1792,7 +1792,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 .btn-landing-google:active { transform: scale(.97); }
 
 .landing-offline-btn {
-  background: none; border: none; cursor: pointer;
+  background: none; border: none; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   color: rgba(255,255,255,.88); font-size: .8rem;
   font-family: var(--font); text-decoration: underline;
   padding: 4px 8px; transition: color var(--t);
@@ -1902,7 +1902,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
   color: #fff;
   font-family: var(--font);
   text-align: center;
-  cursor: pointer;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   overflow: hidden;
   transition: background 0.28s ease, color 0.28s ease, border-color 0.28s ease, transform 0.28s ease, box-shadow 0.28s ease;
   transform-origin: center bottom;
@@ -2362,7 +2362,7 @@ body.app-visible .page .settings-section-title { color: #0d2218; }
 .tut-card-close {
   width: 26px; height: 26px; border-radius: var(--r-sm);
   background: var(--bg-subtle); border: 1px solid var(--border);
-  cursor: pointer; font-size: .78rem; color: var(--text-light);
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; font-size: .78rem; color: var(--text-light);
   display: flex; align-items: center; justify-content: center;
   transition: all var(--t);
 }
@@ -2397,7 +2397,7 @@ body.app-visible .page .settings-section-title { color: #0d2218; }
 }
 .tut-no-show-wrap {
   font-size: .76rem; color: var(--text-light); flex: 1;
-  display: flex; align-items: center; gap: 5px; cursor: pointer;
+  display: flex; align-items: center; gap: 5px; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
 }
 
 /* ══════════════════════════════════════════════════
@@ -2456,7 +2456,7 @@ body.app-visible .page .settings-section-title { color: #0d2218; }
   border: 1.5px solid var(--border);
   background: var(--bg-subtle); color: var(--text-mid);
   font-family: var(--font); font-size: .8rem; font-weight: 700;
-  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; white-space: nowrap; flex-shrink: 0;
   transition: all var(--t); position: relative;
 }
 .ob-tab:hover { border-color: var(--primary-mid); color: var(--primary); }
@@ -2652,7 +2652,7 @@ body.app-visible .page .ob-tab.active .ob-tab-badge {
   color: var(--text);
   font-size: .86rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   transition: all var(--t);
 }
 .ob-step0-cta:hover {
@@ -2684,7 +2684,7 @@ body.app-visible .page .ob-tab.active .ob-tab-badge {
   border: 1.5px solid var(--border);
   background: var(--bg-subtle); color: var(--text-mid);
   font-family: var(--font); font-size: .8rem; font-weight: 600;
-  cursor: pointer; transition: all var(--t);
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: all var(--t);
 }
 .ob-chip:hover { border-color: var(--primary-mid); color: var(--primary); }
 .ob-chip.on {
@@ -2713,7 +2713,7 @@ body.app-visible .page .ob-tab.active .ob-tab-badge {
   font-size: .78rem; font-weight: 700;
 }
 .ob-added-chip button {
-  background: none; border: none; cursor: pointer;
+  background: none; border: none; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   color: var(--primary); font-size: .72rem; padding: 0;
   line-height: 1; opacity: .7; transition: opacity var(--t);
 }
@@ -2763,7 +2763,7 @@ body.app-visible .page .ob-tab.active .ob-tab-badge {
   padding: 16px; border-radius: var(--r-lg);
   border: 1.5px solid var(--border);
   background: var(--bg-subtle);
-  cursor: pointer; transition: all var(--t);
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: all var(--t);
   display: flex; flex-direction: column; gap: 5px;
 }
 .welcome-card:hover {
@@ -2791,7 +2791,7 @@ body.app-visible .page .ob-tab.active .ob-tab-badge {
   width: 28px; height: 28px; border-radius: 50%;
   background: var(--primary-light, #dcfce7);
   color: var(--primary);
-  border: none; cursor: pointer; font-size: 1rem;
+  border: none; cursor: url('cursor-gold-ring.svg') 12 12, pointer; font-size: 1rem;
   font-weight: 700; flex-shrink: 0;
   transition: background var(--t), transform var(--t);
   margin-left: auto;
@@ -2819,7 +2819,7 @@ body.app-visible .page .ob-tab.active .ob-tab-badge {
 .add-by-cat-item {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 12px; border-bottom: 1px solid var(--border);
-  cursor: pointer; border-radius: var(--r-md); transition: background var(--t);
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; border-radius: var(--r-md); transition: background var(--t);
   font-size: .92em;
 }
 .add-by-cat-item:hover { background: var(--primary-xl); }
@@ -2833,7 +2833,7 @@ body.app-visible .page .ob-tab.active .ob-tab-badge {
   width: 100%; text-align: left;
   padding: 10px 14px; margin-bottom: 8px;
   background: var(--bg-subtle); border: 1.5px solid var(--border);
-  border-radius: var(--r-md); cursor: pointer; font-size: .9em; font-weight: 500;
+  border-radius: var(--r-md); cursor: url('cursor-gold-ring.svg') 12 12, pointer; font-size: .9em; font-weight: 500;
   transition: border-color var(--t), background var(--t);
 }
 .sub-opt-available:hover {
@@ -2871,7 +2871,7 @@ body.app-visible .page .ob-tab.active .ob-tab-badge {
   border: none; border-top: 1px dashed color-mix(in srgb, var(--gc, var(--primary)) 25%, var(--border));
   color: var(--gc, var(--primary));
   font-size: .8rem; font-weight: 700;
-  cursor: pointer; transition: background var(--t), opacity var(--t);
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: background var(--t), opacity var(--t);
   letter-spacing: .02em;
 }
 .fi-add-inline-btn:hover {
@@ -2886,7 +2886,7 @@ body.app-visible .page .ob-tab.active .ob-tab-badge {
   border: 1.5px dashed var(--primary-mid);
   border-radius: var(--r-md);
   color: var(--primary); font-size: .85rem; font-weight: 700;
-  cursor: pointer; transition: all var(--t);
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: all var(--t);
   margin-bottom: 8px;
 }
 .add-by-cat-new-btn:hover {
@@ -2910,7 +2910,7 @@ body.app-visible .page .ob-tab.active .ob-tab-badge {
 .pa-meal-header {
   display: flex; align-items: center; gap: 10px;
   padding: 14px 16px;
-  cursor: pointer; transition: background var(--t);
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: background var(--t);
   background: var(--bg-card);
   user-select: none;
 }
@@ -2977,7 +2977,7 @@ input.invalid {
   padding: 0;
   font-size: .85em;
   color: var(--text-2, #64748b);
-  cursor: pointer;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   text-decoration: none;
   font-family: inherit;
 }
@@ -3025,7 +3025,7 @@ input.invalid {
   border-radius: var(--r-full);
   color: var(--pc, var(--primary));
   font-size: .76rem; font-weight: 800;
-  cursor: pointer; transition: all var(--t);
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: all var(--t);
   flex-shrink: 0;
 }
 .pa-cat-add-btn:hover {
@@ -3058,7 +3058,7 @@ input.invalid {
   background: var(--bg-subtle); border: 1.5px solid var(--border);
   border-radius: var(--r-full);
   font-size: .72rem; font-weight: 700; color: var(--text-mid);
-  cursor: pointer; transition: all var(--t);
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: all var(--t);
 }
 .pa-alt-toggle:hover,
 .pa-alt-toggle.active {
@@ -3069,7 +3069,7 @@ input.invalid {
 /* Tasto rimuovi ingrediente */
 .pa-ing-del {
   width: 26px; height: 26px;
-  background: none; border: none; cursor: pointer;
+  background: none; border: none; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   font-size: .72rem; color: var(--text-light);
   border-radius: var(--r-xs);
   display: flex; align-items: center; justify-content: center;
@@ -3100,7 +3100,7 @@ input.invalid {
 .pa-alt-qty    { font-size: .7rem; color: var(--text-light); font-weight: 600; display: block; }
 .pa-alt-del {
   width: 22px; height: 22px;
-  background: none; border: none; cursor: pointer;
+  background: none; border: none; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   font-size: .65rem; color: var(--text-light);
   border-radius: var(--r-xs);
   display: flex; align-items: center; justify-content: center;
@@ -3116,54 +3116,82 @@ input.invalid {
   border: 1.5px dashed var(--primary-mid);
   border-radius: var(--r-md);
   color: var(--primary); font-size: .78rem; font-weight: 700;
-  cursor: pointer; transition: all var(--t);
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; transition: all var(--t);
 }
 .pa-add-alt-btn:hover {
   background: var(--primary-xl);
 }
 
-/* Sezione limiti in fondo alla pagina */
+/* Sezione limiti in fondo alla pagina — specchietto con input contenuti nel riquadro */
 .pa-limiti-section {
   background: var(--bg-card);
   border: 1.5px solid var(--border);
   border-radius: var(--r-xl);
   overflow: hidden;
   margin-top: 20px;
+  max-width: 100%;
 }
 .pa-limiti-header {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--primary) 5%, var(--bg-card));
 }
-.pa-limiti-icon  { font-size: 1.2rem; flex-shrink: 0; }
-.pa-limiti-title { font-size: .88rem; font-weight: 800; flex: 1; min-width: 0; }
-.pa-limiti-sub   { font-size: .72rem; color: var(--text-light); flex-shrink: 0; }
-.pa-limiti-body  { padding: 8px 0; }
+.pa-limiti-icon  { font-size: 1.1rem; flex-shrink: 0; }
+.pa-limiti-title { font-size: .82rem; font-weight: 800; flex: 1; min-width: 0; }
+.pa-limiti-sub   { font-size: .68rem; color: var(--text-light); flex-shrink: 0; }
+.pa-limiti-body  { padding: 6px 0; overflow: hidden; }
 
 .pa-limit-row {
   display: flex; align-items: center; gap: 8px;
-  padding: 9px 14px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--border);
-  min-width: 0; flex-wrap: wrap;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 .pa-limit-row:last-child { border-bottom: none; }
 
-.pa-limit-icon  { font-size: 1.1rem; flex-shrink: 0; width: 24px; text-align: center; }
-.pa-limit-info  { flex: 1; min-width: 100px; display: flex; flex-direction: column; gap: 1px; }
-.pa-limit-label { font-size: .84rem; font-weight: 600; color: var(--text); word-break: break-word; }
-.pa-limit-unit  { font-size: .68rem; color: var(--text-light); }
-.pa-limit-right { display: flex; align-items: center; gap: 5px; flex-shrink: 0; margin-left: auto; }
-.pa-limit-cur   { display: none; } /* nascosto per risparmiare spazio su mobile */
-.pa-limit-max-label { font-size: .7rem; font-weight: 700; color: var(--text-light); }
+.pa-limit-icon  { font-size: 1rem; flex-shrink: 0; width: 22px; text-align: center; }
+.pa-limit-info  { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; overflow: hidden; }
+.pa-limit-label { font-size: .78rem; font-weight: 600; color: var(--text); word-break: break-word; }
+.pa-limit-unit  { font-size: .64rem; color: var(--text-light); }
+.pa-limit-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; min-width: 0; }
+.pa-limit-cur   { display: none; font-size: .7rem; color: var(--text-light); }
+.pa-limit-max-label { font-size: .64rem; font-weight: 700; color: var(--text-light); white-space: nowrap; }
 .pa-limit-input {
-  width: 58px; text-align: center;
-  padding: 5px 6px;
+  width: 52px; min-width: 44px; max-width: 70px;
+  text-align: center;
+  padding: 4px 5px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg); color: var(--text);
+  font-size: .8rem; font-weight: 700;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.pa-limiti-body .pa-limiti-custom-wrap {
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  margin-top: 2px;
+  overflow: hidden;
+}
+.pa-limiti-body .pa-limiti-custom-wrap input {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+.pa-limiti-custom-row {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  min-width: 0;
+}
+.pa-custom-inp {
+  padding: 5px 8px;
   border: 1.5px solid var(--border);
   border-radius: var(--r-md);
-  background: var(--bg); color: var(--text);
-  font-size: .88rem; font-weight: 700;
-  flex-shrink: 0;
+  font-size: .78rem;
+  box-sizing: border-box;
 }
+.pa-custom-name { flex: 1; min-width: 80px; max-width: 140px; }
+.pa-custom-max { width: 52px; text-align: center; flex-shrink: 0; }
 @media (min-width: 480px) {
   .pa-limit-cur { display: block; }
 }
@@ -3396,7 +3424,7 @@ input.invalid {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 10px; background: var(--primary-xl);
   border: 1px solid var(--primary-mid); border-radius: var(--r-full);
-  font-size: .82rem; margin: 3px; cursor: pointer;
+  font-size: .82rem; margin: 3px; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
 }
 .wizard-ing-chip:hover { background: var(--primary-light); }
 .wizard-ing-chip-del { color: var(--danger); font-size: 1rem; line-height: 1; }
@@ -3413,7 +3441,7 @@ input.invalid {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 12px; background: var(--bg-card);
   border: 1.5px solid var(--border); border-radius: var(--r-lg);
-  cursor: pointer; font-size: .85rem; font-weight: 600;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer; font-size: .85rem; font-weight: 600;
   transition: all var(--t); color: var(--text);
 }
 .wizard-cat-btn:hover { border-color: var(--primary); background: var(--primary-xl); }
@@ -3440,7 +3468,7 @@ input.invalid {
   width: 100%; padding: 10px 14px;
   background: linear-gradient(135deg, var(--primary) 0%, #d4a84b 100%);
   color: #fff; border: none; border-radius: var(--r-lg);
-  font-weight: 700; font-size: .82rem; cursor: pointer;
+  font-weight: 700; font-size: .82rem; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   transition: opacity var(--t);
 }
@@ -3543,14 +3571,34 @@ div > .ai-powered-label {
 .pa-wizard-invite-sub {
   font-size: .8rem; color: var(--text-3); margin-bottom: 12px; line-height: 1.4;
 }
+.pa-wizard-invite-actions {
+  display: flex; gap: 14px; flex-wrap: wrap;
+}
 .pa-wizard-invite-btn {
   display: inline-block; padding: 9px 18px;
-  background: var(--primary); color: #fff;
-  border: none; border-radius: var(--r-full);
-  font-weight: 700; font-size: .85rem; cursor: pointer;
-  transition: background var(--t);
+  background: color-mix(in srgb, var(--primary) 35%, transparent);
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 50%, transparent);
+  border-radius: var(--r-full);
+  font-weight: 700; font-size: .85rem; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  transition: background var(--t), border-color var(--t), color var(--t);
 }
-.pa-wizard-invite-btn:hover { background: var(--primary-dark, #2a7a5c); }
+.pa-wizard-invite-btn:hover {
+  background: color-mix(in srgb, var(--primary) 50%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 65%, transparent);
+  color: var(--primary);
+}
+.pa-wizard-invite-btn-secondary {
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  border-color: color-mix(in srgb, var(--text) 20%, transparent);
+  color: var(--text);
+}
+.pa-wizard-invite-btn-secondary:hover {
+  background: color-mix(in srgb, var(--text) 18%, transparent);
+  border-color: color-mix(in srgb, var(--text) 28%, transparent);
+  color: var(--text);
+}
 
 @keyframes pa-wizard-pulse {
   0%,100% { box-shadow: 0 0 0 0 rgba(74,155,127,.35); }
@@ -3577,7 +3625,7 @@ div > .ai-powered-label {
 }
 .wiz-cat-header {
   display: flex; align-items: center; gap: 8px;
-  padding: 10px 14px; cursor: pointer;
+  padding: 10px 14px; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   background: var(--bg-card);
   border-left: 3px solid var(--pc, var(--primary));
   user-select: none;
@@ -3601,7 +3649,7 @@ div > .ai-powered-label {
 .wiz-ing-name  { flex: 1; font-size: .88rem; font-weight: 500; color: var(--text); }
 .wiz-ing-qty   { font-size: .72rem; color: var(--text-3); margin-left: 5px; }
 .wiz-ing-del   {
-  background: none; border: none; cursor: pointer;
+  background: none; border: none; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   color: var(--danger); font-size: .8rem; padding: 2px 6px; flex-shrink: 0;
 }
 
@@ -3610,7 +3658,7 @@ div > .ai-powered-label {
   padding: 7px 12px; background: none;
   border: 1.5px dashed var(--wc, var(--primary));
   border-radius: var(--r-md); color: var(--wc, var(--primary));
-  font-weight: 700; font-size: .82rem; cursor: pointer;
+  font-weight: 700; font-size: .82rem; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   transition: all var(--t);
 }
 .wiz-add-cat-btn:hover { background: color-mix(in srgb, var(--wc, var(--primary)) 10%, transparent); }
@@ -3661,7 +3709,7 @@ div > .ai-powered-label {
    PREFERITI — stella sulle card ricetta
 ══════════════════════════════════════════════════ */
 .fav-btn {
-  background: none; border: none; cursor: pointer;
+  background: none; border: none; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   font-size: 1.1rem; line-height: 1; padding: 4px 6px;
   color: var(--text-3); border-radius: var(--r-sm);
   transition: color .15s, transform .15s; flex-shrink: 0;
@@ -3678,7 +3726,7 @@ div > .ai-powered-label {
 .rf-pill-extra {
   font-size: .78em; padding: 5px 11px;
   background: var(--bg-subtle); border: 1.5px solid var(--border);
-  border-radius: 99px; cursor: pointer; color: var(--text-mid);
+  border-radius: 99px; cursor: url('cursor-gold-ring.svg') 12 12, pointer; color: var(--text-mid);
   font-weight: 600; transition: all .15s;
 }
 .rf-pill-extra:hover { border-color: var(--primary-mid); color: var(--primary); }
@@ -3690,7 +3738,7 @@ div > .ai-powered-label {
 .diet-toggle {
   width: 40px; height: 22px; flex-shrink: 0;
   background: var(--border); border-radius: 99px;
-  position: relative; transition: background .2s; cursor: pointer;
+  position: relative; transition: background .2s; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
 }
 .diet-toggle-on { background: var(--primary); }
 .diet-toggle-knob {
@@ -3707,7 +3755,7 @@ div > .ai-powered-label {
   border-radius: 99px; font-size: .78em; font-weight: 600;
 }
 .allergen-tag button {
-  background: none; border: none; cursor: pointer;
+  background: none; border: none; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   color: #991b1b; font-size: .9em; padding: 0; line-height: 1;
 }
 
@@ -3739,14 +3787,14 @@ div > .ai-powered-label {
 [data-theme="dark"] .expiring-section-title { color: #fbbf24; }
 .expiring-row {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 6px 0; border-bottom: 1px solid #fde68a; cursor: pointer;
+  padding: 6px 0; border-bottom: 1px solid #fde68a; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
 }
 .expiring-row:last-child { border-bottom: none; }
 .expiring-name { font-size: .88em; font-weight: 600; color: var(--text); }
 .expiring-recipe-hint {
   font-size: .74em; font-weight: 700; color: var(--primary);
   padding: 2px 7px; background: var(--primary-xl);
-  border-radius: 99px; cursor: pointer; white-space: nowrap;
+  border-radius: 99px; cursor: url('cursor-gold-ring.svg') 12 12, pointer; white-space: nowrap;
 }
 
 /* ── INGREDIENTI IN ESAURIMENTO (deficit-section) ── */
@@ -3776,7 +3824,7 @@ div > .ai-powered-label {
   gap: 10px;
   padding: 6px 0;
   border-bottom: 1px solid #fde68a;
-  cursor: pointer;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
 }
 .deficit-row:last-child { border-bottom: none; }
 .deficit-icon {
@@ -3819,7 +3867,7 @@ div > .ai-powered-label {
   font-size: .82em;
   font-weight: 700;
   color: #92400e;
-  cursor: pointer;
+  cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   list-style: none;
   display: flex;
   align-items: center;
@@ -3941,11 +3989,8 @@ div > .ai-powered-label {
   box-shadow: 0 8px 32px rgba(61, 139, 111, .5);
 }
 
-/* ── Mobile: dimensioni carattere precedenti, riquadri più compatti ── */
+/* ── Mobile: riquadri compatti (font ereditato da .app-main) ── */
 @media (max-width: 768px) {
-  body.app-visible .page {
-    font-size: .9rem;
-  }
   .page {
     padding: 10px 12px 20px;
     padding-bottom: calc(20px + env(safe-area-inset-bottom));

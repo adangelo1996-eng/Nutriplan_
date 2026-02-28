@@ -78,7 +78,7 @@ body.app-visible .sidebar-nav .nav-tab {
 .sidebar-nav .nav-tab .nav-label {
   flex: 1;
   min-width: 0;
-  font-size: .88rem;
+  font-size: .82rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: visible;      /* ← era hidden */

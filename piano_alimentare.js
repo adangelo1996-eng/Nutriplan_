@@ -916,15 +916,11 @@ function buildPALimitiSection() {
       '</div>' +
       '<div class="pa-limiti-body">' +
         rows +
-        '<div style="padding:10px 14px;border-top:1px solid var(--border);margin-top:4px;">' +
-          '<div style="font-size:.8rem;font-weight:700;color:var(--text-2);margin-bottom:6px;">➕ Limite personalizzato</div>' +
-          '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">' +
-            '<input id="paCustomLimitName" type="text" placeholder="Ingrediente / abitudine" ' +
-                   'style="flex:1;min-width:120px;padding:6px 8px;border-radius:var(--r-md);border:1.5px solid var(--border);font-size:.85rem;">' +
-            '<input id="paCustomLimitUnit" type="text" placeholder="es. volte/sett." ' +
-                   'style="width:110px;padding:6px 8px;border-radius:var(--r-md);border:1.5px solid var(--border);font-size:.85rem;">' +
-            '<input id="paCustomLimitMax" type="number" min="0" step="1" placeholder="Max" ' +
-                   'style="width:70px;padding:6px 8px;border-radius:var(--r-md);border:1.5px solid var(--border);font-size:.85rem;text-align:center;">' +
+        '<div class="pa-limiti-custom-wrap">' +
+          '<div style="font-size:.72rem;font-weight:700;color:var(--text-2);margin-bottom:6px;">➕ Limite personalizzato</div>' +
+          '<div class="pa-limiti-custom-row">' +
+            '<input id="paCustomLimitName" type="text" placeholder="Nome" class="pa-custom-inp pa-custom-name">' +
+            '<input id="paCustomLimitMax" type="number" min="0" step="1" placeholder="Max" class="pa-custom-inp pa-custom-max">' +
             '<button class="rc-btn rc-btn-primary rc-btn-sm" onclick="addPACustomLimit()">Aggiungi</button>' +
           '</div>' +
         '</div>' +
@@ -948,7 +944,6 @@ function savePALimit(key, val) {
 
 function addPACustomLimit() {
   var nameEl = document.getElementById('paCustomLimitName');
-  var unitEl = document.getElementById('paCustomLimitUnit');
   var maxEl  = document.getElementById('paCustomLimitMax');
   if (!nameEl || !maxEl) return;
   var name = (nameEl.value || '').trim();
@@ -959,14 +954,12 @@ function addPACustomLimit() {
   }
   var max = parseFloat(maxEl.value);
   if (isNaN(max) || max < 0) max = 0;
-  var unit = (unitEl && unitEl.value || '').trim();
 
   if (typeof weeklyLimitsCustom === 'undefined' || !weeklyLimitsCustom) weeklyLimitsCustom = {};
   if (!weeklyLimitsCustom[name]) {
-    weeklyLimitsCustom[name] = { icon:'📌', label:name, unit:unit, current:0, max:max };
+    weeklyLimitsCustom[name] = { icon:'📌', label:name, unit:'', current:0, max:max };
   } else {
-    weeklyLimitsCustom[name].unit = unit;
-    weeklyLimitsCustom[name].max  = max;
+    weeklyLimitsCustom[name].max = max;
   }
   if (typeof saveData === 'function') saveData();
   if (typeof renderPianoAlimentare === 'function') renderPianoAlimentare();

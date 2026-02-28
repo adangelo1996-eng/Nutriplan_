@@ -288,7 +288,7 @@ function renderMealItems() {
     var icon  = (typeof getCategoryIcon === 'function') ? getCategoryIcon(cat) : '🧂';
     var catName = (cat && cat.replace) ? cat.replace(/^[^\s]+\s/, '') : cat;
     listHtml +=
-      '<details class="fi-group fi-group-collapsible" style="--gc:' + color + ';" open>' +
+      '<details class="fi-group fi-group-collapsible" style="--gc:' + color + ';">' +
         '<summary class="fi-group-header">' +
           '<span class="fi-group-icon">' + icon + '</span>' +
           '<span class="fi-group-name">' + catName + '</span>' +

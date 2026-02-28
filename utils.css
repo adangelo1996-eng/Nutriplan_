@@ -106,7 +106,7 @@
 .toast-icon        { font-size: 1.1rem; flex-shrink: 0; }
 .toast-msg         { flex: 1; line-height: 1.4; }
 .toast-close {
-  background: none; border: none; cursor: pointer;
+  background: none; border: none; cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   font-size: .8rem; opacity: .7; padding: 2px 4px;
   border-radius: var(--r-xs); color: inherit;
   transition: opacity var(--t); flex-shrink: 0;
@@ -142,7 +142,7 @@
 .ios-banner-close {
   background: var(--bg-subtle); border: 1px solid var(--border);
   color: var(--text-1); width: 32px; height: 32px;
-  border-radius: var(--r-full); cursor: pointer;
+  border-radius: var(--r-full); cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   font-size: 1rem; font-weight: 700; padding: 0; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   transition: color var(--t), background var(--t), border-color var(--t);
@@ -441,7 +441,7 @@
 
 /* Varie */
 .no-select { user-select: none; -webkit-user-select: none; }
-.pointer   { cursor: pointer; }
+.pointer   { cursor: url('cursor-gold-ring.svg') 12 12, pointer; }
 .rounded   { border-radius: var(--r); }
 .rounded-full { border-radius: var(--r-full); }
 .shadow    { box-shadow: var(--shadow); }

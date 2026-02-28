@@ -438,7 +438,7 @@ function renderFridge(targetId) {
     }
 
     html +=
-      '<details class="fi-group fi-group-collapsible" style="--gc:' + color + ';" open>' +
+      '<details class="fi-group fi-group-collapsible" style="--gc:' + color + ';">' +
         '<summary class="fi-group-header">' +
           '<span class="fi-group-icon">' + icon + '</span>' +
           '<span class="fi-group-name">' + catName + '</span>' +
@@ -468,7 +468,7 @@ function renderFridge(targetId) {
   if (groups['🧂 Altro'] && groups['🧂 Altro'].length) {
     var altroItems = groups['🧂 Altro'];
     html +=
-      '<details class="fi-group fi-group-collapsible" style="--gc:#64748b;" open>' +
+      '<details class="fi-group fi-group-collapsible" style="--gc:#64748b;">' +
         '<summary class="fi-group-header">' +
           '<span class="fi-group-icon">🧂</span>' +
           '<span class="fi-group-name">Altro</span>' +
@@ -486,7 +486,7 @@ function renderFridge(targetId) {
     var freezerItems = active.filter(function(i) { return i.freezer; });
     if (freezerItems.length) {
       var freezerHtml =
-        '<details class="fi-group fi-group-collapsible" style="--gc:#3b82f6;margin-bottom:16px;" open>' +
+        '<details class="fi-group fi-group-collapsible" style="--gc:#3b82f6;margin-bottom:16px;">' +
           '<summary class="fi-group-header" style="background:rgba(59,130,246,.12);">' +
             '<span class="fi-group-icon">❄️</span>' +
             '<span class="fi-group-name" style="color:#3b82f6;">Congelatore</span>' +
