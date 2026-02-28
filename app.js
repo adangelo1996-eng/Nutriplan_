@@ -1284,6 +1284,11 @@ function goToPage(key) {
     t.classList.toggle('active', t.id === 'bn-' + key);
   });
 
+  /* Scheda Casa visibile solo quando si è sulla pagina Casa */
+  document.querySelectorAll('.nav-tab-casa').forEach(function(t) {
+    t.classList.toggle('nav-tab-casa-visible', key === 'casa');
+  });
+
   /* Render specifico per pagina */
   var renders = {
     'casa':             function() { if (typeof renderCasa             === 'function') renderCasa(); },

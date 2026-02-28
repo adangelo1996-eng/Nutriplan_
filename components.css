@@ -2012,7 +2012,10 @@ body.app-visible .modal .modal-body .auth-modal-offline:hover {
   background: rgba(212, 168, 75, 0.35);
 }
 
-/* Tab Casa — giallo + glassmorphism, sempre */
+/* Tab Casa — visibile solo sulla pagina Casa */
+.nav-tab-casa:not(.nav-tab-casa-visible) {
+  display: none !important;
+}
 .nav-tab-casa {
   color: #d4a84b;
 }
