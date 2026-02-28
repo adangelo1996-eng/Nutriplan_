@@ -350,30 +350,84 @@ body .landing-accedi-wrap * {
   }
 }
 
-/* Hero: data/ora teleindicatore + headline spezzata + sottotitolo */
+/* Hero: data/ora teleindicatore a palette (per carattere) + headline a palette */
 .landing-flap-datetime {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
   font-family: ui-monospace, 'Cascadia Code', 'SF Mono', Monaco, monospace;
-  font-size: clamp(0.75rem, 2.5vw, 0.9rem);
   font-weight: 600;
-  letter-spacing: 0.08em;
-  color: #e8f5f0;
-  background: rgba(13, 34, 24, 0.85);
-  padding: 8px 14px 10px;
-  border-radius: 6px;
+  letter-spacing: 0.02em;
+  padding: 6px 10px 8px;
   margin-bottom: 20px;
+  background: rgba(13, 34, 24, 0.75);
+  border-radius: 6px;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
   min-height: 1.2em;
+}
+#landingPage.landing-inverted .landing-flap-datetime {
+  background: rgba(232, 245, 240, 0.85);
+  border-color: rgba(13, 34, 24, 0.2);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Singolo carattere data/ora: palette piccola, dimensione nettamente minore */
+.landing-flap-datetime-char {
+  display: inline-block;
+  font-size: clamp(0.55rem, 1.8vw, 0.72rem);
+  color: #e8f5f0;
+  background: rgba(13, 34, 24, 0.9);
+  padding: 3px 4px 4px;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   opacity: 0;
   transform: perspective(420px) rotateX(90deg);
   transform-origin: top center;
-  animation: landing-flap-in 0.6s ease 0.05s forwards;
+  animation: landing-flap-in 0.4s ease forwards;
 }
-#landingPage.landing-inverted .landing-flap-datetime {
+#landingPage.landing-inverted .landing-flap-datetime-char {
   color: #0d2218;
-  background: rgba(232, 245, 240, 0.9);
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(13, 34, 24, 0.15);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Singolo carattere headline: palette stesso stile, dimensione titolo */
+.landing-flap-char {
+  display: inline-block;
+  font-size: inherit;
+  font-weight: inherit;
+  color: #e8f5f0;
+  background: rgba(13, 34, 24, 0.9);
+  padding: 2px 4px 4px;
+  margin: 0 1px;
+  border-radius: 3px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  opacity: 0;
+  transform: perspective(420px) rotateX(90deg);
+  transform-origin: top center;
+  animation: landing-flap-in 0.5s ease forwards;
+  animation-delay: calc(0.035s * var(--i, 0));
+}
+#landingPage.landing-inverted .landing-flap-char {
+  color: #0d2218;
+  background: rgba(255, 255, 255, 0.95);
   border-color: rgba(13, 34, 24, 0.2);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.landing-flap-char .landing-hero-n {
+  color: transparent;
+  -webkit-text-stroke: 1.5px #e8f5f0;
+  text-stroke: 1.5px #e8f5f0;
+}
+#landingPage.landing-inverted .landing-flap-char .landing-hero-n {
+  -webkit-text-stroke: 1.5px #0d2218;
+  text-stroke: 1.5px #0d2218;
 }
 
 .landing-hero {
@@ -409,14 +463,9 @@ body .landing-accedi-wrap * {
 
 .landing-hero-line {
   display: block;
-  opacity: 0;
-  transform: perspective(420px) rotateX(90deg);
-  transform-origin: top center;
-  animation: landing-flap-in 0.7s ease forwards;
 }
-
-.landing-hero-line-1 { animation-delay: 0.12s; }
-.landing-hero-line-2 { animation-delay: 0.28s; }
+.landing-hero-line-1 .landing-flap-char { animation-delay: calc(0.035s * var(--i, 0) + 0.05s); }
+.landing-hero-line-2 .landing-flap-char { animation-delay: calc(0.035s * var(--i, 0) + 0.22s); }
 
 /* Nome utente: stesso colore del titolo + animazione tabellone */
 .landing-hero-username {
@@ -472,8 +521,8 @@ body .landing-accedi-wrap * {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-flap-datetime,
-  .landing-hero-line,
+  .landing-flap-datetime-char,
+  .landing-flap-char,
   .landing-hero .landing-sub {
     animation: none;
     opacity: 1;

@@ -974,13 +974,67 @@ function _buildLandingDaysTrack() {
   inner2.innerHTML = html;
 }
 
+function _buildLandingFlapHeadline() {
+  var line1 = document.querySelector('.landing-hero-line-1');
+  var line2 = document.querySelector('.landing-hero-line-2');
+  if (!line1 || !line2) return;
+
+  function wrapLineInFlapChars(container, startIndex) {
+    var idx = startIndex;
+    var fragment = document.createDocumentFragment();
+    var usernameSpan = container.querySelector('.landing-hero-username');
+    var walk = function(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        var text = node.textContent || '';
+        for (var i = 0; i < text.length; i++) {
+          var span = document.createElement('span');
+          span.className = 'landing-flap-char';
+          span.style.setProperty('--i', idx);
+          span.textContent = text[i];
+          fragment.appendChild(span);
+          idx++;
+        }
+        return;
+      }
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        if (node.classList && node.classList.contains('landing-hero-username')) return;
+        if (node.classList && node.classList.contains('landing-hero-n')) {
+          var wrap = document.createElement('span');
+          wrap.className = 'landing-flap-char';
+          wrap.style.setProperty('--i', idx);
+          wrap.appendChild(node.cloneNode(true));
+          fragment.appendChild(wrap);
+          idx++;
+          return;
+        }
+        for (var j = 0; j < node.childNodes.length; j++) walk(node.childNodes[j]);
+      }
+    };
+    for (var k = 0; k < container.childNodes.length; k++) walk(container.childNodes[k]);
+    container.innerHTML = '';
+    container.appendChild(fragment);
+    if (usernameSpan) container.appendChild(usernameSpan);
+  }
+
+  wrapLineInFlapChars(line1, 0);
+  var line1Count = line1.querySelectorAll('.landing-flap-char').length;
+  wrapLineInFlapChars(line2, line1Count);
+}
+
 function _updateLandingFlapDatetime() {
   var el = document.getElementById('landingFlapDatetime');
   if (!el) return;
   var now = new Date();
   var dateStr = now.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   var timeStr = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-  el.textContent = dateStr + '  ·  ' + timeStr;
+  var full = dateStr + '  ·  ' + timeStr;
+  var html = '';
+  for (var i = 0; i < full.length; i++) {
+    var c = full[i];
+    var escaped = c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '&' ? '&amp;' : c;
+    html += '<span class="landing-flap-datetime-char" style="animation-delay: ' + (i * 0.022) + 's">' + escaped + '</span>';
+  }
+  el.innerHTML = html;
 }
 
 /* Auto-start se non c'è landing page */
@@ -997,6 +1051,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   initDarkMode();
   _buildLandingDaysTrack();
+  _buildLandingFlapHeadline();
   _updateLandingFlapDatetime();
   setInterval(_updateLandingFlapDatetime, 1000);
 
