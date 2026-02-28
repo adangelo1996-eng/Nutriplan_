@@ -683,7 +683,7 @@ body.app-visible .page .rc-ing-row:last-child {
   margin-bottom: 0;
 }
 body.app-visible .page .rc-ing-name { color: #0d2218; }
-body.app-visible .page .rc-ing-qty  { color: rgba(13,34,24,.6); }
+body.app-visible .page .rc-ing-qty  { color: rgba(13,34,24,.78); }
 
 [data-theme="dark"] body.app-visible .page .rc-ing-row {
   border-bottom-color: var(--border);
@@ -1567,7 +1567,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 .landing-marquee-text {
   font-size: clamp(1rem, 3.5vw, 1.35rem);
   font-weight: 800;
-  color: rgba(255,255,255,.35);
+  color: rgba(255,255,255,.82);
   letter-spacing: .02em;
   padding-right: 1.2em;
 }
@@ -1590,9 +1590,9 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
-  color: rgba(255,255,255,.45);
+  color: rgba(255,255,255,.85);
   padding: 6px 12px;
-  border: 1px solid rgba(255,255,255,.2);
+  border: 1px solid rgba(255,255,255,.35);
   border-radius: var(--r-full);
   margin-bottom: 10px;
   transition: transform var(--t), color var(--t), border-color var(--t);
@@ -1602,8 +1602,8 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 }
 
 .landing-badge:hover {
-  color: rgba(255,255,255,.75);
-  border-color: rgba(255,255,255,.4);
+  color: #fff;
+  border-color: rgba(255,255,255,.55);
   transform: scale(1.04);
 }
 
@@ -1635,8 +1635,8 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 
 /* Contrasto invertito su Accedi (come Esplora) quando card o opzioni sono aperte */
 .landing-accedi-wrap.landing-inverted .landing-accedi-btn {
-  color: rgba(13,34,24,.6);
-  border-color: rgba(13,34,24,.25);
+  color: rgba(13,34,24,.85);
+  border-color: rgba(13,34,24,.35);
 }
 .landing-accedi-wrap.landing-inverted .landing-accedi-btn:hover {
   color: #0d2218;
@@ -1729,7 +1729,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 .landing-numbers-inner span {
   font-size: clamp(0.65rem, 2vw, 0.8rem);
   font-weight: 700;
-  color: rgba(255,255,255,.25);
+  color: rgba(255,255,255,.78);
   letter-spacing: .05em;
 }
 
@@ -1746,7 +1746,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 }
 .landing-auth-loading {
   display: flex; align-items: center; gap: 10px;
-  color: rgba(255,255,255,.55); font-size: .86rem;
+  color: rgba(255,255,255,.88); font-size: .86rem;
 }
 .landing-auth-spinner {
   width: 16px; height: 16px;
@@ -1775,11 +1775,11 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 
 .landing-offline-btn {
   background: none; border: none; cursor: pointer;
-  color: rgba(255,255,255,.55); font-size: .8rem;
+  color: rgba(255,255,255,.88); font-size: .8rem;
   font-family: var(--font); text-decoration: underline;
   padding: 4px 8px; transition: color var(--t);
 }
-.landing-offline-btn:hover { color: rgba(255,255,255,.85); }
+.landing-offline-btn:hover { color: #fff; }
 
 /* Card reveal: escono dall'etichetta Esplora, due righe (3 colonne), rientrano al secondo click */
 .landing-cards-reveal {
@@ -1808,7 +1808,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 
 .landing-cards-sub {
   font-size: .82rem;
-  color: rgba(255,255,255,.6);
+  color: rgba(255,255,255,.88);
   margin-bottom: 14px;
   text-align: center;
 }
@@ -1857,7 +1857,7 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 
 .landing-nav-logged { width: 100%; max-width: 420px; margin-top: 8px; }
 .landing-nav-logged-sub {
-  font-size: .82rem; color: rgba(255,255,255,.6);
+  font-size: .82rem; color: rgba(255,255,255,.88);
   margin-bottom: 14px; text-align: center;
 }
 .landing-cards-reveal .landing-nav-grid {
@@ -1929,11 +1929,11 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
 }
 
 .landing-privacy-note {
-  font-size: .7rem; color: rgba(255,255,255,.35);
+  font-size: .7rem; color: rgba(255,255,255,.75);
   max-width: 300px; text-align: center; line-height: 1.5;
   margin-top: 8px;
 }
-.landing-privacy-note a { color: rgba(255,255,255,.55); text-decoration: underline; }
+.landing-privacy-note a { color: rgba(255,255,255,.9); text-decoration: underline; }
 
 /* Modale Privacy Policy — stile coerente con homepage (verde, tipografia, badge) */
 .modal--landing.active {
@@ -2087,9 +2087,9 @@ body.app-visible .page .stat-card:hover {
   box-shadow: var(--shadow);
 }
 body.app-visible .page .stat-val { color: #0d2218; }
-body.app-visible .page .stat-label { color: rgba(13,34,24,.7); }
+body.app-visible .page .stat-label { color: rgba(13,34,24,.82); }
 
-body.app-visible .page .fi-row-unit { color: rgba(13,34,24,.65); }
+body.app-visible .page .fi-row-unit { color: rgba(13,34,24,.78); }
 /* Filtri pasto e tab: stile trasparente come Esplora, più grandi */
 body.app-visible .page .meal-btn {
   padding: 12px 20px;
@@ -2122,7 +2122,7 @@ body.app-visible .page .meal-btn.active .meal-btn-count {
 body.app-visible .page .meal-btn .meal-btn-label { color: inherit; }
 
 body.app-visible .page .spesa-item-name { color: #0d2218; }
-body.app-visible .page .spesa-item.checked .spesa-item-name { color: rgba(13,34,24,.5); }
+body.app-visible .page .spesa-item.checked .spesa-item-name { color: rgba(13,34,24,.68); }
 body.app-visible .page .profilo-name { color: #0d2218; }
 body.app-visible .page .settings-section-title { color: #0d2218; }
 

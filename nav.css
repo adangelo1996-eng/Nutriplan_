@@ -40,7 +40,7 @@ body.app-visible .sidebar-nav {
 }
 
 body.app-visible .sidebar-section-label {
-  color: rgba(255,255,255,.4);
+  color: rgba(255,255,255,.75);
 }
 
 /* ── Tab in sidebar ────────────────────────────── */
@@ -73,7 +73,7 @@ body.app-visible .sidebar-section-label {
 }
 
 body.app-visible .sidebar-nav .nav-tab {
-  color: rgba(255,255,255,.7);
+  color: rgba(255,255,255,.88);
 }
 
 /* Icona quadrata */
@@ -224,7 +224,7 @@ body.app-visible .bottom-nav {
 }
 
 body.app-visible .bottom-nav .nav-tab {
-  color: rgba(255,255,255,.65);
+  color: rgba(255,255,255,.82);
 }
 
 .nav-icon {

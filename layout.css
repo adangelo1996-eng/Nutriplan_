@@ -114,7 +114,7 @@ body.app-visible .page-header-title {
 }
 
 body.app-visible .page-header-sub {
-  color: rgba(13,34,24,.5);
+  color: rgba(13,34,24,.72);
 }
 
 [data-theme="dark"] body.app-visible .page-header-title {
@@ -438,8 +438,8 @@ body.app-visible .page .btn-secondary:hover {
 
 body.app-visible .page .header-chip {
   background: rgba(13,34,24,.08);
-  color: rgba(13,34,24,.7);
-  border-color: rgba(13,34,24,.2);
+  color: rgba(13,34,24,.85);
+  border-color: rgba(13,34,24,.28);
 }
 
 [data-theme="dark"] body.app-visible .page .btn-primary,
@@ -464,10 +464,10 @@ body.app-visible .page .section-title {
   color: #0d2218;
 }
 body.app-visible .page .section-subtitle {
-  color: rgba(13,34,24,.6);
+  color: rgba(13,34,24,.78);
 }
 body.app-visible .page .divider-label span {
-  color: rgba(13,34,24,.55);
+  color: rgba(13,34,24,.72);
 }
 body.app-visible .page .divider-label::before,
 body.app-visible .page .divider-label::after {
@@ -478,10 +478,10 @@ body.app-visible .page .form-group > .field-label {
   color: rgba(13,34,24,.75);
 }
 body.app-visible .page .form-hint {
-  color: rgba(13,34,24,.65);
+  color: rgba(13,34,24,.78);
 }
 body.app-visible .page .input-icon {
-  color: rgba(13,34,24,.5);
+  color: rgba(13,34,24,.68);
 }
 body.app-visible .page input,
 body.app-visible .page select,
@@ -492,13 +492,13 @@ body.app-visible .page textarea {
 }
 body.app-visible .page input::placeholder,
 body.app-visible .page textarea::placeholder {
-  color: rgba(13,34,24,.45);
+  color: rgba(13,34,24,.58);
 }
 body.app-visible .page .search-icon {
-  color: rgba(13,34,24,.5);
+  color: rgba(13,34,24,.68);
 }
 body.app-visible .page .search-clear-btn {
-  color: rgba(13,34,24,.5);
+  color: rgba(13,34,24,.68);
 }
 body.app-visible .page .search-clear-btn:hover {
   color: var(--danger);
@@ -507,7 +507,7 @@ body.app-visible .page .toggle-label {
   color: #0d2218;
 }
 body.app-visible .page .toggle-sublabel {
-  color: rgba(13,34,24,.6);
+  color: rgba(13,34,24,.78);
 }
 body.app-visible .page .toggle-row {
   border-bottom-color: rgba(13,34,24,.12);

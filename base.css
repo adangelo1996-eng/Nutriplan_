@@ -30,6 +30,9 @@
   --text:       #182420;
   --text-mid:   #475c53;
   --text-light: #8aa89e;
+  --text-1:     #182420;
+  --text-2:     #475c53;
+  --text-3:     #5e756b;
 
   /* Bordi */
   --border:     #e2ece7;
@@ -80,7 +83,10 @@
 
   --text:       #e2ede8;
   --text-mid:   #9dbfb0;
-  --text-light: #5e8a7a;
+  --text-light: #6e9a88;
+  --text-1:     #e2ede8;
+  --text-2:     #a8d0bd;
+  --text-3:     #7eb39d;
 
   --border:     #263d32;
   --border-mid: #355248;
@@ -266,19 +272,19 @@ body .landing-accedi-wrap * {
 /* Colori invertiti (come prima) quando card o Accedi sono aperte */
 #landingPage.landing-inverted .landing-hero-headline,
 #landingPage.landing-inverted .landing-sub { color: #0d2218; }
-#landingPage.landing-inverted .landing-marquee-text { color: rgba(13,34,24,.4); }
-#landingPage.landing-inverted .landing-numbers-inner span { color: rgba(13,34,24,.3); }
+#landingPage.landing-inverted .landing-marquee-text { color: rgba(13,34,24,.7); }
+#landingPage.landing-inverted .landing-numbers-inner span { color: rgba(13,34,24,.65); }
 #landingPage.landing-inverted .landing-badge {
-  color: rgba(13,34,24,.6);
-  border-color: rgba(13,34,24,.25);
+  color: rgba(13,34,24,.85);
+  border-color: rgba(13,34,24,.35);
 }
 #landingPage.landing-inverted .landing-badge:hover {
   color: #0d2218;
   border-color: rgba(13,34,24,.5);
 }
 #landingPage.landing-inverted .landing-cards-sub,
-#landingPage.landing-inverted .landing-privacy-note { color: rgba(13,34,24,.5); }
-#landingPage.landing-inverted .landing-privacy-note a { color: rgba(13,34,24,.7); }
+#landingPage.landing-inverted .landing-privacy-note { color: rgba(13,34,24,.72); }
+#landingPage.landing-inverted .landing-privacy-note a { color: rgba(13,34,24,.9); }
 #landingPage.landing-inverted .landing-nav-card {
   background: rgba(13,34,24,.1);
   color: #0d2218;
@@ -399,7 +405,7 @@ body .landing-accedi-wrap * {
 
 .landing-sub {
   font-size: 1rem;
-  color: rgba(255,255,255,.6);
+  color: rgba(255,255,255,.88);
   max-width: 320px;
   line-height: 1.6;
 }
@@ -483,7 +489,7 @@ body .landing-accedi-wrap * {
   opacity: .75;
 }
 .app-header-days-inner span {
-  color: rgba(255,255,255,.7);
+  color: rgba(255,255,255,.88);
 }
 
 @keyframes appHeaderMarquee {
@@ -550,7 +556,7 @@ body .landing-accedi-wrap * {
 }
 .cloud-status.local  {
   background: rgba(255,255,255,.09);
-  color: rgba(255,255,255,.65);
+  color: rgba(255,255,255,.88);
   border-color: rgba(255,255,255,.12);
 }
 .cloud-status.saving {
