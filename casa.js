@@ -39,6 +39,31 @@ function getSuggestedMeal() {
   return null;
 }
 
+/** Numero di pasti con almeno un consumo oggi (0–5). */
+function getConsumedMealsCountToday() {
+  var todayKey = (typeof getCurrentDateKey === 'function') ? getCurrentDateKey() : '';
+  var used = (typeof appHistory !== 'undefined' && appHistory && appHistory[todayKey] && appHistory[todayKey].usedItems)
+    ? appHistory[todayKey].usedItems
+    : {};
+  return Object.keys(used).filter(function(mk) {
+    var m = used[mk] || {};
+    return Object.keys(m).length > 0;
+  }).length;
+}
+
+/** Saluto in base all'ora: Buongiorno / Buon pomeriggio / Buonasera [+ nome]. */
+function getCasaGreeting() {
+  var h = new Date().getHours();
+  var greeting = (h >= 6 && h < 12) ? 'Buongiorno' : (h >= 12 && h < 18) ? 'Buon pomeriggio' : 'Buonasera';
+  var name = (typeof currentUser !== 'undefined' && currentUser && currentUser.displayName) ? currentUser.displayName.trim() : '';
+  return name ? greeting + ', ' + name : greeting;
+}
+
+/** Data formattata breve per la pagina Casa (es. "sabato 28 feb"). */
+function getCasaDateString() {
+  return new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'short' });
+}
+
 function renderCasa() {
   var el = document.getElementById('casaContent');
   if (!el) return;
@@ -64,17 +89,30 @@ function renderCasa() {
     subMsg = 'Rivedi il piano o prepara qualcosa in più.';
   }
 
+  var greeting = getCasaGreeting();
+  var consumedCount = getConsumedMealsCountToday();
+  var dateStr = getCasaDateString();
+
   var html =
+    '<p class="casa-greeting">' + escapeHtml(greeting) + '</p>' +
     '<div class="casa-card rc-card">' +
       '<div class="casa-suggestion">' +
-        '<div class="casa-suggestion-title">' + (label || 'Riepilogo') + '</div>' +
-        '<p class="casa-suggestion-msg">' + msg + '</p>' +
-        '<p class="casa-suggestion-sub">' + subMsg + '</p>' +
+        '<div class="casa-suggestion-title">' + escapeHtml(label || 'Riepilogo') + '</div>' +
+        '<p class="casa-suggestion-msg">' + escapeHtml(msg) + '</p>' +
+        '<p class="casa-suggestion-sub">' + escapeHtml(subMsg) + '</p>' +
         '<button class="rc-btn rc-btn-primary" onclick="selectedMeal=\'' + (suggested || 'colazione') + '\';goToPage(\'piano\')">' +
           'Vai a Oggi →' +
         '</button>' +
       '</div>' +
-    '</div>';
+    '</div>' +
+    '<p class="casa-meta">Oggi: ' + consumedCount + '/5 pasti · ' + escapeHtml(dateStr) + '</p>';
 
   el.innerHTML = html;
+}
+
+function escapeHtml(s) {
+  if (s == null || s === '') return '';
+  var div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
 }
