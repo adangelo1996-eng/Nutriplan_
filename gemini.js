@@ -789,12 +789,12 @@ function _acceptAIRecipe() {
     aiRecipes.push(_aiPendingRecipe);
   }
 
-  /* Aggiungi sempre la ricetta anche alla sezione Oggi (pasto selezionato nel modal AI) */
+  /* Segna come consumata solo se NON da pagina Oggi (da Oggi la ricetta va solo in "Ricette compatibili") */
   var meal = _aiRecipeMealKey || 'pranzo';
   var dateKey = (typeof selectedDateKey !== 'undefined' && selectedDateKey)
     ? selectedDateKey
     : (typeof getCurrentDateKey === 'function' ? getCurrentDateKey() : null);
-  if (dateKey && typeof appHistory !== 'undefined') {
+  if (dateKey && typeof appHistory !== 'undefined' && _aiRecipeContext !== 'oggi' && _aiRecipeContext !== 'oggi_piano') {
     if (!appHistory[dateKey]) appHistory[dateKey] = { usedItems: {}, substitutions: {}, ricette: {} };
     if (!appHistory[dateKey].ricette) appHistory[dateKey].ricette = {};
     if (!appHistory[dateKey].ricette[meal]) appHistory[dateKey].ricette[meal] = {};

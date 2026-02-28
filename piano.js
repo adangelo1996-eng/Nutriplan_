@@ -587,8 +587,8 @@ function renderPianoMissingAlert() {
   wrap.innerHTML =
     '<div class="piano-missing-banner">' +
     '<span class="piano-missing-icon">⚠️</span>' +
-    '<div style="flex:1;min-width:0;"><strong>Ingredienti mancanti in dispensa:</strong><br>' +
-    '<div class="piano-missing-chips">' + chips + '</div></div>' +
+    '<span class="piano-missing-label">Mancano in dispensa:</span>' +
+    '<div class="piano-missing-chips">' + chips + '</div>' +
     '<button class="rc-btn rc-btn-primary rc-btn-sm" onclick="pianoAddMissingToSpesa()">+ spesa</button>' +
     '</div>';
 }

@@ -185,12 +185,10 @@
 
   <div class="app-inner app-header-main">
 
-    <div class="header-left">
-      <button type="button" class="app-logo-mark" id="headerIcon" onclick="goToHomepage()" aria-label="Torna alla homepage">
-        n.
-      </button>
-      <span class="header-title">NutriPlan</span>
-    </div>
+    <button type="button" class="header-left header-logo-wrap" id="headerIcon" onclick="goToHomepage()" aria-label="Torna alla homepage">
+      <span class="app-logo-mark">n.</span>
+      <span class="app-logo-expand">utriplan.</span>
+    </button>
 
     <div class="header-center">
       <span class="cloud-status local" id="cloudStatus">☁ Locale</span>
@@ -203,7 +201,6 @@
         <span class="auth-info" id="authName">Utente</span>
       </div>
       <button class="btn-icon-only" id="loginBtn" onclick="openAuthModal()" title="Accedi">👤</button>
-      <button class="btn-icon-only" id="logoutBtn" onclick="signOut()" title="Disconnetti" style="display:none">🚪</button>
     </div>
 
   </div>
@@ -331,15 +328,17 @@
             <button class="search-clear-btn" onclick="filterPianoToday('');document.getElementById('pianoSearchInput').value=''">✕</button>
           </div>
         </div>
-        <!-- Avviso ingredienti mancanti dalla dispensa -->
-        <div id="pianoMissingWrap"></div>
+
+    <!-- Ricette compatibili per il pasto selezionato (prima degli ingredienti) -->
+    <div class="piano-section-label">📖 Ricette compatibili</div>
+    <div id="pianoRicetteWrap"></div>
+
     <!-- Ingredienti del piano per il pasto selezionato -->
     <div class="piano-section-label">🌿 Ingredienti nel piano</div>
     <div id="mealItemsWrap" class="meal-items-list"></div>
 
-    <!-- Ricette per il pasto selezionato -->
-    <div class="piano-section-label">📖 Ricette</div>
-    <div id="pianoRicetteWrap"></div>
+    <!-- Avviso ingredienti mancanti dalla dispensa -->
+    <div id="pianoMissingWrap"></div>
 
   </div>
 

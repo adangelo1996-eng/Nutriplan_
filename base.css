@@ -507,7 +507,7 @@ body .landing-accedi-wrap * {
   height: auto;
 }
 
-/* Sinistra: logo + titolo */
+/* Sinistra: logo (n. che si espande a "nutriplan." al hover) */
 .header-left {
   display: flex;
   align-items: center;
@@ -515,7 +515,19 @@ body .landing-accedi-wrap * {
   flex-shrink: 0;
   min-width: 0;
 }
-/* Logo tipografico minimal n. (sostituisce icona canvas) */
+.header-logo-wrap {
+  overflow: hidden;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.header-logo-wrap:hover .app-logo-expand {
+  max-width: 120px;
+  opacity: 1;
+}
+/* Logo tipografico minimal n. */
 .app-logo-mark {
   display: inline-flex;
   align-items: center;
@@ -531,6 +543,18 @@ body .landing-accedi-wrap * {
   color: rgba(255,255,255,.95);
   flex-shrink: 0;
   font-family: var(--font);
+}
+.app-logo-expand {
+  display: inline-block;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  white-space: nowrap;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+  transition: max-width .25s ease, opacity .2s ease;
 }
 .header-title    {
   font-size: 1rem; font-weight: 800;
@@ -595,6 +619,11 @@ body .landing-accedi-wrap * {
 .btn-icon-only:hover  { background: rgba(255,255,255,.2); }
 .btn-icon-only:active { transform: scale(.9); }
 
+#themeToggle {
+  color: #fff;
+  filter: brightness(0) invert(1);
+}
+
 /* Pill utente autenticato */
 .auth-user-pill {
   display: flex; align-items: center; gap: 5px;
@@ -620,6 +649,7 @@ body .landing-accedi-wrap * {
   .header-title           { display: none; }
   .header-center,
   .cloud-status           { display: none !important; }
+  .header-logo-wrap:hover .app-logo-expand { max-width: 0; opacity: 0; }
 }
 @media (max-width: 480px) {
   .cloud-status           { padding: 3px 7px; max-width: 32px; }

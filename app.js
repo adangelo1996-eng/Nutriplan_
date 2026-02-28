@@ -527,7 +527,7 @@ function openAuthModal() {
              'onerror="this.style.display=\'none\'" />' +
         '<div style="font-weight:800;font-size:1rem;">' + (user.displayName || '') + '</div>' +
         '<div style="font-size:.78rem;color:var(--text-light);margin:4px 0 20px;">' + (user.email || '') + '</div>' +
-        '<button class="btn btn-danger btn-small" onclick="signOutUser()">Esci</button>' +
+        '<button class="btn btn-danger btn-small" onclick="signOut()">Esci</button>' +
       '</div>';
   } else {
     if (title) title.textContent = 'Accedi';

@@ -230,12 +230,11 @@ function showCloudStatus(status) {
 ============================================================ */
 function updateAuthUI(user) {
   var loginBtn   = document.getElementById('loginBtn');
-  var logoutBtn  = document.getElementById('logoutBtn');
   var pill       = document.getElementById('authUserPill');
   var avatar     = document.getElementById('authAvatar');
   var nameEl     = document.getElementById('authName');
 
-  if (loginBtn && logoutBtn) {
+  if (loginBtn) {
     if (user) {
       if (pill) {
         pill.style.display = '';
@@ -249,13 +248,10 @@ function updateAuthUI(user) {
             : (user.email || 'Utente');
         }
       }
-      loginBtn.style.display  = 'none';
-      logoutBtn.style.display = '';
-      logoutBtn.title = 'Disconnetti (' + (user.displayName || user.email || '') + ')';
+      loginBtn.style.display = 'none';
     } else {
       if (pill) pill.style.display = 'none';
-      loginBtn.style.display  = '';
-      logoutBtn.style.display = 'none';
+      loginBtn.style.display = '';
       loginBtn.title = 'Accedi';
     }
   }
