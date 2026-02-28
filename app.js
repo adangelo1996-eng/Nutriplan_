@@ -974,6 +974,15 @@ function _buildLandingDaysTrack() {
   inner2.innerHTML = html;
 }
 
+function _updateLandingFlapDatetime() {
+  var el = document.getElementById('landingFlapDatetime');
+  if (!el) return;
+  var now = new Date();
+  var dateStr = now.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  var timeStr = now.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  el.textContent = dateStr + '  ·  ' + timeStr;
+}
+
 /* Auto-start se non c'è landing page */
 document.addEventListener('DOMContentLoaded', function() {
   _wireInstallPwaBtn();
@@ -988,6 +997,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   initDarkMode();
   _buildLandingDaysTrack();
+  _updateLandingFlapDatetime();
+  setInterval(_updateLandingFlapDatetime, 1000);
 
   /* Aggiorna icona tema nell'header (data-theme-toggle) */
   var isDark = document.documentElement.getAttribute('data-theme') === 'dark';

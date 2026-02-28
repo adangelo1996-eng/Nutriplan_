@@ -259,6 +259,7 @@ body .landing-accedi-wrap * {
 /* Transizione fluida su testi ed elementi (in sync con overlay) */
 #landingPage .landing-hero-headline,
 #landingPage .landing-sub,
+#landingPage .landing-flap-datetime,
 #landingPage .landing-marquee-text,
 #landingPage .landing-numbers-inner span,
 #landingPage .landing-badge,
@@ -349,7 +350,32 @@ body .landing-accedi-wrap * {
   }
 }
 
-/* Hero: headline spezzata + sottotitolo */
+/* Hero: data/ora teleindicatore + headline spezzata + sottotitolo */
+.landing-flap-datetime {
+  font-family: ui-monospace, 'Cascadia Code', 'SF Mono', Monaco, monospace;
+  font-size: clamp(0.75rem, 2.5vw, 0.9rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #e8f5f0;
+  background: rgba(13, 34, 24, 0.85);
+  padding: 8px 14px 10px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: 1.2em;
+  opacity: 0;
+  transform: perspective(420px) rotateX(90deg);
+  transform-origin: top center;
+  animation: landing-flap-in 0.6s ease 0.05s forwards;
+}
+#landingPage.landing-inverted .landing-flap-datetime {
+  color: #0d2218;
+  background: rgba(232, 245, 240, 0.9);
+  border-color: rgba(13, 34, 24, 0.2);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
 .landing-hero {
   flex: 1;
   display: flex;
@@ -367,6 +393,7 @@ body .landing-accedi-wrap * {
   letter-spacing: -.04em;
   line-height: 1.1;
   margin: 0 0 16px;
+  perspective: 420px;
 }
 
 .landing-hero-n {
@@ -383,12 +410,13 @@ body .landing-accedi-wrap * {
 .landing-hero-line {
   display: block;
   opacity: 0;
-  transform: translateY(14px);
-  animation: landing-hero-in 0.7s ease forwards;
+  transform: perspective(420px) rotateX(90deg);
+  transform-origin: top center;
+  animation: landing-flap-in 0.7s ease forwards;
 }
 
-.landing-hero-line-1 { animation-delay: 0.1s; }
-.landing-hero-line-2 { animation-delay: 0.25s; }
+.landing-hero-line-1 { animation-delay: 0.12s; }
+.landing-hero-line-2 { animation-delay: 0.28s; }
 
 /* Nome utente: stesso colore del titolo + animazione tabellone */
 .landing-hero-username {
@@ -422,10 +450,18 @@ body .landing-accedi-wrap * {
   }
 }
 
+@keyframes landing-flap-in {
+  to {
+    opacity: 1;
+    transform: perspective(420px) rotateX(0deg);
+  }
+}
+
 .landing-hero .landing-sub {
   margin: 0;
   opacity: 0;
-  animation: landing-hero-in 0.6s ease 0.4s forwards;
+  animation: landing-flap-in 0.6s ease 0.4s forwards;
+  transform-origin: top center;
 }
 
 .landing-sub {
@@ -436,6 +472,7 @@ body .landing-accedi-wrap * {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .landing-flap-datetime,
   .landing-hero-line,
   .landing-hero .landing-sub {
     animation: none;
