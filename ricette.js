@@ -76,6 +76,34 @@ function esc(v) {
 }
 function safeStr(v) { return v == null ? '' : String(v); }
 
+/* Numero di persone/porzioni: default 1 se non impostato */
+function getRecipeBasePorzioni(r) {
+  if (!r) return 1;
+  var p = r.porzioni;
+  if (typeof p === 'number' && p >= 1) return Math.round(p);
+  return 1;
+}
+
+/* Scala le quantità degli ingredienti per un altro numero di porzioni (copia, non muta) */
+function scaleIngredientiForPorzioni(ingredienti, basePorzioni, targetPorzioni) {
+  if (!Array.isArray(ingredienti) || basePorzioni <= 0 || targetPorzioni <= 0) return ingredienti || [];
+  if (basePorzioni === targetPorzioni) return ingredienti.slice();
+  var factor = targetPorzioni / basePorzioni;
+  return ingredienti.map(function(ing) {
+    var copy = { name: ing.name || ing.nome, unit: ing.unit || ing.unita || 'g' };
+    var q = ing.quantity != null ? ing.quantity : ing.quantita;
+    if (typeof q === 'number' && !isNaN(q)) {
+      copy.quantity = Math.round(q * factor * 100) / 100;
+      if (copy.quantity === Math.floor(copy.quantity)) copy.quantity = Math.floor(copy.quantity);
+    } else if (q != null && q !== '') {
+      copy.quantity = q;
+    }
+    return copy;
+  });
+}
+
+var currentRecipePorzioni = 1; /* porzioni selezionate nel modale ricetta */
+
 function pastoLabel(p) {
   var map = { colazione:'☀️ Colazione', spuntino:'🍎 Spuntino',
               pranzo:'🍽 Pranzo', merenda:'🥪 Merenda', cena:'🌙 Cena' };
@@ -579,6 +607,9 @@ function openRecipeModal(name) {
   var body  = document.getElementById('recipeModalBody');
   if (!modal||!body) return;
 
+  var basePorzioni = getRecipeBasePorzioni(r);
+  currentRecipePorzioni = basePorzioni;
+
   var icon   = safeStr(r.icon||r.icona||'🍽');
   var ings   = Array.isArray(r.ingredienti)?r.ingredienti:[];
   var prep   = safeStr(r.preparazione||r.preparation||'');
@@ -606,10 +637,22 @@ function openRecipeModal(name) {
             '</div>';
   }
 
+  /* Select numero persone: regola le quantità mostrate */
+  var persOpts = '';
+  for (var i = 1; i <= 12; i++) {
+    persOpts += '<option value="'+i+'"'+(i === currentRecipePorzioni ? ' selected' : '')+'>'+i+(i===1?' persona':' persone')+'</option>';
+  }
+  html += '<div class="rm-porzioni-row">'+
+    '<label class="rm-porzioni-label">Per</label>'+
+    '<select id="recipeModalPorzioni" class="rm-porzioni-select" onchange="updateRecipeModalPorzioni(this.value)">'+persOpts+'</select>'+
+    '<span class="rm-porzioni-suffix">persone</span>'+
+  '</div>';
+
   var pianoNames = getPianoAlimentareIngNames();
   var hasExtraCheck = pianoNames.length > 0;
+  var ingsScaled = scaleIngredientiForPorzioni(ings, basePorzioni, currentRecipePorzioni);
 
-  if (ings.length) {
+  if (ingsScaled.length) {
     var extraCount = countExtraPiano(ings);
     if (hasExtraCheck && extraCount > 0) {
       html += '<div class="rm-extra-notice">⚠ ' + extraCount + ' ingredient' +
@@ -618,15 +661,15 @@ function openRecipeModal(name) {
               ' nel tuo piano alimentare</div>';
     }
     html += '<p class="rm-section-label">Ingredienti</p><ul class="rm-ing-list">';
-    ings.forEach(function(ing){
+    ingsScaled.forEach(function(ing){
       var n  = safeStr(ing.name||ing.nome);
       var nl = n.toLowerCase().trim();
       var ok = fridgeKeys.some(function(k){
         var kl=k.toLowerCase().trim(); return kl===nl||kl.includes(nl)||nl.includes(kl);
       });
       var extra = hasExtraCheck && isIngExtraPiano(n);
-      var qty= (ing.quantity||ing.quantita)
-        ?'<span class="rm-qty">'+safeStr(ing.quantity||ing.quantita)+'\u00a0'+safeStr(ing.unit||ing.unita)+'</span>':'';
+      var qty= (ing.quantity!= null && ing.quantity !== '' || ing.quantita != null && ing.quantita !== '')
+        ?'<span class="rm-qty">'+safeStr(ing.quantity!= null ? ing.quantity : ing.quantita)+'\u00a0'+safeStr(ing.unit||ing.unita||'g')+'</span>':'';
       html += '<li class="rm-ing'+(ok?' ok':'')+(extra?' rm-extra':'')+'">'+
                 '<span class="rm-check">'+(ok?'✔':'○')+'</span>'+
                 '<span class="rm-ing-name">'+n+'</span>'+qty+
@@ -662,11 +705,48 @@ function closeRecipeModal() {
   currentRecipeName = null;
 }
 
+function updateRecipeModalPorzioni(val) {
+  var n = parseInt(val, 10);
+  if (isNaN(n) || n < 1) n = 1;
+  if (n > 12) n = 12;
+  currentRecipePorzioni = n;
+  if (!currentRecipeName) return;
+  var r = findRicetta(currentRecipeName);
+  if (!r) return;
+  var body = document.getElementById('recipeModalBody');
+  var listEl = body ? body.querySelector('.rm-ing-list') : null;
+  if (!listEl || !Array.isArray(r.ingredienti) || !r.ingredienti.length) return;
+  var basePorzioni = getRecipeBasePorzioni(r);
+  var ingsScaled = scaleIngredientiForPorzioni(r.ingredienti, basePorzioni, currentRecipePorzioni);
+  var fridgeKeys = getFridgeKeys();
+  var pianoNames = getPianoAlimentareIngNames();
+  var hasExtraCheck = pianoNames.length > 0;
+  var html = '';
+  ingsScaled.forEach(function(ing){
+    var nameIng = safeStr(ing.name||ing.nome);
+    var nl = nameIng.toLowerCase().trim();
+    var ok = fridgeKeys.some(function(k){
+      var kl=k.toLowerCase().trim(); return kl===nl||kl.includes(nl)||nl.includes(kl);
+    });
+    var extra = hasExtraCheck && isIngExtraPiano(nameIng);
+    var qty = (ing.quantity != null && ing.quantity !== '' || ing.quantita != null && ing.quantita !== '')
+      ? '<span class="rm-qty">'+safeStr(ing.quantity != null ? ing.quantity : ing.quantita)+'\u00a0'+safeStr(ing.unit||ing.unita||'g')+'</span>' : '';
+    html += '<li class="rm-ing'+(ok?' ok':'')+(extra?' rm-extra':'')+'">'+
+      '<span class="rm-check">'+(ok?'✔':'○')+'</span>'+
+      '<span class="rm-ing-name">'+nameIng+'</span>'+qty+
+      (extra?'<span class="rm-extra-tag">extra piano</span>':'')+
+    '</li>';
+  });
+  listEl.innerHTML = html;
+}
+
 function addRecipeIngredientsToSpesa() {
   if (!currentRecipeName) return;
   var r = findRicetta(currentRecipeName);
   if (!r) return;
-  var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+  var basePorzioni = getRecipeBasePorzioni(r);
+  var targetPorzioni = (typeof currentRecipePorzioni === 'number' && currentRecipePorzioni >= 1) ? currentRecipePorzioni : basePorzioni;
+  var ings = scaleIngredientiForPorzioni(Array.isArray(r.ingredienti) ? r.ingredienti : [], basePorzioni, targetPorzioni);
   if (!ings.length) { if (typeof showToast==='function') showToast('Nessun ingrediente da aggiungere','warning'); return; }
   if (typeof spesaItems === 'undefined') spesaItems = [];
   if (typeof pushUndo === 'function') pushUndo('Aggiungi ' + currentRecipeName + ' alla spesa');
@@ -722,7 +802,10 @@ function applyRecipeToMeal() {
   var pasto = Array.isArray(r.pasto)?(r.pasto[0]||'pranzo'):(r.pasto||'pranzo');
   if (!pianoAlimentare[pasto]) pianoAlimentare[pasto]={principale:[],contorno:[],frutta:[],extra:[]};
   if (!Array.isArray(pianoAlimentare[pasto].principale)) pianoAlimentare[pasto].principale=[];
-  var ings=Array.isArray(r.ingredienti)?r.ingredienti:[], added=0;
+  var basePorzioni = getRecipeBasePorzioni(r);
+  var targetPorzioni = (typeof currentRecipePorzioni === 'number' && currentRecipePorzioni >= 1) ? currentRecipePorzioni : basePorzioni;
+  var ings = scaleIngredientiForPorzioni(Array.isArray(r.ingredienti) ? r.ingredienti : [], basePorzioni, targetPorzioni);
+  var added=0;
   ings.forEach(function(ing){
     var nm=safeStr(ing.name||ing.nome).trim(); if(!nm) return;
     var exists=pianoAlimentare[pasto].principale.some(function(i){
@@ -745,7 +828,9 @@ function markRecipeAsPreparedAndClose() {
   if (!recipeName || typeof selectedMeal === 'undefined' || !selectedDateKey) return;
   var r = findRicetta(recipeName);
   if (!r) return;
-  var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+  var basePorzioni = getRecipeBasePorzioni(r);
+  var targetPorzioni = (typeof currentRecipePorzioni === 'number' && currentRecipePorzioni >= 1) ? currentRecipePorzioni : basePorzioni;
+  var ings = scaleIngredientiForPorzioni(Array.isArray(r.ingredienti) ? r.ingredienti : [], basePorzioni, targetPorzioni);
   if (typeof appHistory === 'undefined') appHistory = {};
   if (!appHistory[selectedDateKey]) appHistory[selectedDateKey] = { usedItems: {}, substitutions: {}, ricette: {} };
   if (!appHistory[selectedDateKey].ricette) appHistory[selectedDateKey].ricette = {};

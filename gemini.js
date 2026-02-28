@@ -683,6 +683,7 @@ function _runAIGeneration() {
     '  "preparazione": "Cuoci la pasta in acqua salata. Scalda i pomodori in padella. Aggiungi basilico fresco e servi."\n' +
     '}\n\n' +
     'VINCOLI RIGIDI:\n' +
+    '✓ Le quantità degli ingredienti devono essere per 1 porzione (una persona).\n' +
     '✓ quantity: sempre NUMERO (mai stringa tipo "100")\n' +
     '✓ unit: solo g, ml, pz, cucchiai, cucchiaino, fette, foglie, spicchi\n' +
     '✓ preparazione: max 300 caratteri, NO JSON annidato\n' +
@@ -779,6 +780,8 @@ function _acceptAIRecipe() {
   if (_aiRecipeContext === 'dispensa') {
     _aiPendingRecipe.subcategory = 'Da dispensa';
   }
+
+  _aiPendingRecipe.porzioni = 1; /* ricette AI di base per 1 persona */
 
   var name = _aiPendingRecipe.name || 'Ricetta AI';
   var dup  = aiRecipes.findIndex(function(r){ return (r.name||'').toLowerCase() === name.toLowerCase(); });

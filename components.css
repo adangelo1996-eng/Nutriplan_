@@ -1257,6 +1257,24 @@ body.app-visible .modal .modal-footer .btn-primary:hover {
   height: 100%; border-radius: 99px;
   transition: width .4s ease;
 }
+.rm-porzioni-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 20px 4px; flex-wrap: wrap;
+}
+.rm-porzioni-label {
+  font-size: .85rem; font-weight: 700; color: var(--text-mid);
+}
+.rm-porzioni-select {
+  font-size: .9rem; font-weight: 700;
+  padding: 6px 10px; border-radius: var(--r-sm);
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  min-width: 100px;
+}
+.rm-porzioni-suffix {
+  font-size: .85rem; color: var(--text-light);
+}
 .rm-section-label {
   font-size: .68rem; font-weight: 800; text-transform: uppercase;
   letter-spacing: .09em; color: var(--text-light);

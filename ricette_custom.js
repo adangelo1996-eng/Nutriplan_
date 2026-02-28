@@ -208,6 +208,7 @@ function saveRicettaCustom() {
         pasto:         pasto,
         ingredienti:   ings,
         preparazione:  prep.trim(),
+        porzioni:      1,
         isCustom:      true
     };
 
