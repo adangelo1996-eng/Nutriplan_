@@ -17,26 +17,6 @@ function renderProfilo() {
     buildProfiloSettingsSection();
   /* Render storico nell'apposito contenitore */
   if (typeof renderStorico === 'function') renderStorico('profiloStoricoContent');
-  /* Carica membri casa se in una casa */
-  if (typeof householdId !== 'undefined' && householdId && typeof getHouseholdMembers === 'function') {
-    getHouseholdMembers(householdId).then(function (members) {
-      var listEl = document.getElementById('householdMembersList');
-      if (!listEl) return;
-      if (!members || Object.keys(members).length === 0) {
-        listEl.innerHTML = '<p style="font-size:.85em;color:var(--text-3);">Nessun membro</p>';
-        return;
-      }
-      listEl.innerHTML = Object.keys(members).map(function (uid) {
-        var m = members[uid];
-        var name = (m && m.displayName) || m.email || uid.slice(0, 8);
-        var role = (m && m.role) === 'owner' ? ' (creatore)' : '';
-        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:.9em;">' +
-          '<span style="width:28px;text-align:center;">👤</span>' +
-          '<span>' + String(name).replace(/</g, '&lt;') + role + '</span>' +
-        '</div>';
-      }).join('');
-    });
-  }
 }
 
 /* ══════════════════════════════════════════════
@@ -162,41 +142,21 @@ function buildProfiloUserSection() {
 }
 
 /* ══════════════════════════════════════════════
-   SEZIONE CASA CONDIVISA (dispensa e spesa)
+   SEZIONE CASA CONDIVISA — solo "Esci da casa"
+   (crea/unisciti/copia link/membri sono sotto Casa)
 ══════════════════════════════════════════════ */
 function buildProfiloHouseholdSection() {
   var user = (typeof currentUser !== 'undefined') ? currentUser : null;
   if (!user) return '';
-
   var hid = (typeof householdId !== 'undefined') ? householdId : null;
-  if (hid) {
-    return (
-      '<div class="rc-card settings-section" style="margin-bottom:16px;">' +
-        '<div class="settings-section-title">🏠 Casa condivisa</div>' +
-        '<div style="padding:12px 16px;">' +
-          '<p style="font-size:.9em;color:var(--text-2);margin-bottom:12px;">Dispensa e lista della spesa sono condivise con i membri della casa.</p>' +
-          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">' +
-            '<button class="rc-btn rc-btn-primary" onclick="copyHouseholdInviteLink()">📋 Copia link invito</button>' +
-            '<button class="rc-btn rc-btn-outline" onclick="confirmLeaveHousehold()">🚪 Esci da casa</button>' +
-          '</div>' +
-          '<div style="font-size:.85em;font-weight:600;color:var(--text-2);margin-bottom:6px;">Membri</div>' +
-          '<div id="householdMembersList" style="min-height:24px;">Caricamento...</div>' +
-        '</div>' +
-      '</div>'
-    );
-  }
+  if (!hid) return '';
 
   return (
     '<div class="rc-card settings-section" style="margin-bottom:16px;">' +
       '<div class="settings-section-title">🏠 Casa condivisa</div>' +
       '<div style="padding:12px 16px;">' +
-        '<p style="font-size:.9em;color:var(--text-2);margin-bottom:12px;">Condividi dispensa e lista della spesa con familiari o coinquilini. Crea una casa o unisciti con un link.</p>' +
-        '<button class="rc-btn rc-btn-primary" style="width:100%;margin-bottom:12px;" onclick="createHouseholdAndShowLink()">➕ Crea una casa</button>' +
-        '<div style="display:flex;gap:8px;margin-top:8px;">' +
-          '<input type="text" id="householdJoinInput" placeholder="Incolla il link invito" ' +
-                 'style="flex:1;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);font-size:.9em;color:var(--text-1);">' +
-          '<button class="rc-btn rc-btn-outline" onclick="joinHouseholdFromInput()">Unisciti</button>' +
-        '</div>' +
+        '<p style="font-size:.9em;color:var(--text-2);margin-bottom:12px;">Sei in una casa condivisa. Gestisci casa, link invito e membri dalla pagina Casa.</p>' +
+        '<button class="rc-btn rc-btn-outline" onclick="confirmLeaveHousehold()">🚪 Esci da casa</button>' +
       '</div>' +
     '</div>'
   );
@@ -232,9 +192,6 @@ function joinHouseholdFromInput() {
 }
 
 function createHouseholdAndShowLink() {
-  // #region agent log
-  fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6d3b78'},body:JSON.stringify({sessionId:'6d3b78',location:'profilo.js:createHouseholdAndShowLink',message:'Button clicked (inline path)',data:{createHouseholdExists:typeof createHousehold==='function'},timestamp:Date.now(),hypothesisId:'post-fix'})}).catch(function(){});
-  // #endregion
   var doCreate = function () {
     if (typeof firebase === 'undefined') {
       if (typeof showToast === 'function') showToast('Firebase non disponibile. Ricarica la pagina.', 'error');
@@ -283,9 +240,26 @@ function createHouseholdAndShowLink() {
   };
   var createFn = typeof createHousehold === 'function' ? createHousehold : doCreate;
   createFn().then(function (hid) {
-    if (hid && typeof renderProfilo === 'function') renderProfilo();
-    else if (!hid && typeof showToast === 'function') showToast('Impossibile creare la casa. Verifica di essere connesso e di aver deployato le regole Firebase.', 'error');
+    if (hid) {
+      if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+      copyInviteLinkToClipboard(hid);
+    } else if (typeof showToast === 'function') {
+      showToast('Impossibile creare la casa. Verifica di essere connesso e di aver deployato le regole Firebase.', 'error');
+    }
   });
+}
+
+function copyInviteLinkToClipboard(hid) {
+  if (!hid || typeof getHouseholdInviteLink !== 'function') return;
+  var link = getHouseholdInviteLink(hid);
+  if (!link) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).then(function () {
+      if (typeof showToast === 'function') showToast('Link invito copiato negli appunti. Condividilo per invitare.', 'success');
+    }).catch(function () { fallbackCopyLink(link); });
+  } else {
+    fallbackCopyLink(link);
+  }
 }
 
 function copyHouseholdInviteLink() {

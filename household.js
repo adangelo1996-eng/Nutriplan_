@@ -32,9 +32,10 @@ function stopHouseholdRealtimeListener() {
 
 function getHouseholdInviteLink(hid) {
   if (!hid) return '';
-  var base = (typeof location !== 'undefined' && location.origin)
-    ? (location.origin + (location.pathname || '/'))
-    : '';
+  var base = '';
+  if (typeof location !== 'undefined' && location.origin && location.origin.indexOf('http') === 0) {
+    base = location.origin + (location.pathname || '/');
+  }
   var sep = base.indexOf('?') !== -1 ? '&' : '?';
   return base + sep + 'join=' + encodeURIComponent(hid);
 }
@@ -45,12 +46,6 @@ function getHouseholdInviteLink(hid) {
  * @returns {Promise<string|null>} householdId o null in caso di errore
  */
 function createHousehold() {
-  // #region agent log
-  var dbgFirebase = typeof firebase !== 'undefined';
-  var dbgReady = typeof firebaseReady !== 'undefined' && firebaseReady;
-  var dbgUser = typeof currentUser !== 'undefined' && !!currentUser;
-  fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6d3b78'},body:JSON.stringify({sessionId:'6d3b78',location:'household.js:createHousehold',message:'Entry guards',data:{firebase:dbgFirebase,firebaseReady:dbgReady,currentUser:dbgUser},timestamp:Date.now(),hypothesisId:'B'})}).catch(function(){});
-  // #endregion
   if (typeof firebase === 'undefined') {
     if (typeof showToast === 'function') showToast('Firebase non disponibile. Ricarica la pagina.', 'error');
     return Promise.resolve(null);
@@ -84,17 +79,10 @@ function createHousehold() {
   payload.createdBy = uid;
   payload.createdAt = now;
 
-  // #region agent log
-  fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6d3b78'},body:JSON.stringify({sessionId:'6d3b78',location:'household.js:createHousehold',message:'Before Firebase set',data:{hid:hid},timestamp:Date.now(),hypothesisId:'C'})}).catch(function(){});
-  // #endregion
-
   return firebase.database()
     .ref('households/' + hid)
     .set(payload)
     .then(function () {
-      // #region agent log
-      fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6d3b78'},body:JSON.stringify({sessionId:'6d3b78',location:'household.js:createHousehold',message:'Firebase set success',data:{hid:hid},timestamp:Date.now(),hypothesisId:'D'})}).catch(function(){});
-      // #endregion
       householdId = hid;
       saveData();
       if (typeof showToast === 'function') showToast('Casa creata. Condividi il link per invitare.', 'success');
@@ -102,9 +90,6 @@ function createHousehold() {
       return hid;
     })
     .catch(function (e) {
-      // #region agent log
-      fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6d3b78'},body:JSON.stringify({sessionId:'6d3b78',location:'household.js:createHousehold',message:'Firebase set catch',data:{code:e&&e.code,message:(e&&e.message)||''},timestamp:Date.now(),hypothesisId:'E'})}).catch(function(){});
-      // #endregion
       console.warn('[Household] createHousehold error:', e);
       var msg = 'Errore creazione casa';
       if (e && e.code === 'PERMISSION_DENIED') {

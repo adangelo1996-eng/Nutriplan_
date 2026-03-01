@@ -312,6 +312,12 @@ function renderCasa(force) {
     sharedBlock = '<div class="casa-shared-section rc-card">' +
       '<div class="casa-shared-title">Casa condivisa</div>' +
       '<p class="casa-shared-desc">Dispensa e lista della spesa condivise con i membri della casa.</p>' +
+      '<div class="casa-shared-buttons" style="margin-bottom:12px;">' +
+        '<button class="casa-shared-btn casa-shared-btn-primary" onclick="copyHouseholdInviteLink()">' +
+          '<span class="casa-shared-btn-icon">\uD83D\uDCCB</span>' +
+          '<span>Copia link invito</span>' +
+        '</button>' +
+      '</div>' +
       '<div class="casa-shared-members">' +
         '<div class="casa-shared-label">Membri</div>' +
         '<div id="casaHouseholdMembersList" class="casa-shared-members-list">Caricamento...</div>' +
