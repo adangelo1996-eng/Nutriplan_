@@ -153,6 +153,7 @@
   <!-- Logo n. espandibile in alto a sinistra -->
   <div class="app-inner app-header-main">
     <div class="header-left">
+      <button type="button" class="app-menu-btn" id="appMenuBtn" onclick="toggleAppMenu()" aria-label="Menu" aria-expanded="false" aria-controls="appMenuOverlay">Menu</button>
       <button type="button" class="header-logo-wrap" id="headerIcon" onclick="goToHomepage()" aria-label="Torna alla homepage">
         <span class="app-logo-mark">n</span>
         <span class="app-logo-expand">utriplan.</span>
@@ -279,10 +280,6 @@
      MAIN CONTENT
 ═════════════════════════════════════════════════════════════════ -->
 <main class="app-main" id="appMain" style="display:none">
-
-  <div class="app-page-top" id="appPageTop">
-    <button type="button" class="app-menu-btn" id="appMenuBtn" onclick="toggleAppMenu()" aria-label="Menu" aria-expanded="false" aria-controls="appMenuOverlay">Menu</button>
-  </div>
 
   <!-- ── CASA ────────────────────────────── -->
   <div class="page active" id="page-casa">

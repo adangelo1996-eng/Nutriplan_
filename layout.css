@@ -26,6 +26,17 @@ body.app-visible .app-main {
   margin-left: auto;
   margin-right: auto;
 }
+@media (max-width: 767px) {
+  body.app-visible .app-main {
+    margin-left: max(16px, env(safe-area-inset-left));
+    margin-right: max(16px, env(safe-area-inset-right));
+    margin-top: calc(var(--header-h) + 16px);
+    margin-bottom: 16px;
+  }
+  body.app-visible .page {
+    padding: 20px 16px;
+  }
+}
 body.app-visible .page {
   max-width: none;
   width: 100%;

@@ -483,8 +483,8 @@ body .landing-accedi-wrap * {
   margin: 0 auto;
   display: flex;
   align-items: center;
-  padding: 0 10px;
-  gap: 6px;
+  padding: 0 14px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -561,7 +561,7 @@ body .landing-accedi-wrap * {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex-shrink: 0;
   min-width: 0;
 }
@@ -657,7 +657,7 @@ body .landing-accedi-wrap * {
 /* Destra: azioni */
 .header-right {
   display: flex; align-items: center;
-  gap: 5px; flex-shrink: 0;
+  gap: 12px; flex-shrink: 0;
 }
 .btn-icon-only {
   width: 32px; height: 32px;
@@ -715,7 +715,7 @@ body .landing-accedi-wrap * {
   .auth-info              { display: none; }
   .auth-user-pill         { padding: 3px; max-width: unset; }
   .header-title           { font-size: .88rem; }
-  .app-inner              { padding: 0 8px; gap: 4px; }
+  .app-inner              { padding: 0 10px; gap: 8px; }
 }
 
 /* Mobile: caratteri leggermente più grandi per leggibilità */
