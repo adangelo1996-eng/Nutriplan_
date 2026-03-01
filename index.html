@@ -1284,28 +1284,51 @@
   <div class="modal-box" style="max-width:400px;">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <h2 class="modal-title">Nome e codice accesso casa (opzionale)</h2>
+      <h2 class="modal-title" id="householdModalTitle">Nome e codice accesso casa (opzionale)</h2>
       <button type="button" class="modal-close" onclick="closeHouseholdNamePasswordModal()" aria-label="Chiudi">✕</button>
     </div>
-    <div class="modal-body">
-      <p style="font-size:.9em;color:var(--text-2);margin-bottom:12px;">Chi conosce nome e codice potrà unirsi alla casa senza usare il link.</p>
-      <div style="margin-bottom:12px;">
-        <label style="display:block;font-size:.85em;font-weight:600;margin-bottom:4px;">Nome della casa</label>
-        <input type="text" id="householdNameInput" value="La nostra casa" placeholder="La nostra casa"
-               style="width:100%;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);font-size:.95em;">
+    <div class="modal-body" id="householdModalBody">
+      <div id="householdNamePasswordForm">
+        <p style="font-size:.9em;color:var(--text-2);margin-bottom:12px;">Chi conosce nome e codice potrà unirsi alla casa senza usare il link.</p>
+        <div style="margin-bottom:12px;">
+          <label style="display:block;font-size:.85em;font-weight:600;margin-bottom:4px;">Nome della casa</label>
+          <input type="text" id="householdNameInput" value="La nostra casa" placeholder="La nostra casa"
+                 style="width:100%;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);font-size:.95em;">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="display:block;font-size:.85em;font-weight:600;margin-bottom:4px;">Codice accesso</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="householdCodeInput" placeholder="Clicca Genera per creare un codice" readonly
+                   style="flex:1;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);font-size:.95em;font-family:monospace;">
+            <button type="button" class="btn btn-secondary" id="householdCodeGeneraBtn" onclick="generateHouseholdCode()">Genera</button>
+          </div>
+        </div>
       </div>
-      <div style="margin-bottom:12px;">
-        <label style="display:block;font-size:.85em;font-weight:600;margin-bottom:4px;">Codice accesso</label>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input type="text" id="householdCodeInput" placeholder="Clicca Genera per creare un codice" readonly
-                 style="flex:1;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);font-size:.95em;font-family:monospace;">
-          <button type="button" class="btn btn-secondary" id="householdCodeGeneraBtn" onclick="generateHouseholdCode()">Genera</button>
+      <div id="householdCredentialsSuccess" style="display:none;">
+        <p style="font-size:.9em;color:var(--text-2);margin-bottom:12px;">Salva o condividi nome e codice per far unire altri alla casa.</p>
+        <div class="rc-card" style="padding:16px;background:var(--primary-xl);border:2px solid var(--primary-mid);border-radius:var(--r-lg);margin-bottom:12px;">
+          <div style="margin-bottom:12px;">
+            <div style="font-size:.8em;font-weight:600;color:var(--primary);margin-bottom:4px;">Nome della casa</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span id="householdSuccessName" style="font-size:1.05em;font-weight:600;flex:1;word-break:break-word;"></span>
+            </div>
+          </div>
+          <div style="margin-bottom:14px;">
+            <div style="font-size:.8em;font-weight:600;color:var(--primary);margin-bottom:4px;">Codice accesso</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span id="householdSuccessCode" style="font-size:1.05em;font-family:monospace;letter-spacing:.05em;flex:1;"></span>
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary" style="width:100%;" onclick="copyHouseholdSuccessNameAndCode()">📋 Copia nome e codice</button>
         </div>
       </div>
     </div>
-    <div class="modal-footer">
+    <div class="modal-footer" id="householdModalFooter">
       <button type="button" class="btn btn-secondary" onclick="closeHouseholdNamePasswordModal()">Salta</button>
       <button type="button" class="btn btn-primary" id="householdNamePasswordImpostaBtn">Imposta</button>
+    </div>
+    <div class="modal-footer" id="householdModalFooterSuccess" style="display:none;">
+      <button type="button" class="btn btn-primary" onclick="closeHouseholdNamePasswordModal()">Chiudi</button>
     </div>
   </div>
 </div>

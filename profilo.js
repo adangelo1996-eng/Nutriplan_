@@ -258,14 +258,19 @@ function createHouseholdAndShowLink() {
 }
 
 var _householdNamePasswordHid = null;
+var _householdSuccessName = '';
+var _householdSuccessCode = '';
 
 function openHouseholdNamePasswordModal(hid) {
   if (!hid) return;
   _householdNamePasswordHid = hid;
+  _householdSuccessName = '';
+  _householdSuccessCode = '';
   var nameIn = document.getElementById('householdNameInput');
   var codeIn = document.getElementById('householdCodeInput');
   if (nameIn) nameIn.value = 'La nostra casa';
   if (codeIn) codeIn.value = '';
+  showHouseholdNamePasswordForm(true);
   var m = document.getElementById('householdNamePasswordModal');
   if (m) m.classList.add('active');
   var impostaBtn = document.getElementById('householdNamePasswordImpostaBtn');
@@ -283,16 +288,59 @@ function openHouseholdNamePasswordModal(hid) {
       }
       if (typeof setHouseholdJoinCredentials === 'function') {
         setHouseholdJoinCredentials(_householdNamePasswordHid, n, code).then(function () {
-          closeHouseholdNamePasswordModal();
-          if (typeof showToast === 'function') showToast('Nome e codice salvati. Puoi accedere dalla pagina Casa.', 'success');
+          _householdSuccessName = n;
+          _householdSuccessCode = code;
+          showHouseholdCredentialsSuccess();
+          if (typeof showToast === 'function') showToast('Nome e codice salvati.', 'success');
         });
       }
     };
   }
 }
 
+function showHouseholdNamePasswordForm(show) {
+  var form = document.getElementById('householdNamePasswordForm');
+  var success = document.getElementById('householdCredentialsSuccess');
+  var footer = document.getElementById('householdModalFooter');
+  var footerSuccess = document.getElementById('householdModalFooterSuccess');
+  var title = document.getElementById('householdModalTitle');
+  if (form) form.style.display = show ? 'block' : 'none';
+  if (success) success.style.display = show ? 'none' : 'block';
+  if (footer) footer.style.display = show ? 'flex' : 'none';
+  if (footerSuccess) footerSuccess.style.display = show ? 'none' : 'flex';
+  if (title) title.textContent = show ? 'Nome e codice accesso casa (opzionale)' : 'Casa creata';
+}
+
+function showHouseholdCredentialsSuccess() {
+  var nameEl = document.getElementById('householdSuccessName');
+  var codeEl = document.getElementById('householdSuccessCode');
+  if (nameEl) nameEl.textContent = _householdSuccessName || '';
+  if (codeEl) codeEl.textContent = _householdSuccessCode || '';
+  showHouseholdNamePasswordForm(false);
+}
+
+function copyHouseholdSuccessNameAndCode() {
+  var name = _householdSuccessName || (document.getElementById('householdSuccessName') && document.getElementById('householdSuccessName').textContent) || '';
+  var code = _householdSuccessCode || (document.getElementById('householdSuccessCode') && document.getElementById('householdSuccessCode').textContent) || '';
+  var text = 'Nome: ' + name + '\nCodice: ' + code;
+  if (typeof copyTextToClipboard === 'function') {
+    copyTextToClipboard(text, function (ok) {
+      if (typeof showToast === 'function') showToast(ok ? 'Nome e codice copiati' : 'Copia manuale', ok ? 'success' : 'info');
+    });
+  } else if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () {
+      if (typeof showToast === 'function') showToast('Nome e codice copiati', 'success');
+    }).catch(function () {
+      if (typeof showToast === 'function') showToast('Copia manuale', 'info');
+    });
+  }
+}
+
 function closeHouseholdNamePasswordModal() {
   _householdNamePasswordHid = null;
+  _householdSuccessName = '';
+  _householdSuccessCode = '';
+  showHouseholdNamePasswordForm(true);
   var m = document.getElementById('householdNamePasswordModal');
   if (m) m.classList.remove('active');
 }

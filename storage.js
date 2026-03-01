@@ -399,7 +399,6 @@ function loadFromCloud(uid) {
 
       if (householdId && typeof startHouseholdRealtimeListener === 'function') startHouseholdRealtimeListener();
       refreshAllAppViews();
-      if (typeof currentPage !== 'undefined' && currentPage === 'casa' && typeof renderCasa === 'function') renderCasa();
       showCloudStatus('synced');
       return null;
     })
@@ -408,7 +407,6 @@ function loadFromCloud(uid) {
       /* In caso di errore, usa i dati locali */
       ensurePlanStructure();
       refreshAllAppViews();
-      if (typeof currentPage !== 'undefined' && currentPage === 'casa' && typeof renderCasa === 'function') renderCasa();
       showCloudStatus('error');
     });
 }

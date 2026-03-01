@@ -32,24 +32,31 @@ function getConsumedMealKeysToday() {
   return Object.keys(combined);
 }
 
+/** Restituisce il pasto associato alla fascia oraria corrente (solo ora, non consumi). */
+function getMealByTime(hours) {
+  if (hours >= 6 && hours < 10) return 'colazione';
+  if (hours >= 10 && hours < 12) return 'spuntino';
+  if (hours >= 12 && hours < 15) return 'pranzo';
+  if (hours >= 15 && hours < 17) return 'merenda';
+  if (hours >= 17 && hours < 22) return 'cena';
+  return null;
+}
+
 function getSuggestedMeal() {
   var now = new Date().getHours();
   var consumed = getConsumedMealKeysToday();
+  var order = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
 
-  /* Se ha consumato pasti, suggerisci il prossimo */
-  if (consumed.length > 0) {
-    var order = ['colazione', 'spuntino', 'pranzo', 'merenda', 'cena'];
-    for (var i = 0; i < order.length; i++) {
-      if (consumed.indexOf(order[i]) === -1) return order[i];
-    }
-    return null;
+  /* Fascia oraria corrente: da qui in avanti si suggerisce (se l'ora è passata non torniamo indietro) */
+  var mealByTime = getMealByTime(now);
+  if (!mealByTime) return null; /* fuori 6–22 non suggerire */
+  var startIdx = order.indexOf(mealByTime);
+  if (startIdx < 0) startIdx = 0;
+
+  /* Primo pasto non ancora consumato a partire dalla fascia oraria corrente */
+  for (var i = startIdx; i < order.length; i++) {
+    if (consumed.indexOf(order[i]) === -1) return order[i];
   }
-  /* Altrimenti in base all'ora */
-  if (now >= 6 && now < 10) return 'colazione';
-  if (now >= 10 && now < 12) return 'spuntino';
-  if (now >= 12 && now < 15) return 'pranzo';
-  if (now >= 15 && now < 17) return 'merenda';
-  if (now >= 17 && now < 22) return 'cena';
   return null;
 }
 

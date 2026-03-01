@@ -3,6 +3,8 @@
    createHousehold, joinHousehold, leaveHousehold, getHouseholdInviteLink
    ============================================================ */
 var _householdRealtimeUnsubscribe = null;
+var _householdRefreshTimeout = null;
+var _householdRefreshDebounceMs = 180;
 
 function startHouseholdRealtimeListener() {
   if (typeof householdId === 'undefined' || !householdId || typeof firebase === 'undefined') return;
@@ -25,11 +27,19 @@ function startHouseholdRealtimeListener() {
     }
     if (Array.isArray(h.spesaItems)) spesaItems = h.spesaItems;
     if (h.spesaLastGenerated != null) spesaLastGenerated = h.spesaLastGenerated;
-    if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+    if (typeof refreshAllAppViews === 'function') {
+      clearTimeout(_householdRefreshTimeout);
+      _householdRefreshTimeout = setTimeout(function () {
+        _householdRefreshTimeout = null;
+        refreshAllAppViews();
+      }, _householdRefreshDebounceMs);
+    }
   });
 }
 
 function stopHouseholdRealtimeListener() {
+  clearTimeout(_householdRefreshTimeout);
+  _householdRefreshTimeout = null;
   if (_householdRealtimeUnsubscribe) {
     _householdRealtimeUnsubscribe();
     _householdRealtimeUnsubscribe = null;
