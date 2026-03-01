@@ -45,8 +45,16 @@ function getHouseholdInviteLink(hid) {
  * @returns {Promise<string|null>} householdId o null in caso di errore
  */
 function createHousehold() {
-  if (typeof firebase === 'undefined' || !firebaseReady || !currentUser) {
-    if (typeof showToast === 'function') showToast('Accedi per creare una casa', 'warning');
+  if (typeof firebase === 'undefined') {
+    if (typeof showToast === 'function') showToast('Firebase non disponibile. Ricarica la pagina.', 'error');
+    return Promise.resolve(null);
+  }
+  if (!firebaseReady) {
+    if (typeof showToast === 'function') showToast('Connessione in corso... Riprova tra qualche secondo.', 'warning');
+    return Promise.resolve(null);
+  }
+  if (!currentUser) {
+    if (typeof showToast === 'function') showToast('Accedi con Google per creare una casa condivisa.', 'warning');
     return Promise.resolve(null);
   }
   var uid = currentUser.uid;
@@ -82,7 +90,13 @@ function createHousehold() {
     })
     .catch(function (e) {
       console.warn('[Household] createHousehold error:', e);
-      if (typeof showToast === 'function') showToast('Errore creazione casa', 'error');
+      var msg = 'Errore creazione casa';
+      if (e && e.code === 'PERMISSION_DENIED') {
+        msg = 'Permesso negato. Assicurati di aver deployato le regole Firebase per households.';
+      } else if (e && e.message) {
+        msg = 'Errore: ' + (e.message || '').slice(0, 80);
+      }
+      if (typeof showToast === 'function') showToast(msg, 'error');
       return null;
     });
 }
@@ -179,4 +193,40 @@ function getHouseholdMembers(hid) {
       return snap.val();
     })
     .catch(function () { return null; });
+}
+
+/**
+ * Formatta timestamp in tempo relativo (es. "5 min fa", "2 ore fa").
+ */
+function formatRelativeTime(ts) {
+  if (ts == null || isNaN(ts)) return '';
+  var now = Date.now();
+  var diff = now - ts;
+  if (diff < 60000) return 'adesso';
+  if (diff < 3600000) return Math.floor(diff / 60000) + ' min fa';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + ' ore fa';
+  if (diff < 604800000) return Math.floor(diff / 86400000) + ' giorni fa';
+  if (diff < 2592000000) return Math.floor(diff / 604800000) + ' settimane fa';
+  return Math.floor(diff / 2592000000) + ' mesi fa';
+}
+
+/**
+ * Legge lastActivity dalla casa e ritorna stringa formattata per la UI.
+ * @param {string} hid
+ * @returns {Promise<string>} es. "Dispensa aggiornata da Mario, 2 ore fa" o ""
+ */
+function getHouseholdLastActivity(hid) {
+  if (!hid || typeof firebase === 'undefined') return Promise.resolve('');
+  return firebase.database()
+    .ref('households/' + hid + '/lastActivity')
+    .once('value')
+    .then(function (snap) {
+      var la = snap.val();
+      if (!la || !la.at) return '';
+      var who = (la.byDisplayName || la.by || '').toString().trim() || 'un membro';
+      var typeLabel = la.type === 'spesa' ? 'Lista spesa' : 'Dispensa';
+      var when = formatRelativeTime(la.at);
+      return typeLabel + ' aggiornata da ' + who + ', ' + when;
+    })
+    .catch(function () { return ''; });
 }

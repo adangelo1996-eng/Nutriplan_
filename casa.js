@@ -305,6 +305,32 @@ function renderCasa(force) {
       '</div>' +
     '</div>';
 
+  var sharedBlock = '';
+  if (typeof householdId !== 'undefined' && householdId) {
+    sharedBlock = '<div class="casa-shared-section rc-card">' +
+      '<div class="casa-shared-title">Casa condivisa</div>' +
+      '<p class="casa-shared-desc">Dispensa e lista della spesa condivise con i membri della casa.</p>' +
+      '<div class="casa-shared-members">' +
+        '<div class="casa-shared-label">Membri</div>' +
+        '<div id="casaHouseholdMembersList" class="casa-shared-members-list">Caricamento...</div>' +
+      '</div>' +
+      '<div class="casa-shared-last-activity">' +
+        '<div class="casa-shared-label">Ultima modifica</div>' +
+        '<div id="casaHouseholdLastActivity" class="casa-shared-last-activity-text">Caricamento...</div>' +
+      '</div>' +
+      '<div class="casa-shared-buttons">' +
+        '<button class="casa-shared-btn" onclick="goToPageWithButtonExpand(\'dispensa\', this)" data-page="dispensa">' +
+          '<span class="casa-shared-btn-icon">\uD83D\uDCE6</span>' +
+          '<span>Dispensa</span>' +
+        '</button>' +
+        '<button class="casa-shared-btn" onclick="goToPageWithButtonExpand(\'spesa\', this)" data-page="spesa">' +
+          '<span class="casa-shared-btn-icon">\uD83D\uDED2</span>' +
+          '<span>Lista della spesa</span>' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+  }
+
   var html =
     '<p class="casa-greeting">' + escapeHtml(greeting) + '</p>' +
     completionBar +
@@ -320,9 +346,33 @@ function renderCasa(force) {
       '</div>' +
     '</div>' +
     recipeBlock +
+    sharedBlock +
     '<p class="casa-meta">Oggi · ' + escapeHtml(dateStr) + '</p>';
 
   el.innerHTML = html;
+
+  if (householdId && typeof getHouseholdMembers === 'function' && typeof getHouseholdLastActivity === 'function') {
+    var hid = householdId;
+    getHouseholdMembers(hid).then(function (members) {
+      var listEl = document.getElementById('casaHouseholdMembersList');
+      if (!listEl || listEl.closest('#casaContent') === null) return;
+      if (!members || Object.keys(members).length === 0) {
+        listEl.innerHTML = '<span class="casa-shared-empty">Nessun membro</span>';
+        return;
+      }
+      listEl.innerHTML = Object.keys(members).map(function (uid) {
+        var m = members[uid];
+        var name = (m && m.displayName) || m.email || uid.slice(0, 8);
+        var role = (m && m.role) === 'owner' ? ' (creatore)' : '';
+        return '<div class="casa-shared-member-row">' + escapeHtml(String(name)) + role + '</div>';
+      }).join('');
+    });
+    getHouseholdLastActivity(hid).then(function (text) {
+      var actEl = document.getElementById('casaHouseholdLastActivity');
+      if (!actEl || actEl.closest('#casaContent') === null) return;
+      actEl.innerHTML = text ? ('<span class="casa-shared-activity-text">' + escapeHtml(text) + '</span>') : '<span class="casa-shared-empty">Nessuna modifica recente</span>';
+    });
+  }
 }
 
 function escapeHtml(s) {

@@ -235,6 +235,7 @@ function createHouseholdAndShowLink() {
   if (typeof createHousehold !== 'function') return;
   createHousehold().then(function (hid) {
     if (hid && typeof renderProfilo === 'function') renderProfilo();
+    else if (!hid && typeof showToast === 'function') showToast('Impossibile creare la casa. Verifica di essere connesso e di aver deployato le regole Firebase.', 'error');
   });
 }
 

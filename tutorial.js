@@ -425,6 +425,7 @@ var TUTORIAL_STEPS_BY_PAGE = {
     { icon: '✅', title: 'In base ai consumi', text: 'Se hai già segnato dei pasti (es. Colazione e Pranzo), Casa suggerisce il prossimo della sequenza: Spuntino, Merenda o Cena.', page: 'casa', target: '#casaContent', hint: 'Segna i consumi in Oggi per avere suggerimenti accurati.' },
     { icon: '➡️', title: 'Vai a Oggi', text: 'Il pulsante Vai a Oggi ti porta alla pagina Oggi con il pasto suggerito già selezionato, pronto per segnare ingredienti o scegliere una ricetta.', page: 'casa', target: '#casaContent', hint: 'Premi Avanti per continuare.' },
     { icon: '🎯', title: 'Quando usare Casa', text: 'Apri Casa quando vuoi un promemoria veloce su cosa mangiare adesso, senza cercare tra le schede.', page: 'casa', target: '#page-casa', hint: 'Casa è la prima scheda nel menu.' },
+    { icon: '🏠', title: 'Casa condivisa', text: 'Se hai creato una casa condivisa (dal Profilo), qui vedi i membri, l\'ultima modifica e l\'accesso rapido a Dispensa e Lista della spesa. I pulsanti aprono le pagine con un\'animazione.', page: 'casa', target: '#casaContent .casa-shared-section', hint: 'La sezione appare solo se sei in una casa. Crea una casa dal Profilo per attivarla.' },
     { icon: '🎉', title: 'Fine guida Casa', text: 'Hai visto tutti gli elementi della pagina Casa. Usa Vai a Oggi per passare subito al pasto suggerito.', page: 'casa', target: '#page-casa', hint: 'Premi Avanti per chiudere.' }
   ],
   'piano': [
@@ -474,6 +475,7 @@ var TUTORIAL_STEPS_BY_PAGE = {
     { icon: '✏️', title: 'Modificare quantità', text: 'Su ogni ingrediente puoi aggiornare la quantità. Quando consumi da Oggi, le quantità si aggiornano automaticamente.', page: 'dispensa', target: '#pantryContent', hint: 'Tocca l\'ingrediente per modificare.' },
     { icon: '📅', title: 'Scadenza e freezer', text: 'Se hai indicato una data di scadenza, l\'app può mostrarla. Il flag freezer serve per il congelatore.', page: 'dispensa', target: '#pantryContent', hint: 'Compila scadenza quando aggiungi.' },
     { icon: '🛒', title: 'Dispensa e ricette', text: 'Le ricette compatibili in Oggi e Ricette si basano su ciò che hai in dispensa.', page: 'dispensa', target: '#pantryContent', hint: 'Aggiorna dopo ogni spesa o consumo.' },
+    { icon: '🏠', title: 'Dispensa condivisa', text: 'Se sei in una casa condivisa, la dispensa è sincronizzata con gli altri membri. Le modifiche si vedono in tempo reale su tutti i dispositivi.', page: 'dispensa', target: '#pantryContent', hint: 'Dal Profilo puoi creare o unirti a una casa.' },
     { icon: '🎉', title: 'Fine guida Dispensa', text: 'Hai visto come gestire la dispensa. Aggiungi gli acquisti e segna i consumi da Oggi.', page: 'dispensa', target: '#page-dispensa', hint: 'Premi Avanti per chiudere.' }
   ],
   'ricette': [
@@ -498,6 +500,7 @@ var TUTORIAL_STEPS_BY_PAGE = {
     { icon: '✏️', title: 'Modificare quantità', text: 'Puoi cambiare quantità o unità di un articolo prima di spuntarlo. Puoi anche rimuovere articoli che non servono più.', page: 'spesa', target: '#spesaContent', hint: 'Tocca l\'articolo per modificare o eliminare.' },
     { icon: '🔄', title: 'Svuotare la lista', text: 'Dopo una spesa completa puoi lasciare la lista con gli articoli spuntati o rimuoverli. La dispensa resta aggiornata.', page: 'spesa', target: '#spesaContent', hint: 'Gestisci la lista come preferisci.' },
     { icon: '📲', title: 'Sincronizzazione', text: 'Se usi l\'account, lista e dispensa si sincronizzano tra dispositivi. Fai la spesa da un dispositivo e vedi aggiornamenti ovunque.', page: 'spesa', target: '#spesaContent', hint: 'Controlla lo stato cloud in header.' },
+    { icon: '🏠', title: 'Lista spesa condivisa', text: 'Se sei in una casa condivisa, la lista della spesa è condivisa con gli altri membri. Tutti vedono le stesse voci e aggiornamenti in tempo reale.', page: 'spesa', target: '#spesaContent', hint: 'Dal Profilo puoi creare o unirti a una casa.' },
     { icon: '🎉', title: 'Fine guida Spesa', text: 'Hai visto come usare la lista della spesa. Spunta gli acquisti e inserisci le quantità per tenere la dispensa aggiornata.', page: 'spesa', target: '#page-spesa', hint: 'Premi Avanti per chiudere.' }
   ],
   'statistiche': [
@@ -522,6 +525,7 @@ var TUTORIAL_STEPS_BY_PAGE = {
     { icon: '📖', title: 'Riapri la guida', text: 'Da Impostazioni puoi riattivare il tutorial iniziale. Su ogni pagina il pulsante Aiuto riapre la guida contestuale.', page: 'profilo', target: '#profiloPage', hint: 'Cerca Tutorial o Guida nelle impostazioni.' },
     { icon: '🌙', title: 'Tema chiaro/scuro', text: 'L\'app può essere in modalità chiara o scura. La scelta viene salvata e applicata a tutte le pagine.', page: 'profilo', target: '#profiloPage', hint: 'Il toggle tema è in header o in Impostazioni.' },
     { icon: '☁️', title: 'Cloud e backup', text: 'Con l\'account i dati (piano, dispensa, ricette) si salvano sul cloud e sono disponibili su altri dispositivi.', page: 'profilo', target: '#profiloPage', hint: 'Controlla lo stato cloud in header.' },
+    { icon: '🏠', title: 'Casa condivisa', text: 'Puoi condividere dispensa e lista della spesa con familiari o coinquilini. Crea una casa e condividi il link di invito. Gli altri si uniranno e vedranno la stessa dispensa e spesa.', page: 'profilo', target: '#profiloPage', hint: 'Cerca la sezione Casa condivisa.' },
     { icon: '🎉', title: 'Fine guida Profilo', text: 'Hai visto le principali funzioni del Profilo. Torna qui per account, impostazioni e preferenze.', page: 'profilo', target: '#page-profilo', hint: 'Premi Avanti per chiudere.' }
   ]
 };

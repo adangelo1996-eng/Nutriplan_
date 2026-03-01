@@ -1334,6 +1334,45 @@ function openPageFromLanding(pageKey, ev) {
   setTimeout(finishTransition, 1200);
 }
 
+/* Transizione dalla sezione Casa condivisa: overlay si espande dal pulsante, poi naviga */
+function goToPageWithButtonExpand(pageKey, btnEl) {
+  if (!btnEl) return;
+  var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) {
+    goToPage(pageKey);
+    return;
+  }
+  var rect = btnEl.getBoundingClientRect();
+  var overlay = document.createElement('div');
+  overlay.className = 'casa-shared-transition';
+  overlay.style.left = rect.left + 'px';
+  overlay.style.top = rect.top + 'px';
+  overlay.style.width = rect.width + 'px';
+  overlay.style.height = rect.height + 'px';
+
+  var labelEl = btnEl.querySelector('span:last-child');
+  var title = labelEl ? labelEl.textContent : (pageKey === 'dispensa' ? 'Dispensa' : 'Lista della spesa');
+  overlay.innerHTML = '<div class="casa-shared-transition-inner">' + title + '</div>';
+  document.body.appendChild(overlay);
+
+  var done = false;
+  function finish() {
+    if (done) return;
+    done = true;
+    overlay.removeEventListener('transitionend', onEnd);
+    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    goToPage(pageKey);
+  }
+  function onEnd(e) {
+    if (e.target === overlay) finish();
+  }
+  overlay.addEventListener('transitionend', onEnd);
+  requestAnimationFrame(function () {
+    overlay.classList.add('casa-shared-transition-active');
+  });
+  setTimeout(finish, 800);
+}
+
 /* ── enterApp() ── chiamata dopo login o scelta offline ── */
 function enterApp() {
   var landing = document.getElementById('landingPage');

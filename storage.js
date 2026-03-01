@@ -248,12 +248,19 @@ function syncToCloud() {
       .set(userBlob)
       .then(function () {
         if (householdId) {
+          var lastActivity = {
+            type: 'dispensa',
+            by: currentUser.uid,
+            byDisplayName: (currentUser.displayName || currentUser.email || 'Utente').trim(),
+            at: Date.now()
+          };
           return firebase.database()
             .ref('households/' + householdId)
             .update({
               pantryItems: pantryItems,
               spesaItems: spesaItems,
-              spesaLastGenerated: spesaLastGenerated
+              spesaLastGenerated: spesaLastGenerated,
+              lastActivity: lastActivity
             });
         }
       })

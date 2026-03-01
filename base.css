@@ -351,6 +351,117 @@ body .landing-accedi-wrap * {
   }
 }
 
+/* Sezione Casa condivisa in pagina Casa */
+.casa-shared-section {
+  margin: 20px 0 16px;
+  padding: 16px 18px;
+  border-radius: var(--r-lg, 12px);
+  background: var(--bg-card, #fff);
+  border: 1.5px solid var(--border, #e2e8f0);
+}
+.casa-shared-title {
+  font-size: 1rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: var(--primary, #0d2218);
+}
+.casa-shared-desc {
+  font-size: .85em;
+  color: var(--text-2, #64748b);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+.casa-shared-label {
+  font-size: .78em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-light, #94a3b8);
+  margin-bottom: 4px;
+}
+.casa-shared-members,
+.casa-shared-last-activity {
+  margin-bottom: 12px;
+}
+.casa-shared-members-list,
+.casa-shared-last-activity-text {
+  font-size: .9em;
+  color: var(--text-1, #334155);
+}
+.casa-shared-member-row {
+  padding: 4px 0;
+}
+.casa-shared-empty {
+  font-style: italic;
+  color: var(--text-3, #94a3b8);
+}
+.casa-shared-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.casa-shared-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--r-md, 10px);
+  border: 1.5px solid var(--primary-mid, #2d6e55);
+  background: var(--primary-xl, rgba(74, 155, 127, .12));
+  color: var(--primary, #1c4434);
+  font-size: .9em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s, transform .15s;
+}
+.casa-shared-btn:hover {
+  background: var(--primary-light, rgba(74, 155, 127, .2));
+  transform: translateY(-1px);
+}
+.casa-shared-btn-icon {
+  font-size: 1.1em;
+}
+
+/* Animazione transizione da pulsante Casa condivisa a pagina */
+.casa-shared-transition {
+  position: fixed;
+  z-index: 200;
+  border-radius: 12px;
+  background: var(--primary, #1c4434);
+  color: #fff;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
+  transition:
+    left .6s cubic-bezier(0.33, 1, 0.68, 1),
+    top .6s cubic-bezier(0.33, 1, 0.68, 1),
+    width .6s cubic-bezier(0.33, 1, 0.68, 1),
+    height .6s cubic-bezier(0.33, 1, 0.68, 1),
+    border-radius .6s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.casa-shared-transition-inner {
+  padding: 16px 20px;
+  font-size: 1em;
+  font-weight: 700;
+}
+.casa-shared-transition-active {
+  left: 0 !important;
+  top: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .casa-shared-transition {
+    transition: none;
+  }
+}
+
 /* Hero: data/ora + headline — entrata minimal stile Metalab (fade + translateY) */
 .landing-flap-datetime {
   font-family: ui-monospace, 'Cascadia Code', 'SF Mono', Monaco, monospace;
