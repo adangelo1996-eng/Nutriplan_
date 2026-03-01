@@ -9,6 +9,12 @@ function startHouseholdRealtimeListener() {
   if (_householdRealtimeUnsubscribe) return;
   var ref = firebase.database().ref('households/' + householdId);
   _householdRealtimeUnsubscribe = ref.on('value', function (snap) {
+    if (!snap || typeof snap.val !== 'function') {
+      // #region agent log
+      fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6d3b78'},body:JSON.stringify({sessionId:'6d3b78',location:'household.js:onValue',message:'listener skip',data:{hasSnap:!!snap},timestamp:Date.now(),hypothesisId:'A'})}).catch(function(){});
+      // #endregion
+      return;
+    }
     var h = snap.val();
     if (!h) return;
     if (h.pantryItems && typeof h.pantryItems === 'object') {
