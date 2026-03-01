@@ -361,8 +361,8 @@ body .landing-accedi-wrap * {
   margin-bottom: 20px;
   min-height: 1.2em;
   opacity: 0;
-  transform: translateY(6px);
-  animation: landing-hero-in 0.5s ease 0.05s forwards;
+  filter: blur(6px);
+  animation: landing-hero-in 0.65s cubic-bezier(0.33, 1, 0.68, 1) 0.05s forwards;
 }
 #landingPage.landing-inverted .landing-flap-datetime {
   color: rgba(13, 34, 24, 0.65);
@@ -401,18 +401,18 @@ body .landing-accedi-wrap * {
 .landing-hero-line {
   display: block;
   opacity: 0;
-  transform: translateY(10px);
-  animation: landing-hero-in 0.6s ease forwards;
+  filter: blur(8px);
+  animation: landing-hero-in 0.9s cubic-bezier(0.33, 1, 0.68, 1) forwards;
 }
-.landing-hero-line-1 { animation-delay: 0.1s; }
-.landing-hero-line-2 { animation-delay: 0.22s; }
+.landing-hero-line-1 { animation-delay: 0.06s; }
+.landing-hero-line-2 { animation-delay: 0.18s; }
 
 /* Nome utente: stesso colore del titolo + animazione tabellone */
 .landing-hero-username {
   display: inline;
   color: inherit;
   opacity: 0;
-  transform: translateY(14px);
+  filter: blur(6px);
   animation: none;
 }
 .landing-hero-username .landing-hero-n {
@@ -425,25 +425,25 @@ body .landing-accedi-wrap * {
   text-stroke: 1.5px #0d2218;
 }
 .landing-hero-username.landing-hero-username-visible {
-  animation: landing-hero-in 0.7s ease 0.15s forwards;
+  animation: landing-hero-in 0.9s cubic-bezier(0.33, 1, 0.68, 1) 0.1s forwards;
 }
 @media (prefers-reduced-motion: reduce) {
-  .landing-hero-username { opacity: 1; transform: none; }
-  .landing-hero-username.landing-hero-username-visible { animation: none; opacity: 1; }
+  .landing-hero-username { opacity: 1; filter: none; }
+  .landing-hero-username.landing-hero-username-visible { animation: none; opacity: 1; filter: none; }
 }
 
 @keyframes landing-hero-in {
   to {
     opacity: 1;
-    transform: translateY(0);
+    filter: blur(0);
   }
 }
 
 .landing-hero .landing-sub {
   margin: 0;
   opacity: 0;
-  transform: translateY(10px);
-  animation: landing-hero-in 0.55s ease 0.35s forwards;
+  filter: blur(6px);
+  animation: landing-hero-in 0.75s cubic-bezier(0.33, 1, 0.68, 1) 0.3s forwards;
 }
 
 .landing-sub {
@@ -459,7 +459,7 @@ body .landing-accedi-wrap * {
   .landing-hero .landing-sub {
     animation: none;
     opacity: 1;
-    transform: none;
+    filter: none;
   }
 }
 
