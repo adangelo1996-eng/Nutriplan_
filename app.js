@@ -221,6 +221,7 @@ function tryProcessJoinLink() {
     joinHousehold(hid).then(function (ok) {
       if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('nutriplan_join');
       clearJoinFromUrl();
+      if (ok && typeof goToPage === 'function') goToPage('casa');
     });
   } else {
     if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('nutriplan_join', hid);

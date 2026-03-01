@@ -257,44 +257,48 @@ function joinHousehold(hid) {
       if (typeof showToast === 'function') showToast('Ti sei unito alla casa. Dispensa e spesa sono condivise.', 'success');
       if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
 
-      if (myPantryBeforeJoin && Object.keys(myPantryBeforeJoin).length > 0 && typeof showAppConfirm === 'function') {
-        showAppConfirm({
-          title: 'Quale dispensa usare?',
-          message: 'Puoi sostituire la dispensa della casa con la tua (tutti i membri vedranno la tua dispensa) oppure tenere quella già presente nella casa.',
-          primaryText: 'Usa la mia dispensa',
-          secondaryText: 'Usa quella della casa',
-          primaryAction: function () {
-            if (typeof showAppConfirm === 'function') {
-              showAppConfirm({
-                title: 'Conferma sostituzione',
-                message: 'Sei sicuro? La dispensa attuale della casa verrà sostituita con la tua. Tutti i membri vedranno la nuova dispensa.',
-                primaryText: 'Sì, sostituisci',
-                secondaryText: 'Annulla',
-                primaryAction: function () {
-                  pantryItems = JSON.parse(JSON.stringify(myPantryBeforeJoin));
-                  if (typeof syncToCloud === 'function') syncToCloud(true);
-                  if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
-                  if (typeof showToast === 'function') showToast('Dispensa della casa aggiornata con la tua.', 'success');
-                }
-              });
-            } else if (typeof confirm === 'function' && confirm('Sei sicuro? La dispensa della casa verrà sostituita con la tua.')) {
+      var hasMyPantry = myPantryBeforeJoin && Object.keys(myPantryBeforeJoin).length > 0;
+      function showJoinPantryDialog() {
+        if (hasMyPantry && typeof showAppConfirm === 'function') {
+          showAppConfirm({
+            title: 'Quale dispensa usare?',
+            message: 'Puoi sostituire la dispensa della casa con la tua (tutti i membri vedranno la tua dispensa) oppure tenere quella già presente nella casa.',
+            primaryText: 'Usa la mia dispensa',
+            secondaryText: 'Usa quella della casa',
+            primaryAction: function () {
+              if (typeof showAppConfirm === 'function') {
+                showAppConfirm({
+                  title: 'Conferma sostituzione',
+                  message: 'Sei sicuro? La dispensa attuale della casa verrà sostituita con la tua. Tutti i membri vedranno la nuova dispensa.',
+                  primaryText: 'Sì, sostituisci',
+                  secondaryText: 'Annulla',
+                  primaryAction: function () {
+                    pantryItems = JSON.parse(JSON.stringify(myPantryBeforeJoin));
+                    if (typeof syncToCloud === 'function') syncToCloud(true);
+                    if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+                    if (typeof showToast === 'function') showToast('Dispensa della casa aggiornata con la tua.', 'success');
+                  }
+                });
+              } else if (typeof confirm === 'function' && confirm('Sei sicuro? La dispensa della casa verrà sostituita con la tua.')) {
+                pantryItems = JSON.parse(JSON.stringify(myPantryBeforeJoin));
+                if (typeof syncToCloud === 'function') syncToCloud(true);
+                if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+                if (typeof showToast === 'function') showToast('Dispensa della casa aggiornata con la tua.', 'success');
+              }
+            }
+          });
+        } else if (hasMyPantry && typeof confirm === 'function') {
+          if (confirm('Usa la tua dispensa come dispensa della casa? (sostituirà quella attuale)\n\nClicca Annulla per tenere la dispensa già presente nella casa.')) {
+            if (confirm('Sei sicuro? La dispensa della casa verrà sostituita con la tua.')) {
               pantryItems = JSON.parse(JSON.stringify(myPantryBeforeJoin));
               if (typeof syncToCloud === 'function') syncToCloud(true);
               if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
               if (typeof showToast === 'function') showToast('Dispensa della casa aggiornata con la tua.', 'success');
             }
           }
-        });
-      } else if (myPantryBeforeJoin && Object.keys(myPantryBeforeJoin).length > 0 && typeof confirm === 'function') {
-        if (confirm('Usa la tua dispensa come dispensa della casa? (sostituirà quella attuale)\n\nClicca Annulla per tenere la dispensa già presente nella casa.')) {
-          if (confirm('Sei sicuro? La dispensa della casa verrà sostituita con la tua.')) {
-            pantryItems = JSON.parse(JSON.stringify(myPantryBeforeJoin));
-            if (typeof syncToCloud === 'function') syncToCloud(true);
-            if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
-            if (typeof showToast === 'function') showToast('Dispensa della casa aggiornata con la tua.', 'success');
-          }
         }
       }
+      setTimeout(showJoinPantryDialog, 150);
       return true;
     })
     .catch(function (e) {

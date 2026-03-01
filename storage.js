@@ -201,10 +201,10 @@ function saveData() {
        Questo previene perdita dati se Firebase fallisce. */
     localStorage.setItem(STORAGE_KEY, JSON.stringify(buildSaveObject()));
     
-    /* Sync cloud solo se loggato */
+    /* Sync cloud solo se loggato; se in casa condivisa sync subito così tutti i membri vedono le modifiche */
     var isLoggedIn = (typeof currentUser !== 'undefined') && currentUser;
     if (isLoggedIn) {
-      syncToCloud();
+      syncToCloud(!!(typeof householdId !== 'undefined' && householdId));
     }
   } catch (e) { console.warn('Errore salvataggio:', e); }
 }
