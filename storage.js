@@ -247,11 +247,18 @@ function syncToCloud(immediate) {
   syncTimeout = null;
   function doSync() {
     var userBlob = buildUserSaveObject();
+    /* Cattura snapshot per la casa: evita che il listener in tempo reale sovrascriva
+       pantryItems prima che l'update su households venga inviato (race condition). */
+    var hid = householdId;
+    var pantrySnapshot = (hid && typeof pantryItems === 'object') ? JSON.parse(JSON.stringify(pantryItems || {})) : null;
+    var spesaSnapshot = (hid && Array.isArray(spesaItems)) ? spesaItems.slice() : null;
+    var spesaLastSnap = hid ? spesaLastGenerated : null;
+
     firebase.database()
       .ref('users/' + currentUser.uid + '/nutriplan')
       .set(userBlob)
       .then(function () {
-        if (householdId) {
+        if (hid && pantrySnapshot) {
           var lastActivity = {
             type: 'dispensa',
             by: currentUser.uid,
@@ -259,11 +266,11 @@ function syncToCloud(immediate) {
             at: Date.now()
           };
           return firebase.database()
-            .ref('households/' + householdId)
+            .ref('households/' + hid)
             .update({
-              pantryItems: pantryItems,
-              spesaItems: spesaItems,
-              spesaLastGenerated: spesaLastGenerated,
+              pantryItems: pantrySnapshot,
+              spesaItems: spesaSnapshot !== null ? spesaSnapshot : (spesaItems || []),
+              spesaLastGenerated: spesaLastSnap,
               lastActivity: lastActivity
             });
         }
