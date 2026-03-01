@@ -233,15 +233,56 @@ function joinHouseholdFromInput() {
 
 function createHouseholdAndShowLink() {
   // #region agent log
-  fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6d3b78'},body:JSON.stringify({sessionId:'6d3b78',location:'profilo.js:createHouseholdAndShowLink',message:'Button clicked',data:{createHouseholdExists:typeof createHousehold==='function'},timestamp:Date.now(),hypothesisId:'A'})}).catch(function(){});
+  fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6d3b78'},body:JSON.stringify({sessionId:'6d3b78',location:'profilo.js:createHouseholdAndShowLink',message:'Button clicked (inline path)',data:{createHouseholdExists:typeof createHousehold==='function'},timestamp:Date.now(),hypothesisId:'post-fix'})}).catch(function(){});
   // #endregion
-  if (typeof createHousehold !== 'function') {
-    // #region agent log
-    fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6d3b78'},body:JSON.stringify({sessionId:'6d3b78',location:'profilo.js:createHouseholdAndShowLink',message:'createHousehold not a function, early return',data:{},timestamp:Date.now(),hypothesisId:'D'})}).catch(function(){});
-    // #endregion
-    return;
-  }
-  createHousehold().then(function (hid) {
+  var doCreate = function () {
+    if (typeof firebase === 'undefined') {
+      if (typeof showToast === 'function') showToast('Firebase non disponibile. Ricarica la pagina.', 'error');
+      return Promise.resolve(null);
+    }
+    if (!firebaseReady) {
+      if (typeof showToast === 'function') showToast('Connessione in corso... Riprova tra qualche secondo.', 'warning');
+      return Promise.resolve(null);
+    }
+    if (!currentUser) {
+      if (typeof showToast === 'function') showToast('Accedi con Google per creare una casa condivisa.', 'warning');
+      return Promise.resolve(null);
+    }
+    var uid = currentUser.uid;
+    var displayName = (currentUser.displayName || currentUser.email || 'Utente').trim();
+    var email = currentUser.email || null;
+    var ref = firebase.database().ref('households');
+    var hid = ref.push().key;
+    var now = Date.now();
+    var payload = {
+      members: {},
+      pantryItems: typeof pantryItems !== 'undefined' && pantryItems ? pantryItems : {},
+      spesaItems: Array.isArray(spesaItems) ? spesaItems : [],
+      spesaLastGenerated: spesaLastGenerated,
+      createdBy: uid,
+      createdAt: now
+    };
+    payload.members[uid] = { displayName: displayName, email: email, role: 'owner', joinedAt: now };
+    return firebase.database().ref('households/' + hid).set(payload)
+      .then(function () {
+        householdId = hid;
+        saveData();
+        if (typeof showToast === 'function') showToast('Casa creata. Condividi il link per invitare.', 'success');
+        if (typeof startHouseholdRealtimeListener === 'function') startHouseholdRealtimeListener();
+        if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+        return hid;
+      })
+      .catch(function (e) {
+        console.warn('[Household] createHousehold error:', e);
+        var msg = e && e.code === 'PERMISSION_DENIED'
+          ? 'Permesso negato. Assicurati di aver deployato le regole Firebase per households.'
+          : (e && e.message ? 'Errore: ' + String(e.message).slice(0, 80) : 'Errore creazione casa');
+        if (typeof showToast === 'function') showToast(msg, 'error');
+        return null;
+      });
+  };
+  var createFn = typeof createHousehold === 'function' ? createHousehold : doCreate;
+  createFn().then(function (hid) {
     if (hid && typeof renderProfilo === 'function') renderProfilo();
     else if (!hid && typeof showToast === 'function') showToast('Impossibile creare la casa. Verifica di essere connesso e di aver deployato le regole Firebase.', 'error');
   });
