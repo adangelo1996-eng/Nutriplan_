@@ -407,7 +407,7 @@ body .landing-accedi-wrap * {
 .landing-hero-line-1 { animation-delay: 0.06s; }
 .landing-hero-line-2 { animation-delay: 0.18s; }
 
-/* Nome utente: stesso colore del titolo + animazione tabellone */
+/* Nome utente: stesso ingresso a fuoco del titolo (blur → nitido), animazione avviata dopo precaricamento in JS */
 .landing-hero-username {
   display: inline;
   color: inherit;
@@ -425,7 +425,7 @@ body .landing-accedi-wrap * {
   text-stroke: 1.5px #0d2218;
 }
 .landing-hero-username.landing-hero-username-visible {
-  animation: landing-hero-in 0.9s cubic-bezier(0.33, 1, 0.68, 1) 0.1s forwards;
+  animation: landing-hero-in 1s cubic-bezier(0.33, 1, 0.68, 1) forwards;
 }
 @media (prefers-reduced-motion: reduce) {
   .landing-hero-username { opacity: 1; filter: none; }

@@ -269,13 +269,18 @@ function updateAuthUI(user) {
     if (landingAccediBtn)   landingAccediBtn.style.display = 'none';
     if (landingLogoutBtn)   landingLogoutBtn.style.display = 'inline-block';
     if (typeof closeAccediOptions === 'function') closeAccediOptions();
-    /* Titolo landing: "Il tuo piano alimentare, [nome]" — animazione tabellone + formattazione n */
+    /* Titolo landing: "Il tuo piano alimentare, [nome]" — precaricamento poi animazione a fuoco (blur) */
     var heroName = document.getElementById('landingHeroUserName');
     if (heroName) {
       var firstName = (user.displayName && user.displayName.split(' ')[0]) || user.email || 'Utente';
       var suffix = ', ' + firstName;
       heroName.innerHTML = suffix.replace(/n/g, '<span class="landing-hero-n">n</span>');
-      heroName.classList.add('landing-hero-username-visible');
+      heroName.classList.remove('landing-hero-username-visible');
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          heroName.classList.add('landing-hero-username-visible');
+        });
+      });
     }
   } else {
     if (landingLoading)     landingLoading.style.display = 'none';
