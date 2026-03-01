@@ -253,17 +253,21 @@ function updateAuthUI(user) {
     }
   }
 
-  /* Aggiorna CTA della landing in base allo stato auth (elementi nascosti per modale) */
+  /* Aggiorna CTA della landing: se loggato mostra Logout, altrimenti Accedi */
   var landingLoading = document.getElementById('landingAuthLoading');
   var landingGoogle  = document.getElementById('landingGoogleBtn');
   var landingOffline = document.getElementById('landingOfflineBtn');
   var landingAccediWrap = document.getElementById('landingAccediWrap');
+  var landingAccediBtn  = document.getElementById('landingAccediBtn');
+  var landingLogoutBtn  = document.getElementById('landingLogoutBtn');
 
   if (user) {
     if (landingLoading)     landingLoading.style.display = 'none';
     if (landingGoogle)      landingGoogle.style.display  = 'none';
     if (landingOffline)     landingOffline.style.display = 'none';
-    if (landingAccediWrap)  landingAccediWrap.style.display = 'none';
+    if (landingAccediWrap)  landingAccediWrap.style.display = '';
+    if (landingAccediBtn)   landingAccediBtn.style.display = 'none';
+    if (landingLogoutBtn)   landingLogoutBtn.style.display = '';
     /* Titolo landing: "Il tuo piano alimentare, [nome]" — animazione tabellone + formattazione n */
     var heroName = document.getElementById('landingHeroUserName');
     if (heroName) {
@@ -277,6 +281,8 @@ function updateAuthUI(user) {
     if (landingGoogle)      landingGoogle.style.display  = 'none';
     if (landingOffline)     landingOffline.style.display = 'none';
     if (landingAccediWrap)  landingAccediWrap.style.display = '';
+    if (landingAccediBtn)   landingAccediBtn.style.display = '';
+    if (landingLogoutBtn)   landingLogoutBtn.style.display = 'none';
     var heroName = document.getElementById('landingHeroUserName');
     if (heroName) {
       heroName.innerHTML = '';

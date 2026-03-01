@@ -1370,6 +1370,9 @@ function handleMenuLinkClick(pageKey, ev) {
     if (pageKey === 'contatti') {
       toggleAppMenu();
       openContattiModal();
+    } else if (pageKey === 'homepage') {
+      toggleAppMenu();
+      if (typeof goToHomepage === 'function') goToHomepage();
     } else if (pageKey) {
       goToPage(pageKey);
       toggleAppMenu();

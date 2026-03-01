@@ -90,6 +90,7 @@
       <button type="button" class="landing-badge landing-esplora-btn" id="landingEsploraBtn" onclick="toggleLandingCards()" aria-expanded="false">Esplora</button>
       <div class="landing-accedi-wrap" id="landingAccediWrap">
         <button type="button" class="landing-badge landing-accedi-btn" id="landingAccediBtn" onclick="toggleAccediOptions()" aria-label="Accedi" aria-expanded="false">Accedi</button>
+        <button type="button" class="landing-badge landing-logout-btn" id="landingLogoutBtn" style="display:none" onclick="if(typeof executeSignOut==='function')executeSignOut();" aria-label="Esci">Logout</button>
         <div class="landing-accedi-reveal" id="landingAccediReveal" aria-hidden="true">
           <button type="button" class="landing-nav-card landing-accedi-option" onclick="closeAccediOptions(); openAuthModal();">Login</button>
           <button type="button" class="landing-nav-card landing-accedi-option" onclick="closeAccediOptions(); landingOffline();">Continua senza account</button>
@@ -239,6 +240,7 @@
       <button type="button" class="app-menu-link" data-menu-page="profilo" data-menu-hint="Impostazioni e piano personale" onclick="event.stopPropagation();handleMenuLinkClick('profilo', event)">Profilo</button>
       <button type="button" class="app-menu-link" data-menu-action="contatti" data-menu-hint="Supporto e informazioni" onclick="event.stopPropagation();handleMenuLinkClick('contatti', event)">Contatti</button>
       <button type="button" class="app-menu-link" data-menu-page="casa" data-menu-hint="Il tuo spazio e suggerimenti pasto" onclick="event.stopPropagation();handleMenuLinkClick('casa', event)">Casa</button>
+      <button type="button" class="app-menu-link app-menu-link-homepage" data-menu-hint="Torna alla landing" onclick="event.stopPropagation();handleMenuLinkClick('homepage', event)">Homepage</button>
     </div>
   </div>
 </div>

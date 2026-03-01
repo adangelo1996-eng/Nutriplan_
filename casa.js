@@ -51,11 +51,13 @@ function getConsumedMealsCountToday() {
   }).length;
 }
 
-/** Saluto in base all'ora: Buongiorno / Buon pomeriggio / Buonasera [+ nome]. */
+/** Saluto in base all'ora: Buongiorno / Buon pomeriggio / Buonasera [+ solo nome, senza cognome]. */
 function getCasaGreeting() {
   var h = new Date().getHours();
   var greeting = (h >= 6 && h < 12) ? 'Buongiorno' : (h >= 12 && h < 18) ? 'Buon pomeriggio' : 'Buonasera';
-  var name = (typeof currentUser !== 'undefined' && currentUser && currentUser.displayName) ? currentUser.displayName.trim() : '';
+  var name = (typeof currentUser !== 'undefined' && currentUser && currentUser.displayName)
+    ? (currentUser.displayName.split(' ')[0] || currentUser.displayName.trim())
+    : '';
   return name ? greeting + ', ' + name : greeting;
 }
 
