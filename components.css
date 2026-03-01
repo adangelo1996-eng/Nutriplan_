@@ -1682,7 +1682,34 @@ body.app-visible .modal .modal-body .auth-modal-offline:hover {
   margin: 0;
 }
 
-/* Pulsante Menu in header app — fisso, stile simile al marquee NutriPlan */
+/* Barra Menu: subito sopra il riquadro della pagina (solo quando app visibile) */
+.app-menu-bar {
+  position: fixed;
+  top: var(--header-h);
+  left: 0;
+  right: 0;
+  z-index: 350;
+  height: var(--menu-bar-h);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  pointer-events: none;
+}
+body.app-visible .app-menu-bar {
+  display: flex;
+}
+.app-menu-bar .app-menu-btn {
+  pointer-events: auto;
+}
+@media (max-width: 767px) {
+  .app-menu-bar {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+}
+
+/* Pulsante Menu — stile simile al marquee NutriPlan */
 .app-menu-btn {
   display: inline-block;
   font-size: clamp(0.95rem, 2.5vw, 1.2rem);
@@ -1851,7 +1878,7 @@ body.app-menu-open {
 .app-menu-cornice-right .app-menu-link {
   pointer-events: auto;
 }
-/* Singole etichette bottoni: glassmorphism */
+/* Singole etichette bottoni: glassmorphism + ingrandimento voce in hover/active */
 .app-menu-link {
   position: relative;
   font-family: var(--font);
@@ -1866,13 +1893,28 @@ body.app-menu-open {
   cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   padding: 8px 12px;
   border-radius: var(--r);
-  transition: color var(--t), background var(--t), border-color var(--t), opacity var(--t);
+  transition: color var(--t), background var(--t), border-color var(--t), opacity var(--t), transform .25s ease;
   white-space: nowrap;
+  transform: scale(1);
+}
+/* Hover: la voce sotto il cursore si ingrandisce, le altre si rimpiccioliscono */
+.app-menu-left:has(.app-menu-link:hover) .app-menu-link:not(:hover),
+.app-menu-right:has(.app-menu-link:hover) .app-menu-link:not(:hover) {
+  transform: scale(0.88);
 }
 .app-menu-link:hover {
   color: #fff;
   background: rgba(255,255,255,.12);
   border-color: rgba(255,255,255,.14);
+  transform: scale(1.12);
+}
+/* Click/tap (mobile): stessa scala tramite classe applicata da JS prima della navigazione */
+.app-menu-left:has(.app-menu-link.app-menu-link-active) .app-menu-link:not(.app-menu-link-active),
+.app-menu-right:has(.app-menu-link.app-menu-link-active) .app-menu-link:not(.app-menu-link-active) {
+  transform: scale(0.88);
+}
+.app-menu-link.app-menu-link-active {
+  transform: scale(1.12);
 }
 .app-menu-link::after {
   content: attr(data-menu-hint);

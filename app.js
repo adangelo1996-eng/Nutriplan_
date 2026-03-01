@@ -1359,6 +1359,24 @@ function closePrivacyModal() {
 }
 
 /* ── Overlay Menu (cornice NutriPlan) ───────────────────── */
+var MENU_LINK_BUFFER_MS = 380;
+
+function handleMenuLinkClick(pageKey, ev) {
+  var link = ev && ev.currentTarget;
+  if (!link) return;
+  link.classList.add('app-menu-link-active');
+  setTimeout(function() {
+    link.classList.remove('app-menu-link-active');
+    if (pageKey === 'contatti') {
+      toggleAppMenu();
+      openContattiModal();
+    } else if (pageKey) {
+      goToPage(pageKey);
+      toggleAppMenu();
+    }
+  }, MENU_LINK_BUFFER_MS);
+}
+
 function toggleAppMenu() {
   var overlay = document.getElementById('appMenuOverlay');
   var btn = document.getElementById('appMenuBtn');

@@ -54,10 +54,11 @@
   --r-full: 999px;
 
   /* Layout */
-  --header-h:  92px;
-  --nav-h:     64px;
-  --sidebar-w: 240px;
-  --content-w: 1440px;
+  --header-h:    92px;
+  --menu-bar-h:  44px;
+  --nav-h:       64px;
+  --sidebar-w:   240px;
+  --content-w:   1440px;
 
   /* Tipografia */
   --font: 'Poppins', -apple-system, BlinkMacSystemFont,

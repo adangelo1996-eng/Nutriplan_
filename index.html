@@ -153,7 +153,6 @@
   <!-- Logo n. espandibile in alto a sinistra -->
   <div class="app-inner app-header-main">
     <div class="header-left">
-      <button type="button" class="app-menu-btn" id="appMenuBtn" onclick="toggleAppMenu()" aria-label="Menu" aria-expanded="false" aria-controls="appMenuOverlay">Menu</button>
       <button type="button" class="header-logo-wrap" id="headerIcon" onclick="goToHomepage()" aria-label="Torna alla homepage">
         <span class="app-logo-mark">n</span>
         <span class="app-logo-expand">utriplan.</span>
@@ -207,6 +206,11 @@
   </div>
 </header>
 
+<!-- Barra Menu: subito sopra il riquadro della pagina -->
+<div class="app-menu-bar" id="appMenuBar">
+  <button type="button" class="app-menu-btn" id="appMenuBtn" onclick="toggleAppMenu()" aria-label="Menu" aria-expanded="false" aria-controls="appMenuOverlay">Menu</button>
+</div>
+
 <!-- ═════════════════════════════════════════════════════════════════
      OVERLAY MENU — cornice con NutriPlan verticale, pagine a sinistra,
      Profilo/Contatti/Casa a destra
@@ -215,12 +219,12 @@
   <!-- Cornice sinistra 1/5: scorrimento da sinistra -->
   <div class="app-menu-cornice app-menu-cornice-left" onclick="toggleAppMenu()">
     <div class="app-menu-left">
-      <button type="button" class="app-menu-link" data-menu-hint="Vedi e segna i pasti di oggi" onclick="event.stopPropagation();goToPage('piano');toggleAppMenu();">Oggi</button>
-      <button type="button" class="app-menu-link" data-menu-hint="Configura i pasti e i limiti settimanali" onclick="event.stopPropagation();goToPage('piano-alimentare');toggleAppMenu();">Piano</button>
-      <button type="button" class="app-menu-link" data-menu-hint="Ingredienti disponibili in dispensa" onclick="event.stopPropagation();goToPage('dispensa');toggleAppMenu();">Dispensa</button>
-      <button type="button" class="app-menu-link" data-menu-hint="Catalogo e le tue ricette" onclick="event.stopPropagation();goToPage('ricette');toggleAppMenu();">Ricette</button>
-      <button type="button" class="app-menu-link" data-menu-hint="Lista della spesa" onclick="event.stopPropagation();goToPage('spesa');toggleAppMenu();">Spesa</button>
-      <button type="button" class="app-menu-link" data-menu-hint="Riepilogo settimanale" onclick="event.stopPropagation();goToPage('statistiche');toggleAppMenu();">Stats</button>
+      <button type="button" class="app-menu-link" data-menu-page="piano" data-menu-hint="Vedi e segna i pasti di oggi" onclick="event.stopPropagation();handleMenuLinkClick('piano', event)">Oggi</button>
+      <button type="button" class="app-menu-link" data-menu-page="piano-alimentare" data-menu-hint="Configura i pasti e i limiti settimanali" onclick="event.stopPropagation();handleMenuLinkClick('piano-alimentare', event)">Piano</button>
+      <button type="button" class="app-menu-link" data-menu-page="dispensa" data-menu-hint="Ingredienti disponibili in dispensa" onclick="event.stopPropagation();handleMenuLinkClick('dispensa', event)">Dispensa</button>
+      <button type="button" class="app-menu-link" data-menu-page="ricette" data-menu-hint="Catalogo e le tue ricette" onclick="event.stopPropagation();handleMenuLinkClick('ricette', event)">Ricette</button>
+      <button type="button" class="app-menu-link" data-menu-page="spesa" data-menu-hint="Lista della spesa" onclick="event.stopPropagation();handleMenuLinkClick('spesa', event)">Spesa</button>
+      <button type="button" class="app-menu-link" data-menu-page="statistiche" data-menu-hint="Riepilogo settimanale" onclick="event.stopPropagation();handleMenuLinkClick('statistiche', event)">Stats</button>
     </div>
   </div>
   <!-- Centro 3/5: vetro satinato trasparente, attraverso si vede la pagina -->
@@ -232,9 +236,9 @@
   <!-- Cornice destra 1/5: scorrimento da destra -->
   <div class="app-menu-cornice app-menu-cornice-right" onclick="toggleAppMenu()">
     <div class="app-menu-right">
-      <button type="button" class="app-menu-link" data-menu-hint="Impostazioni e piano personale" onclick="event.stopPropagation();goToPage('profilo');toggleAppMenu();">Profilo</button>
-      <button type="button" class="app-menu-link" data-menu-hint="Supporto e informazioni" onclick="event.stopPropagation();toggleAppMenu();openContattiModal();">Contatti</button>
-      <button type="button" class="app-menu-link" data-menu-hint="Il tuo spazio e suggerimenti pasto" onclick="event.stopPropagation();goToPage('casa');toggleAppMenu();">Casa</button>
+      <button type="button" class="app-menu-link" data-menu-page="profilo" data-menu-hint="Impostazioni e piano personale" onclick="event.stopPropagation();handleMenuLinkClick('profilo', event)">Profilo</button>
+      <button type="button" class="app-menu-link" data-menu-action="contatti" data-menu-hint="Supporto e informazioni" onclick="event.stopPropagation();handleMenuLinkClick('contatti', event)">Contatti</button>
+      <button type="button" class="app-menu-link" data-menu-page="casa" data-menu-hint="Il tuo spazio e suggerimenti pasto" onclick="event.stopPropagation();handleMenuLinkClick('casa', event)">Casa</button>
     </div>
   </div>
 </div>
