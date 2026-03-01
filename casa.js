@@ -90,28 +90,28 @@ function getWeatherBonusForRecipe(recipe, weatherContext) {
   return 0;
 }
 
-/** Etichette motivo suggerimento ricetta (per UI Casa). */
-var CASA_SUGGESTION_REASONS = {
-  expiring:   'Per ingredienti in scadenza',
-  weather:    'Ideale per il meteo di oggi',
-  ai:         'Suggerita in base al meteo (AI)',
-  availability: 'In base a ciò che hai in dispensa'
+/** Categorie esplicite per le due ricette suggerite in Casa. */
+var CASA_SUGGESTION_CATEGORIES = {
+  expiring: 'Per ingredienti in scadenza',
+  weather:  'In base al meteo',
+  weatherAi: 'In base al meteo (suggerita dall\'AI)'
 };
 
 /**
- * Ricetta suggerita per il pasto (solo da database utente): scadenza, disponibilità, bonus meteo.
- * Ritorna { recipe, weatherScore, candidateNames, reason } per UI e AI ultima spiaggia.
+ * Due ricette suggerite per il pasto: 1) per scadenza, 2) per meteo (con eventuale AI).
+ * Ritorna { expiring: { recipe, hasExpiring }, weather: { recipe, isAi }, candidateNames, needAiFallback }.
  */
-function getCasaSuggestedRecipe(mealKey, weatherContext, aiOverrideRecipe) {
-  if (!mealKey) return { recipe: null, weatherScore: 0, candidateNames: [], reason: null };
-  if (aiOverrideRecipe) return { recipe: aiOverrideRecipe, weatherScore: 1, candidateNames: [], reason: 'ai' };
+function getCasaSuggestedRecipes(mealKey, weatherContext, aiOverrideRecipe) {
+  var empty = { expiring: { recipe: null, hasExpiring: false }, weather: { recipe: null, isAi: false }, candidateNames: [], needAiFallback: false };
+  if (!mealKey) return empty;
+
   var all = (typeof getAllRicette === 'function') ? getAllRicette() : [];
   var forMeal = all.filter(function(r) {
     var pasto = r.pasto;
     var pasti = Array.isArray(pasto) ? pasto : (pasto ? [pasto] : []);
     return pasti.indexOf(mealKey) !== -1;
   });
-  if (!forMeal.length) return { recipe: null, weatherScore: 0, candidateNames: [], reason: null };
+  if (!forMeal.length) return empty;
 
   var expiring = (typeof getExpiringSoon === 'function') ? getExpiringSoon(14) : [];
   var expiringNames = expiring.map(function(e) { return (e.name || '').trim().toLowerCase(); });
@@ -134,25 +134,44 @@ function getCasaSuggestedRecipe(mealKey, weatherContext, aiOverrideRecipe) {
     return { recipe: r, expiringCount: exp, avail: avail, weatherBonus: wBonus };
   });
 
-  scored.sort(function(a, b) {
+  var byExpiring = scored.slice().sort(function(a, b) {
     if (b.expiringCount !== a.expiringCount) return b.expiringCount - a.expiringCount;
     if (b.weatherBonus !== a.weatherBonus) return b.weatherBonus - a.weatherBonus;
     return b.avail - a.avail;
   });
+  var byWeather = scored.slice().sort(function(a, b) {
+    if (b.weatherBonus !== a.weatherBonus) return b.weatherBonus - a.weatherBonus;
+    if (b.expiringCount !== a.expiringCount) return b.expiringCount - a.expiringCount;
+    return b.avail - a.avail;
+  });
 
-  var best = scored[0];
-  var candidateNames = forMeal.map(function(r) { return r.name || r.nome || ''; }).filter(Boolean);
-  var reason = null;
-  if (best) {
-    if (best.expiringCount > 0) reason = 'expiring';
-    else if (best.weatherBonus > 0) reason = 'weather';
-    else reason = 'availability';
+  var expiringBest = byExpiring[0];
+  var expiringRecipe = expiringBest ? expiringBest.recipe : null;
+  var hasExpiring = expiringBest ? expiringBest.expiringCount > 0 : false;
+
+  var weatherRecipe = null;
+  var weatherIsAi = false;
+  var bestWeatherBonus = byWeather[0] ? byWeather[0].weatherBonus : 0;
+
+  if (aiOverrideRecipe) {
+    weatherRecipe = aiOverrideRecipe;
+    weatherIsAi = true;
+  } else {
+    for (var i = 0; i < byWeather.length; i++) {
+      var w = byWeather[i];
+      if (w.recipe !== expiringRecipe) { weatherRecipe = w.recipe; break; }
+    }
+    if (!weatherRecipe && byWeather.length) weatherRecipe = byWeather[0].recipe;
   }
+
+  var candidateNames = forMeal.map(function(r) { return r.name || r.nome || ''; }).filter(Boolean);
+  var needAiFallback = !!(weatherContext && weatherContext.type !== 'neutral' && bestWeatherBonus === 0 && candidateNames.length > 1 && !aiOverrideRecipe);
+
   return {
-    recipe: best ? best.recipe : null,
-    weatherScore: best ? best.weatherBonus : 0,
+    expiring: { recipe: expiringRecipe, hasExpiring: hasExpiring },
+    weather: { recipe: weatherRecipe, isAi: weatherIsAi },
     candidateNames: candidateNames,
-    reason: reason
+    needAiFallback: needAiFallback
   };
 }
 
@@ -175,8 +194,7 @@ function renderCasa(force) {
 
   var weather = _casaWeatherState && _casaWeatherState.data ? _casaWeatherState.data : null;
   var weatherContext = (typeof getWeatherSuggestionContext === 'function') ? getWeatherSuggestionContext(weather) : null;
-  var suggestionResult = getCasaSuggestedRecipe(suggested || 'colazione', weatherContext, _casaAISuggestedRecipe);
-  var suggestedRecipe = suggestionResult.recipe;
+  var suggestions = getCasaSuggestedRecipes(suggested || 'colazione', weatherContext, _casaAISuggestedRecipe);
 
   var label = suggested ? CASA_MEAL_LABELS[suggested] : '';
   var msg = '';
@@ -229,21 +247,36 @@ function renderCasa(force) {
   var pctBar = totalMeals ? Math.round((consumedCount / totalMeals) * 100) : 0;
 
   var recipeBlock = '';
-  if (suggestedRecipe && typeof buildCard === 'function') {
-    var reasonKey = suggestionResult.reason;
-    var reasonLabel = reasonKey ? (CASA_SUGGESTION_REASONS[reasonKey] || '') : '';
-    var reasonHtml = reasonLabel ? ('<p class="casa-recipe-suggestion-reason">' + escapeHtml(reasonLabel) + '</p>') : '';
-    recipeBlock =
-      '<div class="casa-recipe-section">' +
-        '<div class="casa-recipe-section-title">📖 Ricetta consigliata per ' + escapeHtml(label || 'questo pasto') + '</div>' +
-        reasonHtml +
-        '<div class="casa-recipe-card-wrap">' + buildCard(suggestedRecipe) + '</div>' +
+  if (typeof buildCard === 'function') {
+    var sectionTitle = '📖 Ricette consigliate per ' + (label || 'questo pasto');
+    var part1 = '';
+    var part2 = '';
+    if (suggestions.expiring.recipe) {
+      part1 =
+        '<div class="casa-recipe-section">' +
+          '<div class="casa-recipe-category">' + escapeHtml(CASA_SUGGESTION_CATEGORIES.expiring) + '</div>' +
+          '<div class="casa-recipe-card-wrap">' + buildCard(suggestions.expiring.recipe) + '</div>' +
+        '</div>';
+    }
+    if (suggestions.weather.recipe) {
+      var weatherCategory = suggestions.weather.isAi ? CASA_SUGGESTION_CATEGORIES.weatherAi : CASA_SUGGESTION_CATEGORIES.weather;
+      part2 =
+        '<div class="casa-recipe-section">' +
+          '<div class="casa-recipe-category">' + escapeHtml(weatherCategory) + '</div>' +
+          '<div class="casa-recipe-card-wrap">' + buildCard(suggestions.weather.recipe) + '</div>' +
+        '</div>';
+    }
+    if (part1 || part2) {
+      recipeBlock = '<div class="casa-recipe-sections">' +
+        '<div class="casa-recipe-section-title">' + escapeHtml(sectionTitle) + '</div>' +
+        part1 + part2 +
       '</div>';
+    }
   }
 
   /* AI ultima spiaggia: se nessun bonus meteo e ci sono candidate, chiedi a Gemini (una volta) */
-  if (weatherContext && suggestionResult.weatherScore === 0 && suggestionResult.candidateNames.length > 1 && typeof suggestRecipeByWeather === 'function' && !_casaAISuggestedRecipe) {
-    suggestRecipeByWeather(suggestionResult.candidateNames, weatherContext.type, function (err, recipeName) {
+  if (suggestions.needAiFallback && typeof suggestRecipeByWeather === 'function' && !_casaAISuggestedRecipe) {
+    suggestRecipeByWeather(suggestions.candidateNames, weatherContext.type, function (err, recipeName) {
       if (err || !recipeName) return;
       var all = (typeof getAllRicette === 'function') ? getAllRicette() : [];
       var found = all.find(function (r) { return (r.name || r.nome || '') === recipeName; });

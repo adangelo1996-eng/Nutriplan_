@@ -2490,9 +2490,12 @@ body.app-visible .bottom-nav .nav-tab-casa.active::after {
 .casa-suggestion-msg { font-size: 1rem; margin-bottom: 6px; color: var(--text-2); }
 .casa-suggestion-sub { font-size: .88rem; color: var(--text-light); margin-bottom: 18px; }
 
-.casa-recipe-section { margin-top: 20px; }
-.casa-recipe-section-title { font-size: .9rem; font-weight: 700; color: var(--text-2); margin-bottom: 12px; }
-.casa-recipe-suggestion-reason { font-size: .8rem; color: var(--text-3, #666); margin: -6px 0 10px 0; }
+.casa-recipe-sections { margin-top: 20px; }
+.casa-recipe-section-title { font-size: .9rem; font-weight: 700; color: var(--text-2); margin-bottom: 14px; }
+.casa-recipe-section { margin-bottom: 18px; }
+.casa-recipe-section:last-child { margin-bottom: 0; }
+.casa-recipe-category { font-size: .8rem; font-weight: 600; color: var(--text-3, #666); margin-bottom: 8px; }
+.casa-recipe-card-wrap { margin-top: 0; }
 .casa-recipe-card-wrap { max-width: 320px; }
 .casa-recipe-card-wrap .rc-card { cursor: pointer; }
 
