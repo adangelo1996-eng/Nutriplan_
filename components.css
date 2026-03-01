@@ -863,6 +863,29 @@ body.app-visible .page .rc-ing-qty  { color: rgba(13,34,24,.78); }
 #appConfirmModal {
   z-index: 750;
 }
+/* Specchietto conferma: altezza limitata e pulsanti sempre visibili su mobile */
+#appConfirmModal .app-confirm-box {
+  max-height: min(85vh, 520px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#appConfirmModal .modal-body {
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+#appConfirmModal .modal-footer {
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#appConfirmModal .modal-footer .btn {
+  min-height: 44px;
+  padding: 10px 16px;
+  font-size: 0.95em;
+}
 
 /* Modali in app: stesso stile del resto dell'app (tema coerente) */
 body.app-visible .modal.active {

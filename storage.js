@@ -269,7 +269,12 @@ function syncToCloud(immediate) {
         }
       })
       .then(function ()  { showCloudStatus('synced'); })
-      .catch(function () { showCloudStatus('error');  });
+      .catch(function (err) {
+        showCloudStatus('error');
+        if (householdId && err && (err.code === 'PERMISSION_DENIED' || err.message)) {
+          console.warn('[Storage] Sync household fallito:', err.code || err.message);
+        }
+      });
   }
   if (immediate) doSync();
   else syncTimeout = setTimeout(doSync, 1500);
