@@ -310,6 +310,9 @@ function syncToCloud(immediate) {
           lastActivity: lastActivity
         };
         Object.keys(pantryUpdates).forEach(function (path) { updatePayload[path] = pantryUpdates[path]; });
+        // #region agent log
+        fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'19a33b'},body:JSON.stringify({sessionId:'19a33b',location:'storage.js:doSync',message:'doSync household update',data:{hid:hid,pantryPathsCount:Object.keys(pantryUpdates).length},hypothesisId:'H3',timestamp:Date.now()})}).catch(function(){});
+        // #endregion
         return firebase.database()
           .ref('households/' + hid)
           .update(updatePayload)
