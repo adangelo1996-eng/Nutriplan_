@@ -450,6 +450,11 @@ function renderFridge(targetId) {
   var deficitByCat = !targetId ? getDeficitByCategory() : {};
 
   var html = '';
+  if (typeof householdId !== 'undefined' && householdId) {
+    html += '<div class="fi-shared-badge" style="display:flex;align-items:center;gap:6px;padding:8px 12px;margin-bottom:12px;background:var(--primary-xl);border:1px solid var(--primary-mid);border-radius:var(--r-md);font-size:.85em;color:var(--primary);font-weight:600;">' +
+      '🏠 Dispensa condivisa' +
+    '</div>';
+  }
   allCats.forEach(function(cat) {
     if (cat === '🧂 Altro') return;
     if (cat === '🥩 Carne e Pesce' && (groups['🥩 Carne'] || groups['🐟 Pesce'] || !groups[cat])) return;

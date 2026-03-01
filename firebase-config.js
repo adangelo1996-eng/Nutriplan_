@@ -92,7 +92,14 @@ function initFirebase() {
         showCloudStatus('saving');
         updateAuthUI(user);
         if (typeof renderProfilo === 'function')  renderProfilo();
-        if (typeof loadFromCloud === 'function')  loadFromCloud(user.uid);
+        if (typeof loadFromCloud === 'function') {
+          var p = loadFromCloud(user.uid);
+          if (p && typeof p.then === 'function') {
+            p.then(function () {
+              if (typeof tryProcessJoinLink === 'function') tryProcessJoinLink();
+            });
+          }
+        }
 
         /* Accesso rilevato: NON entrare automaticamente; resta sulla homepage con le card di selezione.
            Se l'utente ha fatto login esplicitamente (es. click su Google), enterApp() viene chiamata

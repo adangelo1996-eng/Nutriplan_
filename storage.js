@@ -19,6 +19,7 @@ var pianoAlimentare   = {};   /* piano strutturato per categoria ingrediente */
 var weeklyLimitsCustom = {};  /* limiti personalizzati nel piano alimentare */
 var preferiti         = [];   /* nomi ricette preferite */
 var dietProfile       = {};   /* vincoli dieta: { vegetariano, vegano, senzaLattosio, senzaGlutine, allergenici:[] } */
+var householdId       = null; /* id casa condivisa: se impostato, dispensa e spesa si leggono/scrivono da households/{hid} */
 
 function isReadOnlyMode() {
   return typeof window !== 'undefined' && window.NP_READONLY;
@@ -149,6 +150,10 @@ function applyLoadedData(data) {
     preferiti = data.preferiti;
   if (data.dietProfile && typeof data.dietProfile === 'object')
     dietProfile = data.dietProfile;
+  if (data.householdId && typeof data.householdId === 'string' && data.householdId.trim())
+    householdId = data.householdId.trim();
+  else
+    householdId = null;
 }
 
 function buildSaveObject() {
@@ -156,7 +161,7 @@ function buildSaveObject() {
   Object.keys(weeklyLimits || {}).forEach(function (k) {
     limitsToSave[k] = { current: weeklyLimits[k].current || 0 };
   });
-  return {
+  var obj = {
     pantryItems:        pantryItems,
     savedFridges:       savedFridges,
     appHistory:         appHistory,
@@ -169,8 +174,21 @@ function buildSaveObject() {
     pianoAlimentare:    pianoAlimentare,
     weeklyLimitsCustom: weeklyLimitsCustom,
     preferiti:          preferiti,
-    dietProfile:        dietProfile
+    dietProfile:        dietProfile,
+    householdId:        householdId || null
   };
+  return obj;
+}
+
+/* Per sync cloud: se l'utente è in una casa, il blob utente non include dispensa/spesa (stanno in households). */
+function buildUserSaveObject() {
+  var full = buildSaveObject();
+  if (householdId) {
+    full.pantryItems = {};
+    full.spesaItems = [];
+    full.spesaLastGenerated = null;
+  }
+  return full;
 }
 
 function saveData() {
@@ -189,6 +207,32 @@ function saveData() {
 }
 
 /* ============================================================
+   HOUSEHOLD (dispensa e spesa condivise)
+   ============================================================ */
+function loadHouseholdData(hid) {
+  if (!hid || !firebaseReady) return Promise.resolve();
+  return firebase.database()
+    .ref('households/' + hid)
+    .once('value')
+    .then(function (snap) {
+      var h = snap.val();
+      if (!h) return;
+      if (h.pantryItems && typeof h.pantryItems === 'object') {
+        pantryItems = h.pantryItems;
+        Object.keys(pantryItems).forEach(function (k) {
+          if (!k || k === 'undefined' || k === 'null' || k.trim() === '') delete pantryItems[k];
+        });
+      }
+      if (Array.isArray(h.spesaItems)) spesaItems = h.spesaItems;
+      if (h.spesaLastGenerated != null) spesaLastGenerated = h.spesaLastGenerated;
+      console.log('[Storage] Dati casa caricati:', hid);
+    })
+    .catch(function (e) {
+      console.warn('[Storage] Errore caricamento casa:', e);
+    });
+}
+
+/* ============================================================
    FIREBASE SYNC
    ============================================================ */
 var syncTimeout = null;
@@ -198,9 +242,21 @@ function syncToCloud() {
   showCloudStatus('saving');
   clearTimeout(syncTimeout);
   syncTimeout = setTimeout(function () {
+    var userBlob = buildUserSaveObject();
     firebase.database()
       .ref('users/' + currentUser.uid + '/nutriplan')
-      .set(buildSaveObject())
+      .set(userBlob)
+      .then(function () {
+        if (householdId) {
+          return firebase.database()
+            .ref('households/' + householdId)
+            .update({
+              pantryItems: pantryItems,
+              spesaItems: spesaItems,
+              spesaLastGenerated: spesaLastGenerated
+            });
+        }
+      })
       .then(function ()  { showCloudStatus('synced'); })
       .catch(function () { showCloudStatus('error');  });
   }, 1500);
@@ -211,7 +267,7 @@ function loadFromCloud(uid) {
   
   console.log('[Storage] Caricamento da Firebase per uid:', uid);
   
-  firebase.database()
+  return firebase.database()
     .ref('users/' + uid + '/nutriplan')
     .once('value')
     .then(function (snap) {
@@ -221,6 +277,12 @@ function loadFromCloud(uid) {
         console.log('[Storage] Dati trovati su Firebase, applico...');
         applyLoadedData(data);
         ensurePlanStructure();
+        /* Se in una casa, carica dispensa e spesa dalla casa */
+        if (data.householdId && typeof data.householdId === 'string' && data.householdId.trim()) {
+          return loadHouseholdData(data.householdId.trim()).then(function () {
+            return null;
+          });
+        }
       } else {
         console.log('[Storage] Firebase vuoto, preservo dati locali esistenti');
         /* Firebase vuoto: primo login.
@@ -252,13 +314,18 @@ function loadFromCloud(uid) {
         syncToCloud();
       }
 
+      return null;
+    })
+    .then(function () {
       /* Se il piano ha ingredienti, nascondi onboarding; altrimenti mostra scelta iniziale (utente loggato) */
       if (typeof hideOnboardingIfPlanExists === 'function') hideOnboardingIfPlanExists();
       if (typeof checkOnboarding === 'function') checkOnboarding();
 
+      if (householdId && typeof startHouseholdRealtimeListener === 'function') startHouseholdRealtimeListener();
       refreshAllAppViews();
       if (typeof currentPage !== 'undefined' && currentPage === 'casa' && typeof renderCasa === 'function') renderCasa();
       showCloudStatus('synced');
+      return null;
     })
     .catch(function (e) {
       console.warn('[Storage] Errore caricamento cloud:', e);

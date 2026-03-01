@@ -227,8 +227,12 @@ function renderSpesa(preserveRecipeSelectorScroll) {
     buildSpesaGeneratePanel();
 
   if (!items.length) {
+    var emptyBadge = (typeof householdId !== 'undefined' && householdId)
+      ? '<div class="fi-shared-badge" style="display:flex;align-items:center;gap:6px;padding:8px 12px;margin-bottom:12px;background:var(--primary-xl);border:1px solid var(--primary-mid);border-radius:var(--r-md);font-size:.85em;color:var(--primary);font-weight:600;">🏠 Lista della spesa condivisa</div>'
+      : '';
     el.innerHTML =
       toolbar +
+      emptyBadge +
       '<div class="rc-empty">' +
         '<div style="font-size:2.5rem;">🛒</div>' +
         '<p>Premi <strong>⚡ Genera</strong> per creare automaticamente la lista dagli ingredienti mancanti nel tuo piano.</p>' +
@@ -253,6 +257,11 @@ function renderSpesa(preserveRecipeSelectorScroll) {
   });
 
   var html = toolbar;
+  if (typeof householdId !== 'undefined' && householdId) {
+    html += '<div class="fi-shared-badge" style="display:flex;align-items:center;gap:6px;padding:8px 12px;margin-bottom:12px;background:var(--primary-xl);border:1px solid var(--primary-mid);border-radius:var(--r-md);font-size:.85em;color:var(--primary);font-weight:600;">' +
+      '🏠 Lista della spesa condivisa' +
+    '</div>';
+  }
   catOrder.forEach(function(cat) {
     var catItems = groups[cat];
     if (!catItems || !catItems.length) return;

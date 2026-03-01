@@ -180,6 +180,53 @@ function dismissInstallBanner() {
 }
 
 /* ══════════════════════════════════════════════════
+   INVITO CASA (join=HID in URL)
+══════════════════════════════════════════════════ */
+function getJoinHidFromUrl() {
+  try {
+    var fromSearch = typeof URLSearchParams !== 'undefined' && location.search
+      ? new URLSearchParams(location.search).get('join') : null;
+    if (fromSearch) return fromSearch;
+    if (location.hash && location.hash.length > 1) {
+      var fromHash = new URLSearchParams(location.hash.slice(1)).get('join');
+      if (fromHash) return fromHash;
+    }
+  } catch (e) {}
+  return null;
+}
+
+function clearJoinFromUrl() {
+  try {
+    var url = new URL(location.href);
+    url.searchParams.delete('join');
+    if (url.searchParams.toString()) url.search = '?' + url.searchParams.toString();
+    else url.search = '';
+    var hash = url.hash;
+    if (hash && hash.indexOf('join=') !== -1) {
+      var params = new URLSearchParams(hash.slice(1));
+      params.delete('join');
+      url.hash = params.toString() ? '#' + params.toString() : '';
+    }
+    if (history.replaceState) history.replaceState(null, '', url.pathname + url.search + url.hash);
+  } catch (e) {}
+}
+
+function tryProcessJoinLink() {
+  var hid = getJoinHidFromUrl() || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('nutriplan_join') : null);
+  if (!hid || !hid.trim()) return;
+  hid = hid.trim();
+  if (typeof currentUser !== 'undefined' && currentUser && typeof joinHousehold === 'function') {
+    joinHousehold(hid).then(function (ok) {
+      if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('nutriplan_join');
+      clearJoinFromUrl();
+    });
+  } else {
+    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('nutriplan_join', hid);
+    clearJoinFromUrl();
+  }
+}
+
+/* ══════════════════════════════════════════════════
    NAVIGAZIONE PAGINE
 ══════════════════════════════════════════════════ */
 var PAGE_MAP = {
@@ -685,13 +732,18 @@ function showAppAlert(title, message) {
   });
 }
 
-/* Chiudi modali cliccando sfondo */
+/* Chiudi modali cliccando sfondo; salva link invito se non loggato */
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.modal').forEach(function(modal) {
     modal.addEventListener('click', function(e) {
       if (e.target === modal) modal.classList.remove('active');
     });
   });
+  var joinHid = typeof getJoinHidFromUrl === 'function' ? getJoinHidFromUrl() : null;
+  if (joinHid && (typeof currentUser === 'undefined' || !currentUser) && typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem('nutriplan_join', joinHid);
+    if (typeof clearJoinFromUrl === 'function') clearJoinFromUrl();
+  }
 });
 
 /* ══════════════════════════════════════════════════

@@ -11,11 +11,32 @@ function renderProfilo() {
   if (!el) return;
   el.innerHTML =
     buildProfiloUserSection() +
+    buildProfiloHouseholdSection() +
     buildProfiloDietaSection() +
     buildProfiloStoricoSection() +
     buildProfiloSettingsSection();
   /* Render storico nell'apposito contenitore */
   if (typeof renderStorico === 'function') renderStorico('profiloStoricoContent');
+  /* Carica membri casa se in una casa */
+  if (typeof householdId !== 'undefined' && householdId && typeof getHouseholdMembers === 'function') {
+    getHouseholdMembers(householdId).then(function (members) {
+      var listEl = document.getElementById('householdMembersList');
+      if (!listEl) return;
+      if (!members || Object.keys(members).length === 0) {
+        listEl.innerHTML = '<p style="font-size:.85em;color:var(--text-3);">Nessun membro</p>';
+        return;
+      }
+      listEl.innerHTML = Object.keys(members).map(function (uid) {
+        var m = members[uid];
+        var name = (m && m.displayName) || m.email || uid.slice(0, 8);
+        var role = (m && m.role) === 'owner' ? ' (creatore)' : '';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:.9em;">' +
+          '<span style="width:28px;text-align:center;">👤</span>' +
+          '<span>' + String(name).replace(/</g, '&lt;') + role + '</span>' +
+        '</div>';
+      }).join('');
+    });
+  }
 }
 
 /* ══════════════════════════════════════════════
@@ -138,6 +159,130 @@ function buildProfiloUserSection() {
       '</div>' +
     '</div>'
   );
+}
+
+/* ══════════════════════════════════════════════
+   SEZIONE CASA CONDIVISA (dispensa e spesa)
+══════════════════════════════════════════════ */
+function buildProfiloHouseholdSection() {
+  var user = (typeof currentUser !== 'undefined') ? currentUser : null;
+  if (!user) return '';
+
+  var hid = (typeof householdId !== 'undefined') ? householdId : null;
+  if (hid) {
+    return (
+      '<div class="rc-card settings-section" style="margin-bottom:16px;">' +
+        '<div class="settings-section-title">🏠 Casa condivisa</div>' +
+        '<div style="padding:12px 16px;">' +
+          '<p style="font-size:.9em;color:var(--text-2);margin-bottom:12px;">Dispensa e lista della spesa sono condivise con i membri della casa.</p>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">' +
+            '<button class="rc-btn rc-btn-primary" onclick="copyHouseholdInviteLink()">📋 Copia link invito</button>' +
+            '<button class="rc-btn rc-btn-outline" onclick="confirmLeaveHousehold()">🚪 Esci da casa</button>' +
+          '</div>' +
+          '<div style="font-size:.85em;font-weight:600;color:var(--text-2);margin-bottom:6px;">Membri</div>' +
+          '<div id="householdMembersList" style="min-height:24px;">Caricamento...</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  return (
+    '<div class="rc-card settings-section" style="margin-bottom:16px;">' +
+      '<div class="settings-section-title">🏠 Casa condivisa</div>' +
+      '<div style="padding:12px 16px;">' +
+        '<p style="font-size:.9em;color:var(--text-2);margin-bottom:12px;">Condividi dispensa e lista della spesa con familiari o coinquilini. Crea una casa o unisciti con un link.</p>' +
+        '<button class="rc-btn rc-btn-primary" style="width:100%;margin-bottom:12px;" onclick="createHouseholdAndShowLink()">➕ Crea una casa</button>' +
+        '<div style="display:flex;gap:8px;margin-top:8px;">' +
+          '<input type="text" id="householdJoinInput" placeholder="Incolla il link invito" ' +
+                 'style="flex:1;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);font-size:.9em;color:var(--text-1);">' +
+          '<button class="rc-btn rc-btn-outline" onclick="joinHouseholdFromInput()">Unisciti</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function parseJoinInput(val) {
+  if (!val || typeof val !== 'string') return null;
+  var trimmed = val.trim();
+  if (!trimmed) return null;
+  try {
+    if (trimmed.indexOf('http') === 0 || trimmed.indexOf('?') !== -1) {
+      var url = new URL(trimmed.indexOf('http') === 0 ? trimmed : (location.origin + (location.pathname || '/') + (trimmed.indexOf('?') === 0 ? trimmed : '?' + trimmed)));
+      var join = url.searchParams.get('join');
+      if (join) return join;
+    }
+  } catch (e) {}
+  return trimmed;
+}
+
+function joinHouseholdFromInput() {
+  var inp = document.getElementById('householdJoinInput');
+  if (!inp) return;
+  var hid = parseJoinInput(inp.value);
+  if (!hid) {
+    if (typeof showToast === 'function') showToast('Incolla il link invito o l\'id della casa', 'warning');
+    return;
+  }
+  if (typeof joinHousehold === 'function') {
+    joinHousehold(hid).then(function (ok) {
+      if (ok && inp) inp.value = '';
+    });
+  }
+}
+
+function createHouseholdAndShowLink() {
+  if (typeof createHousehold !== 'function') return;
+  createHousehold().then(function (hid) {
+    if (hid && typeof renderProfilo === 'function') renderProfilo();
+  });
+}
+
+function copyHouseholdInviteLink() {
+  if (!householdId || typeof getHouseholdInviteLink !== 'function') return;
+  var link = getHouseholdInviteLink(householdId);
+  if (!link) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).then(function () {
+      if (typeof showToast === 'function') showToast('Link copiato negli appunti', 'success');
+    }).catch(function () {
+      fallbackCopyLink(link);
+    });
+  } else {
+    fallbackCopyLink(link);
+  }
+}
+
+function fallbackCopyLink(link) {
+  var ta = document.createElement('textarea');
+  ta.value = link;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    if (typeof showToast === 'function') showToast('Link copiato negli appunti', 'success');
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('Copia il link manualmente', 'info');
+  }
+  document.body.removeChild(ta);
+}
+
+function confirmLeaveHousehold() {
+  if (typeof showAppConfirm === 'function') {
+    showAppConfirm({
+      title: 'Esci da casa',
+      message: 'Dispensa e spesa torneranno personali. I dati attuali resteranno sul tuo profilo.',
+      primaryText: 'Esci',
+      secondaryText: 'Annulla',
+      primaryAction: function () {
+        if (typeof leaveHousehold === 'function') leaveHousehold();
+      }
+    });
+  } else if (confirm('Esci dalla casa? Dispensa e spesa torneranno personali.')) {
+    if (typeof leaveHousehold === 'function') leaveHousehold();
+  }
 }
 
 /* ══════════════════════════════════════════════
@@ -597,6 +742,8 @@ function executeDeleteAllData() {
   if (typeof appHistory           !== 'undefined') appHistory           = {};
   if (typeof spesaItems           !== 'undefined') spesaItems           = [];
   if (typeof pianoAlimentare      !== 'undefined') pianoAlimentare      = {};
+  if (typeof householdId         !== 'undefined') householdId          = null;
+  if (typeof stopHouseholdRealtimeListener === 'function') stopHouseholdRealtimeListener();
   if (typeof weeklyLimitsCustom   !== 'undefined') weeklyLimitsCustom   = {};
   if (typeof customRecipes        !== 'undefined') customRecipes        = [];
   if (typeof customIngredients    !== 'undefined') customIngredients    = [];
