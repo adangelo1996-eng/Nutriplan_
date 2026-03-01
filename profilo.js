@@ -257,38 +257,106 @@ function createHouseholdAndShowLink() {
   })();
 }
 
-function askOptionalHouseholdNameAndPassword(hid) {
-  if (!hid || typeof setHouseholdJoinCredentials !== 'function') return;
-  var msg = 'Vuoi poter accedere a questa casa anche con un nome e una password? Chi conosce nome e password potrà unirsi senza usare il link.';
-  if (typeof showAppConfirm === 'function') {
-    showAppConfirm({
-      title: 'Accesso con nome e password (opzionale)',
-      message: msg,
-      primaryText: 'Sì, imposta nome e password',
-      secondaryText: 'Salta',
-      primaryAction: function () {
-        var name = (typeof prompt === 'function' && prompt('Nome della casa (es. Casa Rossi):')) || '';
-        if (!name || !name.trim()) return;
-        var password = (typeof prompt === 'function' && prompt('Password per l\'accesso (la condividerai con chi deve entrare):')) || '';
-        if (!password || !password.trim()) {
-          if (typeof showToast === 'function') showToast('Nome e password non impostati.', 'info');
+var _householdNamePasswordHid = null;
+
+function openHouseholdNamePasswordModal(hid) {
+  if (!hid) return;
+  _householdNamePasswordHid = hid;
+  var nameIn = document.getElementById('householdNameInput');
+  var codeIn = document.getElementById('householdCodeInput');
+  if (nameIn) nameIn.value = 'La nostra casa';
+  if (codeIn) codeIn.value = '';
+  var m = document.getElementById('householdNamePasswordModal');
+  if (m) m.classList.add('active');
+  var impostaBtn = document.getElementById('householdNamePasswordImpostaBtn');
+  if (impostaBtn) {
+    impostaBtn.onclick = function () {
+      var n = nameIn ? nameIn.value.trim() : '';
+      var code = codeIn ? codeIn.value.trim() : '';
+      if (!n) {
+        if (typeof showToast === 'function') showToast('Inserisci il nome della casa.', 'warning');
+        return;
+      }
+      if (!code) {
+        if (typeof showToast === 'function') showToast('Clicca Genera per creare un codice accesso.', 'warning');
+        return;
+      }
+      if (typeof setHouseholdJoinCredentials === 'function') {
+        setHouseholdJoinCredentials(_householdNamePasswordHid, n, code).then(function () {
+          closeHouseholdNamePasswordModal();
+          if (typeof showToast === 'function') showToast('Nome e codice salvati. Puoi accedere dalla pagina Casa.', 'success');
+        });
+      }
+    };
+  }
+}
+
+function closeHouseholdNamePasswordModal() {
+  _householdNamePasswordHid = null;
+  var m = document.getElementById('householdNamePasswordModal');
+  if (m) m.classList.remove('active');
+}
+
+function generateHouseholdCode() {
+  var btn = document.getElementById('householdCodeGeneraBtn');
+  var codeIn = document.getElementById('householdCodeInput');
+  if (!codeIn) return;
+  if (typeof hashPasswordForHousehold !== 'function' || typeof firebase === 'undefined' || !firebase.database) {
+    var code = randomHouseholdCode();
+    codeIn.value = code;
+    return;
+  }
+  var origText = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Generazione…'; }
+  function tryGenerate(attempt) {
+    if (attempt > 20) {
+      if (btn) { btn.disabled = false; btn.textContent = origText; }
+      if (typeof showToast === 'function') showToast('Riprova a generare il codice.', 'warning');
+      return;
+    }
+    var code = randomHouseholdCode();
+    hashPasswordForHousehold(code).then(function (hash) {
+      if (!hash) { tryGenerate(attempt + 1); return; }
+      firebase.database().ref('usedCodes/' + hash).once('value').then(function (snap) {
+        if (snap.exists()) {
+          tryGenerate(attempt + 1);
           return;
         }
-        setHouseholdJoinCredentials(hid, name.trim(), password).then(function () {
-          if (typeof showToast === 'function') showToast('Nome e password salvati. Puoi accedere dalla pagina Casa.', 'success');
-        });
+        codeIn.value = code;
+        if (btn) { btn.disabled = false; btn.textContent = origText; }
+      }).catch(function () {
+        tryGenerate(attempt + 1);
+      });
+    }).catch(function () {
+      tryGenerate(attempt + 1);
+    });
+  }
+  tryGenerate(0);
+}
+
+function randomHouseholdCode() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var len = 10;
+  var code = '';
+  for (var i = 0; i < len; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+  return code;
+}
+
+function askOptionalHouseholdNameAndPassword(hid) {
+  if (!hid || typeof setHouseholdJoinCredentials !== 'function') return;
+  var msg = 'Vuoi poter accedere a questa casa anche con un nome e un codice? Chi conosce nome e codice potrà unirsi senza usare il link.';
+  if (typeof showAppConfirm === 'function') {
+    showAppConfirm({
+      title: 'Accesso con nome e codice (opzionale)',
+      message: msg,
+      primaryText: 'Sì, imposta nome e codice',
+      secondaryText: 'Salta',
+      primaryAction: function () {
+        if (typeof openHouseholdNamePasswordModal === 'function') openHouseholdNamePasswordModal(hid);
       }
     });
-  } else if (typeof confirm === 'function' && confirm(msg)) {
-    var name = (typeof prompt === 'function' && prompt('Nome della casa:')) || '';
-    if (name && name.trim()) {
-      var password = (typeof prompt === 'function' && prompt('Password per l\'accesso:')) || '';
-      if (password && password.trim()) {
-        setHouseholdJoinCredentials(hid, name.trim(), password).then(function () {
-          if (typeof showToast === 'function') showToast('Nome e password salvati.', 'success');
-        });
-      }
-    }
+  } else {
+    if (typeof openHouseholdNamePasswordModal === 'function') openHouseholdNamePasswordModal(hid);
   }
 }
 

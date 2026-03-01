@@ -183,13 +183,17 @@ function renderMealItems() {
       '</div>';
   }
 
-  /* ── Pulsante Genera Ricetta AI ── */
+  /* ── Pulsante Genera Ricetta AI e Aggiungi da dispensa ── */
   var aiBtn =
     '<div style="margin-bottom:10px;">' +
       '<button class="ai-recipe-btn" onclick="openAIRecipeModal(\'oggi\')">' +
         'Genera ricetta AI con questi ingredienti' +
         '<span class="ai-powered-label">Powered by Gemini</span>' +
       '</button>' +
+    '</div>';
+  var addFromPantryBtn =
+    '<div style="margin-bottom:12px;">' +
+      '<button type="button" class="btn btn-secondary btn-small" onclick="openAddFromPantryModal()">➕ Aggiungi da dispensa</button>' +
     '</div>';
 
   function buildPianoItemCard(item) {
@@ -279,6 +283,34 @@ function renderMealItems() {
     if (catOrder.indexOf(c) === -1) catOrder.push(c);
   });
 
+  /* ── Sezione "Aggiunti da dispensa" (extraConsumed) ── */
+  var dayData3 = getDayData(selectedDateKey);
+  var extraList = (dayData3.extraConsumed && dayData3.extraConsumed[selectedMeal]) ? dayData3.extraConsumed[selectedMeal] : [];
+  var extraHtml = '';
+  if (Array.isArray(extraList) && extraList.length > 0) {
+    extraHtml =
+      '<details class="fi-group fi-group-collapsible" open style="--gc:#64748b;">' +
+        '<summary class="fi-group-header">' +
+          '<span class="fi-group-icon">\uD83D\uDCE6</span>' +
+          '<span class="fi-group-name">Da dispensa</span>' +
+          '<span class="fi-group-count">' + extraList.length + '</span>' +
+        '</summary>' +
+        '<div class="fi-list">' +
+          extraList.map(function (ex) {
+            var label = ex.name + (ex.quantity && ex.unit ? ' — ' + ex.quantity + ' ' + (ex.unit || 'g') : '');
+            var safeLabel = (typeof escapeHtml === 'function' ? escapeHtml(label) : (label + '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+            return '<div class="rc-card piano-item-card" style="margin-bottom:8px;">' +
+              '<div class="piano-item-row">' +
+                '<div class="piano-item-name-block"><span class="piano-item-name">' + safeLabel + '</span></div>' +
+                '<div class="piano-item-actions">' +
+                  '<button class="rc-btn-icon" title="Rimuovi consumo" onclick="removeExtraConsumed(\'' + escQ(ex.name) + '\')">↩</button>' +
+                '</div>' +
+              '</div></div>';
+          }).join('') +
+        '</div>' +
+      '</details>';
+  }
+
   var listHtml = '';
   catOrder.forEach(function(cat) {
     if (cat === '🥩 Carne e Pesce' && (groups['🥩 Carne'] || groups['🐟 Pesce'])) return;
@@ -288,7 +320,7 @@ function renderMealItems() {
     var icon  = (typeof getCategoryIcon === 'function') ? getCategoryIcon(cat) : '🧂';
     var catName = (cat && cat.replace) ? cat.replace(/^[^\s]+\s/, '') : cat;
     listHtml +=
-      '<details class="fi-group fi-group-collapsible" style="--gc:' + color + ';">' +
+      '<details class="fi-group fi-group-collapsible" open style="--gc:' + color + ';">' +
         '<summary class="fi-group-header">' +
           '<span class="fi-group-icon">' + icon + '</span>' +
           '<span class="fi-group-name">' + catName + '</span>' +
@@ -300,7 +332,7 @@ function renderMealItems() {
       '</details>';
   });
 
-  el.innerHTML = consumedHtml + aiBtn + listHtml;
+  el.innerHTML = consumedHtml + aiBtn + addFromPantryBtn + (extraHtml ? extraHtml + '<div style="margin-top:12px;"></div>' : '') + listHtml;
 }
 
 /* ── USED / SUBSTITUTE ── */
@@ -318,6 +350,18 @@ function toggleUsedItem(name) {
   var isToday = selectedDateKey === todayKey;
   
   if (cur) {
+    /* Annullando il consumo: ripristina la quantità in dispensa (solo oggi) */
+    if (isToday && typeof pantryItems !== 'undefined' && pantryItems) {
+      var subsUnmark = day.substitutions && day.substitutions[selectedMeal] && day.substitutions[selectedMeal][name];
+      var consumedUnmark = subsUnmark || name;
+      if (pantryItems[consumedUnmark]) {
+        var itemUnmark = getMealItems(selectedMeal).find(function(i){ return i.name === name; });
+        if (itemUnmark && itemUnmark.quantity) {
+          var q = parseFloat(itemUnmark.quantity) || 0;
+          pantryItems[consumedUnmark].quantity = (pantryItems[consumedUnmark].quantity || 0) + q;
+        }
+      }
+    }
     delete day.usedItems[selectedMeal][name];
   } else {
     day.usedItems[selectedMeal][name] = true;
@@ -533,6 +577,136 @@ function renderPianoRicette() {
 
 function escQ(str) {
   return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+var _addFromPantrySelected = null; /* { name, available, unit } */
+
+function openAddFromPantryModal() {
+  if (!selectedDateKey || !selectedMeal) return;
+  _addFromPantrySelected = null;
+  var listEl = document.getElementById('addFromPantryList');
+  var qtyStep = document.getElementById('addFromPantryQtyStep');
+  var confirmBtn = document.getElementById('addFromPantryConfirmBtn');
+  if (qtyStep) qtyStep.style.display = 'none';
+  if (confirmBtn) confirmBtn.style.display = 'none';
+  if (!listEl) return;
+  var available = [];
+  if (typeof pantryItems !== 'undefined' && pantryItems) {
+    Object.keys(pantryItems).forEach(function (k) {
+      if (!k || !pantryItems[k]) return;
+      var q = pantryItems[k].quantity;
+      if (q == null || (typeof q === 'number' && q <= 0)) return;
+      available.push({
+        name: k,
+        quantity: parseFloat(q) || 0,
+        unit: (pantryItems[k].unit || 'g').trim()
+      });
+    });
+  }
+  if (!available.length) {
+    listEl.innerHTML = '<p style="color:var(--text-3);font-size:.9em;">Nessun ingrediente in dispensa con quantità &gt; 0.</p>';
+  } else {
+    listEl.innerHTML = available.map(function (a) {
+      var lab = a.name + ' — ' + a.quantity + ' ' + (a.unit || 'g');
+      return '<button type="button" class="rc-card" style="display:block;width:100%;text-align:left;padding:12px 14px;margin-bottom:6px;cursor:pointer;border:1.5px solid var(--border);" onclick="selectAddFromPantryItem(\'' + escQ(a.name) + '\', ' + parseFloat(a.quantity) + ', \'' + escQ(a.unit || 'g') + '\')">' + (typeof escapeHtml === 'function' ? escapeHtml(lab) : lab.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')) + '</button>';
+    }).join('');
+  }
+  var m = document.getElementById('addFromPantryModal');
+  if (m) m.classList.add('active');
+}
+
+function selectAddFromPantryItem(name, available, unit) {
+  _addFromPantrySelected = { name: name, available: available, unit: unit || 'g' };
+  var listEl = document.getElementById('addFromPantryList');
+  var qtyStep = document.getElementById('addFromPantryQtyStep');
+  var qtyInput = document.getElementById('addFromPantryQtyInput');
+  var maxLabel = document.getElementById('addFromPantryMaxLabel');
+  var unitLabel = document.getElementById('addFromPantryUnitLabel');
+  var confirmBtn = document.getElementById('addFromPantryConfirmBtn');
+  if (listEl) listEl.style.display = 'none';
+  if (qtyStep) {
+    qtyStep.style.display = 'block';
+    if (maxLabel) maxLabel.textContent = available;
+    if (unitLabel) unitLabel.textContent = unit || 'g';
+    if (qtyInput) {
+      qtyInput.value = '';
+      qtyInput.max = available;
+      qtyInput.step = 'any';
+      qtyInput.placeholder = '0';
+    }
+  }
+  if (confirmBtn) {
+    confirmBtn.style.display = 'inline-block';
+    confirmBtn.onclick = confirmAddFromPantryConsume;
+  }
+}
+
+function confirmAddFromPantryConsume() {
+  if (!_addFromPantrySelected || !selectedDateKey || !selectedMeal) return;
+  var qtyInput = document.getElementById('addFromPantryQtyInput');
+  var qty = parseFloat(qtyInput && qtyInput.value ? qtyInput.value : 0);
+  var max = _addFromPantrySelected.available;
+  if (isNaN(qty) || qty <= 0) {
+    if (typeof showToast === 'function') showToast('Inserisci una quantità valida.', 'warning');
+    return;
+  }
+  if (qty > max) {
+    if (typeof showToast === 'function') showToast('La quantità non può essere maggiore di ' + max + ' ' + (_addFromPantrySelected.unit || 'g') + '.', 'warning');
+    return;
+  }
+  var day = getDayData(selectedDateKey);
+  if (!day.extraConsumed) day.extraConsumed = {};
+  if (!day.extraConsumed[selectedMeal]) day.extraConsumed[selectedMeal] = [];
+  day.extraConsumed[selectedMeal].push({
+    name: _addFromPantrySelected.name,
+    quantity: qty,
+    unit: _addFromPantrySelected.unit || 'g'
+  });
+  if (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[_addFromPantrySelected.name]) {
+    var cur = parseFloat(pantryItems[_addFromPantrySelected.name].quantity) || 0;
+    pantryItems[_addFromPantrySelected.name].quantity = Math.max(0, cur - qty);
+  }
+  if (typeof saveData === 'function') saveData();
+  closeAddFromPantryModal();
+  if (typeof renderMealItems === 'function') renderMealItems();
+  if (typeof renderMealProgress === 'function') renderMealProgress();
+  if (typeof renderFridge === 'function') renderFridge();
+  if (typeof showToast === 'function') showToast('Consumo aggiunto.', 'success');
+}
+
+function closeAddFromPantryModal() {
+  _addFromPantrySelected = null;
+  var m = document.getElementById('addFromPantryModal');
+  if (m) m.classList.remove('active');
+  var listEl = document.getElementById('addFromPantryList');
+  var qtyStep = document.getElementById('addFromPantryQtyStep');
+  var confirmBtn = document.getElementById('addFromPantryConfirmBtn');
+  if (listEl) listEl.style.display = 'block';
+  if (qtyStep) qtyStep.style.display = 'none';
+  if (confirmBtn) confirmBtn.style.display = 'none';
+}
+
+function removeExtraConsumed(name) {
+  if (!selectedDateKey || !selectedMeal) return;
+  var day = getDayData(selectedDateKey);
+  if (!day.extraConsumed || !day.extraConsumed[selectedMeal]) return;
+  var list = day.extraConsumed[selectedMeal];
+  var idx = -1;
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].name === name) { idx = i; break; }
+  }
+  if (idx === -1) return;
+  var ex = list[idx];
+  list.splice(idx, 1);
+  if (pantryItems && pantryItems[name]) {
+    var cur = parseFloat(pantryItems[name].quantity) || 0;
+    pantryItems[name].quantity = cur + (parseFloat(ex.quantity) || 0);
+  }
+  if (typeof saveData === 'function') saveData();
+  if (typeof renderMealItems === 'function') renderMealItems();
+  if (typeof renderMealProgress === 'function') renderMealProgress();
+  if (typeof renderFridge === 'function') renderFridge();
+  if (typeof showToast === 'function') showToast('Consumo rimosso.', 'info');
 }
 
 /* ── MISSING ALERT ── */

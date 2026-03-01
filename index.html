@@ -1255,6 +1255,61 @@
   </div>
 </div>
 
+<!-- Modale: aggiungi da dispensa (Oggi) -->
+<div class="modal" id="addFromPantryModal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="addFromPantryTitle">➕ Aggiungi da dispensa</h2>
+      <button type="button" class="modal-close" onclick="closeAddFromPantryModal()" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="modal-body" id="addFromPantryBody">
+      <p style="font-size:.9em;color:var(--text-2);margin-bottom:10px;">Scegli un ingrediente e indica la quantità da consumare.</p>
+      <div id="addFromPantryList" style="max-height:50vh;overflow-y:auto;"></div>
+      <div id="addFromPantryQtyStep" style="display:none;">
+        <p style="font-size:.9em;margin-bottom:8px;">Quantità da consumare (max <span id="addFromPantryMaxLabel">0</span>)</p>
+        <input type="number" id="addFromPantryQtyInput" min="0" step="any" placeholder="0" style="width:100%;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);font-size:1em;">
+        <span id="addFromPantryUnitLabel" style="margin-left:8px;color:var(--text-2);">g</span>
+      </div>
+    </div>
+    <div class="modal-footer" id="addFromPantryFooter">
+      <button type="button" class="btn btn-secondary" onclick="closeAddFromPantryModal()">Annulla</button>
+      <button type="button" class="btn btn-primary" id="addFromPantryConfirmBtn" style="display:none;">Aggiungi consumo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale: nome e codice accesso casa (dopo creazione) -->
+<div class="modal" id="householdNamePasswordModal">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title">Nome e codice accesso casa (opzionale)</h2>
+      <button type="button" class="modal-close" onclick="closeHouseholdNamePasswordModal()" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.9em;color:var(--text-2);margin-bottom:12px;">Chi conosce nome e codice potrà unirsi alla casa senza usare il link.</p>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:.85em;font-weight:600;margin-bottom:4px;">Nome della casa</label>
+        <input type="text" id="householdNameInput" value="La nostra casa" placeholder="La nostra casa"
+               style="width:100%;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);font-size:.95em;">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:.85em;font-weight:600;margin-bottom:4px;">Codice accesso</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="householdCodeInput" placeholder="Clicca Genera per creare un codice" readonly
+                 style="flex:1;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);font-size:.95em;font-family:monospace;">
+          <button type="button" class="btn btn-secondary" id="householdCodeGeneraBtn" onclick="generateHouseholdCode()">Genera</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeHouseholdNamePasswordModal()">Salta</button>
+      <button type="button" class="btn btn-primary" id="householdNamePasswordImpostaBtn">Imposta</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modale: conferma disconnessione -->
 <div class="modal" id="confirmLogoutModal">
   <div class="modal-box" style="max-width:360px;">

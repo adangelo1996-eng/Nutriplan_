@@ -5,9 +5,6 @@
 var _householdRealtimeUnsubscribe = null;
 
 function startHouseholdRealtimeListener() {
-  // #region agent log
-  fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'19a33b'},body:JSON.stringify({sessionId:'19a33b',location:'household.js:startHouseholdRealtimeListener',message:'startHouseholdRealtimeListener entry',data:{householdId:typeof householdId!=='undefined'?householdId:null,alreadySubscribed:!!_householdRealtimeUnsubscribe},hypothesisId:'H1',timestamp:Date.now()})}).catch(function(){});
-  // #endregion
   if (typeof householdId === 'undefined' || !householdId || typeof firebase === 'undefined') return;
   if (_householdRealtimeUnsubscribe) return;
   var ref = firebase.database().ref('households/' + householdId);
@@ -15,7 +12,6 @@ function startHouseholdRealtimeListener() {
     if (!snap || typeof snap.val !== 'function') return;
     var h = snap.val();
     if (!h) return;
-    var keysBefore = h.pantryItems && typeof h.pantryItems === 'object' ? Object.keys(h.pantryItems).length : 0;
     if (h.pantryItems && typeof h.pantryItems === 'object') {
       if (typeof applyHouseholdPantryFromSnapshot === 'function') {
         applyHouseholdPantryFromSnapshot(h.pantryItems);
@@ -27,17 +23,10 @@ function startHouseholdRealtimeListener() {
       }
       if (typeof setLastHouseholdPantrySnapshot === 'function') setLastHouseholdPantrySnapshot(pantryItems);
     }
-    var keysAfter = typeof pantryItems !== 'undefined' && pantryItems ? Object.keys(pantryItems).length : 0;
-    // #region agent log
-    fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'19a33b'},body:JSON.stringify({sessionId:'19a33b',location:'household.js:listener onValue',message:'listener fired',data:{householdId:householdId,keysInSnapshot:keysBefore,keysInPantryAfter:keysAfter},hypothesisId:'H2',timestamp:Date.now()})}).catch(function(){});
-    // #endregion
     if (Array.isArray(h.spesaItems)) spesaItems = h.spesaItems;
     if (h.spesaLastGenerated != null) spesaLastGenerated = h.spesaLastGenerated;
     if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
   });
-  // #region agent log
-  fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'19a33b'},body:JSON.stringify({sessionId:'19a33b',location:'household.js:startHouseholdRealtimeListener',message:'listener subscribed',data:{householdId:householdId},hypothesisId:'H1',timestamp:Date.now()})}).catch(function(){});
-  // #endregion
 }
 
 function stopHouseholdRealtimeListener() {
@@ -113,11 +102,14 @@ function setHouseholdJoinCredentials(hid, name, password) {
   if (!n) return Promise.resolve();
   return hashPasswordForHousehold(password).then(function (passwordHash) {
     if (!passwordHash) return;
-    return firebase.database().ref('householdJoin/' + hid).set({
+    var updates = {};
+    updates['householdJoin/' + hid] = {
       name: n,
       nameLower: n.toLowerCase(),
       passwordHash: passwordHash
-    });
+    };
+    updates['usedCodes/' + passwordHash] = hid;
+    return firebase.database().ref().update(updates);
   }).catch(function (e) {
     console.warn('[Household] setHouseholdJoinCredentials error:', e);
   });
@@ -205,9 +197,7 @@ function createHousehold(includeMyPantry) {
       if (typeof syncToCloud === 'function') syncToCloud(true);
       if (typeof showToast === 'function') showToast('Casa creata. Condividi il link per invitare.', 'success');
       if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
-      // #region agent log
-      fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'19a33b'},body:JSON.stringify({sessionId:'19a33b',location:'household.js:createHousehold then',message:'createHousehold success',data:{hid:hid},hypothesisId:'H1',timestamp:Date.now()})}).catch(function(){});
-      // #endregion
+      if (typeof startHouseholdRealtimeListener === 'function') startHouseholdRealtimeListener();
       return hid;
     })
     .catch(function (e) {
@@ -355,12 +345,22 @@ function leaveHousehold() {
 
 /**
  * Elimina definitivamente la casa da Firebase (solo se chiamato dopo aver verificato di essere l'ultimo membro).
+ * Rimuove anche la voce in usedCodes se la casa aveva nome/codice.
  */
 function deleteHouseholdPermanently(hid) {
   if (!hid || typeof firebase === 'undefined') return Promise.resolve();
   return firebase.database()
-    .ref('households/' + hid)
-    .remove()
+    .ref('householdJoin/' + hid)
+    .once('value')
+    .then(function (snap) {
+      var join = snap.val();
+      var passwordHash = join && join.passwordHash ? join.passwordHash : null;
+      var updates = {};
+      updates['households/' + hid] = null;
+      updates['householdJoin/' + hid] = null;
+      if (passwordHash) updates['usedCodes/' + passwordHash] = null;
+      return firebase.database().ref().update(updates);
+    })
     .then(function () {
       if (householdId === hid) {
         stopHouseholdRealtimeListener();
