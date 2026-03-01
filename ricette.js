@@ -323,11 +323,18 @@ function renderAIRicetteTab() {
 function deleteAIRicetta(idx) {
   if (!Array.isArray(aiRecipes) || !aiRecipes[idx]) return;
   var name = aiRecipes[idx].name || 'questa ricetta';
-  if (!confirm('Eliminare la ricetta AI "' + name + '"?')) return;
-  aiRecipes.splice(idx, 1);
-  if (typeof saveData === 'function') saveData();
-  renderAIRicetteTab();
-  renderRicetteGrid();
+  if (typeof showAppConfirm !== 'function') { aiRecipes.splice(idx, 1); if (typeof saveData === 'function') saveData(); renderAIRicetteTab(); renderRicetteGrid(); return; }
+  showAppConfirm({
+    title: 'Elimina ricetta AI',
+    message: 'Eliminare la ricetta AI "' + name + '"?',
+    primaryText: 'Elimina',
+    primaryAction: function() {
+      aiRecipes.splice(idx, 1);
+      if (typeof saveData === 'function') saveData();
+      renderAIRicetteTab();
+      renderRicetteGrid();
+    }
+  });
 }
 
 function deleteAIRicettaById(id) {
@@ -335,11 +342,18 @@ function deleteAIRicettaById(id) {
   var idx = aiRecipes.findIndex(function(r) { return r.id === id; });
   if (idx === -1) return;
   var name = aiRecipes[idx].name || 'questa ricetta';
-  if (!confirm('Eliminare la ricetta AI "' + name + '"?')) return;
-  aiRecipes.splice(idx, 1);
-  if (typeof saveData === 'function') saveData();
-  renderAIRicetteTab();
-  renderRicetteGrid();
+  if (typeof showAppConfirm !== 'function') { aiRecipes.splice(idx, 1); if (typeof saveData === 'function') saveData(); renderAIRicetteTab(); renderRicetteGrid(); return; }
+  showAppConfirm({
+    title: 'Elimina ricetta AI',
+    message: 'Eliminare la ricetta AI "' + name + '"?',
+    primaryText: 'Elimina',
+    primaryAction: function() {
+      aiRecipes.splice(idx, 1);
+      if (typeof saveData === 'function') saveData();
+      renderAIRicetteTab();
+      renderRicetteGrid();
+    }
+  });
 }
 function findRicetta(name) {
   return getAllRicette().find(function(r){ return (r.name||r.nome||'')===name; })||null;

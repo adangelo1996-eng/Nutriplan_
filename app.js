@@ -386,7 +386,20 @@ function selectDate(dk) {
     if (d < todayD) {
       var hd = (typeof appHistory !== 'undefined' && appHistory && appHistory[dk]) ? appHistory[dk] : {};
       var hasData = Object.keys(hd.usedItems||{}).some(function(m){ return Object.keys((hd.usedItems||{})[m]||{}).length>0; });
-      if (hasData && !confirm('Vuoi modificare i dati di ' + dk + '?\nLe modifiche aggiornano i dati storici.')) return;
+      if (hasData) {
+        showAppConfirm({
+          title: 'Modifica dati',
+          message: 'Vuoi modificare i dati di ' + dk + '?\nLe modifiche aggiornano i dati storici.',
+          primaryText: 'Sì',
+          primaryAction: function() {
+            selectedDateKey = dk;
+            buildCalendarBar();
+            updateDateLabel();
+            if (typeof renderPiano === 'function') renderPiano();
+          }
+        });
+        return;
+      }
     }
   }
   selectedDateKey = dk;
@@ -621,6 +634,55 @@ function closeNewRicettaModal() {
 function closePurchasedQtyModal() {
   var m = document.getElementById('purchasedQtyModal');
   if (m) m.classList.remove('active');
+}
+
+/* ── Modal conferma/avviso in stile app (sostituisce confirm/alert del browser) ── */
+function closeAppConfirmModal() {
+  var m = document.getElementById('appConfirmModal');
+  if (m) m.classList.remove('active');
+}
+
+/**
+ * Mostra un dialog di conferma in stile app.
+ * opts: { title, message, primaryText, primaryAction, secondaryText, secondaryAction }
+ * Se opts.alertMode === true mostra solo il pulsante primary (avviso tipo alert).
+ */
+function showAppConfirm(opts) {
+  if (!opts) return;
+  var titleEl = document.getElementById('appConfirmTitle');
+  var msgEl = document.getElementById('appConfirmMessage');
+  var primaryBtn = document.getElementById('appConfirmPrimaryBtn');
+  var secondaryBtn = document.getElementById('appConfirmSecondaryBtn');
+  var modal = document.getElementById('appConfirmModal');
+  if (!titleEl || !msgEl || !primaryBtn || !secondaryBtn || !modal) return;
+
+  titleEl.textContent = opts.title || 'Conferma';
+  msgEl.textContent = opts.message || '';
+  primaryBtn.textContent = opts.primaryText || 'Ok';
+  secondaryBtn.textContent = opts.secondaryText || 'Annulla';
+  secondaryBtn.style.display = (opts.alertMode === true) ? 'none' : '';
+
+  primaryBtn.onclick = function() {
+    closeAppConfirmModal();
+    if (typeof opts.primaryAction === 'function') opts.primaryAction();
+  };
+  secondaryBtn.onclick = function() {
+    closeAppConfirmModal();
+    if (typeof opts.secondaryAction === 'function') opts.secondaryAction();
+  };
+
+  modal.classList.add('active');
+}
+
+/** Avviso in stile app (un solo pulsante Ok), sostituisce alert(). */
+function showAppAlert(title, message) {
+  showAppConfirm({
+    title: title || 'Avviso',
+    message: message || '',
+    primaryText: 'Ok',
+    alertMode: true,
+    primaryAction: function() {}
+  });
 }
 
 /* Chiudi modali cliccando sfondo */
@@ -876,14 +938,21 @@ function updateAllUI() {
    RESET GIORNATA
 ══════════════════════════════════════════════════ */
 function resetDay() {
-  if (!confirm('Vuoi resettare i dati di oggi (spuntati e sostituzioni) mantenendo invariato il piano alimentare?')) return;
-
   var dk = (typeof selectedDateKey !== 'undefined' && selectedDateKey)
     ? selectedDateKey
     : (typeof getCurrentDateKey === 'function' ? getCurrentDateKey() : null);
 
   if (!dk) return;
 
+  showAppConfirm({
+    title: 'Reset giorno',
+    message: 'Vuoi resettare i dati di oggi (spuntati e sostituzioni) mantenendo invariato il piano alimentare?',
+    primaryText: 'Sì, resetta',
+    primaryAction: function() { _doResetDay(dk); }
+  });
+}
+
+function _doResetDay(dk) {
   if (typeof appHistory !== 'undefined' && appHistory && appHistory[dk]) {
     var day = appHistory[dk];
     day.usedItems     = {};
@@ -1056,9 +1125,16 @@ function landingSignIn() {
 }
 
 function landingOffline() {
-  if (!confirm('Senza accesso i dati non vengono sincronizzati tra dispositivi.\nContinuare in modalità offline?')) return;
-  if (typeof window !== 'undefined') window.NP_READONLY = true;
-  enterApp();
+  showAppConfirm({
+    title: 'Continua senza account',
+    message: 'Senza accesso i dati non vengono sincronizzati tra dispositivi.\nContinuare in modalità offline?',
+    primaryText: 'Ok',
+    secondaryText: 'Annulla',
+    primaryAction: function() {
+      if (typeof window !== 'undefined') window.NP_READONLY = true;
+      enterApp();
+    }
+  });
 }
 
 function setLandingInvertedOrigin(btnEl) {

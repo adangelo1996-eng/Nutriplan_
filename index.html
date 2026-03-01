@@ -79,7 +79,7 @@
     </div>
   </div>
 
-  <!-- Hero: data/ora teleindicatore + headline + sottotitolo + Esplora + Accedi -->
+  <!-- Hero: data/ora + headline + sottotitolo + (Sign in | Esplora) + (Continua senza accedere | Logout) -->
   <div class="landing-hero">
     <div class="landing-flap-datetime" id="landingFlapDatetime" role="timer" aria-live="polite"></div>
     <h1 class="landing-hero-headline">
@@ -87,14 +87,12 @@
       <span class="landing-hero-line landing-hero-line-2">pia<span class="landing-hero-n">n</span>o alime<span class="landing-hero-n">n</span>tare<span id="landingHeroUserName" class="landing-hero-username"></span></span>
     </h1>
     <div class="landing-hero-actions">
-      <button type="button" class="landing-badge landing-esplora-btn" id="landingEsploraBtn" onclick="toggleLandingCards()" aria-expanded="false">Esplora</button>
+      <!-- Senza login: Sign in (primo) + Continua senza accedere. Con login: Esplora + Logout -->
+      <button type="button" class="landing-badge landing-signin-btn" id="landingSignInBtn" onclick="landingSignIn()" aria-label="Sign in">Sign in</button>
+      <button type="button" class="landing-badge landing-esplora-btn" id="landingEsploraBtn" style="display:none" onclick="toggleLandingCards()" aria-expanded="false">Esplora</button>
+      <button type="button" class="landing-badge landing-continua-btn" id="landingContinuaSenzaBtn" onclick="landingOffline()">Continua senza accedere</button>
       <div class="landing-accedi-wrap" id="landingAccediWrap">
-        <button type="button" class="landing-badge landing-accedi-btn" id="landingAccediBtn" onclick="toggleAccediOptions()" aria-label="Accedi" aria-expanded="false">Accedi</button>
         <button type="button" class="landing-badge landing-logout-btn" id="landingLogoutBtn" style="display:none" onclick="if(typeof executeSignOut==='function')executeSignOut();" aria-label="Esci">Logout</button>
-        <div class="landing-accedi-reveal" id="landingAccediReveal" aria-hidden="true">
-          <button type="button" class="landing-nav-card landing-accedi-option" onclick="closeAccediOptions(); openAuthModal();">Login</button>
-          <button type="button" class="landing-nav-card landing-accedi-option" onclick="closeAccediOptions(); landingOffline();">Continua senza account</button>
-        </div>
       </div>
     </div>
   </div>
@@ -1235,6 +1233,24 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-primary" onclick="closeContattiModal()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale generico: conferma / avviso in stile app (sostituisce confirm e alert del browser) -->
+<div class="modal" id="appConfirmModal" role="alertdialog" aria-modal="true" aria-labelledby="appConfirmTitle" aria-describedby="appConfirmMessage">
+  <div class="modal-box app-confirm-box" style="max-width:380px;">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 class="modal-title" id="appConfirmTitle">Conferma</h2>
+      <button type="button" class="modal-close" onclick="closeAppConfirmModal()" aria-label="Chiudi">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="appConfirmMessage" class="app-confirm-message"></p>
+    </div>
+    <div class="modal-footer app-confirm-footer">
+      <button type="button" class="btn btn-secondary" id="appConfirmSecondaryBtn" onclick="closeAppConfirmModal();if(typeof _appConfirmOnCancel==='function')_appConfirmOnCancel();">Annulla</button>
+      <button type="button" class="btn btn-primary" id="appConfirmPrimaryBtn">Ok</button>
     </div>
   </div>
 </div>

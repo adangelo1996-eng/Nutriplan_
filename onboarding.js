@@ -744,13 +744,21 @@ function saveOnboardingPlan() {
 }
 
 function obSkip() {
-  if (!confirm('Vuoi davvero saltare la configurazione iniziale? Potrai creare il piano in seguito dalla sezione Profilo.')) {
+  function doSkip() {
+    localStorage.setItem(ONBOARDING_KEY, '1');
+    var overlay = document.getElementById('onboardingOverlay');
+    if (overlay) overlay.classList.remove('active');
+  }
+  if (typeof showAppConfirm === 'function') {
+    showAppConfirm({
+      title: 'Salta configurazione',
+      message: 'Vuoi davvero saltare la configurazione iniziale? Potrai creare il piano in seguito dalla sezione Profilo.',
+      primaryText: 'Sì, salta',
+      primaryAction: doSkip
+    });
     return;
   }
-  
-  localStorage.setItem(ONBOARDING_KEY, '1');
-  var overlay = document.getElementById('onboardingOverlay');
-  if (overlay) overlay.classList.remove('active');
+  doSkip();
 }
 
 /* ══════════════════════════════════════════════════════

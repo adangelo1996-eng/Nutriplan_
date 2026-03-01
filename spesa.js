@@ -329,19 +329,42 @@ function removeSpesaItem(idx) {
 }
 
 function clearBoughtItems() {
-  if (!confirm('Rimuovere tutti gli articoli acquistati?')) return;
-  spesaItems = (typeof spesaItems !== 'undefined' ? spesaItems : [])
-    .filter(function(i){ return !i.bought; });
-  saveData();
-  renderSpesa();
+  if (typeof showAppConfirm !== 'function') {
+    spesaItems = (typeof spesaItems !== 'undefined' ? spesaItems : []).filter(function(i){ return !i.bought; });
+    saveData(); renderSpesa();
+    return;
+  }
+  showAppConfirm({
+    title: 'Rimuovi acquistati',
+    message: 'Rimuovere tutti gli articoli acquistati?',
+    primaryText: 'Sì',
+    primaryAction: function() {
+      spesaItems = (typeof spesaItems !== 'undefined' ? spesaItems : []).filter(function(i){ return !i.bought; });
+      saveData();
+      renderSpesa();
+    }
+  });
 }
 
 function clearEntireSpesaList() {
-  if (!confirm('Vuoi svuotare tutta la lista della spesa? Tutti gli articoli (anche non ancora acquistati) verranno rimossi.')) return;
-  spesaItems = [];
-  if (typeof saveData === 'function') saveData();
-  if (typeof renderSpesa === 'function') renderSpesa();
-  if (typeof showToast === 'function') showToast('Lista della spesa svuotata', 'info');
+  if (typeof showAppConfirm !== 'function') {
+    spesaItems = [];
+    if (typeof saveData === 'function') saveData();
+    if (typeof renderSpesa === 'function') renderSpesa();
+    if (typeof showToast === 'function') showToast('Lista della spesa svuotata', 'info');
+    return;
+  }
+  showAppConfirm({
+    title: 'Svuota lista',
+    message: 'Vuoi svuotare tutta la lista della spesa? Tutti gli articoli (anche non ancora acquistati) verranno rimossi.',
+    primaryText: 'Sì, svuota',
+    primaryAction: function() {
+      spesaItems = [];
+      if (typeof saveData === 'function') saveData();
+      if (typeof renderSpesa === 'function') renderSpesa();
+      if (typeof showToast === 'function') showToast('Lista della spesa svuotata', 'info');
+    }
+  });
 }
 
 /* ── GENERA DA PIANO (× giorni) ── */

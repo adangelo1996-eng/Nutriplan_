@@ -223,7 +223,15 @@ function goToPianoGenFromPianoPage() {
   }
   if (hasPlan) {
     var msg = 'Esiste già un piano alimentare.\nVuoi generarne uno nuovo che potrebbe sostituire quello attuale?';
-    if (!window.confirm(msg)) return;
+    if (typeof showAppConfirm === 'function') {
+      showAppConfirm({
+        title: 'Genera piano',
+        message: msg,
+        primaryText: 'Sì',
+        primaryAction: function() { if (typeof goToPage === 'function') goToPage('piano-gen'); }
+      });
+      return;
+    }
   }
   if (typeof goToPage === 'function') goToPage('piano-gen');
 }

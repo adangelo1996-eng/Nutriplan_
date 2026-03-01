@@ -848,6 +848,22 @@ body.app-visible .page .rc-ing-qty  { color: rgba(13,34,24,.78); }
 .modal-footer-rc { flex-wrap: wrap; gap: 8px; }
 .modal-box-rc .modal-footer .rc-btn { flex-shrink: 0; }
 
+/* Modal conferma/avviso in stile app: messaggio a più righe */
+.app-confirm-box .app-confirm-message {
+  white-space: pre-line;
+  margin: 0;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.app-confirm-footer {
+  justify-content: flex-end;
+}
+
+/* Modal conferma sopra overlay onboarding (onboarding z-index 700) */
+#appConfirmModal {
+  z-index: 750;
+}
+
 /* Modali in app: stesso stile del resto dell'app (tema coerente) */
 body.app-visible .modal.active {
   background: rgba(0,0,0,.45);
@@ -1709,7 +1725,9 @@ body.app-visible .modal .modal-body .auth-modal-offline:hover {
 .landing-hero .landing-esplora-btn {
   margin-top: 0;
 }
-.landing-hero-actions .landing-esplora-btn {
+.landing-hero-actions .landing-esplora-btn,
+.landing-hero-actions .landing-signin-btn,
+.landing-hero-actions .landing-continua-btn {
   margin: 0;
 }
 
@@ -2056,16 +2074,15 @@ body.app-menu-open {
   }
   .app-menu-left,
   .app-menu-right {
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-direction: column;
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
     gap: 6px;
     max-width: 100%;
     min-width: 0;
   }
-  .app-menu-cornice-left .app-menu-left { align-items: center; }
-  .app-menu-cornice-right .app-menu-right { align-items: center; }
+  .app-menu-cornice-left .app-menu-left { align-items: flex-start; }
+  .app-menu-cornice-right .app-menu-right { align-items: flex-end; }
   .app-menu-link {
     font-size: .8rem;
     padding: 6px 10px;

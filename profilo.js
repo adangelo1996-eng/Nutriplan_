@@ -514,7 +514,15 @@ function openPlanGeneratorFromProfile() {
   }
   if (hasPlan) {
     var msg = 'Esiste già un piano alimentare.\nVuoi generarne uno nuovo che potrebbe sostituire quello attuale?';
-    if (!window.confirm(msg)) return;
+    if (typeof showAppConfirm === 'function') {
+      showAppConfirm({
+        title: 'Genera piano',
+        message: msg,
+        primaryText: 'Sì',
+        primaryAction: function() { goToPage('piano-gen'); }
+      });
+      return;
+    }
   }
   goToPage('piano-gen');
 }
@@ -566,10 +574,13 @@ function confirmClearAllData() {
   var modal = document.getElementById('confirmDeleteModal');
   if (modal) {
     modal.classList.add('active');
-  } else {
-    /* Fallback per sicurezza */
-    if (!confirm('Cancellare TUTTI i dati di NutriPlan?\nQuesta operazione è irreversibile.')) return;
-    executeDeleteAllData();
+  } else if (typeof showAppConfirm === 'function') {
+    showAppConfirm({
+      title: 'Cancella tutti i dati',
+      message: 'Cancellare TUTTI i dati di NutriPlan?\nQuesta operazione è irreversibile.',
+      primaryText: 'Elimina tutto',
+      primaryAction: function() { executeDeleteAllData(); }
+    });
   }
 }
 

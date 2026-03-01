@@ -167,7 +167,8 @@ function saveRicettaCustom() {
     nome = nome.trim();
 
     if (!nome) {
-        alert('Inserisci il nome della ricetta.');
+        if (typeof showAppAlert === 'function') showAppAlert('Attenzione', 'Inserisci il nome della ricetta.');
+        else if (typeof showToast === 'function') showToast('Inserisci il nome della ricetta.', 'warning');
         document.getElementById('rfNome').focus();
         return;
     }
@@ -222,19 +223,31 @@ function saveRicettaCustom() {
             return (r.nome || r.name || '').toLowerCase() === nome.toLowerCase();
         });
         if (dup !== -1) {
-            if (!confirm('Esiste già una ricetta con questo nome. Sovrascrivere?')) return;
+            if (typeof showAppConfirm === 'function') {
+                showAppConfirm({
+                    title: 'Ricetta esistente',
+                    message: 'Esiste già una ricetta con questo nome. Sovrascrivere?',
+                    primaryText: 'Sì, sovrascrivi',
+                    primaryAction: function() { customRecipes[dup] = ricetta; _saveRicettaCustomDone(nome); }
+                });
+                return;
+            }
             customRecipes[dup] = ricetta;
         } else {
             customRecipes.push(ricetta);
         }
     }
 
+    _saveRicettaCustomDone(nome);
+}
+
+function _saveRicettaCustomDone(nome) {
     saveData();
     closeRicettaForm();
     renderCustomRicette();
-    /* Aggiorna anche il catalogo se visibile */
     renderRicetteGrid();
-    alert('✅ Ricetta "' + nome + '" salvata!');
+    if (typeof showToast === 'function') showToast('✅ Ricetta "' + (nome || '') + '" salvata!', 'success');
+    else if (typeof showAppAlert === 'function') showAppAlert('Salvata', '✅ Ricetta "' + (nome || '') + '" salvata!');
 }
 
 /* ---- EDIT / DELETE ---- */
@@ -246,7 +259,20 @@ function deleteRicettaCustom(idx) {
     var name = customRecipes[idx]
         ? (customRecipes[idx].nome || customRecipes[idx].name || 'questa ricetta')
         : 'questa ricetta';
-    if (!confirm('Eliminare la ricetta "' + name + '"?')) return;
+    if (typeof showAppConfirm === 'function') {
+        showAppConfirm({
+            title: 'Elimina ricetta',
+            message: 'Eliminare la ricetta "' + name + '"?',
+            primaryText: 'Elimina',
+            primaryAction: function() {
+                customRecipes.splice(idx, 1);
+                saveData();
+                renderCustomRicette();
+                renderRicetteGrid();
+            }
+        });
+        return;
+    }
     customRecipes.splice(idx, 1);
     saveData();
     renderCustomRicette();

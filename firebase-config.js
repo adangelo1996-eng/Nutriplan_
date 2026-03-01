@@ -124,8 +124,8 @@ function signInWithGoogle() {
     /* Usa showToast se disponibile, altrimenti fallback */
     if (typeof showToast === 'function') {
       showToast('⚠️ Firebase non disponibile. Ricarica la pagina.', 'warning');
-    } else {
-      alert('Firebase non disponibile. Ricarica la pagina.');
+    } else if (typeof showAppAlert === 'function') {
+      showAppAlert('Attenzione', 'Firebase non disponibile. Ricarica la pagina.');
     }
     return;
   }
@@ -156,8 +156,8 @@ function signInWithGoogle() {
 
       if (typeof showToast === 'function') {
         showToast('✗ Errore di accesso: ' + (e.message || e), 'error');
-      } else {
-        alert('Errore di accesso: ' + (e.message || e));
+      } else if (typeof showAppAlert === 'function') {
+        showAppAlert('Errore', 'Errore di accesso: ' + (e.message || e));
       }
     });
 }
@@ -253,23 +253,27 @@ function updateAuthUI(user) {
     }
   }
 
-  /* Aggiorna CTA della landing: se loggato mostra Logout, altrimenti Accedi */
+  /* Landing hero: senza login = Sign in + Continua senza accedere; con login = Esplora + Logout */
   var landingLoading = document.getElementById('landingAuthLoading');
   var landingGoogle  = document.getElementById('landingGoogleBtn');
   var landingOffline = document.getElementById('landingOfflineBtn');
   var landingAccediWrap = document.getElementById('landingAccediWrap');
-  var landingAccediBtn  = document.getElementById('landingAccediBtn');
+  var landingSignInBtn = document.getElementById('landingSignInBtn');
+  var landingEsploraBtn = document.getElementById('landingEsploraBtn');
+  var landingContinuaSenzaBtn = document.getElementById('landingContinuaSenzaBtn');
   var landingLogoutBtn  = document.getElementById('landingLogoutBtn');
 
+  if (landingLoading) landingLoading.style.display = 'none';
+  if (landingGoogle)  landingGoogle.style.display = 'none';
+  if (landingOffline) landingOffline.style.display = 'none';
+
   if (user) {
-    if (landingLoading)     landingLoading.style.display = 'none';
-    if (landingGoogle)      landingGoogle.style.display  = 'none';
-    if (landingOffline)     landingOffline.style.display = 'none';
-    if (landingAccediWrap)  landingAccediWrap.style.display = '';
-    if (landingAccediBtn)   landingAccediBtn.style.display = 'none';
-    if (landingLogoutBtn)   landingLogoutBtn.style.display = 'inline-block';
-    if (typeof closeAccediOptions === 'function') closeAccediOptions();
-    /* Titolo landing: "Il tuo piano alimentare, [nome]" — precaricamento poi animazione a fuoco (blur) */
+    if (landingSignInBtn)       landingSignInBtn.style.display = 'none';
+    if (landingContinuaSenzaBtn) landingContinuaSenzaBtn.style.display = 'none';
+    if (landingEsploraBtn)      landingEsploraBtn.style.display = '';
+    if (landingAccediWrap)      landingAccediWrap.style.display = '';
+    if (landingLogoutBtn)       landingLogoutBtn.style.display = 'inline-block';
+    /* Titolo landing: "Il tuo piano alimentare, [nome]" */
     var heroName = document.getElementById('landingHeroUserName');
     if (heroName) {
       var firstName = (user.displayName && user.displayName.split(' ')[0]) || user.email || 'Utente';
@@ -283,12 +287,11 @@ function updateAuthUI(user) {
       });
     }
   } else {
-    if (landingLoading)     landingLoading.style.display = 'none';
-    if (landingGoogle)      landingGoogle.style.display  = 'none';
-    if (landingOffline)     landingOffline.style.display = 'none';
-    if (landingAccediWrap)  landingAccediWrap.style.display = '';
-    if (landingAccediBtn)   landingAccediBtn.style.display = 'inline-block';
-    if (landingLogoutBtn)   landingLogoutBtn.style.display = 'none';
+    if (landingSignInBtn)       landingSignInBtn.style.display = '';
+    if (landingContinuaSenzaBtn) landingContinuaSenzaBtn.style.display = '';
+    if (landingEsploraBtn)      landingEsploraBtn.style.display = 'none';
+    if (landingAccediWrap)      landingAccediWrap.style.display = 'none';
+    if (landingLogoutBtn)       landingLogoutBtn.style.display = 'none';
     var heroName = document.getElementById('landingHeroUserName');
     if (heroName) {
       heroName.innerHTML = '';
