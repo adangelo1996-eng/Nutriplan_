@@ -253,44 +253,69 @@ function copyInviteLinkToClipboard(hid) {
   if (!hid || typeof getHouseholdInviteLink !== 'function') return;
   var link = getHouseholdInviteLink(hid);
   if (!link) return;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(link).then(function () {
-      if (typeof showToast === 'function') showToast('Link invito copiato negli appunti. Condividilo per invitare.', 'success');
-    }).catch(function () { fallbackCopyLink(link); });
-  } else {
-    fallbackCopyLink(link);
-  }
+  copyTextToClipboard(link, function (ok) {
+    if (ok && typeof showToast === 'function') showToast('Link invito copiato negli appunti. Condividilo per invitare.', 'success');
+    else if (!ok && typeof showToast === 'function') showToast('Usa il pulsante "Copia link invito" per copiare.', 'info');
+  });
 }
 
 function copyHouseholdInviteLink() {
-  if (!householdId || typeof getHouseholdInviteLink !== 'function') return;
-  var link = getHouseholdInviteLink(householdId);
-  if (!link) return;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(link).then(function () {
-      if (typeof showToast === 'function') showToast('Link copiato negli appunti', 'success');
-    }).catch(function () {
-      fallbackCopyLink(link);
-    });
-  } else {
-    fallbackCopyLink(link);
+  if (!householdId || typeof getHouseholdInviteLink !== 'function') {
+    if (typeof showToast === 'function') showToast('Nessuna casa attiva', 'warning');
+    return;
   }
+  var link = getHouseholdInviteLink(householdId);
+  if (!link) {
+    if (typeof showToast === 'function') showToast('Apri l\'app da un indirizzo web (https://...) per ottenere un link', 'warning');
+    return;
+  }
+  copyTextToClipboard(link, function (ok) {
+    if (ok && typeof showToast === 'function') showToast('Link copiato negli appunti', 'success');
+    else showLinkForManualCopy(link);
+  });
 }
 
-function fallbackCopyLink(link) {
-  var ta = document.createElement('textarea');
-  ta.value = link;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.select();
+function showLinkForManualCopy(link) {
   try {
-    document.execCommand('copy');
-    if (typeof showToast === 'function') showToast('Link copiato negli appunti', 'success');
+    prompt('Copia il link invito (Ctrl+C o Cmd+C):', link);
   } catch (e) {
     if (typeof showToast === 'function') showToast('Copia il link manualmente', 'info');
   }
+}
+
+function copyTextToClipboard(text, done) {
+  if (!text || typeof text !== 'string') { if (done) done(false); return; }
+  var copied = false;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () {
+      copied = true;
+      if (done) done(true);
+    }).catch(function () {
+      if (!copied) fallbackCopyText(text, done);
+    });
+  } else {
+    fallbackCopyText(text, done);
+  }
+}
+
+function fallbackCopyText(text, done) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:0;left:0;width:2em;height:2em;padding:0;border:none;outline:none;boxShadow:none;background:transparent;opacity:0.01';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, text.length);
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) {}
   document.body.removeChild(ta);
+  if (done) done(ok);
+}
+
+function fallbackCopyLink(link) {
+  fallbackCopyText(link, function (ok) {
+    if (typeof showToast === 'function') showToast(ok ? 'Link copiato negli appunti' : 'Copia il link manualmente', ok ? 'success' : 'info');
+  });
 }
 
 function confirmLeaveHousehold() {

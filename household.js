@@ -33,9 +33,10 @@ function stopHouseholdRealtimeListener() {
 function getHouseholdInviteLink(hid) {
   if (!hid) return '';
   var base = '';
-  if (typeof location !== 'undefined' && location.origin && location.origin.indexOf('http') === 0) {
+  if (typeof location !== 'undefined' && location.origin && String(location.origin).indexOf('http') === 0) {
     base = location.origin + (location.pathname || '/');
   }
+  if (!base) return '';
   var sep = base.indexOf('?') !== -1 ? '&' : '?';
   return base + sep + 'join=' + encodeURIComponent(hid);
 }
