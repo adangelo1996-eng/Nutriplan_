@@ -73,13 +73,21 @@ function getCasaDateString() {
   return new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'short' });
 }
 
-/** Bonus keyword meteo su nome + preparazione (solo dati utente). */
+/**
+ * Bonus meteo: prima associazione in DB (recipe.meteo), poi fallback keyword.
+ * L'AI va usata solo quando nessuna ricetta ha associazione (nuove ricette/ingredienti).
+ */
 function getWeatherBonusForRecipe(recipe, weatherContext) {
   if (!weatherContext || weatherContext.type === 'neutral') return 0;
+  var type = weatherContext.type;
+  var meteo = recipe.meteo;
+  if (meteo) {
+    var arr = Array.isArray(meteo) ? meteo : [meteo];
+    if (arr.indexOf(type) !== -1) return 1;
+  }
   var name = (recipe.name || recipe.nome || '').toLowerCase();
   var prep = (recipe.preparazione || recipe.preparation || '').toLowerCase();
   var text = name + ' ' + prep;
-  var type = weatherContext.type;
   if (type === 'cold') {
     if (/zuppa|minestra|brodo|porridge|tè|caldo|in forno|cuoci/.test(text)) return 1;
   } else if (type === 'hot') {
@@ -90,7 +98,7 @@ function getWeatherBonusForRecipe(recipe, weatherContext) {
   return 0;
 }
 
-/** Categorie esplicite per le due ricette suggerite in Casa. */
+/** Categorie esplicite per le due ricette suggerite in Casa (affiancate in UI). */
 var CASA_SUGGESTION_CATEGORIES = {
   expiring: 'Per ingredienti in scadenza',
   weather:  'In base al meteo',
@@ -269,7 +277,7 @@ function renderCasa(force) {
     if (part1 || part2) {
       recipeBlock = '<div class="casa-recipe-sections">' +
         '<div class="casa-recipe-section-title">' + escapeHtml(sectionTitle) + '</div>' +
-        part1 + part2 +
+        '<div class="casa-recipe-sections-row">' + part1 + part2 + '</div>' +
       '</div>';
     }
   }

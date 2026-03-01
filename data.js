@@ -217,13 +217,15 @@ var defaultMealPlan = {
 
 /* ============================================================
    RICETTE — 55 ricette su tutti i pasti
+   meteo (opzionale): 'cold' | 'hot' | 'rain' — associazione al meteo per suggerimenti Casa.
+   Se assente, si usa il fallback keyword su nome/preparazione; l'AI interviene solo se nessuna ricetta ha associazione.
    ============================================================ */
 var defaultRecipes = [
 
   /* ════════════ COLAZIONE (9) ════════════ */
   {
     id:'r001', icon:'🥣', name:'Porridge di avena con banana e miele',
-    pasto:['colazione'],
+    pasto:['colazione'], meteo:'cold',
     ingredienti:[
       { name:'Fiocchi di avena',              quantity:40,  unit:'g'  },
       { name:'Latte parzialmente scremato',   quantity:150, unit:'ml' },
@@ -291,7 +293,7 @@ var defaultRecipes = [
   },
   {
     id:'r007', icon:'🥛', name:'Skyr con avena, fragole e miele',
-    pasto:['colazione','merenda'],
+    pasto:['colazione','merenda'], meteo:'hot',
     ingredienti:[
       { name:'Skyr bianco',    quantity:150, unit:'g' },
       { name:'Fiocchi di avena',quantity:20, unit:'g' },
@@ -314,7 +316,7 @@ var defaultRecipes = [
   },
   {
     id:'r009', icon:'☕', name:'Smoothie proteico con latte e avena',
-    pasto:['colazione','spuntino'],
+    pasto:['colazione','spuntino'], meteo:'hot',
     ingredienti:[
       { name:'Latte parzialmente scremato', quantity:200, unit:'ml' },
       { name:'Fiocchi di avena',            quantity:30,  unit:'g'  },
@@ -422,7 +424,7 @@ var defaultRecipes = [
   },
   {
     id:'r019', icon:'🫘', name:'Pasta e ceci al rosmarino',
-    pasto:['pranzo','cena'],
+    pasto:['pranzo','cena'], meteo:'rain',
     ingredienti:[
       { name:'Pasta integrale', quantity:60,  unit:'g'  },
       { name:'Ceci in scatola', quantity:150, unit:'g'  },
@@ -473,7 +475,7 @@ var defaultRecipes = [
   },
   {
     id:'r023', icon:'🍚', name:'Riso integrale con salmone e avocado',
-    pasto:['pranzo'],
+    pasto:['pranzo'], meteo:'hot',
     ingredienti:[
       { name:'Riso integrale',    quantity:70,  unit:'g'  },
       { name:'Salmone affumicato',quantity:80,  unit:'g'  },
@@ -499,7 +501,7 @@ var defaultRecipes = [
   },
   {
     id:'r025', icon:'🥗', name:'Insalata di farro con tonno e verdure',
-    pasto:['pranzo'],
+    pasto:['pranzo'], meteo:'hot',
     ingredienti:[
       { name:'Farro perlato',       quantity:70,  unit:'g'  },
       { name:'Tonno al naturale',   quantity:100, unit:'g'  },
@@ -524,7 +526,7 @@ var defaultRecipes = [
   },
   {
     id:'r027', icon:'🥗', name:'Bowl di pollo con avocado e insalata',
-    pasto:['pranzo'],
+    pasto:['pranzo'], meteo:'hot',
     ingredienti:[
       { name:'Straccetti di pollo',quantity:130, unit:'g'  },
       { name:'Lattuga',            quantity:80,  unit:'g'  },
@@ -537,7 +539,7 @@ var defaultRecipes = [
   },
   {
     id:'r028', icon:'🫓', name:'Piadina con bresaola, avocado e lattuga',
-    pasto:['pranzo'],
+    pasto:['pranzo'], meteo:'hot',
     ingredienti:[
       { name:'Piadina integrale', quantity:75, unit:'g'  },
       { name:'Bresaola',          quantity:80, unit:'g'  },
@@ -560,7 +562,7 @@ var defaultRecipes = [
   },
   {
     id:'r030', icon:'🥬', name:'Insalata di lenticchie, pomodori e cetrioli',
-    pasto:['pranzo'],
+    pasto:['pranzo'], meteo:'hot',
     ingredienti:[
       { name:'Lenticchie in scatola', quantity:150, unit:'g'  },
       { name:'Pomodorini',            quantity:80,  unit:'g'  },
@@ -573,7 +575,7 @@ var defaultRecipes = [
   },
   {
     id:'r031', icon:'🫘', name:'Insalata di fagioli e tonno',
-    pasto:['pranzo'],
+    pasto:['pranzo'], meteo:'hot',
     ingredienti:[
       { name:'Fagioli in scatola',  quantity:150, unit:'g'  },
       { name:'Tonno al naturale',   quantity:80,  unit:'g'  },
@@ -597,7 +599,7 @@ var defaultRecipes = [
   },
   {
     id:'r033', icon:'🥚', name:'Frittata di spinaci e ricotta al forno',
-    pasto:['pranzo','cena'],
+    pasto:['pranzo','cena'], meteo:'cold',
     ingredienti:[
       { name:'Uova',            quantity:3,   unit:'pz' },
       { name:'Spinaci',         quantity:150, unit:'g'  },
@@ -621,7 +623,7 @@ var defaultRecipes = [
   },
   {
     id:'r035', icon:'🐟', name:'Insalata di salmone affumicato e avocado',
-    pasto:['pranzo'],
+    pasto:['pranzo'], meteo:'hot',
     ingredienti:[
       { name:'Salmone affumicato', quantity:80,  unit:'g'  },
       { name:'Avocado',            quantity:70,  unit:'g'  },
@@ -645,7 +647,7 @@ var defaultRecipes = [
   },
   {
     id:'r037', icon:'🍚', name:'Riso integrale con legumi e curry',
-    pasto:['pranzo','cena'],
+    pasto:['pranzo','cena'], meteo:'rain',
     ingredienti:[
       { name:'Riso integrale',  quantity:70,  unit:'g'  },
       { name:'Ceci in scatola', quantity:100, unit:'g'  },
@@ -659,7 +661,7 @@ var defaultRecipes = [
   },
   {
     id:'r038', icon:'🐟', name:'Salmone al forno con verdure e limone',
-    pasto:['pranzo','cena'],
+    pasto:['pranzo','cena'], meteo:'cold',
     ingredienti:[
       { name:'Salmone',   quantity:130, unit:'g'  },
       { name:'Asparagi',  quantity:150, unit:'g'  },
@@ -673,7 +675,7 @@ var defaultRecipes = [
   /* ════════════ CENA (17) ════════════ */
   {
     id:'r039', icon:'🐟', name:'Merluzzo al forno con patate al rosmarino',
-    pasto:['cena'],
+    pasto:['cena'], meteo:'cold',
     ingredienti:[
       { name:'Merluzzo',   quantity:150, unit:'g'  },
       { name:'Patate',     quantity:200, unit:'g'  },
@@ -709,7 +711,7 @@ var defaultRecipes = [
   },
   {
     id:'r042', icon:'🐟', name:'Spigola al forno con patate e pomodorini',
-    pasto:['cena'],
+    pasto:['cena'], meteo:'cold',
     ingredienti:[
       { name:'Spigola',    quantity:180, unit:'g'  },
       { name:'Patate',     quantity:150, unit:'g'  },
@@ -721,7 +723,7 @@ var defaultRecipes = [
   },
   {
     id:'r043', icon:'🐟', name:'Orata al cartoccio con limone e aglio',
-    pasto:['cena'],
+    pasto:['cena'], meteo:'cold',
     ingredienti:[
       { name:'Orata',          quantity:180, unit:'g'  },
       { name:'Limone',         quantity:1,   unit:'pz' },
@@ -769,7 +771,7 @@ var defaultRecipes = [
   },
   {
     id:'r047', icon:'🦑', name:'Seppie in umido con piselli',
-    pasto:['cena'],
+    pasto:['cena'], meteo:'rain',
     ingredienti:[
       { name:'Seppie',           quantity:200, unit:'g'  },
       { name:'Piselli in scatola',quantity:100,unit:'g'  },
@@ -781,7 +783,7 @@ var defaultRecipes = [
   },
   {
     id:'r048', icon:'🐟', name:'Tonno fresco alla piastra con insalata',
-    pasto:['cena'],
+    pasto:['cena'], meteo:'hot',
     ingredienti:[
       { name:'Tonno fresco',  quantity:150, unit:'g'  },
       { name:'Insalata mista',quantity:100, unit:'g'  },
@@ -805,7 +807,7 @@ var defaultRecipes = [
   },
   {
     id:'r050', icon:'🥚', name:'Frittata di verdure miste al forno',
-    pasto:['cena','pranzo'],
+    pasto:['cena','pranzo'], meteo:'cold',
     ingredienti:[
       { name:'Uova',          quantity:3,   unit:'pz' },
       { name:'Zucchine',      quantity:100, unit:'g'  },
@@ -818,7 +820,7 @@ var defaultRecipes = [
   },
   {
     id:'r051', icon:'🫘', name:'Zuppa di lenticchie e verdure',
-    pasto:['cena'],
+    pasto:['cena'], meteo:'cold',
     ingredienti:[
       { name:'Lenticchie in scatola', quantity:150, unit:'g'  },
       { name:'Carote',                quantity:100, unit:'g'  },
@@ -832,7 +834,7 @@ var defaultRecipes = [
   },
   {
     id:'r052', icon:'🫘', name:'Zuppa di ceci e spinaci',
-    pasto:['cena'],
+    pasto:['cena'], meteo:'cold',
     ingredienti:[
       { name:'Ceci in scatola', quantity:150, unit:'g'  },
       { name:'Spinaci',         quantity:150, unit:'g'  },
@@ -858,7 +860,7 @@ var defaultRecipes = [
   },
   {
     id:'r054', icon:'🥩', name:'Coniglio al forno con verdure mediterranee',
-    pasto:['cena'],
+    pasto:['cena'], meteo:'cold',
     ingredienti:[
       { name:'Coniglio',       quantity:200, unit:'g'  },
       { name:'Patate dolci',   quantity:150, unit:'g'  },
@@ -873,7 +875,7 @@ var defaultRecipes = [
   /* ════════════ MERENDA (5) ════════════ */
   {
     id:'r055', icon:'🍫', name:'Skyr con cioccolato fondente e noci',
-    pasto:['merenda'],
+    pasto:['merenda'], meteo:'rain',
     ingredienti:[
       { name:'Skyr bianco',          quantity:125, unit:'g' },
       { name:'Cioccolato fondente',  quantity:10,  unit:'g' },
@@ -913,7 +915,7 @@ var defaultRecipes = [
   },
   {
     id:'r059', icon:'🍫', name:'Cioccolato fondente con mandorle e kiwi',
-    pasto:['merenda'],
+    pasto:['merenda'], meteo:'rain',
     ingredienti:[
       { name:'Cioccolato fondente', quantity:15, unit:'g'  },
       { name:'Mandorle',            quantity:10, unit:'g'  },

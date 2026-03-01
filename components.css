@@ -2492,7 +2492,8 @@ body.app-visible .bottom-nav .nav-tab-casa.active::after {
 
 .casa-recipe-sections { margin-top: 20px; }
 .casa-recipe-section-title { font-size: .9rem; font-weight: 700; color: var(--text-2); margin-bottom: 14px; }
-.casa-recipe-section { margin-bottom: 18px; }
+.casa-recipe-sections-row { display: flex; gap: 16px; flex-wrap: wrap; }
+.casa-recipe-section { flex: 1; min-width: 260px; }
 .casa-recipe-section:last-child { margin-bottom: 0; }
 .casa-recipe-category { font-size: .8rem; font-weight: 600; color: var(--text-3, #666); margin-bottom: 8px; }
 .casa-recipe-card-wrap { margin-top: 0; }
