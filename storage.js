@@ -150,10 +150,13 @@ function applyLoadedData(data) {
     preferiti = data.preferiti;
   if (data.dietProfile && typeof data.dietProfile === 'object')
     dietProfile = data.dietProfile;
-  if (data.householdId && typeof data.householdId === 'string' && data.householdId.trim())
-    householdId = data.householdId.trim();
-  else
-    householdId = null;
+  /* householdId: aggiorna solo se il cloud ha un valore esplicito; non azzerare se assente (evita race con sync dopo crea/unisciti casa) */
+  if (data.hasOwnProperty('householdId')) {
+    if (data.householdId && typeof data.householdId === 'string' && data.householdId.trim())
+      householdId = data.householdId.trim();
+    else
+      householdId = null;
+  }
 }
 
 function buildSaveObject() {

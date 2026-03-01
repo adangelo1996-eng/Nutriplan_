@@ -260,11 +260,21 @@ function copyInviteLinkToClipboard(hid) {
 }
 
 function copyHouseholdInviteLink() {
-  if (!householdId || typeof getHouseholdInviteLink !== 'function') {
+  var hid = householdId;
+  if (!hid && typeof localStorage !== 'undefined') {
+    try {
+      var raw = localStorage.getItem('nutriplan_v2');
+      if (raw) {
+        var data = JSON.parse(raw);
+        if (data && data.householdId && typeof data.householdId === 'string') hid = data.householdId.trim();
+      }
+    } catch (e) {}
+  }
+  if (!hid || typeof getHouseholdInviteLink !== 'function') {
     if (typeof showToast === 'function') showToast('Nessuna casa attiva', 'warning');
     return;
   }
-  var link = getHouseholdInviteLink(householdId);
+  var link = getHouseholdInviteLink(hid);
   if (!link) {
     if (typeof showToast === 'function') showToast('Apri l\'app da un indirizzo web (https://...) per ottenere un link', 'warning');
     return;
