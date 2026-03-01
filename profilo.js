@@ -244,10 +244,8 @@ function createHouseholdAndShowLink() {
       });
   };
   var createFn = typeof createHousehold === 'function' ? createHousehold : doCreate;
-  var hasPantry = typeof pantryItems !== 'undefined' && pantryItems && Object.keys(pantryItems).length > 0;
-
-  function runCreate(includeMyPantry) {
-    createFn(includeMyPantry).then(function (hid) {
+  (function runCreate() {
+    createFn(true).then(function (hid) {
       if (hid) {
         if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
         copyInviteLinkToClipboard(hid);
@@ -256,26 +254,7 @@ function createHouseholdAndShowLink() {
         showToast('Impossibile creare la casa. Verifica di essere connesso e di aver deployato le regole Firebase.', 'error');
       }
     });
-  }
-
-  if (hasPantry && typeof showAppConfirm === 'function') {
-    showAppConfirm({
-      title: 'Usa la tua dispensa per la nuova casa?',
-      message: 'Vuoi usare la tua dispensa personale come dispensa della casa? Sarà visibile a tutti i membri che si uniranno. Puoi anche creare una casa con dispensa vuota.',
-      primaryText: 'Sì, usa la mia dispensa',
-      secondaryText: 'No, crea con dispensa vuota',
-      primaryAction: function () { runCreate(true); },
-      secondaryAction: function () { runCreate(false); }
-    });
-  } else if (hasPantry && typeof confirm === 'function') {
-    if (confirm('Vuoi usare la tua dispensa personale come dispensa della nuova casa?')) {
-      runCreate(true);
-    } else {
-      runCreate(false);
-    }
-  } else {
-    runCreate(true);
-  }
+  })();
 }
 
 function askOptionalHouseholdNameAndPassword(hid) {
