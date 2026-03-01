@@ -187,14 +187,13 @@ function joinHouseholdByNameAndPassword(name, password) {
       // #endregion
       if (!snap.exists()) return false;
       var hid = null;
-      var storedHash = null;
       for (var key in val) {
-        if (val[key] && val[key].passwordHash) {
+        if (val[key] && val[key].passwordHash && val[key].passwordHash === inputHash) {
           hid = key;
-          storedHash = val[key].passwordHash;
           break;
         }
       }
+      var storedHash = hid && val[hid] ? val[hid].passwordHash : null;
       var hashesEqual = !!(hid && storedHash && inputHash && storedHash === inputHash);
       // #region agent log
       fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'19a33b'},body:JSON.stringify({sessionId:'19a33b',location:'household.js:afterMatch',message:'Match check',data:{foundHid:!!hid,hashesEqual:hashesEqual,storedHashLen:storedHash?(storedHash+'').length:0},timestamp:Date.now(),hypothesisId:'H3'})}).catch(function(){});
