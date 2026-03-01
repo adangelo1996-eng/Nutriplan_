@@ -397,6 +397,14 @@ function renderCasa(force) {
   if (householdId && typeof getHouseholdMembers === 'function' && typeof getHouseholdLastActivity === 'function') {
     var hid = householdId;
     getHouseholdMembers(hid).then(function (members) {
+      var uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+      if (uid && (!members || !members[uid])) {
+        householdId = null;
+        if (typeof stopHouseholdRealtimeListener === 'function') stopHouseholdRealtimeListener();
+        if (typeof saveData === 'function') saveData();
+        if (typeof renderCasa === 'function') renderCasa(true);
+        return;
+      }
       var listEl = document.getElementById('casaHouseholdMembersList');
       if (!listEl || listEl.closest('#casaContent') === null) return;
       if (!members || Object.keys(members).length === 0) {

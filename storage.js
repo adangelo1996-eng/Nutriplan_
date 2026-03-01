@@ -20,6 +20,7 @@ var weeklyLimitsCustom = {};  /* limiti personalizzati nel piano alimentare */
 var preferiti         = [];   /* nomi ricette preferite */
 var dietProfile       = {};   /* vincoli dieta: { vegetariano, vegano, senzaLattosio, senzaGlutine, allergenici:[] } */
 var householdId       = null; /* id casa condivisa: se impostato, dispensa e spesa si leggono/scrivono da households/{hid} */
+var _lastHouseholdPantrySnapshot = null; /* per update granulari: ultimo stato dispensa inviato a households */
 
 function isReadOnlyMode() {
   return typeof window !== 'undefined' && window.NP_READONLY;
@@ -221,18 +222,36 @@ function loadHouseholdData(hid) {
       var h = snap.val();
       if (!h) return;
       if (h.pantryItems && typeof h.pantryItems === 'object') {
-        pantryItems = h.pantryItems;
-        Object.keys(pantryItems).forEach(function (k) {
-          if (!k || k === 'undefined' || k === 'null' || k.trim() === '') delete pantryItems[k];
-        });
+        applyHouseholdPantryFromSnapshot(h.pantryItems);
       }
       if (Array.isArray(h.spesaItems)) spesaItems = h.spesaItems;
       if (h.spesaLastGenerated != null) spesaLastGenerated = h.spesaLastGenerated;
+      _lastHouseholdPantrySnapshot = (h.pantryItems && typeof h.pantryItems === 'object')
+        ? JSON.parse(JSON.stringify(pantryItems)) : {};
       console.log('[Storage] Dati casa caricati:', hid);
     })
     .catch(function (e) {
       console.warn('[Storage] Errore caricamento casa:', e);
     });
+}
+
+function setLastHouseholdPantrySnapshot(snap) {
+  _lastHouseholdPantrySnapshot = (snap && typeof snap === 'object') ? JSON.parse(JSON.stringify(snap)) : null;
+}
+
+function clearLastHouseholdPantrySnapshot() {
+  _lastHouseholdPantrySnapshot = null;
+}
+
+/** Applica allo stato locale la dispensa ricevuta da Firebase (chiavi unescaped: \\ -> /). */
+function applyHouseholdPantryFromSnapshot(raw) {
+  if (!raw || typeof raw !== 'object') return;
+  pantryItems = {};
+  Object.keys(raw).forEach(function (k) {
+    var unescaped = (k + '').replace(/\\/g, '/');
+    if (!unescaped || unescaped.trim() === '' || unescaped === 'undefined' || unescaped === 'null') return;
+    pantryItems[unescaped] = raw[k];
+  });
 }
 
 /* ============================================================
@@ -258,28 +277,60 @@ function syncToCloud(immediate) {
       .ref('users/' + currentUser.uid + '/nutriplan')
       .set(userBlob)
       .then(function () {
-        if (hid && pantrySnapshot) {
-          var lastActivity = {
-            type: 'dispensa',
-            by: currentUser.uid,
-            byDisplayName: (currentUser.displayName || currentUser.email || 'Utente').trim(),
-            at: Date.now()
-          };
-          return firebase.database()
-            .ref('households/' + hid)
-            .update({
-              pantryItems: pantrySnapshot,
-              spesaItems: spesaSnapshot !== null ? spesaSnapshot : (spesaItems || []),
-              spesaLastGenerated: spesaLastSnap,
-              lastActivity: lastActivity
-            });
+        if (!hid) return;
+        var lastActivity = {
+          type: 'dispensa',
+          by: currentUser.uid,
+          byDisplayName: (currentUser.displayName || currentUser.email || 'Utente').trim(),
+          at: Date.now()
+        };
+        /* Update granulari dispensa: solo chiavi modificate/aggiunte/rimosse, per evitare race tra membri */
+        var pantryUpdates = {};
+        var cur = pantrySnapshot || {};
+        var last = _lastHouseholdPantrySnapshot || {};
+        function pantryPathKey(key) {
+          return (key + '').replace(/\//g, '\\');
         }
+        Object.keys(cur).forEach(function (k) {
+          if (!k || (typeof k === 'string' && k.trim() === '')) return;
+          var curVal = cur[k];
+          var lastVal = last[k];
+          if (JSON.stringify(curVal) !== JSON.stringify(lastVal)) {
+            pantryUpdates['pantryItems/' + pantryPathKey(k)] = curVal;
+          }
+        });
+        Object.keys(last).forEach(function (k) {
+          if (!cur.hasOwnProperty(k)) {
+            pantryUpdates['pantryItems/' + pantryPathKey(k)] = null;
+          }
+        });
+        var updatePayload = {
+          spesaItems: spesaSnapshot !== null ? spesaSnapshot : (spesaItems || []),
+          spesaLastGenerated: spesaLastSnap,
+          lastActivity: lastActivity
+        };
+        Object.keys(pantryUpdates).forEach(function (path) { updatePayload[path] = pantryUpdates[path]; });
+        return firebase.database()
+          .ref('households/' + hid)
+          .update(updatePayload)
+          .then(function () {
+            _lastHouseholdPantrySnapshot = JSON.parse(JSON.stringify(cur));
+          });
       })
       .then(function ()  { showCloudStatus('synced'); })
       .catch(function (err) {
         showCloudStatus('error');
         if (householdId && err && (err.code === 'PERMISSION_DENIED' || err.message)) {
           console.warn('[Storage] Sync household fallito:', err.code || err.message);
+          if (err && err.code === 'PERMISSION_DENIED') {
+            householdId = null;
+            clearLastHouseholdPantrySnapshot();
+            if (typeof stopHouseholdRealtimeListener === 'function') stopHouseholdRealtimeListener();
+            if (typeof showToast === 'function') showToast('Non fai più parte della casa. Dispensa e spesa sono ora personali.', 'info');
+            saveData();
+            if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+            if (typeof renderCasa === 'function') renderCasa(true);
+          }
         }
       });
   }

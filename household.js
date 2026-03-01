@@ -13,10 +13,15 @@ function startHouseholdRealtimeListener() {
     var h = snap.val();
     if (!h) return;
     if (h.pantryItems && typeof h.pantryItems === 'object') {
-      pantryItems = h.pantryItems;
-      Object.keys(pantryItems).forEach(function (k) {
-        if (!k || k === 'undefined' || k.trim() === '') delete pantryItems[k];
-      });
+      if (typeof applyHouseholdPantryFromSnapshot === 'function') {
+        applyHouseholdPantryFromSnapshot(h.pantryItems);
+      } else {
+        pantryItems = h.pantryItems;
+        Object.keys(pantryItems).forEach(function (k) {
+          if (!k || k === 'undefined' || k.trim() === '') delete pantryItems[k];
+        });
+      }
+      if (typeof setLastHouseholdPantrySnapshot === 'function') setLastHouseholdPantrySnapshot(pantryItems);
     }
     if (Array.isArray(h.spesaItems)) spesaItems = h.spesaItems;
     if (h.spesaLastGenerated != null) spesaLastGenerated = h.spesaLastGenerated;
@@ -322,9 +327,11 @@ function leaveHousehold() {
     .then(function () {
       stopHouseholdRealtimeListener();
       householdId = null;
+      if (typeof clearLastHouseholdPantrySnapshot === 'function') clearLastHouseholdPantrySnapshot();
       saveData();
       if (typeof showToast === 'function') showToast('Sei uscito dalla casa. Dispensa e spesa sono ora personali.', 'info');
       if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+      if (typeof renderCasa === 'function') renderCasa(true);
     })
     .catch(function (e) {
       console.warn('[Household] leaveHousehold error:', e);
@@ -344,10 +351,12 @@ function deleteHouseholdPermanently(hid) {
       if (householdId === hid) {
         stopHouseholdRealtimeListener();
         householdId = null;
+        if (typeof clearLastHouseholdPantrySnapshot === 'function') clearLastHouseholdPantrySnapshot();
         saveData();
       }
       if (typeof showToast === 'function') showToast('Casa eliminata definitivamente.', 'info');
       if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+      if (typeof renderCasa === 'function') renderCasa(true);
     })
     .catch(function (e) {
       console.warn('[Household] deleteHouseholdPermanently error:', e);
