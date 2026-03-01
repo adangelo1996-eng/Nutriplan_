@@ -2492,6 +2492,7 @@ body.app-visible .bottom-nav .nav-tab-casa.active::after {
 
 .casa-recipe-section { margin-top: 20px; }
 .casa-recipe-section-title { font-size: .9rem; font-weight: 700; color: var(--text-2); margin-bottom: 12px; }
+.casa-recipe-suggestion-reason { font-size: .8rem; color: var(--text-3, #666); margin: -6px 0 10px 0; }
 .casa-recipe-card-wrap { max-width: 320px; }
 .casa-recipe-card-wrap .rc-card { cursor: pointer; }
 
