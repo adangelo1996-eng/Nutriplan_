@@ -419,6 +419,16 @@ body .landing-accedi-wrap * {
   background: var(--primary-light, rgba(74, 155, 127, .2));
   transform: translateY(-1px);
 }
+.casa-shared-btn-primary {
+  background: var(--primary, #1c4434);
+  color: #fff;
+  border-color: var(--primary, #1c4434);
+}
+.casa-shared-btn-primary:hover {
+  background: var(--primary-mid, #2d6e55);
+  border-color: var(--primary-mid, #2d6e55);
+  color: #fff;
+}
 .casa-shared-btn-icon {
   font-size: 1.1em;
 }

@@ -451,7 +451,7 @@ function addFromSpesa(name, quantity, unit) {
    ============================================================ */
 function refreshAllAppViews() {
   var fns = [
-    'renderMealPlan', 'renderPantry', 'renderFridge',
+    'renderCasa', 'renderMealPlan', 'renderPantry', 'renderFridge',
     'renderRicettePage', 'renderStorico', 'renderSpesa',
     'renderStatistiche', 'renderProfilo', 'updateSavedFridges',
     'updateLimits', 'renderPianoAlimentare'

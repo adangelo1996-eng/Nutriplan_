@@ -306,7 +306,9 @@ function renderCasa(force) {
     '</div>';
 
   var sharedBlock = '';
-  if (typeof householdId !== 'undefined' && householdId) {
+  var hasHousehold = typeof householdId !== 'undefined' && householdId;
+  var hasUser = typeof currentUser !== 'undefined' && currentUser;
+  if (hasHousehold) {
     sharedBlock = '<div class="casa-shared-section rc-card">' +
       '<div class="casa-shared-title">Casa condivisa</div>' +
       '<p class="casa-shared-desc">Dispensa e lista della spesa condivise con i membri della casa.</p>' +
@@ -327,6 +329,22 @@ function renderCasa(force) {
           '<span class="casa-shared-btn-icon">\uD83D\uDED2</span>' +
           '<span>Lista della spesa</span>' +
         '</button>' +
+      '</div>' +
+    '</div>';
+  } else if (hasUser) {
+    sharedBlock = '<div class="casa-shared-section rc-card">' +
+      '<div class="casa-shared-title">Casa condivisa</div>' +
+      '<p class="casa-shared-desc">Condividi dispensa e lista della spesa con familiari o coinquilini.</p>' +
+      '<div class="casa-shared-buttons">' +
+        '<button class="casa-shared-btn casa-shared-btn-primary" onclick="createHouseholdAndShowLink()">' +
+          '<span class="casa-shared-btn-icon">\u2795</span>' +
+          '<span>Crea una casa</span>' +
+        '</button>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:12px;align-items:center;">' +
+        '<input type="text" id="casaHouseholdJoinInput" placeholder="Incolla il link invito" ' +
+               'style="flex:1;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);font-size:.9em;color:var(--text-1);">' +
+        '<button class="casa-shared-btn" onclick="joinHouseholdFromCasaInput()">Unisciti</button>' +
       '</div>' +
     '</div>';
   }
@@ -380,4 +398,19 @@ function escapeHtml(s) {
   var div = document.createElement('div');
   div.textContent = s;
   return div.innerHTML;
+}
+
+function joinHouseholdFromCasaInput() {
+  var inp = document.getElementById('casaHouseholdJoinInput');
+  if (!inp) return;
+  var hid = typeof parseJoinInput === 'function' ? parseJoinInput(inp.value) : (inp.value && inp.value.trim()) || null;
+  if (!hid) {
+    if (typeof showToast === 'function') showToast('Incolla il link invito o l\'id della casa', 'warning');
+    return;
+  }
+  if (typeof joinHousehold === 'function') {
+    joinHousehold(hid).then(function (ok) {
+      if (ok && inp) inp.value = '';
+    });
+  }
 }

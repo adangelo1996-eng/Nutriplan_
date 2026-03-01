@@ -232,7 +232,15 @@ function joinHouseholdFromInput() {
 }
 
 function createHouseholdAndShowLink() {
-  if (typeof createHousehold !== 'function') return;
+  // #region agent log
+  fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6d3b78'},body:JSON.stringify({sessionId:'6d3b78',location:'profilo.js:createHouseholdAndShowLink',message:'Button clicked',data:{createHouseholdExists:typeof createHousehold==='function'},timestamp:Date.now(),hypothesisId:'A'})}).catch(function(){});
+  // #endregion
+  if (typeof createHousehold !== 'function') {
+    // #region agent log
+    fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'6d3b78'},body:JSON.stringify({sessionId:'6d3b78',location:'profilo.js:createHouseholdAndShowLink',message:'createHousehold not a function, early return',data:{},timestamp:Date.now(),hypothesisId:'D'})}).catch(function(){});
+    // #endregion
+    return;
+  }
   createHousehold().then(function (hid) {
     if (hid && typeof renderProfilo === 'function') renderProfilo();
     else if (!hid && typeof showToast === 'function') showToast('Impossibile creare la casa. Verifica di essere connesso e di aver deployato le regole Firebase.', 'error');
