@@ -151,28 +151,7 @@
      HEADER (app) — con marquee stile homepage
 ═════════════════════════════════════════════════════════════════ -->
 <header class="app-header" id="appHeader" style="display:none">
-  <!-- Logo n. espandibile in alto a sinistra -->
-  <div class="app-inner app-header-main">
-    <div class="header-left">
-      <button type="button" class="header-logo-wrap" id="headerIcon" onclick="goToHomepage()" aria-label="Torna alla homepage">
-        <span class="app-logo-mark">n</span>
-        <span class="app-logo-expand">utriplan.</span>
-      </button>
-    </div>
-    <div class="header-center">
-      <span class="cloud-status local" id="cloudStatus">☁ Locale</span>
-    </div>
-    <div class="header-right">
-      <button class="btn-icon-only" id="themeToggle" onclick="toggleTheme()" title="Tema">🌙</button>
-      <div class="auth-user-pill" id="authUserPill" style="display:none" onclick="handleAuthPillClick(event)">
-        <img class="auth-avatar" id="authAvatar" src="" alt="">
-        <span class="auth-info" id="authName">Utente</span>
-      </div>
-      <button class="btn-icon-only" id="loginBtn" onclick="openAuthModal()" title="Accedi">👤</button>
-    </div>
-  </div>
-
-  <!-- Marquee NutriPlan + numeri: sfumati ai bordi, flusso continuo infinito -->
+  <!-- Marquee NutriPlan + numeri: in alto come prima cosa, sfumati ai bordi, flusso continuo infinito -->
   <div class="app-header-marquee">
     <div class="app-header-logo-track" aria-hidden="true">
       <div class="app-header-logo-runner">
@@ -203,6 +182,27 @@
         <div class="app-header-days-inner" id="appHeaderDaysInner"></div>
         <div class="app-header-days-inner" id="appHeaderDaysInnerClone"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Logo n. espandibile, cloud, azioni (sotto il marquee) -->
+  <div class="app-inner app-header-main">
+    <div class="header-left">
+      <button type="button" class="header-logo-wrap" id="headerIcon" onclick="goToHomepage()" aria-label="Torna alla homepage">
+        <span class="app-logo-mark">n</span>
+        <span class="app-logo-expand">utriplan.</span>
+      </button>
+    </div>
+    <div class="header-center">
+      <span class="cloud-status local" id="cloudStatus">☁ Locale</span>
+    </div>
+    <div class="header-right">
+      <button class="btn-icon-only" id="themeToggle" onclick="toggleTheme()" title="Tema">🌙</button>
+      <div class="auth-user-pill" id="authUserPill" style="display:none" onclick="handleAuthPillClick(event)">
+        <img class="auth-avatar" id="authAvatar" src="" alt="">
+        <span class="auth-info" id="authName">Utente</span>
+      </div>
+      <button class="btn-icon-only" id="loginBtn" onclick="openAuthModal()" title="Accedi">👤</button>
     </div>
   </div>
 </header>

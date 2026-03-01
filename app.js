@@ -1261,8 +1261,8 @@ function goToHomepage() {
     landing.style.display = '';
     landing.classList.remove('landing-transition-to-app');
   }
-  /* Mostra Accedi solo se l'utente non è loggato */
-  if (accediWrap) accediWrap.style.display = (typeof currentUser !== 'undefined' && currentUser) ? 'none' : '';
+  /* Wrap sempre visibile: Accedi o Logout gestiti da updateAuthUI in firebase-config */
+  if (accediWrap) accediWrap.style.display = '';
   if (header)  header.style.display  = 'none';
   if (sidebar) sidebar.style.display = 'none';
   if (bottom)  bottom.style.display  = 'none';

@@ -1682,7 +1682,7 @@ body.app-visible .modal .modal-body .auth-modal-offline:hover {
   margin: 0;
 }
 
-/* Barra Menu: subito sopra il riquadro della pagina (solo quando app visibile) */
+/* Barra Menu: subito sopra il riquadro della pagina */
 .app-menu-bar {
   position: fixed;
   top: var(--header-h);
@@ -1710,7 +1710,7 @@ body.app-visible .app-menu-bar {
   }
 }
 
-/* Pulsante Menu — giallo come il cursore (gold) */
+/* Pulsante Menu — giallo come il cursore; sfocatura solo sul tasto, a prescindere da cosa c’è sopra/sotto/dietro */
 .app-menu-btn {
   display: inline-block;
   font-size: clamp(0.95rem, 2.5vw, 1.2rem);
@@ -1718,9 +1718,11 @@ body.app-visible .app-menu-bar {
   letter-spacing: .02em;
   color: #d4a84b;
   padding: 8px 14px;
-  border: 1px solid rgba(212, 168, 75, .6);
+  border: 1px solid rgba(212, 168, 75, .5);
   border-radius: var(--r-full);
-  background: rgba(212, 168, 75, .12);
+  background: rgba(212, 168, 75, .15);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
   cursor: url('cursor-gold-ring.svg') 12 12, pointer;
   font-family: var(--font);
   transition: transform var(--t), color var(--t), border-color var(--t), background var(--t);
@@ -1730,18 +1732,20 @@ body.app-visible .app-menu-bar {
 .app-menu-btn:hover {
   color: #e8c068;
   border-color: #d4a84b;
-  background: rgba(212, 168, 75, .2);
+  background: rgba(212, 168, 75, .25);
   transform: scale(1.04);
 }
 [data-theme="dark"] .app-menu-btn {
   color: #d4a84b;
   border-color: rgba(212, 168, 75, .5);
-  background: rgba(212, 168, 75, .1);
+  background: rgba(212, 168, 75, .12);
+  backdrop-filter: blur(12px) saturate(1.15);
+  -webkit-backdrop-filter: blur(12px) saturate(1.15);
 }
 [data-theme="dark"] .app-menu-btn:hover {
   color: #e8c068;
   border-color: #d4a84b;
-  background: rgba(212, 168, 75, .18);
+  background: rgba(212, 168, 75, .22);
 }
 
 /* ══════════════════════════════════════════════════
@@ -1961,24 +1965,26 @@ body.app-menu-open {
   color: #0d2218;
   background: #e8f5f0;
 }
-/* Homepage: senza glassmorphism, stile piatto */
+/* Homepage: giallo come il cursore, con glassmorphism */
 .app-menu-link-homepage {
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border-color: rgba(255, 255, 255, .2);
+  color: #d4a84b;
+  background: rgba(212, 168, 75, .12);
+  border-color: rgba(212, 168, 75, .4);
 }
 .app-menu-link-homepage:hover {
-  background: rgba(255, 255, 255, .06);
-  border-color: rgba(255, 255, 255, .28);
+  color: #e8c068;
+  background: rgba(212, 168, 75, .22);
+  border-color: rgba(212, 168, 75, .6);
 }
 [data-theme="dark"] .app-menu-link-homepage {
-  background: transparent;
-  border-color: rgba(255, 255, 255, .15);
+  color: #d4a84b;
+  background: rgba(212, 168, 75, .14);
+  border-color: rgba(212, 168, 75, .45);
 }
 [data-theme="dark"] .app-menu-link-homepage:hover {
-  background: rgba(255, 255, 255, .06);
-  border-color: rgba(255, 255, 255, .25);
+  color: #e8c068;
+  background: rgba(212, 168, 75, .22);
+  border-color: rgba(212, 168, 75, .6);
 }
 /* Scritta NutriPlan: contrasto in base a tema (chiaro=testo scuro, scuro=testo chiaro), non invertita come il resto del menu */
 .app-menu-brand {

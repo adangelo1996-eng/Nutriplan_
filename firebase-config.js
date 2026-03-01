@@ -267,7 +267,8 @@ function updateAuthUI(user) {
     if (landingOffline)     landingOffline.style.display = 'none';
     if (landingAccediWrap)  landingAccediWrap.style.display = '';
     if (landingAccediBtn)   landingAccediBtn.style.display = 'none';
-    if (landingLogoutBtn)   landingLogoutBtn.style.display = '';
+    if (landingLogoutBtn)   landingLogoutBtn.style.display = 'inline-block';
+    if (typeof closeAccediOptions === 'function') closeAccediOptions();
     /* Titolo landing: "Il tuo piano alimentare, [nome]" — animazione tabellone + formattazione n */
     var heroName = document.getElementById('landingHeroUserName');
     if (heroName) {
@@ -281,7 +282,7 @@ function updateAuthUI(user) {
     if (landingGoogle)      landingGoogle.style.display  = 'none';
     if (landingOffline)     landingOffline.style.display = 'none';
     if (landingAccediWrap)  landingAccediWrap.style.display = '';
-    if (landingAccediBtn)   landingAccediBtn.style.display = '';
+    if (landingAccediBtn)   landingAccediBtn.style.display = 'inline-block';
     if (landingLogoutBtn)   landingLogoutBtn.style.display = 'none';
     var heroName = document.getElementById('landingHeroUserName');
     if (heroName) {

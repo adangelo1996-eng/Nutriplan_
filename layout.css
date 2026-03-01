@@ -20,7 +20,7 @@
 /* Pagine a schermo intero con margine dal bordo quando in app; contenitore centrato */
 body.app-visible .app-main {
   margin: 12px;
-  margin-top: calc(var(--header-h) + var(--menu-bar-h, 44px) + 12px);
+  margin-top: calc(var(--header-h) + var(--menu-bar-h, 44px) + 20px);
   margin-bottom: 12px;
   max-width: var(--content-w, 1200px);
   margin-left: auto;
@@ -30,7 +30,7 @@ body.app-visible .app-main {
   body.app-visible .app-main {
     margin-left: max(16px, env(safe-area-inset-left));
     margin-right: max(16px, env(safe-area-inset-right));
-    margin-top: calc(var(--header-h) + var(--menu-bar-h, 44px) + 16px);
+    margin-top: calc(var(--header-h) + var(--menu-bar-h, 44px) + 24px);
     margin-bottom: 16px;
   }
   body.app-visible .page {
