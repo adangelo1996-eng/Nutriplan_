@@ -319,17 +319,30 @@ function showHouseholdCredentialsSuccess() {
   showHouseholdNamePasswordForm(false);
 }
 
-function copyHouseholdSuccessNameAndCode() {
+function copyHouseholdSuccessName() {
   var name = _householdSuccessName || (document.getElementById('householdSuccessName') && document.getElementById('householdSuccessName').textContent) || '';
-  var code = _householdSuccessCode || (document.getElementById('householdSuccessCode') && document.getElementById('householdSuccessCode').textContent) || '';
-  var text = 'Nome: ' + name + '\nCodice: ' + code;
   if (typeof copyTextToClipboard === 'function') {
-    copyTextToClipboard(text, function (ok) {
-      if (typeof showToast === 'function') showToast(ok ? 'Nome e codice copiati' : 'Copia manuale', ok ? 'success' : 'info');
+    copyTextToClipboard(name, function (ok) {
+      if (typeof showToast === 'function') showToast(ok ? 'Nome copiato' : 'Copia manuale', ok ? 'success' : 'info');
     });
   } else if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function () {
-      if (typeof showToast === 'function') showToast('Nome e codice copiati', 'success');
+    navigator.clipboard.writeText(name).then(function () {
+      if (typeof showToast === 'function') showToast('Nome copiato', 'success');
+    }).catch(function () {
+      if (typeof showToast === 'function') showToast('Copia manuale', 'info');
+    });
+  }
+}
+
+function copyHouseholdSuccessCode() {
+  var code = _householdSuccessCode || (document.getElementById('householdSuccessCode') && document.getElementById('householdSuccessCode').textContent) || '';
+  if (typeof copyTextToClipboard === 'function') {
+    copyTextToClipboard(code, function (ok) {
+      if (typeof showToast === 'function') showToast(ok ? 'Codice copiato' : 'Copia manuale', ok ? 'success' : 'info');
+    });
+  } else if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(function () {
+      if (typeof showToast === 'function') showToast('Codice copiato', 'success');
     }).catch(function () {
       if (typeof showToast === 'function') showToast('Copia manuale', 'info');
     });
