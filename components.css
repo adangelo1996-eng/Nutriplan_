@@ -2037,18 +2037,22 @@ body.app-menu-open {
   color: rgba(255,255,255,.95);
 }
 @media (max-width: 767px) {
+  /* Riduci centro e ingrandisci laterali: niente uscita dai bordi, link più spazio */
   .app-menu-cornice-left,
   .app-menu-cornice-right {
-    width: 25%;
-    min-width: 80px;
-    padding: 20px 10px;
+    width: 38%;
+    min-width: 100px;
+    max-width: 50%;
+    padding: 20px 12px;
+    box-sizing: border-box;
   }
   .app-menu-frame {
-    left: 25%;
-    width: 50%;
+    left: 38%;
+    width: 24%;
+    min-width: 60px;
   }
   .app-menu-center {
-    padding: 20px 16px;
+    padding: 16px 8px;
   }
   .app-menu-left,
   .app-menu-right {
@@ -2057,14 +2061,24 @@ body.app-menu-open {
     justify-content: center;
     align-items: center;
     gap: 6px;
+    max-width: 100%;
+    min-width: 0;
   }
   .app-menu-cornice-left .app-menu-left { align-items: center; }
   .app-menu-cornice-right .app-menu-right { align-items: center; }
+  .app-menu-link {
+    font-size: .8rem;
+    padding: 6px 10px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .app-menu-brand {
     writing-mode: vertical-rl;
     text-orientation: mixed;
     transform: rotate(180deg);
-    font-size: clamp(2rem, 12vw, 4rem);
+    font-size: clamp(1.5rem, 8vw, 2.8rem);
   }
   .app-menu-link::after {
     display: none;
@@ -3805,6 +3819,16 @@ input.invalid {
   margin-bottom: 10px;
 }
 [data-theme="dark"] .rm-extra-notice {
+  background: #2d1b00; color: #fcd34d; border-color: #78350f;
+}
+
+/* Avviso non bloccante: ingredienti non tutti in dispensa (modal ricetta) */
+.rm-missing-notice {
+  background: #fef3c7; color: #92400e;
+  border: 1px solid #fde68a; border-radius: var(--r-md);
+  padding: 8px 14px; margin-top: 8px; font-size: .8rem; font-weight: 600;
+}
+[data-theme="dark"] .rm-missing-notice {
   background: #2d1b00; color: #fcd34d; border-color: #78350f;
 }
 

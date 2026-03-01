@@ -11,16 +11,30 @@ var CASA_MEAL_LABELS = {
   cena:       'Cena'
 };
 
-function getSuggestedMeal() {
-  var now = new Date().getHours();
+/** Pasti considerati "completati" oggi: da usedItems O da ricette preparate. */
+function getConsumedMealKeysToday() {
   var todayKey = (typeof getCurrentDateKey === 'function') ? getCurrentDateKey() : '';
-  var used = (typeof appHistory !== 'undefined' && appHistory && appHistory[todayKey] && appHistory[todayKey].usedItems)
-    ? appHistory[todayKey].usedItems
-    : {};
-  var consumed = Object.keys(used).filter(function(mk) {
+  if (typeof appHistory === 'undefined' || !appHistory || !appHistory[todayKey]) return [];
+  var day = appHistory[todayKey];
+  var used = day.usedItems || {};
+  var ricette = day.ricette || {};
+  var fromUsed = Object.keys(used).filter(function(mk) {
     var m = used[mk] || {};
     return Object.keys(m).length > 0;
   });
+  var fromRicette = Object.keys(ricette).filter(function(mk) {
+    var r = ricette[mk] || {};
+    return Object.keys(r).length > 0;
+  });
+  var combined = {};
+  fromUsed.forEach(function(m) { combined[m] = true; });
+  fromRicette.forEach(function(m) { combined[m] = true; });
+  return Object.keys(combined);
+}
+
+function getSuggestedMeal() {
+  var now = new Date().getHours();
+  var consumed = getConsumedMealKeysToday();
 
   /* Se ha consumato pasti, suggerisci il prossimo */
   if (consumed.length > 0) {
@@ -39,16 +53,9 @@ function getSuggestedMeal() {
   return null;
 }
 
-/** Numero di pasti con almeno un consumo oggi (0–5). */
+/** Numero di pasti con almeno un consumo oggi (0–5): usedItems + ricette preparate. */
 function getConsumedMealsCountToday() {
-  var todayKey = (typeof getCurrentDateKey === 'function') ? getCurrentDateKey() : '';
-  var used = (typeof appHistory !== 'undefined' && appHistory && appHistory[todayKey] && appHistory[todayKey].usedItems)
-    ? appHistory[todayKey].usedItems
-    : {};
-  return Object.keys(used).filter(function(mk) {
-    var m = used[mk] || {};
-    return Object.keys(m).length > 0;
-  }).length;
+  return getConsumedMealKeysToday().length;
 }
 
 /** Saluto in base all'ora: Buongiorno / Buon pomeriggio / Buonasera [+ solo nome, senza cognome]. */
@@ -111,11 +118,21 @@ function getCasaSuggestedRecipe(mealKey) {
   return forMeal[0] || null;
 }
 
+var _renderCasaLastRun = 0;
+var _renderCasaDebounceMs = 120;
+
 function renderCasa() {
+  var now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+  if (now - _renderCasaLastRun < _renderCasaDebounceMs) return;
+  _renderCasaLastRun = now;
+
   var el = document.getElementById('casaContent');
   if (!el) return;
 
   var suggested = getSuggestedMeal();
+  /* Esponi per openRecipeModal: prepara da Casa con pasto suggerito */
+  try { window.casaSuggestedMeal = suggested || 'colazione'; window.casaSuggestedDateKey = (typeof getCurrentDateKey === 'function') ? getCurrentDateKey() : ''; } catch (e) {}
+
   var label = suggested ? CASA_MEAL_LABELS[suggested] : '';
   var msg = '';
   var subMsg = '';
@@ -139,6 +156,8 @@ function renderCasa() {
   var greeting = getCasaGreeting();
   var consumedCount = getConsumedMealsCountToday();
   var dateStr = getCasaDateString();
+  var totalMeals = 5;
+  var pctBar = totalMeals ? Math.round((consumedCount / totalMeals) * 100) : 0;
 
   var suggestedRecipe = getCasaSuggestedRecipe(suggested || 'colazione');
   var recipeBlock = '';
@@ -151,8 +170,19 @@ function renderCasa() {
       '</div>';
   }
 
+  var completionBar =
+    '<div class="casa-completion-wrap meal-progress-wrap">' +
+      '<div class="meal-prog-bar-wrap">' +
+        '<div class="meal-prog-bar" role="progressbar" aria-valuenow="' + consumedCount + '" aria-valuemin="0" aria-valuemax="' + totalMeals + '">' +
+          '<div class="meal-prog-fill casa-prog-fill" style="width:' + pctBar + '%"></div>' +
+        '</div>' +
+        '<span class="meal-prog-label casa-prog-label">' + consumedCount + '/' + totalMeals + ' pasti</span>' +
+      '</div>' +
+    '</div>';
+
   var html =
     '<p class="casa-greeting">' + escapeHtml(greeting) + '</p>' +
+    completionBar +
     '<div class="casa-card rc-card">' +
       '<div class="casa-suggestion">' +
         '<div class="casa-suggestion-title">' + escapeHtml(label || 'Riepilogo') + '</div>' +
@@ -164,7 +194,7 @@ function renderCasa() {
       '</div>' +
     '</div>' +
     recipeBlock +
-    '<p class="casa-meta">Oggi: ' + consumedCount + '/5 pasti · ' + escapeHtml(dateStr) + '</p>';
+    '<p class="casa-meta">Oggi · ' + escapeHtml(dateStr) + '</p>';
 
   el.innerHTML = html;
 }

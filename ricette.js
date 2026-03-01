@@ -594,6 +594,14 @@ function openRecipeModal(name) {
   var body  = document.getElementById('recipeModalBody');
   if (!modal||!body) return;
 
+  /* Da Casa: imposta pasto e data così "Segna come preparata" è disponibile */
+  if (typeof currentPage !== 'undefined' && currentPage === 'casa' && typeof casaSuggestedMeal !== 'undefined' && casaSuggestedMeal) {
+    if (typeof selectedMeal !== 'undefined') window.selectedMeal = casaSuggestedMeal;
+    if (typeof selectedDateKey !== 'undefined' && typeof getCurrentDateKey === 'function' && typeof casaSuggestedDateKey !== 'undefined')
+      window.selectedDateKey = casaSuggestedDateKey || getCurrentDateKey();
+    else if (typeof getCurrentDateKey === 'function') window.selectedDateKey = getCurrentDateKey();
+  }
+
   var basePorzioni = getRecipeBasePorzioni(r);
   currentRecipePorzioni = basePorzioni;
 
@@ -622,6 +630,12 @@ function openRecipeModal(name) {
               '<div class="rm-avail-track"><div class="rm-avail-fill" style="width:'+pct+'%;background:'+barClr+'"></div></div>'+
               '<span style="color:'+barClr+';font-size:.75rem;font-weight:800">'+avail+'/'+tot+' in dispensa</span>'+
             '</div>';
+    /* Avviso non bloccante: alcuni ingredienti mancanti */
+    if (pct < 100) {
+      html += '<div class="rm-missing-notice" role="status">' +
+              '⚠️ Alcuni ingredienti non sono in dispensa. Puoi comunque segnare come preparata.' +
+              '</div>';
+    }
   }
 
   /* Select numero persone: regola le quantità mostrate */
@@ -681,7 +695,8 @@ function openRecipeModal(name) {
   if (preparataBtn) {
     var fromOggiOrEdit = (typeof currentPage !== 'undefined' && (currentPage === 'piano' || currentPage === 'edit-day') &&
       typeof selectedMeal !== 'undefined' && selectedDateKey);
-    preparataBtn.style.display = fromOggiOrEdit ? '' : 'none';
+    var fromCasa = (typeof currentPage !== 'undefined' && currentPage === 'casa' && typeof casaSuggestedMeal !== 'undefined' && casaSuggestedMeal && selectedDateKey);
+    preparataBtn.style.display = (fromOggiOrEdit || fromCasa) ? '' : 'none';
   }
   modal.classList.add('active');
 }
@@ -846,6 +861,7 @@ function markRecipeAsPreparedAndClose() {
   if (typeof renderMealItems === 'function') renderMealItems();
   if (typeof renderPianoRicette === 'function') renderPianoRicette();
   if (typeof renderFridge === 'function') renderFridge();
+  if (typeof renderCasa === 'function') renderCasa();
 }
 
 function renderCustomRicette() {

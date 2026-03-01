@@ -257,6 +257,7 @@ function loadFromCloud(uid) {
       if (typeof checkOnboarding === 'function') checkOnboarding();
 
       refreshAllAppViews();
+      if (typeof currentPage !== 'undefined' && currentPage === 'casa' && typeof renderCasa === 'function') renderCasa();
       showCloudStatus('synced');
     })
     .catch(function (e) {
@@ -264,6 +265,7 @@ function loadFromCloud(uid) {
       /* In caso di errore, usa i dati locali */
       ensurePlanStructure();
       refreshAllAppViews();
+      if (typeof currentPage !== 'undefined' && currentPage === 'casa' && typeof renderCasa === 'function') renderCasa();
       showCloudStatus('error');
     });
 }
