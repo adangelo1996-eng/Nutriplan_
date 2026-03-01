@@ -212,9 +212,11 @@ function clearJoinFromUrl() {
 }
 
 function tryProcessJoinLink() {
-  var hid = getJoinHidFromUrl() || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('nutriplan_join') : null);
-  if (!hid || !hid.trim()) return;
-  hid = hid.trim();
+  var raw = getJoinHidFromUrl() || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('nutriplan_join') : null);
+  if (!raw || typeof raw !== 'string') return;
+  var hid = raw.trim();
+  try { hid = decodeURIComponent(hid); } catch (e) {}
+  if (!hid) return;
   if (typeof currentUser !== 'undefined' && currentUser && typeof joinHousehold === 'function') {
     joinHousehold(hid).then(function (ok) {
       if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('nutriplan_join');

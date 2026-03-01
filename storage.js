@@ -150,11 +150,11 @@ function applyLoadedData(data) {
     preferiti = data.preferiti;
   if (data.dietProfile && typeof data.dietProfile === 'object')
     dietProfile = data.dietProfile;
-  /* householdId: aggiorna solo se il cloud ha un valore esplicito; non azzerare se assente (evita race con sync dopo crea/unisciti casa) */
+  /* householdId: non sovrascrivere un valore locale valido con null dal cloud (sync in ritardo dopo crea/unisciti) */
   if (data.hasOwnProperty('householdId')) {
     if (data.householdId && typeof data.householdId === 'string' && data.householdId.trim())
       householdId = data.householdId.trim();
-    else
+    else if (!householdId)
       householdId = null;
   }
 }
@@ -240,11 +240,12 @@ function loadHouseholdData(hid) {
    ============================================================ */
 var syncTimeout = null;
 
-function syncToCloud() {
+function syncToCloud(immediate) {
   if (!firebaseReady || !currentUser) { showCloudStatus('local'); return; }
   showCloudStatus('saving');
   clearTimeout(syncTimeout);
-  syncTimeout = setTimeout(function () {
+  syncTimeout = null;
+  function doSync() {
     var userBlob = buildUserSaveObject();
     firebase.database()
       .ref('users/' + currentUser.uid + '/nutriplan')
@@ -269,7 +270,9 @@ function syncToCloud() {
       })
       .then(function ()  { showCloudStatus('synced'); })
       .catch(function () { showCloudStatus('error');  });
-  }, 1500);
+  }
+  if (immediate) doSync();
+  else syncTimeout = setTimeout(doSync, 1500);
 }
 
 function loadFromCloud(uid) {

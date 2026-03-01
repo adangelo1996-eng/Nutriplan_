@@ -336,6 +336,12 @@ function renderCasa(force) {
           '<span>Lista della spesa</span>' +
         '</button>' +
       '</div>' +
+      '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">' +
+        '<button class="casa-shared-btn" style="color:var(--text-3);" onclick="confirmDeleteHousehold()">' +
+          '<span class="casa-shared-btn-icon">\u2716</span>' +
+          '<span>Elimina casa condivisa</span>' +
+        '</button>' +
+      '</div>' +
     '</div>';
   } else if (hasUser) {
     sharedBlock = '<div class="casa-shared-section rc-card">' +
@@ -347,10 +353,23 @@ function renderCasa(force) {
           '<span>Crea una casa</span>' +
         '</button>' +
       '</div>' +
-      '<div style="display:flex;gap:8px;margin-top:12px;align-items:center;">' +
-        '<input type="text" id="casaHouseholdJoinInput" placeholder="Incolla il link invito" ' +
-               'style="flex:1;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);font-size:.9em;color:var(--text-1);">' +
-        '<button class="casa-shared-btn" onclick="joinHouseholdFromCasaInput()">Unisciti</button>' +
+      '<div style="margin-top:12px;">' +
+        '<div style="font-size:.85em;color:var(--text-2);margin-bottom:6px;">Con link invito</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;">' +
+          '<input type="text" id="casaHouseholdJoinInput" placeholder="Incolla il link invito" ' +
+                 'style="flex:1;padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);font-size:.9em;color:var(--text-1);">' +
+          '<button class="casa-shared-btn" onclick="joinHouseholdFromCasaInput()">Unisciti</button>' +
+        '</div>' +
+      '</div>' +
+      '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">' +
+        '<div style="font-size:.85em;color:var(--text-2);margin-bottom:6px;">Oppure con nome e password</div>' +
+        '<div style="display:flex;flex-direction:column;gap:8px;">' +
+          '<input type="text" id="casaHouseholdNameInput" placeholder="Nome della casa" ' +
+                 'style="padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);font-size:.9em;color:var(--text-1);">' +
+          '<input type="password" id="casaHouseholdPasswordInput" placeholder="Password" ' +
+                 'style="padding:10px 12px;border-radius:var(--r-md);border:1.5px solid var(--border);background:var(--bg-subtle);font-size:.9em;color:var(--text-1);">' +
+          '<button class="casa-shared-btn" onclick="joinHouseholdByNamePasswordFromCasa()">Accedi alla casa</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   }
@@ -419,4 +438,32 @@ function joinHouseholdFromCasaInput() {
       if (ok && inp) inp.value = '';
     });
   }
+}
+
+function joinHouseholdByNamePasswordFromCasa() {
+  var nameEl = document.getElementById('casaHouseholdNameInput');
+  var passEl = document.getElementById('casaHouseholdPasswordInput');
+  var name = nameEl ? nameEl.value : '';
+  var password = passEl ? passEl.value : '';
+  if (!name || !name.trim()) {
+    if (typeof showToast === 'function') showToast('Inserisci il nome della casa', 'warning');
+    return;
+  }
+  if (!password || !password.trim()) {
+    if (typeof showToast === 'function') showToast('Inserisci la password', 'warning');
+    return;
+  }
+  if (typeof joinHouseholdByNameAndPassword !== 'function') {
+    if (typeof showToast === 'function') showToast('Funzione non disponibile', 'error');
+    return;
+  }
+  joinHouseholdByNameAndPassword(name.trim(), password).then(function (ok) {
+    if (ok) {
+      if (nameEl) nameEl.value = '';
+      if (passEl) passEl.value = '';
+      if (typeof showToast === 'function') showToast('Accesso alla casa effettuato.', 'success');
+    } else {
+      if (typeof showToast === 'function') showToast('Nome casa o password non corretti. Riprova.', 'error');
+    }
+  });
 }

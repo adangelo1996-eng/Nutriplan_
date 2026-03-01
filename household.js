@@ -30,6 +30,30 @@ function stopHouseholdRealtimeListener() {
   }
 }
 
+/**
+ * Unisce la dispensa personale (myPantry) in quella della casa (pantryItems).
+ * Per ogni ingrediente: se non c'è nella casa lo aggiunge; se c'è già somma le quantità.
+ */
+function mergePantryIntoHousehold(myPantry) {
+  if (!myPantry || typeof myPantry !== 'object') return;
+  if (typeof pantryItems === 'undefined') return;
+  if (!pantryItems) pantryItems = {};
+  Object.keys(myPantry).forEach(function (name) {
+    if (!name || String(name).trim() === '') return;
+    var mine = myPantry[name];
+    var existing = pantryItems[name];
+    if (!existing) {
+      pantryItems[name] = mine && typeof mine === 'object' ? Object.assign({}, mine) : { quantity: mine, category: '' };
+      return;
+    }
+    var myQ = mine && typeof mine === 'object' && typeof mine.quantity !== 'undefined' ? Number(mine.quantity) : Number(mine);
+    var exQ = typeof existing.quantity !== 'undefined' ? Number(existing.quantity) : Number(existing);
+    if (isNaN(myQ)) myQ = 0;
+    if (isNaN(exQ)) exQ = 0;
+    pantryItems[name] = Object.assign({}, existing, { quantity: exQ + myQ });
+  });
+}
+
 function getHouseholdInviteLink(hid) {
   if (!hid) return '';
   var base = '';
@@ -42,11 +66,85 @@ function getHouseholdInviteLink(hid) {
 }
 
 /**
+ * Hash della password per accesso con nome casa (SHA-256 in hex).
+ * @param {string} password
+ * @returns {Promise<string>}
+ */
+function hashPasswordForHousehold(password) {
+  var str = (password || '').trim();
+  if (!str) return Promise.resolve('');
+  if (typeof crypto !== 'undefined' && crypto.subtle && typeof crypto.subtle.digest === 'function') {
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)).then(function (buf) {
+      var arr = new Uint8Array(buf);
+      var hex = '';
+      for (var i = 0; i < arr.length; i++) hex += ('0' + arr[i].toString(16)).slice(-2);
+      return hex;
+    });
+  }
+  return Promise.resolve(str);
+}
+
+/**
+ * Salva nome e password per permettere accesso alla casa senza link (householdJoin).
+ * @param {string} hid
+ * @param {string} name nome della casa
+ * @param {string} password
+ */
+function setHouseholdJoinCredentials(hid, name, password) {
+  if (!hid || typeof firebase === 'undefined') return Promise.resolve();
+  var n = (name || '').trim();
+  if (!n) return Promise.resolve();
+  return hashPasswordForHousehold(password).then(function (passwordHash) {
+    if (!passwordHash) return;
+    return firebase.database().ref('householdJoin/' + hid).set({
+      name: n,
+      nameLower: n.toLowerCase(),
+      passwordHash: passwordHash
+    });
+  }).catch(function (e) {
+    console.warn('[Household] setHouseholdJoinCredentials error:', e);
+  });
+}
+
+/**
+ * Unisciti a una casa tramite nome e password. Cerca in householdJoin e verifica la password.
+ * @param {string} name nome della casa
+ * @param {string} password
+ * @returns {Promise<boolean>}
+ */
+function joinHouseholdByNameAndPassword(name, password) {
+  var n = (name || '').trim().toLowerCase();
+  if (!n || typeof firebase === 'undefined') return Promise.resolve(false);
+  return hashPasswordForHousehold(password).then(function (inputHash) {
+    if (!inputHash) return false;
+    return firebase.database().ref('householdJoin').orderByChild('nameLower').equalTo(n).once('value').then(function (snap) {
+      if (!snap.exists()) return false;
+      var val = snap.val();
+      var hid = null;
+      var storedHash = null;
+      for (var key in val) {
+        if (val[key] && val[key].passwordHash) {
+          hid = key;
+          storedHash = val[key].passwordHash;
+          break;
+        }
+      }
+      if (!hid || storedHash !== inputHash) return false;
+      return typeof joinHousehold === 'function' ? joinHousehold(hid) : Promise.resolve(false);
+    });
+  }).catch(function (e) {
+    console.warn('[Household] joinHouseholdByNameAndPassword error:', e);
+    return false;
+  });
+}
+
+/**
  * Crea una nuova casa: dispensa e spesa correnti vengono migrate nella casa.
  * Richiede utente loggato e Firebase pronto.
+ * @param {boolean} [includeMyPantry=true] se true unisce la dispensa personale alla casa
  * @returns {Promise<string|null>} householdId o null in caso di errore
  */
-function createHousehold() {
+function createHousehold(includeMyPantry) {
   if (typeof firebase === 'undefined') {
     if (typeof showToast === 'function') showToast('Firebase non disponibile. Ricarica la pagina.', 'error');
     return Promise.resolve(null);
@@ -59,6 +157,7 @@ function createHousehold() {
     if (typeof showToast === 'function') showToast('Accedi con Google per creare una casa condivisa.', 'warning');
     return Promise.resolve(null);
   }
+  if (includeMyPantry !== false) includeMyPantry = true;
   var uid = currentUser.uid;
   var displayName = (currentUser.displayName || currentUser.email || 'Utente').trim();
   var email = currentUser.email || null;
@@ -66,7 +165,7 @@ function createHousehold() {
   var hid = ref.push().key;
   var now = Date.now();
   var payload = {
-    members: {};
+    members: {}
   };
   payload.members[uid] = {
     displayName: displayName,
@@ -74,7 +173,7 @@ function createHousehold() {
     role: 'owner',
     joinedAt: now
   };
-  payload.pantryItems = typeof pantryItems !== 'undefined' && pantryItems ? pantryItems : {};
+  payload.pantryItems = includeMyPantry && typeof pantryItems !== 'undefined' && pantryItems ? pantryItems : {};
   payload.spesaItems = Array.isArray(spesaItems) ? spesaItems : [];
   payload.spesaLastGenerated = spesaLastGenerated;
   payload.createdBy = uid;
@@ -86,6 +185,7 @@ function createHousehold() {
     .then(function () {
       householdId = hid;
       saveData();
+      if (typeof syncToCloud === 'function') syncToCloud(true);
       if (typeof showToast === 'function') showToast('Casa creata. Condividi il link per invitare.', 'success');
       if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
       return hid;
@@ -120,6 +220,12 @@ function joinHousehold(hid) {
   var displayName = (currentUser.displayName || currentUser.email || 'Utente').trim();
   var email = currentUser.email || null;
 
+  var myPantryBeforeJoin = null;
+  try {
+    myPantryBeforeJoin = (typeof pantryItems !== 'undefined' && pantryItems && Object.keys(pantryItems).length > 0)
+      ? JSON.parse(JSON.stringify(pantryItems)) : null;
+  } catch (e) { myPantryBeforeJoin = null; }
+
   return firebase.database()
     .ref('households/' + hid)
     .once('value')
@@ -145,9 +251,32 @@ function joinHousehold(hid) {
     .then(function () {
       if (householdId !== hid) return false;
       saveData();
+      if (typeof syncToCloud === 'function') syncToCloud(true);
       startHouseholdRealtimeListener();
       if (typeof showToast === 'function') showToast('Ti sei unito alla casa. Dispensa e spesa sono condivise.', 'success');
       if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+
+      if (myPantryBeforeJoin && Object.keys(myPantryBeforeJoin).length > 0 && typeof showAppConfirm === 'function') {
+        showAppConfirm({
+          title: 'Quale dispensa usare?',
+          message: 'Puoi usare la tua dispensa personale come dispensa della casa (sostituirà quella attuale per tutti i membri) oppure tenere la dispensa già presente nella casa.',
+          primaryText: 'Usa la mia dispensa',
+          secondaryText: 'Usa quella della casa',
+          primaryAction: function () {
+            pantryItems = JSON.parse(JSON.stringify(myPantryBeforeJoin));
+            if (typeof syncToCloud === 'function') syncToCloud(true);
+            if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+            if (typeof showToast === 'function') showToast('Dispensa della casa aggiornata con la tua.', 'success');
+          }
+        });
+      } else if (myPantryBeforeJoin && Object.keys(myPantryBeforeJoin).length > 0 && typeof confirm === 'function') {
+        if (confirm('Usa la tua dispensa come dispensa della casa? (sostituirà quella attuale)\n\nClicca Annulla per tenere la dispensa già presente nella casa.')) {
+          pantryItems = JSON.parse(JSON.stringify(myPantryBeforeJoin));
+          if (typeof syncToCloud === 'function') syncToCloud(true);
+          if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+          if (typeof showToast === 'function') showToast('Dispensa della casa aggiornata con la tua.', 'success');
+        }
+      }
       return true;
     })
     .catch(function (e) {
@@ -179,6 +308,72 @@ function leaveHousehold() {
       console.warn('[Household] leaveHousehold error:', e);
       if (typeof showToast === 'function') showToast('Errore uscita dalla casa', 'error');
     });
+}
+
+/**
+ * Elimina definitivamente la casa da Firebase (solo se chiamato dopo aver verificato di essere l'ultimo membro).
+ */
+function deleteHouseholdPermanently(hid) {
+  if (!hid || typeof firebase === 'undefined') return Promise.resolve();
+  return firebase.database()
+    .ref('households/' + hid)
+    .remove()
+    .then(function () {
+      if (householdId === hid) {
+        stopHouseholdRealtimeListener();
+        householdId = null;
+        saveData();
+      }
+      if (typeof showToast === 'function') showToast('Casa eliminata definitivamente.', 'info');
+      if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+    })
+    .catch(function (e) {
+      console.warn('[Household] deleteHouseholdPermanently error:', e);
+      if (typeof showToast === 'function') showToast('Errore eliminazione casa', 'error');
+    });
+}
+
+/**
+ * Elimina casa per l'utente: se è l'ultimo membro elimina la casa definitivamente (con conferma), altrimenti esce solo lui.
+ */
+function confirmDeleteHousehold() {
+  if (!householdId || !currentUser) return;
+  var hid = householdId;
+  var uid = currentUser.uid;
+
+  if (typeof getHouseholdMembers !== 'function') return;
+  getHouseholdMembers(hid).then(function (members) {
+    var list = members && typeof members === 'object' ? Object.keys(members) : [];
+    var isLast = list.length === 1 && list[0] === uid;
+
+    if (isLast) {
+      if (typeof showAppConfirm === 'function') {
+        showAppConfirm({
+          title: 'Elimina casa definitivamente',
+          message: 'Sei l\'ultimo membro. Eliminando la casa verrà rimossa definitivamente per tutti. Vuoi continuare?',
+          primaryText: 'Elimina definitivamente',
+          secondaryText: 'Annulla',
+          primaryAction: function () { deleteHouseholdPermanently(hid); }
+        });
+      } else if (confirm('Sei l\'ultimo membro. Eliminando la casa verrà rimossa definitivamente. Continuare?')) {
+        deleteHouseholdPermanently(hid);
+      }
+    } else {
+      if (typeof showAppConfirm === 'function') {
+        showAppConfirm({
+          title: 'Elimina casa per te',
+          message: 'Uscirai dalla casa. La casa resterà attiva per gli altri membri.',
+          primaryText: 'Esci dalla casa',
+          secondaryText: 'Annulla',
+          primaryAction: function () { leaveHousehold(); }
+        });
+      } else if (confirm('Vuoi uscire dalla casa? La casa resterà attiva per gli altri membri.')) {
+        leaveHousehold();
+      }
+    }
+  }).catch(function () {
+    if (typeof showToast === 'function') showToast('Impossibile verificare i membri. Riprova.', 'error');
+  });
 }
 
 /**

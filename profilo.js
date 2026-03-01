@@ -156,7 +156,10 @@ function buildProfiloHouseholdSection() {
       '<div class="settings-section-title">🏠 Casa condivisa</div>' +
       '<div style="padding:12px 16px;">' +
         '<p style="font-size:.9em;color:var(--text-2);margin-bottom:12px;">Sei in una casa condivisa. Gestisci casa, link invito e membri dalla pagina Casa.</p>' +
-        '<button class="rc-btn rc-btn-outline" onclick="confirmLeaveHousehold()">🚪 Esci da casa</button>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+          '<button class="rc-btn rc-btn-outline" onclick="confirmLeaveHousehold()">🚪 Esci da casa</button>' +
+          '<button class="rc-btn rc-btn-outline" style="color:var(--text-3);" onclick="confirmDeleteHousehold()">Elimina casa condivisa</button>' +
+        '</div>' +
       '</div>' +
     '</div>'
   );
@@ -192,7 +195,8 @@ function joinHouseholdFromInput() {
 }
 
 function createHouseholdAndShowLink() {
-  var doCreate = function () {
+  var doCreate = function (includeMyPantry) {
+    if (includeMyPantry !== false) includeMyPantry = true;
     if (typeof firebase === 'undefined') {
       if (typeof showToast === 'function') showToast('Firebase non disponibile. Ricarica la pagina.', 'error');
       return Promise.resolve(null);
@@ -213,7 +217,7 @@ function createHouseholdAndShowLink() {
     var now = Date.now();
     var payload = {
       members: {},
-      pantryItems: typeof pantryItems !== 'undefined' && pantryItems ? pantryItems : {},
+      pantryItems: includeMyPantry && typeof pantryItems !== 'undefined' && pantryItems ? pantryItems : {},
       spesaItems: Array.isArray(spesaItems) ? spesaItems : [],
       spesaLastGenerated: spesaLastGenerated,
       createdBy: uid,
@@ -224,6 +228,7 @@ function createHouseholdAndShowLink() {
       .then(function () {
         householdId = hid;
         saveData();
+        if (typeof syncToCloud === 'function') syncToCloud(true);
         if (typeof showToast === 'function') showToast('Casa creata. Condividi il link per invitare.', 'success');
         if (typeof startHouseholdRealtimeListener === 'function') startHouseholdRealtimeListener();
         if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
@@ -239,14 +244,73 @@ function createHouseholdAndShowLink() {
       });
   };
   var createFn = typeof createHousehold === 'function' ? createHousehold : doCreate;
-  createFn().then(function (hid) {
-    if (hid) {
-      if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
-      copyInviteLinkToClipboard(hid);
-    } else if (typeof showToast === 'function') {
-      showToast('Impossibile creare la casa. Verifica di essere connesso e di aver deployato le regole Firebase.', 'error');
+  var hasPantry = typeof pantryItems !== 'undefined' && pantryItems && Object.keys(pantryItems).length > 0;
+
+  function runCreate(includeMyPantry) {
+    createFn(includeMyPantry).then(function (hid) {
+      if (hid) {
+        if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+        copyInviteLinkToClipboard(hid);
+        askOptionalHouseholdNameAndPassword(hid);
+      } else if (typeof showToast === 'function') {
+        showToast('Impossibile creare la casa. Verifica di essere connesso e di aver deployato le regole Firebase.', 'error');
+      }
+    });
+  }
+
+  if (hasPantry && typeof showAppConfirm === 'function') {
+    showAppConfirm({
+      title: 'Usa la tua dispensa per la nuova casa?',
+      message: 'Vuoi usare la tua dispensa personale come dispensa della casa? Sarà visibile a tutti i membri che si uniranno. Puoi anche creare una casa con dispensa vuota.',
+      primaryText: 'Sì, usa la mia dispensa',
+      secondaryText: 'No, crea con dispensa vuota',
+      primaryAction: function () { runCreate(true); },
+      secondaryAction: function () { runCreate(false); }
+    });
+  } else if (hasPantry && typeof confirm === 'function') {
+    if (confirm('Vuoi usare la tua dispensa personale come dispensa della nuova casa?')) {
+      runCreate(true);
+    } else {
+      runCreate(false);
     }
-  });
+  } else {
+    runCreate(true);
+  }
+}
+
+function askOptionalHouseholdNameAndPassword(hid) {
+  if (!hid || typeof setHouseholdJoinCredentials !== 'function') return;
+  var msg = 'Vuoi poter accedere a questa casa anche con un nome e una password? Chi conosce nome e password potrà unirsi senza usare il link.';
+  if (typeof showAppConfirm === 'function') {
+    showAppConfirm({
+      title: 'Accesso con nome e password (opzionale)',
+      message: msg,
+      primaryText: 'Sì, imposta nome e password',
+      secondaryText: 'Salta',
+      primaryAction: function () {
+        var name = (typeof prompt === 'function' && prompt('Nome della casa (es. Casa Rossi):')) || '';
+        if (!name || !name.trim()) return;
+        var password = (typeof prompt === 'function' && prompt('Password per l\'accesso (la condividerai con chi deve entrare):')) || '';
+        if (!password || !password.trim()) {
+          if (typeof showToast === 'function') showToast('Nome e password non impostati.', 'info');
+          return;
+        }
+        setHouseholdJoinCredentials(hid, name.trim(), password).then(function () {
+          if (typeof showToast === 'function') showToast('Nome e password salvati. Puoi accedere dalla pagina Casa.', 'success');
+        });
+      }
+    });
+  } else if (typeof confirm === 'function' && confirm(msg)) {
+    var name = (typeof prompt === 'function' && prompt('Nome della casa:')) || '';
+    if (name && name.trim()) {
+      var password = (typeof prompt === 'function' && prompt('Password per l\'accesso:')) || '';
+      if (password && password.trim()) {
+        setHouseholdJoinCredentials(hid, name.trim(), password).then(function () {
+          if (typeof showToast === 'function') showToast('Nome e password salvati.', 'success');
+        });
+      }
+    }
+  }
 }
 
 function copyInviteLinkToClipboard(hid) {
