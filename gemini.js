@@ -79,6 +79,27 @@ function _geminiCall(prompt, callback, opts) {
   xhr.send(body);
 }
 
+/**
+ * Suggerimento ricetta per meteo (ultima spiaggia Casa): prompt minimal, pochi token.
+ * recipeNames: array di stringhe; weatherType: 'cold'|'hot'|'rain'|'neutral'.
+ * callback(err, recipeName) con il nome della ricetta consigliata o err.
+ */
+function suggestRecipeByWeather(recipeNames, weatherType, callback) {
+  if (!Array.isArray(recipeNames) || !recipeNames.length) { callback('Nessuna ricetta', null); return; }
+  var list = recipeNames.slice(0, 15).join(', ');
+  var meteoIt = weatherType === 'cold' ? 'freddo' : weatherType === 'hot' ? 'caldo' : weatherType === 'rain' ? 'pioggia' : 'neutro';
+  var prompt = 'Ricette: ' + list + '.\nMeteo: ' + meteoIt + '.\nQuale consigli? Rispondi solo con il nome di una ricetta della lista.';
+  _geminiCall(prompt, function (text, err) {
+    if (err) { callback(err, null); return; }
+    var name = (text || '').trim().replace(/^["']|["']$/g, '');
+    if (!name) { callback('Risposta vuota', null); return; }
+    var found = recipeNames.find(function (n) {
+      return n && name.toLowerCase().indexOf((n).toLowerCase()) !== -1 || (n).toLowerCase().indexOf(name.toLowerCase()) !== -1;
+    });
+    callback(null, found || recipeNames[0]);
+  }, { maxOutputTokens: 60, temperature: 0.2 });
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    PARSER JSON MULTI-STRATEGIA
    Prova diverse tecniche per estrarre JSON valido dalla risposta AI

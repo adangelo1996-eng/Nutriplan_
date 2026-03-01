@@ -73,19 +73,37 @@ function getCasaDateString() {
   return new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'short' });
 }
 
+/** Bonus keyword meteo su nome + preparazione (solo dati utente). */
+function getWeatherBonusForRecipe(recipe, weatherContext) {
+  if (!weatherContext || weatherContext.type === 'neutral') return 0;
+  var name = (recipe.name || recipe.nome || '').toLowerCase();
+  var prep = (recipe.preparazione || recipe.preparation || '').toLowerCase();
+  var text = name + ' ' + prep;
+  var type = weatherContext.type;
+  if (type === 'cold') {
+    if (/zuppa|minestra|brodo|porridge|tè|caldo|in forno|cuoci/.test(text)) return 1;
+  } else if (type === 'hot') {
+    if (/insalata|gazpacho|freddo|raffreddare|fresco|crudo/.test(text)) return 1;
+  } else if (type === 'rain') {
+    if (/cremoso|minestra|zuppa|cioccolata|torta|comfort/.test(text)) return 1;
+  }
+  return 0;
+}
+
 /**
- * Ricetta suggerita per il pasto: quella con più ingredienti in scadenza;
- * in assenza di ingredienti in scadenza, quella con più ingredienti disponibili in dispensa.
+ * Ricetta suggerita per il pasto (solo da database utente): scadenza, disponibilità, bonus meteo.
+ * Ritorna { recipe, weatherScore, candidateNames } per eventuale AI ultima spiaggia.
  */
-function getCasaSuggestedRecipe(mealKey) {
-  if (!mealKey) return null;
+function getCasaSuggestedRecipe(mealKey, weatherContext, aiOverrideRecipe) {
+  if (!mealKey) return { recipe: null, weatherScore: 0, candidateNames: [] };
+  if (aiOverrideRecipe) return { recipe: aiOverrideRecipe, weatherScore: 1, candidateNames: [] };
   var all = (typeof getAllRicette === 'function') ? getAllRicette() : [];
   var forMeal = all.filter(function(r) {
     var pasto = r.pasto;
     var pasti = Array.isArray(pasto) ? pasto : (pasto ? [pasto] : []);
     return pasti.indexOf(mealKey) !== -1;
   });
-  if (!forMeal.length) return null;
+  if (!forMeal.length) return { recipe: null, weatherScore: 0, candidateNames: [] };
 
   var expiring = (typeof getExpiringSoon === 'function') ? getExpiringSoon(14) : [];
   var expiringNames = expiring.map(function(e) { return (e.name || '').trim().toLowerCase(); });
@@ -98,40 +116,52 @@ function getCasaSuggestedRecipe(mealKey) {
     }).length;
   }
 
-  var withExpiring = forMeal.map(function(r) {
-    return { recipe: r, expiringCount: countExpiringInRecipe(r) };
-  }).filter(function(x) { return x.expiringCount > 0; });
-
-  if (withExpiring.length) {
-    withExpiring.sort(function(a, b) { return b.expiringCount - a.expiringCount; });
-    return withExpiring[0].recipe;
-  }
-
   var countAvail = (typeof countAvailable === 'function') ? countAvailable : function() { return 0; };
-  forMeal.sort(function(a, b) {
-    var aIngs = Array.isArray(a.ingredienti) ? a.ingredienti : [];
-    var bIngs = Array.isArray(b.ingredienti) ? b.ingredienti : [];
-    var diff = countAvail(bIngs) - countAvail(aIngs);
-    if (diff !== 0) return diff;
-    return (b.ingredienti || []).length - (a.ingredienti || []).length;
+
+  var scored = forMeal.map(function(r) {
+    var exp = countExpiringInRecipe(r);
+    var ings = Array.isArray(r.ingredienti) ? r.ingredienti : [];
+    var avail = countAvail(ings);
+    var wBonus = getWeatherBonusForRecipe(r, weatherContext);
+    return { recipe: r, expiringCount: exp, avail: avail, weatherBonus: wBonus };
   });
-  return forMeal[0] || null;
+
+  scored.sort(function(a, b) {
+    if (b.expiringCount !== a.expiringCount) return b.expiringCount - a.expiringCount;
+    if (b.weatherBonus !== a.weatherBonus) return b.weatherBonus - a.weatherBonus;
+    return b.avail - a.avail;
+  });
+
+  var best = scored[0];
+  var candidateNames = forMeal.map(function(r) { return r.name || r.nome || ''; }).filter(Boolean);
+  return {
+    recipe: best ? best.recipe : null,
+    weatherScore: best ? best.weatherBonus : 0,
+    candidateNames: candidateNames
+  };
 }
 
 var _renderCasaLastRun = 0;
 var _renderCasaDebounceMs = 120;
+var _casaWeatherState = null; /* { loading, data, error } */
+var _casaAISuggestedRecipe = null; /* override da AI ultima spiaggia */
+var _casaWeatherRequestStarted = false;
 
-function renderCasa() {
+function renderCasa(force) {
   var now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
-  if (now - _renderCasaLastRun < _renderCasaDebounceMs) return;
+  if (!force && now - _renderCasaLastRun < _renderCasaDebounceMs) return;
   _renderCasaLastRun = now;
 
   var el = document.getElementById('casaContent');
   if (!el) return;
 
   var suggested = getSuggestedMeal();
-  /* Esponi per openRecipeModal: prepara da Casa con pasto suggerito */
   try { window.casaSuggestedMeal = suggested || 'colazione'; window.casaSuggestedDateKey = (typeof getCurrentDateKey === 'function') ? getCurrentDateKey() : ''; } catch (e) {}
+
+  var weather = _casaWeatherState && _casaWeatherState.data ? _casaWeatherState.data : null;
+  var weatherContext = (typeof getWeatherSuggestionContext === 'function') ? getWeatherSuggestionContext(weather) : null;
+  var suggestionResult = getCasaSuggestedRecipe(suggested || 'colazione', weatherContext, _casaAISuggestedRecipe);
+  var suggestedRecipe = suggestionResult.recipe;
 
   var label = suggested ? CASA_MEAL_LABELS[suggested] : '';
   var msg = '';
@@ -148,9 +178,33 @@ function renderCasa() {
     var m = msgs[suggested] || { msg: 'Suggerimento: ' + label + '.', sub: 'Cosa hai in programma?' };
     msg = m.msg;
     subMsg = m.sub;
+    if (weatherContext && weatherContext.type === 'cold') subMsg = (subMsg ? subMsg + ' ' : '') + 'Con questo freddo una zuppa è l\'ideale.';
+    else if (weatherContext && weatherContext.type === 'hot') subMsg = (subMsg ? subMsg + ' ' : '') + 'Con il caldo preferisci qualcosa di fresco?';
+    else if (weatherContext && weatherContext.type === 'rain') subMsg = (subMsg ? subMsg + ' ' : '') + 'Giornata di pioggia: un piatto comfort?';
   } else {
     msg = 'Hai già consumato tutti i pasti di oggi.';
     subMsg = 'Rivedi il piano o prepara qualcosa in più.';
+  }
+
+  /* Avvio fetch meteo una sola volta; al risultato ri-render */
+  if (typeof getWeatherForCasa === 'function' && !_casaWeatherRequestStarted) {
+    _casaWeatherRequestStarted = true;
+    _casaWeatherState = { loading: true };
+    getWeatherForCasa(function (w) {
+      _casaWeatherState = w.error ? { loading: false, error: w.error } : { loading: false, data: w };
+      renderCasa(true);
+    });
+  }
+
+  var weatherBlock = '';
+  if (_casaWeatherState && _casaWeatherState.loading) {
+    weatherBlock = '<div class="casa-weather casa-weather--loading" aria-busy="true"><span class="casa-weather-icon">🌤️</span><span class="casa-weather-temp">--</span><span class="casa-weather-label">Meteo in caricamento…</span></div>';
+  } else if (weather && !weather.error) {
+    var condClass = 'casa-weather--' + (weather.condition || 'cloudy');
+    weatherBlock = '<div class="casa-weather ' + condClass + '">' +
+      '<span class="casa-weather-icon">' + (weather.icon || '🌤️') + '</span>' +
+      '<span class="casa-weather-temp">' + (weather.temp != null ? weather.temp + ' °C' : '--') + '</span>' +
+      '<span class="casa-weather-label">' + escapeHtml(weather.label || '') + '</span></div>';
   }
 
   var greeting = getCasaGreeting();
@@ -159,15 +213,26 @@ function renderCasa() {
   var totalMeals = 5;
   var pctBar = totalMeals ? Math.round((consumedCount / totalMeals) * 100) : 0;
 
-  var suggestedRecipe = getCasaSuggestedRecipe(suggested || 'colazione');
   var recipeBlock = '';
   if (suggestedRecipe && typeof buildCard === 'function') {
-    var recipeName = suggestedRecipe.name || suggestedRecipe.nome || '';
     recipeBlock =
       '<div class="casa-recipe-section">' +
         '<div class="casa-recipe-section-title">📖 Ricetta consigliata per ' + escapeHtml(label || 'questo pasto') + '</div>' +
         '<div class="casa-recipe-card-wrap">' + buildCard(suggestedRecipe) + '</div>' +
       '</div>';
+  }
+
+  /* AI ultima spiaggia: se nessun bonus meteo e ci sono candidate, chiedi a Gemini (una volta) */
+  if (weatherContext && suggestionResult.weatherScore === 0 && suggestionResult.candidateNames.length > 1 && typeof suggestRecipeByWeather === 'function' && !_casaAISuggestedRecipe) {
+    suggestRecipeByWeather(suggestionResult.candidateNames, weatherContext.type, function (err, recipeName) {
+      if (err || !recipeName) return;
+      var all = (typeof getAllRicette === 'function') ? getAllRicette() : [];
+      var found = all.find(function (r) { return (r.name || r.nome || '') === recipeName; });
+      if (found) {
+        _casaAISuggestedRecipe = found;
+        renderCasa(true);
+      }
+    });
   }
 
   var completionBar =
@@ -183,6 +248,7 @@ function renderCasa() {
   var html =
     '<p class="casa-greeting">' + escapeHtml(greeting) + '</p>' +
     completionBar +
+    (weatherBlock ? weatherBlock : '') +
     '<div class="casa-card rc-card">' +
       '<div class="casa-suggestion">' +
         '<div class="casa-suggestion-title">' + escapeHtml(label || 'Riepilogo') + '</div>' +

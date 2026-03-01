@@ -2495,6 +2495,61 @@ body.app-visible .bottom-nav .nav-tab-casa.active::after {
 .casa-recipe-card-wrap { max-width: 320px; }
 .casa-recipe-card-wrap .rc-card { cursor: pointer; }
 
+/* Riquadro meteo Casa */
+.casa-weather {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+.casa-weather-icon { font-size: 1.5rem; line-height: 1; }
+.casa-weather-temp { font-size: 1.1rem; font-weight: 800; color: var(--text); }
+.casa-weather-label { font-size: 0.85rem; color: var(--text-2); }
+.casa-weather--loading { opacity: 0.85; }
+.casa-weather--sunny {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(245, 158, 11, 0.06) 100%);
+  border-color: rgba(251, 191, 36, 0.35);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .casa-weather--sunny { animation: casa-weather-sunny 8s ease-in-out infinite; }
+}
+@keyframes casa-weather-sunny {
+  0%, 100% { box-shadow: 0 0 0 rgba(251, 191, 36, 0); }
+  50% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.15); }
+}
+.casa-weather--cloudy {
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.1) 0%, rgba(100, 116, 139, 0.06) 100%);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+.casa-weather--rain {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(30, 64, 175, 0.06) 100%);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .casa-weather--rain { animation: casa-weather-rain 3s ease-in-out infinite; }
+}
+@keyframes casa-weather-rain {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.92; }
+}
+.casa-weather--snow {
+  background: linear-gradient(135deg, rgba(226, 232, 240, 0.25) 0%, rgba(203, 213, 225, 0.12) 100%);
+  border-color: rgba(226, 232, 240, 0.4);
+}
+.casa-weather--thunderstorm {
+  background: linear-gradient(135deg, rgba(71, 85, 105, 0.2) 0%, rgba(51, 65, 85, 0.1) 100%);
+  border-color: rgba(71, 85, 105, 0.35);
+}
+.casa-weather--fog {
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.15) 0%, rgba(100, 116, 139, 0.08) 100%);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
 .edit-day-picker {
   padding: 24px 20px;
   background: var(--bg-subtle);
