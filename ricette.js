@@ -464,13 +464,13 @@ function buildGroupedGrid(list) {
   order.concat(['_altro']).forEach(function(p){
     var items=groups[p]; if(!items||!items.length) return;
     var m=meta[p]||meta._altro;
-    html+='<div class="rc-meal-group">'+
-            '<div class="rc-meal-group-header">'+
+    html+='<details class="rc-meal-group rc-meal-group-collapsible">'+
+            '<summary class="rc-meal-group-header">'+
               '<span class="rc-meal-group-name">'+m.name+'</span>'+
               '<span class="rc-meal-group-count">'+items.length+'</span>'+
-            '</div>'+
+            '</summary>'+
             '<div class="rc-meal-group-body"><div class="rc-grid">'+items.map(buildCard).join('')+'</div></div>'+
-          '</div>';
+          '</details>';
   });
   return html;
 }

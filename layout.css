@@ -714,6 +714,12 @@ body.app-visible .page .page-tab.active {
   color: #0d2218;
   box-shadow: none;
 }
+[data-theme="dark"] body.app-visible .page .section-title {
+  color: var(--text);
+}
+[data-theme="dark"] body.app-visible .page .section-subtitle {
+  color: var(--text-2);
+}
 [data-theme="dark"] body.app-visible .page .page-tabs {
   background: rgba(255,255,255,.04);
   border-color: rgba(255,255,255,.12);
