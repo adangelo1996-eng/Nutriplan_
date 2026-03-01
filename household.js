@@ -46,6 +46,43 @@ function stopHouseholdRealtimeListener() {
   }
 }
 
+var HOUSEHOLD_DISPLAY_PREFIX = 'nutriplan_hh_display_';
+
+function getHouseholdDisplayCredentials(hid) {
+  if (!hid || typeof localStorage === 'undefined') return { name: null, code: null };
+  try {
+    var raw = localStorage.getItem(HOUSEHOLD_DISPLAY_PREFIX + hid);
+    if (!raw) return { name: null, code: null };
+    var o = JSON.parse(raw);
+    return { name: (o && o.name) || null, code: (o && o.code) || null };
+  } catch (e) {
+    return { name: null, code: null };
+  }
+}
+
+function saveHouseholdDisplayCredentials(hid, name, code) {
+  if (!hid || typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(HOUSEHOLD_DISPLAY_PREFIX + hid, JSON.stringify({ name: name || '', code: code || '' }));
+  } catch (e) {}
+}
+
+function clearHouseholdDisplayCredentials(hid) {
+  if (!hid || typeof localStorage === 'undefined') return;
+  try {
+    localStorage.removeItem(HOUSEHOLD_DISPLAY_PREFIX + hid);
+  } catch (e) {}
+}
+
+/** Restituisce il nome della casa da Firebase (householdJoin). */
+function getHouseholdNameFromFirebase(hid) {
+  if (!hid || typeof firebase === 'undefined' || !firebase.database) return Promise.resolve(null);
+  return firebase.database().ref('householdJoin/' + hid + '/name').once('value').then(function (snap) {
+    var v = snap.val();
+    return (v && typeof v === 'string') ? v.trim() : null;
+  }).catch(function () { return null; });
+}
+
 /**
  * Unisce la dispensa personale (myPantry) in quella della casa (pantryItems).
  * Per ogni ingrediente: se non c'è nella casa lo aggiunge; se c'è già somma le quantità.
@@ -339,6 +376,7 @@ function leaveHousehold() {
     .ref('households/' + hid + '/members/' + uid)
     .remove()
     .then(function () {
+      if (typeof clearHouseholdDisplayCredentials === 'function') clearHouseholdDisplayCredentials(hid);
       stopHouseholdRealtimeListener();
       householdId = null;
       if (typeof clearLastHouseholdPantrySnapshot === 'function') clearLastHouseholdPantrySnapshot();
@@ -372,6 +410,7 @@ function deleteHouseholdPermanently(hid) {
       return firebase.database().ref().update(updates);
     })
     .then(function () {
+      if (typeof clearHouseholdDisplayCredentials === 'function') clearHouseholdDisplayCredentials(hid);
       if (householdId === hid) {
         stopHouseholdRealtimeListener();
         householdId = null;

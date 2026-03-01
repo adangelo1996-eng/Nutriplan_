@@ -125,7 +125,7 @@ function renderMealItems() {
   if (pianoSearchQuery) {
     items = items.filter(function(item) {
       var subName = subsMap[item.name] || null;
-      var display = subName || item.name;
+      var display = subName || (typeof getIngredientDisplayNameForDiet === 'function' ? getIngredientDisplayNameForDiet(item.name) : item.name);
       return display.toLowerCase().includes(pianoSearchQuery);
     });
   }
@@ -137,8 +137,8 @@ function renderMealItems() {
   items.sort(function(a, b) {
     var aSubName = subsMap[a.name] || null;
     var bSubName = subsMap[b.name] || null;
-    var aDisplay = aSubName || a.name;
-    var bDisplay = bSubName || b.name;
+    var aDisplay = aSubName || (typeof getIngredientDisplayNameForDiet === 'function' ? getIngredientDisplayNameForDiet(a.name) : a.name);
+    var bDisplay = bSubName || (typeof getIngredientDisplayNameForDiet === 'function' ? getIngredientDisplayNameForDiet(b.name) : b.name);
     var aInFridge = isAvail(aDisplay);
     var bInFridge = isAvail(bDisplay);
 
@@ -199,7 +199,7 @@ function renderMealItems() {
   function buildPianoItemCard(item) {
     var used    = usedMap[item.name] ? true : false;
     var subName = subsMap[item.name] || null;
-    var display = subName || item.name;
+    var display = subName || (typeof getIngredientDisplayNameForDiet === 'function' ? getIngredientDisplayNameForDiet(item.name) : item.name);
     var qty     = item.quantity ? item.quantity + ' ' + (item.unit||'g') : '';
     var inFridge = (typeof isIngredientAvailableInDispensa === 'function') ? isIngredientAvailableInDispensa(display) : (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[display] && (pantryItems[display].quantity||0) > 0);
     var usedCls = used ? ' style="opacity:.45;text-decoration:line-through;"' : '';
@@ -297,7 +297,8 @@ function renderMealItems() {
         '</summary>' +
         '<div class="fi-list">' +
           extraList.map(function (ex) {
-            var label = ex.name + (ex.quantity && ex.unit ? ' — ' + ex.quantity + ' ' + (ex.unit || 'g') : '');
+            var exDisplay = typeof getIngredientDisplayNameForDiet === 'function' ? getIngredientDisplayNameForDiet(ex.name) : ex.name;
+            var label = exDisplay + (ex.quantity && ex.unit ? ' — ' + ex.quantity + ' ' + (ex.unit || 'g') : '');
             var safeLabel = (typeof escapeHtml === 'function' ? escapeHtml(label) : (label + '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
             return '<div class="rc-card piano-item-card" style="margin-bottom:8px;">' +
               '<div class="piano-item-row">' +

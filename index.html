@@ -1306,22 +1306,20 @@
       </div>
       <div id="householdCredentialsSuccess" style="display:none;">
         <p style="font-size:.9em;color:var(--text-2);margin-bottom:12px;">Salva o condividi nome e codice per far unire altri alla casa.</p>
-        <div class="rc-card" style="padding:16px;background:var(--primary-xl);border:2px solid var(--primary-mid);border-radius:var(--r-lg);margin-bottom:12px;">
-          <div style="margin-bottom:12px;">
-            <div style="font-size:.8em;font-weight:600;color:var(--primary);margin-bottom:4px;">Nome della casa</div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span id="householdSuccessName" style="font-size:1.05em;font-weight:600;flex:1;word-break:break-word;"></span>
+        <div class="rc-card household-success-card">
+          <div class="household-success-row">
+            <div class="household-success-label">Nome della casa</div>
+            <div class="household-success-field-row">
+              <span id="householdSuccessName" class="household-success-value"></span>
+              <button type="button" class="btn btn-primary household-copy-btn" onclick="copyHouseholdSuccessName()">Copia</button>
             </div>
           </div>
-          <div style="margin-bottom:14px;">
-            <div style="font-size:.8em;font-weight:600;color:var(--primary);margin-bottom:4px;">Codice accesso</div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span id="householdSuccessCode" style="font-size:1.05em;font-family:monospace;letter-spacing:.05em;flex:1;"></span>
+          <div class="household-success-row">
+            <div class="household-success-label">Codice accesso</div>
+            <div class="household-success-field-row">
+              <span id="householdSuccessCode" class="household-success-value household-success-code"></span>
+              <button type="button" class="btn btn-primary household-copy-btn" onclick="copyHouseholdSuccessCode()">Copia</button>
             </div>
-          </div>
-          <div style="display:flex;gap:8px;">
-            <button type="button" class="btn btn-primary" style="flex:1;" onclick="copyHouseholdSuccessName()">📋 Copia nome</button>
-            <button type="button" class="btn btn-primary" style="flex:1;" onclick="copyHouseholdSuccessCode()">📋 Copia codice</button>
           </div>
         </div>
       </div>

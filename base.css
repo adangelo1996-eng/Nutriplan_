@@ -365,6 +365,121 @@ body .landing-accedi-wrap * {
   margin-bottom: 6px;
   color: var(--primary, #0d2218);
 }
+
+/* Riquadro fisso nome e codice casa */
+.casa-credentials-box {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: var(--r-md, 10px);
+  background: var(--bg-subtle, #f8fafc);
+  border: 1px solid var(--border, #e2e8f0);
+}
+.casa-credentials-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.casa-credentials-row:last-of-type {
+  margin-bottom: 0;
+}
+.casa-credentials-label {
+  font-size: .8em;
+  font-weight: 600;
+  color: var(--text-2, #64748b);
+  min-width: 52px;
+}
+.casa-credentials-value {
+  font-size: 1em;
+  font-weight: 600;
+  color: var(--text-1, #334155);
+  word-break: break-word;
+}
+.casa-credentials-code-wrap {
+  flex: 1;
+  font-size: 1em;
+  font-family: monospace;
+  letter-spacing: .06em;
+  color: var(--text-1, #334155);
+  min-height: 1.3em;
+}
+.casa-credentials-code-blur .casa-credentials-code {
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+}
+.casa-credentials-eye {
+  flex-shrink: 0;
+  width: 40px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: var(--r-md, 10px);
+  background: var(--bg-card, #fff);
+  color: var(--text-2, #64748b);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.casa-credentials-eye:hover {
+  background: var(--bg-subtle, #f1f5f9);
+  color: var(--text-1, #334155);
+}
+.casa-credentials-eye .casa-eye-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.casa-credentials-eye .casa-eye-icon svg {
+  display: block;
+}
+
+/* Modale successo casa: nome e codice con Copia affiancato al campo */
+.household-success-card {
+  padding: 16px;
+  background: var(--primary-xl);
+  border: 2px solid var(--primary-mid);
+  border-radius: var(--r-lg);
+  margin-bottom: 12px;
+}
+.household-success-row {
+  margin-bottom: 14px;
+}
+.household-success-row:last-child {
+  margin-bottom: 0;
+}
+.household-success-label {
+  font-size: .8em;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+.household-success-field-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+}
+.household-success-value {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.05em;
+  font-weight: 600;
+  word-break: break-word;
+  color: var(--text-1);
+}
+.household-success-code {
+  font-family: monospace;
+  letter-spacing: .05em;
+}
+.household-copy-btn {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  font-size: .9em;
+}
+
 .casa-shared-desc {
   font-size: .85em;
   color: var(--text-2, #64748b);

@@ -318,6 +318,22 @@ function renderCasa(force) {
   if (hasHousehold) {
     sharedBlock = '<div class="casa-shared-section rc-card">' +
       '<div class="casa-shared-title">Casa condivisa</div>' +
+      '<div id="casaHouseholdCredentialsBox" class="casa-credentials-box">' +
+        '<div class="casa-credentials-row">' +
+          '<span class="casa-credentials-label">Nome</span>' +
+          '<span id="casaHouseholdName" class="casa-credentials-value">—</span>' +
+        '</div>' +
+        '<div class="casa-credentials-row">' +
+          '<span class="casa-credentials-label">Codice</span>' +
+          '<span id="casaHouseholdCodeWrap" class="casa-credentials-code-wrap casa-credentials-code-blur">' +
+            '<span id="casaHouseholdCode" class="casa-credentials-code">—</span>' +
+          '</span>' +
+          '<button type="button" id="casaHouseholdCodeEye" class="casa-credentials-eye" title="Mostra/nascondi codice" aria-label="Mostra codice">' +
+            '<span class="casa-eye-icon casa-eye-show" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>' +
+            '<span class="casa-eye-icon casa-eye-hide" aria-hidden="true" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span>' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
       '<p class="casa-shared-desc">Dispensa e lista della spesa condivise con i membri della casa.</p>' +
       '<div class="casa-shared-buttons" style="margin-bottom:12px;">' +
         '<button class="casa-shared-btn casa-shared-btn-primary" onclick="copyHouseholdInviteLink()">' +
@@ -401,6 +417,10 @@ function renderCasa(force) {
 
   el.innerHTML = html;
 
+  if (householdId) {
+    fillHouseholdCredentialsBox(householdId);
+  }
+
   if (householdId && typeof getHouseholdMembers === 'function' && typeof getHouseholdLastActivity === 'function') {
     var hid = householdId;
     getHouseholdMembers(hid).then(function (members) {
@@ -431,6 +451,44 @@ function renderCasa(force) {
       actEl.innerHTML = text ? ('<span class="casa-shared-activity-text">' + escapeHtml(text) + '</span>') : '<span class="casa-shared-empty">Nessuna modifica recente</span>';
     });
   }
+}
+
+function fillHouseholdCredentialsBox(hid) {
+  var nameEl = document.getElementById('casaHouseholdName');
+  var codeEl = document.getElementById('casaHouseholdCode');
+  var wrapEl = document.getElementById('casaHouseholdCodeWrap');
+  var eyeBtn = document.getElementById('casaHouseholdCodeEye');
+  if (!nameEl || !codeEl || !wrapEl || !eyeBtn) return;
+  var cred = (typeof getHouseholdDisplayCredentials === 'function') ? getHouseholdDisplayCredentials(hid) : { name: null, code: null };
+  var name = (cred && cred.name) ? cred.name : null;
+  var code = (cred && cred.code) ? cred.code : null;
+  if (!name && typeof getHouseholdNameFromFirebase === 'function') {
+    getHouseholdNameFromFirebase(hid).then(function (firebaseName) {
+      if (nameEl.closest('#casaContent') === null) return;
+      nameEl.textContent = firebaseName || '—';
+    });
+  } else {
+    nameEl.textContent = name || '—';
+  }
+  codeEl.textContent = code || '—';
+  wrapEl.classList.add('casa-credentials-code-blur');
+  eyeBtn.setAttribute('aria-label', 'Mostra codice');
+  eyeBtn.onclick = function () {
+    var blurred = wrapEl.classList.contains('casa-credentials-code-blur');
+    var showEl = eyeBtn.querySelector('.casa-eye-show');
+    var hideEl = eyeBtn.querySelector('.casa-eye-hide');
+    if (blurred) {
+      wrapEl.classList.remove('casa-credentials-code-blur');
+      eyeBtn.setAttribute('aria-label', 'Nascondi codice');
+      if (showEl) showEl.style.display = 'none';
+      if (hideEl) hideEl.style.display = '';
+    } else {
+      wrapEl.classList.add('casa-credentials-code-blur');
+      eyeBtn.setAttribute('aria-label', 'Mostra codice');
+      if (showEl) showEl.style.display = '';
+      if (hideEl) hideEl.style.display = 'none';
+    }
+  };
 }
 
 function escapeHtml(s) {

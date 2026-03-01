@@ -63,9 +63,7 @@ function isDietCompatible(recipe) {
     if (dp.senzaLattosio) {
       for (var k = 0; k < _DAIRY_KW.length; k++) { if (n.includes(_DAIRY_KW[k])) return false; }
     }
-    if (dp.senzaGlutine) {
-      for (var k = 0; k < _GLUT_KW.length; k++) { if (n.includes(_GLUT_KW[k])) return false; }
-    }
+    /* Senza glutine: non escludere ricette con ingredienti con glutine; in visualizzazione si aggiunge "(senza glutine)" o sostituto */
   }
   return true;
 }
@@ -146,6 +144,47 @@ function isIngredienteBaseEsclusoDaProfilo(ingName) {
     var al = (a || '').toLowerCase().trim();
     return al && (nl.indexOf(al) !== -1 || al.indexOf(nl) !== -1);
   });
+}
+
+/** Se il profilo è senza glutine e l'ingrediente contiene glutine, restituisce il nome da mostrare: sostituto o "nome (senza glutine)". */
+var _GLUTINE_SOSTITUTI = {
+  pasta: 'Pasta senza glutine',
+  pane: 'Pane senza glutine',
+  farina: 'Farina senza glutine',
+  orzo: 'Orzo (sostituibile con riso)',
+  farro: 'Farro (sostituibile con quinoa)',
+  avena: 'Avena (senza glutine se certificata)',
+  segale: 'Pane di segale (sostituibile con pane senza glutine)',
+  grano: 'Grano (sostituibile con riso o quinoa)',
+  semola: 'Semola (sostituibile con farina di riso)',
+  biscotti: 'Biscotti senza glutine',
+  crackers: 'Crackers senza glutine',
+  grissini: 'Grissini senza glutine',
+  focaccia: 'Focaccia senza glutine',
+  pizza: 'Pizza senza glutine',
+  couscous: 'Couscous (sostituibile con quinoa)',
+  bulgur: 'Bulgur (sostituibile con quinoa)',
+  pangrattato: 'Pan grattato senza glutine',
+  brioche: 'Brioche senza glutine',
+  cornetto: 'Cornetto senza glutine'
+};
+
+function isIngredienteConGlutine(ingName) {
+  if (!ingName) return false;
+  var nl = safeStr(ingName).toLowerCase().trim();
+  return _GLUT_KW.some(function(kw) { return nl.indexOf(kw) !== -1; });
+}
+
+function getIngredientDisplayNameForDiet(ingName) {
+  if (!ingName) return '';
+  var dp = (typeof dietProfile !== 'undefined' && dietProfile) ? dietProfile : {};
+  if (!dp.senzaGlutine) return safeStr(ingName).trim();
+  if (!isIngredienteConGlutine(ingName)) return safeStr(ingName).trim();
+  var nl = safeStr(ingName).toLowerCase().trim();
+  for (var key in _GLUTINE_SOSTITUTI) {
+    if (nl.indexOf(key) !== -1) return _GLUTINE_SOSTITUTI[key];
+  }
+  return safeStr(ingName).trim() + ' (senza glutine)';
 }
 
 function isIngredientAvailableInDispensa(ingName) {

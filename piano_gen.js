@@ -460,6 +460,11 @@ function pgIsIngredientAllowed(name) {
   if (typeof dietProfile === 'undefined' || !dietProfile) return true;
   var nl = (name || '').toLowerCase();
 
+  /* Ingredienti di base sono sempre ammessi, salvo esclusi da profilo (allergie/intolleranze) */
+  if (typeof isIngredienteBase === 'function' && isIngredienteBase(name)) {
+    return typeof isIngredienteBaseEsclusoDaProfilo === 'function' ? !isIngredienteBaseEsclusoDaProfilo(name) : true;
+  }
+
   var cat = null;
   if (typeof defaultIngredients !== 'undefined' && Array.isArray(defaultIngredients)) {
     var d = defaultIngredients.find(function(i) {
@@ -488,11 +493,7 @@ function pgIsIngredientAllowed(name) {
     if (/latte|formagg|yogurt|panna|burro|ricotta/i.test(nl) && !/senza lattosio/i.test(nl)) return false;
   }
 
-  if (dp.senzaGlutine) {
-    if (cat === '🌾 Cereali e Legumi') {
-      if (/pasta|pane|couscous|farro|orzo|biscott|gnocchi|gallette|crackers|piadina|wasa/i.test(nl)) return false;
-    }
-  }
+  /* Senza glutine: non escludere gli ingredienti con glutine; in visualizzazione si aggiunge "(senza glutine)" o sostituto */
 
   if (Array.isArray(dp.allergenici) && dp.allergenici.length) {
     var blocked = dp.allergenici.some(function(a) {
@@ -700,22 +701,24 @@ function pgBuildPreviewIngredientRow(mealKey, catName, item, idx, safeIdBase) {
     var altQty = (alt.quantity !== null && alt.quantity !== undefined)
       ? alt.quantity + ' ' + (alt.unit || 'g')
       : '';
+    var altDisplayName = (typeof getIngredientDisplayNameForDiet === 'function') ? getIngredientDisplayNameForDiet(alt.name) : alt.name;
     return (
       '<div class="pa-alt-row">' +
         '<span class="pa-alt-bullet">↔</span>' +
         '<div class="pa-alt-info">' +
-          '<span class="pa-alt-name">' + alt.name + '</span>' +
+          '<span class="pa-alt-name">' + altDisplayName + '</span>' +
           (altQty ? '<span class="pa-alt-qty">' + altQty + '</span>' : '') +
         '</div>' +
       '</div>'
     );
   }).join('');
 
+  var displayName = (typeof getIngredientDisplayNameForDiet === 'function') ? getIngredientDisplayNameForDiet(item.name) : item.name;
   return (
     '<div class="pa-ing-row pa-ing-preview" id="pg-ing-' + safeIdBase + '-' + idx + '">' +
       '<div class="pa-ing-main">' +
         '<div class="pa-ing-info">' +
-          '<span class="pa-ing-name">' + item.name + '</span>' +
+          '<span class="pa-ing-name">' + displayName + '</span>' +
           (qty ? '<span class="pa-ing-qty">' + qty + '</span>' : '') +
         '</div>' +
         (hasAlts

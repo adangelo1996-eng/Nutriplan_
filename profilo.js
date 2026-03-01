@@ -290,6 +290,7 @@ function openHouseholdNamePasswordModal(hid) {
         setHouseholdJoinCredentials(_householdNamePasswordHid, n, code).then(function () {
           _householdSuccessName = n;
           _householdSuccessCode = code;
+          if (typeof saveHouseholdDisplayCredentials === 'function') saveHouseholdDisplayCredentials(_householdNamePasswordHid, n, code);
           showHouseholdCredentialsSuccess();
           if (typeof showToast === 'function') showToast('Nome e codice salvati.', 'success');
         });
