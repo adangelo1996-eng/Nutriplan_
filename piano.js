@@ -556,7 +556,8 @@ function applySubstitute(original, substitute) {
 
 /* ── Ricette del piano (sezione sotto "Oggi") ── */
 var _pianoRicetteFilter = 'base';
-var _pianoRicetteExpanded = false;
+var _pianoRicetteVisibleCount = 3;
+var _pianoRicetteExpandStep = 3;
 
 function renderPianoRicette() {
   var container = document.getElementById(editDayActive ? 'editDay_ricetteWrap' : 'pianoRicetteWrap');
@@ -598,8 +599,7 @@ function renderPianoRicette() {
     return (a.name || a.nome || '').localeCompare(b.name || b.nome || '', 'it');
   });
 
-  var maxVisible = 6;
-  var visibleRicette = _pianoRicetteExpanded ? compatibleRicette : compatibleRicette.slice(0, maxVisible);
+  var visibleRicette = compatibleRicette.slice(0, _pianoRicetteVisibleCount);
 
   /* Stesso layout della pagina Ricette: rc-grid + buildCard */
   var cardsHtml = (typeof buildCard === 'function')
@@ -609,14 +609,15 @@ function renderPianoRicette() {
   var remaining = compatibleRicette.length - visibleRicette.length;
   var toggleHtml = '';
   if (remaining > 0) {
+    var toShow = Math.min(_pianoRicetteExpandStep, remaining);
     toggleHtml =
       '<div class="piano-ricette-toggle">' +
-        '<button type="button" class="btn btn-secondary btn-small" onclick="expandPianoRicette()">Mostra tutte le ' + compatibleRicette.length + ' ricette</button>' +
+        '<button type="button" class="btn btn-secondary btn-small" onclick="expandPianoRicette()">Mostra altre ' + toShow + '</button>' +
       '</div>';
-  } else if (_pianoRicetteExpanded && compatibleRicette.length > maxVisible) {
+  } else if (_pianoRicetteVisibleCount > _pianoRicetteExpandStep && compatibleRicette.length > _pianoRicetteExpandStep) {
     toggleHtml =
       '<div class="piano-ricette-toggle">' +
-        '<button type="button" class="btn btn-secondary btn-small" onclick="collapsePianoRicette()">Mostra solo le prime ' + maxVisible + '</button>' +
+        '<button type="button" class="btn btn-secondary btn-small" onclick="collapsePianoRicette()">Mostra solo le prime ' + _pianoRicetteExpandStep + '</button>' +
       '</div>';
   }
 
@@ -629,12 +630,12 @@ function renderPianoRicette() {
 }
 
 function expandPianoRicette() {
-  _pianoRicetteExpanded = true;
+  _pianoRicetteVisibleCount += _pianoRicetteExpandStep;
   renderPianoRicette();
 }
 
 function collapsePianoRicette() {
-  _pianoRicetteExpanded = false;
+  _pianoRicetteVisibleCount = _pianoRicetteExpandStep;
   renderPianoRicette();
 }
 

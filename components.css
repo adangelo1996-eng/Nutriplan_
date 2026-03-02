@@ -4861,6 +4861,24 @@ div > .ai-powered-label {
   color: var(--text-2);
   margin-bottom: 12px;
 }
+.ai-action-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ai-action-block:last-child { border-bottom: none; }
+.ai-action-block .ai-step-text { flex: 1; }
+.ai-action-block .ai-step-execute { flex-shrink: 0; }
+.ai-action-done {
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-left: 6px;
+}
+.ai-action-completed .ai-step-text { opacity: .9; }
 .ai-step {
   padding: 6px 0;
   border-bottom: 1px solid var(--border);

@@ -16,13 +16,10 @@ var AI_MEAL_LABELS = {
 };
 
 var AI_EXAMPLE_COMMANDS = [
-  'Ho mangiato pollo con porri e peperoni',
-  'Aggiungi peperoni da comprare',
+  'Ho mangiato pollo con verdure',
+  'Aggiungi latte alla spesa',
   'Non so cosa mangiare stasera',
-  'Ho fatto colazione con latte e biscotti',
-  'Metti in lista farina e olio',
-  'Dammi 3 idee per cena',
-  'Ho mangiato il pollo e aggiungi la farina da comprare'
+  'Ho mangiato pasta al pomodoro e metti il pane in lista'
 ];
 
 function renderAIPage() {
@@ -133,7 +130,12 @@ function _displayAIResult(parsed) {
   var stepsHtml = '';
   parsed.actions.forEach(function(a, i) {
     var stepText = _actionToStepText(a, parsed);
-    if (stepText) stepsHtml += '<div class="ai-step">' + (i + 1) + '. ' + stepText + '</div>';
+    if (stepText) {
+      stepsHtml += '<div class="ai-action-block" data-action-index="' + i + '">' +
+        '<div class="ai-step-text">' + (i + 1) + '. ' + escapeHtml(stepText) + '</div>' +
+        '<button type="button" class="rc-btn rc-btn-primary rc-btn-sm ai-step-execute" onclick="executeAISingleAction(' + i + ')">Esegui</button>' +
+      '</div>';
+    }
   });
   if (stepsEl) stepsEl.innerHTML = stepsHtml || '<div class="ai-step">Nessun passo da eseguire.</div>';
 
@@ -156,6 +158,7 @@ function _actionToStepText(a, parsed) {
     var mealLabel = AI_MEAL_LABELS[meal] || meal;
     var items = Array.isArray(a.items) ? a.items : [];
     var parts = items.map(function(it) {
+      if (it.isRecipe) return (it.name || '').trim() + ' (ricetta)';
       var q = it.quantity != null ? it.quantity + ' ' + (it.unit || 'g') : '';
       return (it.name || '').trim() + (q ? ' (' + q + ')' : '');
     }).filter(Boolean);
@@ -182,6 +185,51 @@ function cancelAIResult() {
   _aiSuggestedRecipes = [];
   var inputWrap = document.getElementById('aiResultWrap');
   if (inputWrap) inputWrap.style.display = 'none';
+}
+
+function executeAISingleAction(index) {
+  if (!_aiPendingResult || !Array.isArray(_aiPendingResult.actions)) return;
+  var a = _aiPendingResult.actions[index];
+  if (!a) return;
+
+  var dateKey = _aiPendingResult.date || (typeof getCurrentDateKey === 'function' ? getCurrentDateKey() : '');
+  try {
+    if (a.type === 'log_meal') {
+      _executeLogMeal(a, dateKey);
+    } else if (a.type === 'add_to_shopping_list') {
+      _executeAddToShoppingList(a);
+    } else if (a.type === 'suggest_recipes') {
+      _executeSuggestRecipes(a);
+    }
+  } catch (e) {
+    console.warn('[AI] Errore esecuzione azione:', a.type, e);
+    if (typeof showToast === 'function') showToast('Errore durante l\'esecuzione', 'warning');
+    return;
+  }
+
+  saveData();
+  if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
+  if (typeof renderFridge === 'function') renderFridge();
+  if (typeof renderSpesa === 'function') renderSpesa();
+  if (typeof renderMealItems === 'function') renderMealItems();
+  if (typeof renderMealProgress === 'function') renderMealProgress();
+  if (typeof renderPianoRicette === 'function') renderPianoRicette();
+
+  _markAIActionCompleted(index);
+
+  var hasSuggestRecipes = a.type === 'suggest_recipes';
+  if (!hasSuggestRecipes && typeof showToast === 'function') showToast('Azione completata', 'success');
+}
+
+function _markAIActionCompleted(index) {
+  var block = document.querySelector('.ai-action-block[data-action-index="' + index + '"]');
+  if (block) {
+    var btn = block.querySelector('.ai-step-execute');
+    if (btn) btn.remove();
+    var textEl = block.querySelector('.ai-step-text');
+    if (textEl) textEl.innerHTML = (textEl.innerHTML || '') + ' <span class="ai-action-done">Completato</span>';
+    block.classList.add('ai-action-completed');
+  }
 }
 
 function executeAIResult() {
@@ -220,6 +268,8 @@ function executeAIResult() {
   var hasSuggestRecipes = _aiPendingResult.actions.some(function(a) { return a.type === 'suggest_recipes'; });
   if (!hasSuggestRecipes) cancelAIResult();
 
+  _aiPendingResult.actions.forEach(function(_, i) { _markAIActionCompleted(i); });
+
   var execBtn = document.getElementById('aiExecuteBtn');
   if (execBtn) {
     execBtn.textContent = 'Completato';
@@ -243,19 +293,55 @@ function _executeLogMeal(a, dateKey) {
 
   if (!day.extraConsumed) day.extraConsumed = {};
   if (!day.extraConsumed[meal]) day.extraConsumed[meal] = [];
+  if (!day.ricette) day.ricette = {};
+  if (!day.ricette[meal]) day.ricette[meal] = {};
 
   items.forEach(function(it) {
     var name = (it.name || '').trim();
     if (!name) return;
+
+    if (it.isRecipe) {
+      var r = (typeof findRicetta === 'function') ? findRicetta(name) : null;
+      if (r) {
+        day.ricette[meal][name] = true;
+        var basePorzioni = (typeof getRecipeBasePorzioni === 'function') ? getRecipeBasePorzioni(r) : 1;
+        var ings = (typeof scaleIngredientiForPorzioni === 'function')
+          ? scaleIngredientiForPorzioni(Array.isArray(r.ingredienti) ? r.ingredienti : [], basePorzioni, basePorzioni)
+          : (Array.isArray(r.ingredienti) ? r.ingredienti : []);
+        if (typeof pantryItems !== 'undefined' && pantryItems && ings.length) {
+          ings.forEach(function(ing) {
+            var iname = (ing.name || ing.nome || '').trim();
+            if (!iname) return;
+            var qty = parseFloat(ing.quantity || ing.quantita) || 0;
+            if (qty <= 0) return;
+            var key = Object.keys(pantryItems).find(function(k) {
+              return k && k.toLowerCase().trim() === iname.toLowerCase();
+            });
+            if (!key) return;
+            var cur = parseFloat(pantryItems[key].quantity) || 0;
+            pantryItems[key].quantity = Math.max(0, cur - qty);
+          });
+        }
+      } else {
+        day.extraConsumed[meal].push({ name: name, quantity: 1, unit: 'pz' });
+      }
+      return;
+    }
+
     var qty = parseFloat(it.quantity);
     if (isNaN(qty) || qty <= 0) qty = 1;
     var unit = (it.unit || 'g').trim() || 'g';
 
     day.extraConsumed[meal].push({ name: name, quantity: qty, unit: unit });
 
-    if (typeof pantryItems !== 'undefined' && pantryItems && pantryItems[name]) {
-      var cur = parseFloat(pantryItems[name].quantity) || 0;
-      pantryItems[name].quantity = Math.max(0, cur - qty);
+    if (typeof pantryItems !== 'undefined' && pantryItems) {
+      var key = Object.keys(pantryItems).find(function(k) {
+        return k && k.toLowerCase().trim() === name.toLowerCase();
+      });
+      if (key) {
+        var cur = parseFloat(pantryItems[key].quantity) || 0;
+        pantryItems[key].quantity = Math.max(0, cur - qty);
+      }
     }
   });
 }

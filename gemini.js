@@ -1092,6 +1092,7 @@ function parseNaturalLanguageCommand(userText, callback) {
     '  "meal": "colazione|spuntino|pranzo|merenda|cena|null",\n' +
     '  "actions": [\n' +
     '    { "type": "log_meal", "meal": "pranzo", "items": [{"name":"pollo","quantity":150,"unit":"g","approximate":true}] },\n' +
+    '    { "type": "log_meal", "meal": "cena", "items": [{"name":"Pasta al tonno","isRecipe":true}] },\n' +
     '    { "type": "add_to_shopping_list", "items": [{"name":"peperoni","quantity":3,"unit":"pz","approximate":true}] },\n' +
     '    { "type": "suggest_recipes", "meal": "cena", "count": 3 }\n' +
     '  ],\n' +
@@ -1100,7 +1101,8 @@ function parseNaturalLanguageCommand(userText, callback) {
     'REGOLE:\n' +
     '- date: usa "' + today + '" per oggi, stamattina, stasera, a pranzo, ecc.\n' +
     '- meal: inferisci dall\'ora se non specificato (ora attuale: ' + hour + '). Colazione 6-10, Spuntino 10-12, Pranzo 12-15, Merenda 15-18, Cena 18-22.\n' +
-    '- log_meal: ingredienti consumati. Stima quantità se manca (approximate:true). Unità: g, kg, ml, l, pz, fette, cucchiai.\n' +
+    '- log_meal: se l\'utente indica ingredienti singoli, usa items con name, quantity, unit (approximate:true se stima). Se indica una ricetta (es. "pasta al tonno", "risotto", "pasta al pomodoro"), usa un item con isRecipe:true e name=nome ricetta.\n' +
+    '- Se un ingrediente non è in dispensa o la quantità è insufficiente, segna comunque il pasto consumato; non bloccare.\n' +
     '- add_to_shopping_list: ingredienti da aggiungere alla lista spesa.\n' +
     '- suggest_recipes: quando l\'utente chiede "cosa mangiare", "non so cosa cucinare", "idee per cena". count: 3.\n' +
     '- Se la richiesta contiene PIÙ comandi (es. "ho mangiato X e aggiungi Y da comprare"), crea più azioni in ordine.\n' +
