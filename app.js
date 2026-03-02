@@ -981,6 +981,7 @@ function goToPage(key) {
     'dispensa':         function() { if (typeof renderFridge === 'function') renderFridge(); },
     'ricette':          function() { if (typeof renderRicette          === 'function') renderRicette(); },
     'spesa':            function() { if (typeof renderSpesa            === 'function') renderSpesa(); },
+    'ai':               function() { if (typeof renderAIPage            === 'function') renderAIPage(); },
     'statistiche':      function() { if (typeof renderStats            === 'function') renderStats(); },
     'profilo':          function() { if (typeof renderProfilo          === 'function') renderProfilo(); }
   };
@@ -988,7 +989,7 @@ function goToPage(key) {
 }
 
 /* Navigazione sequenziale con frecce accanto al Menu */
-var MAIN_PAGE_ORDER = ['piano','dispensa','ricette','spesa','profilo'];
+var MAIN_PAGE_ORDER = ['piano','dispensa','ricette','spesa','ai','profilo'];
 
 function updateNavArrows() {
   var prevBtn = document.getElementById('appPrevBtn');

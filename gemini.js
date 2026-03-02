@@ -1068,3 +1068,65 @@ function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
     }
   }, { maxOutputTokens: 1024, temperature: 0.1 });
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   PARSING COMANDI LINGUAGGIO NATURALE (pagina AI)
+   Trasforma richieste in italiano in azioni strutturate JSON.
+   Callback(parsed, err): parsed = { date, meal, actions, notes } o null.
+══════════════════════════════════════════════════════════════════════════════ */
+function parseNaturalLanguageCommand(userText, callback) {
+  if (!userText || typeof userText !== 'string' || !userText.trim()) {
+    callback(null, 'Inserisci una richiesta');
+    return;
+  }
+
+  var today = new Date().toISOString().slice(0, 10);
+  var hour = new Date().getHours();
+
+  var prompt =
+    'Sei un assistente per un\'app di piano alimentare italiano (NutriPlan). ' +
+    'L\'utente scrive richieste in linguaggio naturale. Converti SEMPRE in un JSON valido, senza altro testo.\n\n' +
+    'SCHEMA OBBLIGATORIO:\n' +
+    '{\n' +
+    '  "date": "YYYY-MM-DD",\n' +
+    '  "meal": "colazione|spuntino|pranzo|merenda|cena|null",\n' +
+    '  "actions": [\n' +
+    '    { "type": "log_meal", "meal": "pranzo", "items": [{"name":"pollo","quantity":150,"unit":"g","approximate":true}] },\n' +
+    '    { "type": "add_to_shopping_list", "items": [{"name":"peperoni","quantity":3,"unit":"pz","approximate":true}] },\n' +
+    '    { "type": "suggest_recipes", "meal": "cena", "count": 3 }\n' +
+    '  ],\n' +
+    '  "notes": ["eventuali avvisi per l\'utente"]\n' +
+    '}\n\n' +
+    'REGOLE:\n' +
+    '- date: usa "' + today + '" per oggi, stamattina, stasera, a pranzo, ecc.\n' +
+    '- meal: inferisci dall\'ora se non specificato (ora attuale: ' + hour + '). Colazione 6-10, Spuntino 10-12, Pranzo 12-15, Merenda 15-18, Cena 18-22.\n' +
+    '- log_meal: ingredienti consumati. Stima quantità se manca (approximate:true). Unità: g, kg, ml, l, pz, fette, cucchiai.\n' +
+    '- add_to_shopping_list: ingredienti da aggiungere alla lista spesa.\n' +
+    '- suggest_recipes: quando l\'utente chiede "cosa mangiare", "non so cosa cucinare", "idee per cena". count: 3.\n' +
+    '- Se la richiesta contiene PIÙ comandi (es. "ho mangiato X e aggiungi Y da comprare"), crea più azioni in ordine.\n' +
+    '- Rispondi SOLO con il JSON. Nessun markdown, nessun testo prima o dopo.\n\n' +
+    'RICHIESTA UTENTE:\n' + userText.trim();
+
+  _geminiCall(prompt, function(text, err) {
+    if (err) { callback(null, err); return; }
+    var parsed = null;
+    try {
+      var jsonStr = _extractBalancedJson(text || '');
+      if (!jsonStr) jsonStr = (text || '').replace(/```[\s\S]*?```/g, '').trim();
+      var raw = jsonStr ? JSON.parse(jsonStr) : null;
+      if (!raw || !Array.isArray(raw.actions)) {
+        callback(null, 'Risposta AI non valida');
+        return;
+      }
+      parsed = {
+        date: raw.date || today,
+        meal: raw.meal || null,
+        actions: Array.isArray(raw.actions) ? raw.actions.slice(0, 10) : [],
+        notes: Array.isArray(raw.notes) ? raw.notes : []
+      };
+      callback(parsed, null);
+    } catch (e) {
+      callback(null, 'Errore interpretazione: ' + (e.message || 'formato non valido'));
+    }
+  }, { maxOutputTokens: 1500, temperature: 0.2 });
+}

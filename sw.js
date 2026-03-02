@@ -45,6 +45,7 @@ var STATIC_ASSETS = [
   BASE_PATH + '/onboarding.js',
   BASE_PATH + '/firebase-config.js',
   BASE_PATH + '/gemini.js',
+  BASE_PATH + '/ai.js',
   BASE_PATH + '/app-sw.js',
   BASE_PATH + '/app-theme.js',
   BASE_PATH + '/app-modals.js',

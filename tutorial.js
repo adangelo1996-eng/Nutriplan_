@@ -527,6 +527,11 @@ var TUTORIAL_STEPS_BY_PAGE = {
     { icon: '☁️', title: 'Cloud e backup', text: 'Con l\'account i dati (piano, dispensa, ricette) si salvano sul cloud e sono disponibili su altri dispositivi.', page: 'profilo', target: '#profiloPage', hint: 'Controlla lo stato cloud in header.' },
     { icon: '🏠', title: 'Casa condivisa', text: 'Puoi condividere dispensa e lista della spesa con familiari o coinquilini. Crea una casa e condividi il link di invito. Gli altri si uniranno e vedranno la stessa dispensa e spesa.', page: 'profilo', target: '#profiloPage', hint: 'Cerca la sezione Casa condivisa.' },
     { icon: '🎉', title: 'Fine guida Profilo', text: 'Hai visto le principali funzioni del Profilo. Torna qui per account, impostazioni e preferenze.', page: 'profilo', target: '#page-profilo', hint: 'Premi Avanti per chiudere.' }
+  ],
+  'ai': [
+    { icon: '🤖', title: 'Assistente AI', text: 'Scrivi in linguaggio naturale cosa hai fatto o cosa vuoi fare. L\'AI interpreta e propone le azioni da eseguire.', page: 'ai', target: '#page-ai .page-header', hint: 'Premi Avanti.' },
+    { icon: '✍️', title: 'Esempi di richieste', text: '"Ho mangiato pollo con porri e peperoni", "Aggiungi peperoni da comprare", "Non so cosa mangiare stasera". Puoi combinare più richieste in una frase.', page: 'ai', target: '#aiCommandInput', hint: 'Scrivi nella casella di testo.' },
+    { icon: '✅', title: 'Conferma prima di eseguire', text: 'L\'AI mostra sempre un\'anteprima dei passi. Clicca "Esegui azioni" solo dopo aver verificato che tutto sia corretto.', page: 'ai', target: '#aiResultWrap', hint: 'Premi Avanti per chiudere.' }
   ]
 };
 
