@@ -62,7 +62,6 @@ var PAGE_MAP = {
   'ricette': 'ricettePage',
   'storico': 'storicoPage',
   'spesa':   'spesaPage',
-  'stats':   'statsPage',
   'profilo': 'profiloPage'
 };
 
@@ -97,7 +96,6 @@ function switchPage(pageKey) {
   if (pageKey === 'ricette') { if (typeof renderRicette === 'function') renderRicette(); }
   if (pageKey === 'storico') { if (typeof renderStorico === 'function') renderStorico(); }
   if (pageKey === 'spesa')   { if (typeof renderSpesa   === 'function') renderSpesa(); }
-  if (pageKey === 'stats')   { if (typeof renderStats   === 'function') renderStats(); }
   if (pageKey === 'profilo') { if (typeof renderProfilo === 'function') renderProfilo(); }
 }
 
@@ -487,7 +485,6 @@ function updateAllUI() {
   if (typeof renderFridge  === 'function' && currentPage === 'dispensa') renderFridge();
   if (typeof renderRicette === 'function' && currentPage === 'ricette') renderRicette();
   if (typeof renderSpesa   === 'function' && currentPage === 'spesa') renderSpesa();
-  if (typeof renderStats   === 'function' && currentPage === 'stats') renderStats();
 }
 
 /* ══════════════════════════════════════════════════
@@ -983,7 +980,6 @@ function goToPage(key) {
     'ricette':          function() { if (typeof renderRicette          === 'function') renderRicette(); },
     'spesa':            function() { if (typeof renderSpesa            === 'function') renderSpesa(); },
     'ai':               function() { if (typeof renderAIPage            === 'function') renderAIPage(); },
-    'statistiche':      function() { if (typeof renderStats            === 'function') renderStats(); },
     'profilo':          function() { if (typeof renderProfilo          === 'function') renderProfilo(); }
   };
   if (renders[key]) renders[key]();
@@ -1124,7 +1120,7 @@ function saveNewRicetta()      { if (typeof saveCustomRicetta === 'function') sa
 function addIngToNewRicetta()  { if (typeof addIngredientToNew === 'function') addIngredientToNew(); }
 function addRecipeToPlan()     { if (typeof applyRecipeToMeal === 'function') applyRecipeToMeal(); }
 
-/* ── Alias renderPiano / renderRicette / renderStats / renderIngredienti ─── */
+/* ── Alias renderPiano / renderRicette / renderIngredienti ─── */
 function renderPiano() {
   if (typeof renderMealPlan === 'function') renderMealPlan();
 }
@@ -1162,7 +1158,6 @@ function performUndo() {
     'dispensa':    function() { if (typeof renderFridge      === 'function') renderFridge(); },
     'ricette':     function() { if (typeof renderRicette     === 'function') renderRicette(); },
     'spesa':       function() { if (typeof renderSpesa       === 'function') renderSpesa(); },
-    'statistiche': function() { if (typeof renderStatistiche === 'function') renderStatistiche(); },
     'profilo':     function() { if (typeof renderProfilo     === 'function') renderProfilo(); }
   };
   if (typeof currentPage !== 'undefined' && rmap[currentPage]) rmap[currentPage]();
@@ -1186,12 +1181,9 @@ function _hideUndoBar() {
   if (bar) bar.classList.remove('visible');
 }
 
-/* ── Alias renderPiano / renderRicette / renderStats / renderIngredienti ─── */
+/* ── Alias renderPiano / renderRicette / renderIngredienti ─── */
 function renderRicette() {
   if (typeof renderRicettePage === 'function') renderRicettePage();
-}
-function renderStats() {
-  if (typeof renderStatistiche === 'function') renderStatistiche();
 }
 function renderIngredienti() {
   var el = document.getElementById('ingredientiContent');

@@ -17,8 +17,6 @@ function renderProfilo() {
     buildProfiloSettingsSection();
   /* Render storico nell'apposito contenitore */
   if (typeof renderStorico === 'function') renderStorico('profiloStoricoContent');
-  /* Render statistiche embed dentro Profilo */
-  if (typeof renderStatistiche === 'function') renderStatistiche('profiloStatsContent');
 }
 
 /* ══════════════════════════════════════════════
@@ -878,16 +876,12 @@ function buildProfiloStoricoSection() {
     '<div class="rc-card" style="margin-bottom:16px;">' +
       '<div style="padding:16px 20px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);">' +
         '<span style="font-size:1.3em;">📅</span>' +
-        '<span style="font-weight:700;font-size:1.05em;">Storico &amp; Statistiche</span>' +
+        '<span style="font-weight:700;font-size:1.05em;">Storico pasti</span>' +
       '</div>' +
       '<div style="padding:16px 20px;">' +
         '<div style="margin-bottom:16px;">' +
           '<div style="font-size:.85em;font-weight:700;color:var(--text-2);margin-bottom:6px;">Storico pasti</div>' +
           '<div id="profiloStoricoContent"></div>' +
-        '</div>' +
-        '<div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;">' +
-          '<div style="font-size:.85em;font-weight:700;color:var(--text-2);margin-bottom:6px;">Statistiche</div>' +
-          '<div id="profiloStatsContent"></div>' +
         '</div>' +
       '</div>' +
     '</div>'

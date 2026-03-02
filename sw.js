@@ -38,7 +38,6 @@ var STATIC_ASSETS = [
   BASE_PATH + '/ricette_custom.js',
   BASE_PATH + '/spesa.js',
   BASE_PATH + '/storico.js',
-  BASE_PATH + '/statistiche.js',
   BASE_PATH + '/profilo.js',
   BASE_PATH + '/pdf.js',
   BASE_PATH + '/tutorial.js',

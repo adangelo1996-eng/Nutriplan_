@@ -4,7 +4,6 @@
    - Generazione ricette strutturate per pasto (JSON puro)
    - Accetta / Rigenera / Rifiuta ricette generate
    - Suggerimenti sostituzione ingredienti
-   - Analisi AI statistiche (solo dati aggregati, no piano)
 ============================================================ */
 
 function _getGeminiKey() {
@@ -877,61 +876,6 @@ function getAISubstituteSuggestions(ingredientName, origCat, callback) {
   });
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   ANALISI AI STATISTICHE
-══════════════════════════════════════════════════════════════════════════════ */
-function generateAIStatsAnalysis() {
-  var resultEl = document.getElementById('aiStatsResult');
-  var btnEl    = document.getElementById('aiStatsBtn');
-  if (!resultEl) return;
-
-  if (btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ Analisi in corso…'; }
-  resultEl.style.display = 'block';
-  resultEl.innerHTML = '<div class="ai-loading"><span class="ai-spinner"></span> Gemini sta analizzando le tue abitudini…</div>';
-
-  var stats     = (typeof computeStats     === 'function') ? computeStats()     : {};
-  var weekUsage = (typeof computeWeekUsage === 'function') ? computeWeekUsage() : {};
-
-  var topIng   = (stats.topIngredients||[]).slice(0,5).map(function(i){ return i.name+'('+i.count+'x)'; }).join(', ');
-  var mealDist = Object.keys(stats.mealCounts||{}).map(function(mk){ return mk+':'+((stats.mealCounts||{})[mk]||0); }).join(', ');
-  var weekStr  = Object.keys(weekUsage).map(function(k){ return k+':'+weekUsage[k]; }).join(', ');
-
-  var prompt =
-    'Sei un nutrizionista italiano esperto. Analizza queste statistiche alimentari e fornisci consigli utili.\n\n' +
-    'STATISTICHE:\n' +
-    '- Giorni registrati: ' + (stats.totalDays||0) + '\n' +
-    '- Pasti totali: '      + (stats.totalMeals||0) + '\n' +
-    '- Alimenti unici: '   + (stats.uniqueIngredients||0) + '\n' +
-    '- Sostituzioni: '     + (stats.totalSubs||0) + '\n' +
-    (topIng   ? '- Più frequenti: ' + topIng   + '\n' : '') +
-    (mealDist ? '- Per pasto: '    + mealDist + '\n' : '') +
-    (weekStr  ? '- Settimanale: '  + weekStr  + '\n' : '') +
-    '\nStruttura la risposta:\n1. Commento generale (2-3 righe)\n2. Tre suggerimenti pratici\n3. Un punto di forza\n\n' +
-    'In italiano, positivo, max 250 parole. Frasi sempre complete.';
-
-  _geminiCall(prompt, function(text, err) {
-    if (btnEl) { btnEl.disabled = false; btnEl.innerHTML = 'Analisi AI <span class=\"ai-powered-label\">Powered by Gemini</span>'; }
-    if (!resultEl) return;
-    if (err || !text) {
-      resultEl.innerHTML = '<p style="color:var(--danger);font-size:.9em;">Errore: ' + (err||'risposta vuota') + '</p>';
-      return;
-    }
-    var html = text
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g,'<em>$1</em>')
-      .replace(/^(\d+\.)/gm,'<br><strong>$1</strong>')
-      .replace(/\n\n+/g,'<br><br>').replace(/\n/g,'<br>');
-    resultEl.innerHTML =
-      '<div style="padding:14px 16px;background:var(--bg-subtle);border-radius:var(--r-lg);border:1px solid var(--border);margin-top:4px;">' +
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
-          '<span style="font-size:1.1rem;">🤖</span>' +
-          '<span style="font-size:.75em;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.05em;">Analisi Gemini</span>' +
-        '</div>' +
-        '<div style="font-size:.9em;line-height:1.7;color:var(--text-2);">' + html + '</div>' +
-      '</div>';
-  }, { maxOutputTokens: 2500, temperature: 0.5 });
-}
 
 /* ══════════════════════════════════════════════════════════════════════════════
    VERIFICA AI PIANO GENERATO
@@ -1075,6 +1019,42 @@ function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
    Callback(parsed, err): parsed = { date, meal, actions, notes } o null.
 ══════════════════════════════════════════════════════════════════════════════ */
 
+/* Trova in dispensa un ingrediente simile a quello richiesto (pollo≈petto di pollo, porri≈porro, filetto orata≈orata) */
+function findSimilarIngredientInPantry(requested, pantryItems) {
+  if (!requested || typeof requested !== 'string' || !pantryItems || typeof pantryItems !== 'object') return null;
+  var r = requested.toLowerCase().trim();
+  if (!r) return null;
+  var rNorm = r.replace(/\s+/g, ' ');
+  var keys = Object.keys(pantryItems).filter(function(k) {
+    return k && pantryItems[k] && (pantryItems[k].quantity || 0) > 0;
+  });
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var kn = k.toLowerCase().trim();
+    if (kn === rNorm) return k;
+    if (kn.indexOf(rNorm) !== -1 || rNorm.indexOf(kn) !== -1) return k;
+    var rBase = rNorm.replace(/^(di|da|con|e|il|la|lo|i|gli|le)\s+/, '').replace(/\s+(di|da|con|e)$/, '');
+    var kBase = kn.replace(/^(di|da|con|e|il|la|lo|i|gli|le)\s+/, '').replace(/\s+(di|da|con|e)$/, '');
+    if (rBase === kBase) return k;
+    var rStem = rBase.replace(/[ie]$/, '');
+    var kStem = kBase.replace(/[ieo]$/, '');
+    if (rStem.length >= 3 && kStem.length >= 3 && (rStem === kStem || rBase.indexOf(kStem) === 0 || kBase.indexOf(rStem) === 0)) return k;
+    if (kn.indexOf(rBase) !== -1 || rNorm.indexOf(kBase) !== -1) return k;
+  }
+  return null;
+}
+
+/* Mappa ingredienti richiesti con equivalenti in dispensa (usa quelli in dispensa se simili) */
+function mapIngredientsToPantry(ingredients, pantryItems) {
+  if (!Array.isArray(ingredients) || !pantryItems) return ingredients.slice();
+  return ingredients.map(function(ing) {
+    var name = (typeof ing === 'string' ? ing : (ing && ing.name) ? ing.name : '').trim();
+    if (!name) return ing;
+    var match = findSimilarIngredientInPantry(name, pantryItems);
+    return match || name;
+  });
+}
+
 /* Genera ricetta da lista ingredienti (chiamabile da ai.js) */
 function generateRecipeFromIngredients(ingredients, meal, callback) {
   if (!Array.isArray(ingredients) || ingredients.length === 0) {
@@ -1083,7 +1063,9 @@ function generateRecipeFromIngredients(ingredients, meal, callback) {
   }
   var mealKey = meal || 'pranzo';
   var mealLabel = { colazione:'Colazione', spuntino:'Spuntino', pranzo:'Pranzo', merenda:'Merenda', cena:'Cena' }[mealKey] || 'Pranzo';
-  var ingList = ingredients.slice(0, 15).join(', ');
+  var pantry = (typeof pantryItems !== 'undefined' && pantryItems) ? pantryItems : {};
+  var mappedIngs = mapIngredientsToPantry(ingredients, pantry);
+  var ingList = mappedIngs.slice(0, 15).join(', ');
   var dietHints = [];
   var dp = (typeof dietProfile !== 'undefined') ? dietProfile : {};
   if (dp.vegetariano) dietHints.push('vegetariana (no carne, no pesce)');
@@ -1093,7 +1075,9 @@ function generateRecipeFromIngredients(ingredients, meal, callback) {
   if (Array.isArray(dp.allergenici) && dp.allergenici.length) dietHints.push('senza: ' + dp.allergenici.join(', '));
   var dietClause = dietHints.length ? '\n\nVINCOLI DIETA: La ricetta deve essere ' + dietHints.join('; ') + '.' : '';
   var prompt =
-    'Sei uno chef italiano. Crea una ricetta per ' + mealLabel + ' che USI questi ingredienti: ' + ingList + '.' + dietClause + '\n\n' +
+    'Sei uno chef italiano. Crea una ricetta per ' + mealLabel + '.\n\n' +
+    'OBBLIGATORIO: la ricetta DEVE includere TUTTI questi ingredienti (nessuno può essere omesso): ' + ingList + '.\n' +
+    'Puoi aggiungere solo ingredienti base (sale, olio, pepe, spezie, erbe aromatiche). Gli ingredienti indicati dall\'utente devono comparire TUTTI nella lista ingredienti della ricetta.' + dietClause + '\n\n' +
     'FORMATO OBBLIGATORIO — Restituisci SOLO questo JSON (NO testo prima, NO testo dopo, NO markdown):\n\n{\n' +
     '  "name": "Nome ricetta in italiano",\n' +
     '  "icon": "🍽",\n' +
@@ -1103,7 +1087,7 @@ function generateRecipeFromIngredients(ingredients, meal, callback) {
     '  ],\n' +
     '  "preparazione": "Cuoci... Servi."\n' +
     '}\n\n' +
-    'VINCOLI: quantity in numero, unit: g/ml/pz/cucchiai/foglie. preparazione max 300 caratteri. Almeno 3 ingredienti. ZERO testo fuori dal JSON.';
+    'VINCOLI: quantity in numero, unit: g/ml/pz/cucchiai/foglie. preparazione max 300 caratteri. Tutti gli ingredienti richiesti devono essere presenti. ZERO testo fuori dal JSON.';
   _geminiCall(prompt, function(text, err) {
     if (err) { callback(null, err); return; }
     var recipe;

@@ -5,6 +5,7 @@
 */
 
 var _aiPendingResult = null;
+var _aiPendingRequestText = '';
 var _aiSuggestedRecipes = [];
 
 var AI_MEAL_LABELS = {
@@ -174,6 +175,7 @@ function askAICommand() {
     if (totalItems > 20) parsed.notes.push('Molte richieste: alcune potrebbero essere state semplificate. Prova a dividere in più comandi se necessario.');
 
     _aiPendingResult = parsed;
+    _aiPendingRequestText = text;
     _aiSuggestedRecipes = [];
     _displayAIResult(parsed);
     if (inputWrap) inputWrap.style.display = 'block';
@@ -209,9 +211,14 @@ function _displayAIResult(parsed) {
   parsed.actions.forEach(function(a, i) {
     var stepText = _actionToStepText(a, parsed);
     if (stepText) {
+      var missing = _getMissingIngredientsForAction(a);
+      var createBtn = missing.length > 0
+        ? '<button type="button" class="rc-btn rc-btn-outline rc-btn-sm ai-step-create" onclick="openAICreateIngredientModal(_getMissingIngredientsForAction(_aiPendingResult.actions[' + i + ']), ' + i + ')">Crea ingrediente</button>'
+        : '';
       stepsHtml += '<div class="ai-action-block" data-action-index="' + i + '">' +
         '<div class="ai-step-text">' + (i + 1) + '. ' + escapeHtml(stepText) + '</div>' +
-        '<button type="button" class="rc-btn rc-btn-primary rc-btn-sm ai-step-execute" onclick="executeAISingleAction(' + i + ')">Esegui</button>' +
+        '<div class="ai-step-buttons">' + createBtn +
+        '<button type="button" class="rc-btn rc-btn-primary rc-btn-sm ai-step-execute" onclick="executeAISingleAction(' + i + ')">Esegui</button></div>' +
       '</div>';
     }
   });
@@ -228,6 +235,10 @@ function _displayAIResult(parsed) {
     recipesEl.innerHTML = '';
     recipesEl.style.display = 'none';
   }
+  var testimonyWrap = document.getElementById('aiTestimonyWrap');
+  if (testimonyWrap) { testimonyWrap.innerHTML = ''; testimonyWrap.style.display = 'none'; }
+  var execBtn = document.getElementById('aiExecuteBtn');
+  if (execBtn) { execBtn.style.display = ''; execBtn.disabled = false; execBtn.textContent = 'Esegui tutto'; }
 }
 
 function _actionToStepText(a, parsed) {
@@ -275,6 +286,13 @@ function executeAISingleAction(index) {
   var a = _aiPendingResult.actions[index];
   if (!a) return;
 
+  var missing = _getMissingIngredientsForAction(a);
+  if (missing.length > 0) {
+    openAICreateIngredientModal(missing, index);
+    if (typeof showToast === 'function') showToast('Crea gli ingredienti mancanti prima di eseguire', 'warning');
+    return;
+  }
+
   var dateKey = _aiPendingResult.date || (typeof getCurrentDateKey === 'function' ? getCurrentDateKey() : '');
   if (a.type === 'generate_recipe') {
     _executeGenerateRecipe(a, index);
@@ -303,6 +321,7 @@ function executeAISingleAction(index) {
   if (typeof renderSpesa === 'function') renderSpesa();
   if (typeof renderMealItems === 'function') renderMealItems();
   if (typeof renderMealProgress === 'function') renderMealProgress();
+  if (typeof renderCasa === 'function') renderCasa(true);
   if (typeof renderPianoRicette === 'function') renderPianoRicette();
 
   _markAIActionCompleted(index);
@@ -311,15 +330,130 @@ function executeAISingleAction(index) {
   if (!hasSuggestRecipes && typeof showToast === 'function') showToast('Azione completata', 'success');
 }
 
+/* Verifica se l'ingrediente esiste in pantryItems o è simile a uno esistente. */
+function _ingredientExistsInDatabase(name) {
+  if (!name || typeof name !== 'string') return true;
+  var n = (name || '').trim();
+  if (!n) return true;
+  if (typeof pantryItems === 'undefined' || !pantryItems) return false;
+  var exists = Object.keys(pantryItems).some(function(k) {
+    return k && k.toLowerCase().trim() === n.toLowerCase();
+  });
+  if (exists) return true;
+  if (typeof findSimilarIngredientInPantry === 'function') {
+    return !!findSimilarIngredientInPantry(n, pantryItems);
+  }
+  return false;
+}
+
+/* Restituisce gli ingredienti mancanti per l'azione (non presenti in dispensa). */
+function _getMissingIngredientsForAction(a) {
+  var missing = [];
+  if (a.type === 'log_meal' && Array.isArray(a.items)) {
+    a.items.forEach(function(it) {
+      var n = (it.name || it || '').trim();
+      if (n && !it.isRecipe && !_ingredientExistsInDatabase(n)) missing.push(n);
+    });
+  }
+  if (a.type === 'add_to_shopping_list' && Array.isArray(a.items)) {
+    a.items.forEach(function(it) {
+      var n = (it.name || it || '').trim();
+      if (n && !_ingredientExistsInDatabase(n)) missing.push(n);
+    });
+  }
+  if (a.type === 'generate_recipe' && Array.isArray(a.ingredients)) {
+    a.ingredients.forEach(function(ing) {
+      var n = (typeof ing === 'string' ? ing : (ing && ing.name) ? ing.name : '').trim();
+      if (n && !_ingredientExistsInDatabase(n)) missing.push(n);
+    });
+  }
+  return missing.filter(function(n, i, arr) { return arr.indexOf(n) === i; });
+}
+
+var _aiCreateIngredientPendingIndex = null;
+var _aiCreateIngredientPendingBulk = false;
+
+function openAICreateIngredientModal(missingIngredients, actionIndex) {
+  if (!missingIngredients || !missingIngredients.length) return;
+  _aiCreateIngredientPendingIndex = actionIndex;
+  _aiCreateIngredientPendingBulk = false;
+  var modal = document.getElementById('aiCreateIngredientModal');
+  var body = document.getElementById('aiCreateIngredientModalBody');
+  if (!modal || !body) return;
+  body.innerHTML = '<p class="ai-create-ing-desc">Gli ingredienti seguenti non esistono nel database. Crealili prima di eseguire l\'azione.</p>' +
+    missingIngredients.map(function(name) {
+      var attrVal = String(name).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return '<div class="ai-create-ing-row" data-name="' + attrVal + '">' +
+        '<span class="ai-create-ing-name">' + (typeof escapeHtml === 'function' ? escapeHtml(name) : name) + '</span>' +
+        '<button type="button" class="rc-btn rc-btn-primary rc-btn-sm ai-create-ing-btn">Crea ingrediente</button>' +
+        '</div>';
+    }).join('');
+  body.querySelectorAll('.ai-create-ing-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var row = btn.closest('.ai-create-ing-row');
+      var name = row && row.getAttribute('data-name');
+      if (name && typeof openAddFridgePrecompiled === 'function') {
+        closeAICreateIngredientModal();
+        openAddFridgePrecompiled(name);
+      }
+    });
+  });
+  modal.classList.add('active');
+}
+
+function closeAICreateIngredientModal() {
+  var modal = document.getElementById('aiCreateIngredientModal');
+  if (modal) modal.classList.remove('active');
+  _aiCreateIngredientPendingIndex = null;
+  _aiCreateIngredientPendingBulk = false;
+}
+
+function _getModifiedPagesForAction(a) {
+  if (a.type === 'log_meal') return [{ page: 'piano', label: 'Oggi', id: 'piano' }];
+  if (a.type === 'add_to_shopping_list') return [{ page: 'spesa', label: 'Lista spesa', id: 'spesa' }];
+  if (a.type === 'generate_recipe') return [{ page: 'ricette', label: 'Ricette', id: 'ricette' }];
+  if (a.type === 'suggest_recipes') return [];
+  return [];
+}
+
+function _updateAITestimony() {
+  if (!_aiPendingResult || !_aiPendingRequestText) return;
+  var completed = document.querySelectorAll('.ai-action-completed');
+  var seen = {};
+  var pages = [];
+  completed.forEach(function(bl) {
+    var idx = parseInt(bl.getAttribute('data-action-index'), 10);
+    var a = _aiPendingResult.actions[idx];
+    if (a) _getModifiedPagesForAction(a).forEach(function(p) {
+      if (!seen[p.id]) { seen[p.id] = true; pages.push(p); }
+    });
+  });
+  var wrap = document.getElementById('aiTestimonyWrap');
+  if (!wrap) return;
+  if (pages.length === 0) { wrap.style.display = 'none'; return; }
+  var linksHtml = pages.map(function(p) {
+    return '<a href="#" class="ai-testimony-link" onclick="goToPage(\'' + (p.id || p.page) + '\');return false;">' + (typeof escapeHtml === 'function' ? escapeHtml(p.label) : p.label) + '</a>';
+  }).join(', ');
+  wrap.innerHTML = '<div class="ai-testimony-block">' +
+    '<div class="ai-testimony-label">Richiesta eseguita</div>' +
+    '<div class="ai-testimony-request">' + (typeof escapeHtml === 'function' ? escapeHtml(_aiPendingRequestText) : _aiPendingRequestText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')) + '</div>' +
+    '<div class="ai-testimony-pages">Pagine modificate: ' + linksHtml + '</div>' +
+    '</div>';
+  wrap.style.display = 'block';
+}
+
 function _markAIActionCompleted(index) {
   var block = document.querySelector('.ai-action-block[data-action-index="' + index + '"]');
   if (block) {
-    var btn = block.querySelector('.ai-step-execute');
-    if (btn) btn.remove();
+    var btns = block.querySelector('.ai-step-buttons');
+    if (btns) btns.remove();
     var textEl = block.querySelector('.ai-step-text');
     if (textEl) textEl.innerHTML = (textEl.innerHTML || '') + ' <span class="ai-action-done">Completato</span>';
     block.classList.add('ai-action-completed');
   }
+  var execBtn = document.getElementById('aiExecuteBtn');
+  if (execBtn) execBtn.style.display = 'none';
+  _updateAITestimony();
 }
 
 function _condenseAIAction(a, parsed) {
@@ -363,6 +497,19 @@ function _pushAIActionHistory(actions, dateKey) {
 function executeAIResult() {
   if (!_aiPendingResult || !Array.isArray(_aiPendingResult.actions)) return;
 
+  var allMissing = [];
+  _aiPendingResult.actions.forEach(function(a) {
+    _getMissingIngredientsForAction(a).forEach(function(n) {
+      if (allMissing.indexOf(n) === -1) allMissing.push(n);
+    });
+  });
+  if (allMissing.length > 0) {
+    _aiCreateIngredientPendingBulk = true;
+    openAICreateIngredientModal(allMissing, null);
+    if (typeof showToast === 'function') showToast('Crea gli ingredienti mancanti prima di eseguire', 'warning');
+    return;
+  }
+
   var dateKey = _aiPendingResult.date || (typeof getCurrentDateKey === 'function' ? getCurrentDateKey() : '');
   var completed = 0;
   var failed = 0;
@@ -394,10 +541,11 @@ function executeAIResult() {
   if (typeof renderSpesa === 'function') renderSpesa();
   if (typeof renderMealItems === 'function') renderMealItems();
   if (typeof renderMealProgress === 'function') renderMealProgress();
+  if (typeof renderCasa === 'function') renderCasa(true);
   if (typeof renderPianoRicette === 'function') renderPianoRicette();
 
   var hasSuggestRecipes = _aiPendingResult.actions.some(function(a) { return a.type === 'suggest_recipes'; });
-  if (!hasSuggestRecipes) cancelAIResult();
+  if (!hasSuggestRecipes && typeof showToast === 'function') showToast('Azioni completate', 'success');
 
   _pushAIActionHistory(_aiPendingResult.actions, dateKey);
 
@@ -407,10 +555,13 @@ function executeAIResult() {
 
   var execBtn = document.getElementById('aiExecuteBtn');
   if (execBtn) {
+    execBtn.style.display = 'none';
     execBtn.textContent = 'Completato';
     execBtn.disabled = true;
     execBtn.onclick = null;
   }
+  _aiPendingRequestText = _aiPendingResult.actions.length ? (_aiPendingRequestText || '') : '';
+  if (_aiPendingRequestText) _updateAITestimony();
 
   if (typeof showToast === 'function') {
     var msg = completed > 0 ? '✅ ' + completed + ' azione/i completata/e.' : '';

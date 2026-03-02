@@ -196,25 +196,6 @@ function exportPDF() {
     if (rows) storicoHtml += '<div class="day-block"><h3 class="day-label">'+label+'</h3><table class="data-table">'+rows+'</table></div>';
   });
 
-  /* Statistiche rapide per nutrizionista */
-  var daysWithData = 0;
-  var totalMeals = 0;
-  storicoKeys.forEach(function(dk){
-    var hd = appHistory[dk] || {};
-    var used = hd.usedItems || {};
-    var ric = hd.ricette || {};
-    var count = 0;
-    MEALS_ORDER.forEach(function(mk){
-      count += (used[mk] ? Object.keys(used[mk]).length : 0) + (ric[mk] ? Object.keys(ric[mk]).length : 0);
-    });
-    if (count > 0) { daysWithData++; totalMeals += count; }
-  });
-  var mediaMeals = daysWithData ? (totalMeals / daysWithData).toFixed(1) : '—';
-  var statsHtml = '<table class="stats-table">' +
-    '<tr><td>Giorni con almeno un pasto registrato (ultimi 30)</td><td class="num">'+daysWithData+'</td></tr>' +
-    '<tr><td>Media alimenti/ricette consumati per giorno (solo giorni con dati)</td><td class="num">'+mediaMeals+'</td></tr>' +
-    '</table>';
-
   /* ── Dispensa ── */
   var dispensaRows = '';
   if (typeof pantryItems !== 'undefined' && pantryItems) {
@@ -308,9 +289,6 @@ function exportPDF() {
     '.ing-chip.ric{background:#f5f3ff;border-color:#c4b5fd;}'+
     '.ing-chip em{color:#6b7280;font-style:normal;}'+
     'tr.bought td{color:#9ca3af;text-decoration:line-through;}'+
-    '.stats-table{width:100%;max-width:400px;border-collapse:collapse;margin:12px 0;}'+
-    '.stats-table td{padding:8px 12px;border-bottom:1px solid #e5e7eb;}'+
-    '.stats-table .num{font-weight:700;color:#166534;}'+
     '.muted{color:#9ca3af;font-style:italic;margin:8px 0;}'+
     '.chart-section{margin:14px 0 24px;page-break-inside:avoid;}'+
     '.chart-bar{display:flex;align-items:center;gap:10px;margin-bottom:6px;}'+
@@ -356,26 +334,22 @@ function exportPDF() {
     (periodLabel ? '<p class="section-block" style="font-size:10pt;color:#6b7280;">Periodo: '+periodLabel+'. Alimenti e ricette segnati come consumati.</p>' : '')+
     (storicoHtml || '<p class="muted">Nessun dato di consumo negli ultimi 30 giorni.</p>')+
 
-    /* 5. Statistiche */
-    '<h2>5. Riepilogo statistiche</h2>'+
-    statsHtml+
-
-    /* 6. Dispensa */
-    '<h2>6. Dispensa attuale</h2>'+
+    /* 5. Dispensa */
+    '<h2>5. Dispensa attuale</h2>'+
     (dispensaRows ? '<table class="data-table"><thead><tr><th>Ingrediente</th><th class="num">Quantità</th></tr></thead><tbody>'+dispensaRows+'</tbody></table>' : '<p class="muted">Dispensa vuota o non compilata.</p>')+
 
-    /* 7. Lista spesa */
-    '<h2>7. Lista della spesa</h2>'+
+    /* 6. Lista spesa */
+    '<h2>6. Lista della spesa</h2>'+
     (spesaRows ? '<table class="data-table"><thead><tr><th>Voce</th><th class="num">Quantità</th></tr></thead><tbody>'+spesaRows+'</tbody></table>' : '<p class="muted">Nessuna voce in lista.</p>')+
 
-    /* 8. Grafici */
-    (chart1Html || chart2Html ? '<h2>8. Riepilogo visivo</h2>'+
+    /* 7. Grafici */
+    (chart1Html || chart2Html ? '<h2>7. Riepilogo visivo</h2>'+
       (chart1Html ? '<div class="chart-title">Dispensa per categoria</div><div class="chart-sub">Numero di ingredienti con quantità &gt; 0</div>'+chart1Html : '')+
       (chart2Html ? '<div class="chart-title" style="margin-top:20px;">Consumo per giorno (ultimi 30)</div><div class="chart-sub">Alimenti/ricette segnati come consumati</div>'+chart2Html : '')
     : '')+
 
-    /* 9. Note per nutrizionista */
-    '<h2>9. Note per il nutrizionista</h2>'+
+    /* 8. Note per nutrizionista */
+    '<h2>8. Note per il nutrizionista</h2>'+
     '<div class="notes-box">Spazio per appunti in sede di confronto con il paziente.</div>'+
 
     '<script>window.onload=function(){window.print();}<\/script>'+

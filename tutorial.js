@@ -503,18 +503,6 @@ var TUTORIAL_STEPS_BY_PAGE = {
     { icon: '🏠', title: 'Lista spesa condivisa', text: 'Se sei in una casa condivisa, la lista della spesa è condivisa con gli altri membri. Tutti vedono le stesse voci e aggiornamenti in tempo reale.', page: 'spesa', target: '#spesaContent', hint: 'Dal Profilo puoi creare o unirti a una casa.' },
     { icon: '🎉', title: 'Fine guida Spesa', text: 'Hai visto come usare la lista della spesa. Spunta gli acquisti e inserisci le quantità per tenere la dispensa aggiornata.', page: 'spesa', target: '#page-spesa', hint: 'Premi Avanti per chiudere.' }
   ],
-  'statistiche': [
-    { icon: '📊', title: 'Statistiche', text: 'Qui trovi grafici e riepiloghi del tuo utilizzo: calorie, macro, pasti consumati e andamento nel tempo.', page: 'statistiche', target: '#page-statistiche .page-header', hint: 'Premi Avanti.' },
-    { icon: '📅', title: 'Periodo', text: 'Le statistiche si riferiscono a un periodo (es. ultima settimana o mese). Controlla l\'intestazione per l\'arco temporale.', page: 'statistiche', target: '#statisticheContent', hint: 'Alcune sezioni permettono di cambiare periodo.' },
-    { icon: '📈', title: 'Grafici', text: 'I grafici mostrano l\'andamento di calorie o macro nel tempo. Utili per vedere se rispetti il piano.', page: 'statistiche', target: '#statisticheContent', hint: 'Scorri per vedere tutti i grafici.' },
-    { icon: '🥗', title: 'Riepilogo pasti', text: 'Puoi vedere come sono distribuiti i pasti (colazione, pranzo, cena) e le categorie di alimenti consumati.', page: 'statistiche', target: '#statisticheContent', hint: 'Usa questi dati per bilanciare la settimana.' },
-    { icon: '🎯', title: 'Confronto con limiti', text: 'Se hai impostato limiti settimanali nel Piano alimentare, qui puoi vedere se li rispetti.', page: 'statistiche', target: '#statisticheContent', hint: 'Controlla le sezioni limiti se presenti.' },
-    { icon: '💾', title: 'Dati usati', text: 'Le statistiche si basano sui consumi che segni in Oggi e sulle ricette preparate. Più usi l\'app, più i dati sono significativi.', page: 'statistiche', target: '#statisticheContent', hint: 'Segna sempre i consumi per statistiche affidabili.' },
-    { icon: '📤', title: 'Esportare', text: 'Per condividere i dati con un professionista, puoi usare Esporta PDF dal Profilo o dagli strumenti di questa pagina.', page: 'statistiche', target: '#statisticheContent', hint: 'Controlla il pulsante PDF in header o Profilo.' },
-    { icon: '🔄', title: 'Aggiornamento', text: 'I dati si aggiornano in base ai consumi registrati. Apri di nuovo la pagina dopo aver usato Oggi.', page: 'statistiche', target: '#statisticheContent', hint: 'Le stats riflettono l\'ultimo utilizzo.' },
-    { icon: '📱', title: 'Uso regolare', text: 'Per statistiche utili segna i consumi ogni giorno in Oggi e segna le ricette come preparate quando le cucini.', page: 'statistiche', target: '#statisticheContent', hint: 'Più dati inserisci, più le stats sono significative.' },
-    { icon: '🎉', title: 'Fine guida Statistiche', text: 'Hai visto come leggere grafici e riepiloghi. Usa questa pagina per monitorare i progressi.', page: 'statistiche', target: '#page-statistiche', hint: 'Premi Avanti per chiudere.' }
-  ],
   'profilo': [
     { icon: '👤', title: 'Profilo', text: 'Qui gestisci account, impostazioni, vincoli dieta, storico e preferenze dell\'app.', page: 'profilo', target: '#page-profilo .page-header', hint: 'Premi Avanti.' },
     { icon: '🔐', title: 'Accesso e account', text: 'In cima trovi le informazioni sull\'account (nome, email se loggato con Google) e i pulsanti per accedere o uscire.', page: 'profilo', target: '#profiloPage', hint: 'Scorri per vedere la sezione account.' },

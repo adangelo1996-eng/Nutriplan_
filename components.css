@@ -4231,14 +4231,6 @@ div > .ai-powered-label {
   color: #0d2218;
   font-size: .7rem;
 }
-/* Pulsante stats: label non blocco ma inline */
-#aiStatsBtn .ai-powered-label {
-  display: inline;
-  font-size: .68rem;
-  margin-left: 6px;
-  opacity: .8;
-}
-
 [data-theme="dark"] .section-title + .ai-powered-label,
 [data-theme="dark"] .modal-title + .ai-powered-label,
 [data-theme="dark"] div > .ai-powered-label {
@@ -4871,6 +4863,7 @@ div > .ai-powered-label {
 }
 .ai-action-block:last-child { border-bottom: none; }
 .ai-action-block .ai-step-text { flex: 1; }
+.ai-action-block .ai-step-buttons { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
 .ai-action-block .ai-step-execute { flex-shrink: 0; }
 .ai-action-done {
   font-size: .8rem;
@@ -4914,6 +4907,49 @@ div > .ai-powered-label {
   gap: 10px;
   margin-top: 14px;
 }
+.ai-testimony-wrap {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.ai-testimony-block {
+  font-size: .85rem;
+  color: var(--text-2);
+}
+.ai-testimony-label {
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 4px;
+}
+.ai-testimony-request {
+  margin-bottom: 6px;
+  font-style: italic;
+}
+.ai-testimony-pages {
+  font-size: .82rem;
+}
+.ai-testimony-link {
+  color: var(--primary);
+  text-decoration: none;
+}
+.ai-testimony-link:hover {
+  text-decoration: underline;
+}
+.ai-create-ing-desc {
+  margin-bottom: 14px;
+  font-size: .9rem;
+  color: var(--text-2);
+}
+.ai-create-ing-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ai-create-ing-row:last-child { border-bottom: none; }
+.ai-create-ing-name { font-weight: 600; flex: 1; }
 .ai-loading-wrap {
   padding: 24px;
   text-align: center;

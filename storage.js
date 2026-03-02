@@ -530,7 +530,7 @@ function refreshAllAppViews() {
   var fns = [
     'renderCasa', 'renderMealPlan', 'renderPantry', 'renderFridge',
     'renderRicettePage', 'renderStorico', 'renderSpesa',
-    'renderStatistiche', 'renderProfilo', 'updateSavedFridges',
+    'renderProfilo', 'updateSavedFridges',
     'updateLimits', 'renderPianoAlimentare'
   ];
   fns.forEach(function (name) {
