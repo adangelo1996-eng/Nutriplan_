@@ -25,6 +25,7 @@ var weeklyLimitsCustom = {};  /* limiti personalizzati nel piano alimentare */
 var preferiti         = [];   /* nomi ricette preferite */
 var dietProfile       = {};   /* vincoli dieta: { vegetariano, vegano, senzaLattosio, senzaGlutine, allergenici:[] } */
 var householdId       = null; /* id casa condivisa: se impostato, dispensa e spesa si leggono/scrivono da households/{hid} */
+var aiActionHistory   = [];   /* storico condensato azioni AI eseguite (ultimi 50) */
 var _lastHouseholdPantrySnapshot = null; /* per update granulari: ultimo stato dispensa inviato a households */
 
 function isReadOnlyMode() {
@@ -156,6 +157,8 @@ function applyLoadedData(data) {
     preferiti = data.preferiti;
   if (data.dietProfile && typeof data.dietProfile === 'object')
     dietProfile = data.dietProfile;
+  if (Array.isArray(data.aiActionHistory))
+    aiActionHistory = data.aiActionHistory.slice(-50);
   /* householdId: non sovrascrivere un valore locale valido con null dal cloud (sync in ritardo dopo crea/unisciti) */
   if (data.hasOwnProperty('householdId')) {
     if (data.householdId && typeof data.householdId === 'string' && data.householdId.trim())
@@ -184,7 +187,8 @@ function buildSaveObject() {
     weeklyLimitsCustom: weeklyLimitsCustom,
     preferiti:          preferiti,
     dietProfile:        dietProfile,
-    householdId:        householdId || null
+    householdId:        householdId || null,
+    aiActionHistory:    (aiActionHistory || []).slice(-50)
   };
   return obj;
 }

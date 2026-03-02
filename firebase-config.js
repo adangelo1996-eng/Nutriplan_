@@ -91,6 +91,7 @@ function initFirebase() {
       if (user) {
         showCloudStatus('saving');
         updateAuthUI(user);
+        if (typeof updateAdminBadge === 'function') updateAdminBadge();
         if (typeof renderProfilo === 'function')  renderProfilo();
         if (typeof loadFromCloud === 'function') {
           var p = loadFromCloud(user.uid);
@@ -108,6 +109,7 @@ function initFirebase() {
         currentUser = null;
         showCloudStatus('local');
         updateAuthUI(null);
+        if (typeof updateAdminBadge === 'function') updateAdminBadge();
         if (typeof renderProfilo === 'function')  renderProfilo();
       }
     });

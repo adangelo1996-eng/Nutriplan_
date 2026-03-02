@@ -916,6 +916,21 @@ body .landing-accedi-wrap * {
   filter: brightness(0) invert(1);
 }
 
+/* Badge ADMIN in header */
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: .65rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  color: #d4a84b;
+  background: rgba(212, 168, 75, .2);
+  border: 1px solid rgba(212, 168, 75, .5);
+  border-radius: var(--r-full);
+  margin-right: 4px;
+}
+
 /* Pill utente autenticato */
 .auth-user-pill {
   display: flex; align-items: center; gap: 5px;

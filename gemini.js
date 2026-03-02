@@ -1074,6 +1074,51 @@ function verifyGeneratedPlanWithAI(userProfile, planSummary, callback) {
    Trasforma richieste in italiano in azioni strutturate JSON.
    Callback(parsed, err): parsed = { date, meal, actions, notes } o null.
 ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Genera ricetta da lista ingredienti (chiamabile da ai.js) */
+function generateRecipeFromIngredients(ingredients, meal, callback) {
+  if (!Array.isArray(ingredients) || ingredients.length === 0) {
+    callback(null, 'Nessun ingrediente specificato');
+    return;
+  }
+  var mealKey = meal || 'pranzo';
+  var mealLabel = { colazione:'Colazione', spuntino:'Spuntino', pranzo:'Pranzo', merenda:'Merenda', cena:'Cena' }[mealKey] || 'Pranzo';
+  var ingList = ingredients.slice(0, 15).join(', ');
+  var dietHints = [];
+  var dp = (typeof dietProfile !== 'undefined') ? dietProfile : {};
+  if (dp.vegetariano) dietHints.push('vegetariana (no carne, no pesce)');
+  if (dp.vegano) dietHints.push('vegana');
+  if (dp.senzaLattosio) dietHints.push('senza lattosio');
+  if (dp.senzaGlutine) dietHints.push('senza glutine');
+  if (Array.isArray(dp.allergenici) && dp.allergenici.length) dietHints.push('senza: ' + dp.allergenici.join(', '));
+  var dietClause = dietHints.length ? '\n\nVINCOLI DIETA: La ricetta deve essere ' + dietHints.join('; ') + '.' : '';
+  var prompt =
+    'Sei uno chef italiano. Crea una ricetta per ' + mealLabel + ' che USI questi ingredienti: ' + ingList + '.' + dietClause + '\n\n' +
+    'FORMATO OBBLIGATORIO — Restituisci SOLO questo JSON (NO testo prima, NO testo dopo, NO markdown):\n\n{\n' +
+    '  "name": "Nome ricetta in italiano",\n' +
+    '  "icon": "🍽",\n' +
+    '  "pasto": "' + mealKey + '",\n' +
+    '  "ingredienti": [\n' +
+    '    {"name": "Ingrediente", "quantity": 100, "unit": "g"}\n' +
+    '  ],\n' +
+    '  "preparazione": "Cuoci... Servi."\n' +
+    '}\n\n' +
+    'VINCOLI: quantity in numero, unit: g/ml/pz/cucchiai/foglie. preparazione max 300 caratteri. Almeno 3 ingredienti. ZERO testo fuori dal JSON.';
+  _geminiCall(prompt, function(text, err) {
+    if (err) { callback(null, err); return; }
+    var recipe;
+    try {
+      recipe = _parseGeminiRecipe(text || '');
+    } catch (e) { recipe = null; }
+    var isValid = recipe && recipe.name && Array.isArray(recipe.ingredienti) && recipe.ingredienti.length >= 2;
+    if (!isValid) { callback(null, 'Ricetta non valida'); return; }
+    recipe.pasto = recipe.pasto || mealKey;
+    recipe.icon = recipe.icon || '🍽';
+    recipe.isAI = true;
+    callback(recipe, null);
+  }, { maxOutputTokens: 1500, temperature: 0.3 });
+}
+
 function parseNaturalLanguageCommand(userText, callback) {
   if (!userText || typeof userText !== 'string' || !userText.trim()) {
     callback(null, 'Inserisci una richiesta');
@@ -1094,7 +1139,8 @@ function parseNaturalLanguageCommand(userText, callback) {
     '    { "type": "log_meal", "meal": "pranzo", "items": [{"name":"pollo","quantity":150,"unit":"g","approximate":true}] },\n' +
     '    { "type": "log_meal", "meal": "cena", "items": [{"name":"Pasta al tonno","isRecipe":true}] },\n' +
     '    { "type": "add_to_shopping_list", "items": [{"name":"peperoni","quantity":3,"unit":"pz","approximate":true}] },\n' +
-    '    { "type": "suggest_recipes", "meal": "cena", "count": 3 }\n' +
+    '    { "type": "suggest_recipes", "meal": "cena", "count": 3 },\n' +
+    '    { "type": "generate_recipe", "meal": "pranzo", "ingredients": ["spinaci","pollo"] }\n' +
     '  ],\n' +
     '  "notes": ["eventuali avvisi per l\'utente"]\n' +
     '}\n\n' +
@@ -1102,9 +1148,11 @@ function parseNaturalLanguageCommand(userText, callback) {
     '- date: usa "' + today + '" per oggi, stamattina, stasera, a pranzo, ecc.\n' +
     '- meal: inferisci dall\'ora se non specificato (ora attuale: ' + hour + '). Colazione 6-10, Spuntino 10-12, Pranzo 12-15, Merenda 15-18, Cena 18-22.\n' +
     '- log_meal: se l\'utente indica ingredienti singoli, usa items con name, quantity, unit (approximate:true se stima). Se indica una ricetta (es. "pasta al tonno", "risotto", "pasta al pomodoro"), usa un item con isRecipe:true e name=nome ricetta.\n' +
+    '- IMPORTANTE: "pasta e fagioli", "pollo e patate" con "e" tra ingredienti sono PIÙ ingredienti: crea un item separato per ciascuno. Es: "pasta e fagioli" -> [{"name":"pasta","quantity":80,"unit":"g"},{"name":"fagioli","quantity":80,"unit":"g"}]. NON usare un singolo item "pasta e fagioli". Usa isRecipe:true solo per ricette composte (es. "pasta al tonno", "risotto alla milanese").\n' +
     '- Se un ingrediente non è in dispensa o la quantità è insufficiente, segna comunque il pasto consumato; non bloccare.\n' +
     '- add_to_shopping_list: ingredienti da aggiungere alla lista spesa.\n' +
     '- suggest_recipes: quando l\'utente chiede "cosa mangiare", "non so cosa cucinare", "idee per cena". count: 3.\n' +
+    '- generate_recipe: quando l\'utente vuole CREARE una ricetta con ingredienti specifici (es. "voglio fare qualcosa con spinaci e pollo", "ricetta con X e Y", "cosa posso cucinare con spinaci"). Usa type "generate_recipe" con "ingredients": ["spinaci","pollo"] e "meal" (pranzo/cena ecc.).\n' +
     '- Se la richiesta contiene PIÙ comandi (es. "ho mangiato X e aggiungi Y da comprare"), crea più azioni in ordine.\n' +
     '- Rispondi SOLO con il JSON. Nessun markdown, nessun testo prima o dopo.\n\n' +
     'RICHIESTA UTENTE:\n' + userText.trim();

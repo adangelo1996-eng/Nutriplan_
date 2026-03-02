@@ -910,6 +910,7 @@ function enterApp() {
 
   buildCalendarBar();
   updateDateLabel();
+  if (typeof updateAdminBadge === 'function') updateAdminBadge();
   /* Home semplificata: atterra sempre su "Oggi" */
   goToPage('piano');
 

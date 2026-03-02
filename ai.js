@@ -19,8 +19,62 @@ var AI_EXAMPLE_COMMANDS = [
   'Ho mangiato pollo con verdure',
   'Aggiungi latte alla spesa',
   'Non so cosa mangiare stasera',
-  'Ho mangiato pasta al pomodoro e metti il pane in lista'
+  'Voglio fare qualcosa con spinaci e pollo'
 ];
+
+var AI_REQUESTS_LIMIT = 5;
+var AI_ADMIN_EMAILS = ['a.dangelo1996@gmail.com'];
+var _aiRequestsToday = { date: '', count: 0 };
+
+function _isAIAdmin() {
+  var user = (typeof currentUser !== 'undefined') ? currentUser : null;
+  if (!user || !user.email) return false;
+  var email = (user.email || '').toLowerCase().trim();
+  return AI_ADMIN_EMAILS.some(function(e) { return (e || '').toLowerCase().trim() === email; });
+}
+
+function _getAIDailyRequests() {
+  try {
+    var raw = localStorage.getItem('nutriplan_ai_requests');
+    if (raw) {
+      var r = JSON.parse(raw);
+      var today = new Date().toISOString().slice(0, 10);
+      if (r.date === today) return r.count;
+    }
+  } catch (e) {}
+  return 0;
+}
+
+function _incrementAIDailyRequests() {
+  try {
+    var today = new Date().toISOString().slice(0, 10);
+    var count = _getAIDailyRequests();
+    if (count >= AI_REQUESTS_LIMIT) return false;
+    count++;
+    localStorage.setItem('nutriplan_ai_requests', JSON.stringify({ date: today, count: count }));
+    return true;
+  } catch (e) {}
+  return true;
+}
+
+function _updateAILimitBanner() {
+  var bannerEl = document.getElementById('aiLimitBanner');
+  if (!bannerEl) return;
+  var used = _getAIDailyRequests();
+  var left = Math.max(0, AI_REQUESTS_LIMIT - used);
+  if (_isAIAdmin()) {
+    bannerEl.innerHTML = '<span class="ai-limit-text">Admin: limiti disabilitati. (Standard: ' + AI_REQUESTS_LIMIT + ' richieste/giorno.)</span>';
+  } else {
+    bannerEl.innerHTML = '<span class="ai-limit-text">Massimo ' + AI_REQUESTS_LIMIT + ' richieste al giorno. Oggi ne hai usate ' + used + ', ne restano ' + left + '.</span>';
+  }
+  bannerEl.style.display = 'block';
+}
+
+function updateAdminBadge() {
+  var badge = document.getElementById('adminBadge');
+  if (!badge) return;
+  badge.style.display = _isAIAdmin() ? 'inline-flex' : 'none';
+}
 
 function renderAIPage() {
   _aiPendingResult = null;
@@ -48,6 +102,16 @@ function renderAIPage() {
       chipsWrap.appendChild(chip);
     });
   }
+
+  _updateAILimitBanner();
+
+  var historyEl = document.getElementById('aiHistoryList');
+  if (historyEl && typeof aiActionHistory !== 'undefined' && Array.isArray(aiActionHistory)) {
+    var history = aiActionHistory.slice().reverse().slice(0, 10);
+    historyEl.innerHTML = history.length
+      ? history.map(function(h) { return '<div class="ai-history-item">' + (typeof escapeHtml === 'function' ? escapeHtml(h) : h.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')) + '</div>'; }).join('')
+      : '<div class="ai-history-empty">Nessuna azione eseguita ancora.</div>';
+  }
 }
 
 function askAICommand() {
@@ -62,6 +126,18 @@ function askAICommand() {
   if (!text) {
     if (typeof showToast === 'function') showToast('Scrivi una richiesta', 'warning');
     return;
+  }
+
+  if (!_isAIAdmin()) {
+    var used = _getAIDailyRequests();
+    if (used >= AI_REQUESTS_LIMIT) {
+      if (typeof showToast === 'function') showToast('Limite giornaliero raggiunto (' + AI_REQUESTS_LIMIT + ' richieste). Riprova domani.', 'warning');
+      return;
+    }
+    if (!_incrementAIDailyRequests()) {
+      if (typeof showToast === 'function') showToast('Limite giornaliero raggiunto.', 'warning');
+      return;
+    }
   }
 
   if (inputWrap) inputWrap.style.display = 'none';
@@ -79,6 +155,7 @@ function askAICommand() {
   parseNaturalLanguageCommand(text, function(parsed, err) {
     if (loadingWrap) loadingWrap.style.display = 'none';
     if (askBtn) askBtn.disabled = false;
+    _updateAILimitBanner();
 
     if (err) {
       _showAIError(err);
@@ -117,6 +194,7 @@ function _displayAIResult(parsed) {
     if (a.type === 'log_meal') actionTypes.push('aggiorna pasti');
     else if (a.type === 'add_to_shopping_list') actionTypes.push('aggiorna spesa');
     else if (a.type === 'suggest_recipes') actionTypes.push('suggerisci ricette');
+    else if (a.type === 'generate_recipe') actionTypes.push('genera ricetta');
   });
   if (actionTypes.length) actionTypes = actionTypes.filter(function(t, i, arr) { return arr.indexOf(t) === i; });
 
@@ -177,6 +255,11 @@ function _actionToStepText(a, parsed) {
     var count = a.count || 3;
     return 'Suggerire ' + count + ' ricette per ' + (AI_MEAL_LABELS[m] || m) + '.';
   }
+  if (a.type === 'generate_recipe') {
+    var m = a.meal || parsed.meal || 'pranzo';
+    var ings = Array.isArray(a.ingredients) ? a.ingredients : [];
+    return 'Generare ricetta con ' + (ings.join(', ') || '—') + ' per ' + (AI_MEAL_LABELS[m] || m) + '.';
+  }
   return '';
 }
 
@@ -193,6 +276,11 @@ function executeAISingleAction(index) {
   if (!a) return;
 
   var dateKey = _aiPendingResult.date || (typeof getCurrentDateKey === 'function' ? getCurrentDateKey() : '');
+  if (a.type === 'generate_recipe') {
+    _executeGenerateRecipe(a, index);
+    return;
+  }
+
   try {
     if (a.type === 'log_meal') {
       _executeLogMeal(a, dateKey);
@@ -206,6 +294,8 @@ function executeAISingleAction(index) {
     if (typeof showToast === 'function') showToast('Errore durante l\'esecuzione', 'warning');
     return;
   }
+
+  _pushAIActionHistory([a], dateKey);
 
   saveData();
   if (typeof refreshAllAppViews === 'function') refreshAllAppViews();
@@ -232,6 +322,44 @@ function _markAIActionCompleted(index) {
   }
 }
 
+function _condenseAIAction(a, parsed) {
+  var meal = a.meal || parsed.meal || 'pranzo';
+  var mealLabel = AI_MEAL_LABELS[meal] || meal;
+  if (a.type === 'log_meal') {
+    var items = Array.isArray(a.items) ? a.items : [];
+    var parts = items.map(function(it) {
+      if (it.isRecipe) return (it.name || '').trim() + '(r)';
+      return (it.name || '').trim();
+    }).filter(Boolean);
+    return 'log_meal ' + mealLabel + ': ' + parts.join(', ');
+  }
+  if (a.type === 'add_to_shopping_list') {
+    var list = Array.isArray(a.items) ? a.items : [];
+    var names = list.map(function(it) { return (it.name || '').trim(); }).filter(Boolean);
+    return 'add_spesa: ' + names.join(', ');
+  }
+  if (a.type === 'suggest_recipes') {
+    return 'suggest_recipes ' + mealLabel + ' (' + (a.count || 3) + ')';
+  }
+  if (a.type === 'generate_recipe') {
+    var ings = Array.isArray(a.ingredients) ? a.ingredients : [];
+    return 'generate_recipe ' + mealLabel + ': ' + ings.join(', ');
+  }
+  return a.type || '?';
+}
+
+function _pushAIActionHistory(actions, dateKey) {
+  if (typeof aiActionHistory === 'undefined') aiActionHistory = [];
+  var now = new Date();
+  var ts = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  var parsed = { meal: null };
+  var parts = actions.map(function(a) { return _condenseAIAction(a, parsed); }).filter(Boolean);
+  if (parts.length) {
+    aiActionHistory.push(ts + ' | ' + parts.join('; '));
+    if (aiActionHistory.length > 50) aiActionHistory = aiActionHistory.slice(-50);
+  }
+}
+
 function executeAIResult() {
   if (!_aiPendingResult || !Array.isArray(_aiPendingResult.actions)) return;
 
@@ -239,9 +367,12 @@ function executeAIResult() {
   var completed = 0;
   var failed = 0;
 
-  _aiPendingResult.actions.forEach(function(a) {
+  _aiPendingResult.actions.forEach(function(a, i) {
     try {
-      if (a.type === 'log_meal') {
+      if (a.type === 'generate_recipe') {
+        _executeGenerateRecipe(a, i);
+        completed++;
+      } else if (a.type === 'log_meal') {
         _executeLogMeal(a, dateKey);
         completed++;
       } else if (a.type === 'add_to_shopping_list') {
@@ -268,7 +399,11 @@ function executeAIResult() {
   var hasSuggestRecipes = _aiPendingResult.actions.some(function(a) { return a.type === 'suggest_recipes'; });
   if (!hasSuggestRecipes) cancelAIResult();
 
-  _aiPendingResult.actions.forEach(function(_, i) { _markAIActionCompleted(i); });
+  _pushAIActionHistory(_aiPendingResult.actions, dateKey);
+
+  _aiPendingResult.actions.forEach(function(a, i) {
+    if (a.type !== 'generate_recipe') _markAIActionCompleted(i);
+  });
 
   var execBtn = document.getElementById('aiExecuteBtn');
   if (execBtn) {
@@ -291,10 +426,14 @@ function _executeLogMeal(a, dateKey) {
   var day = typeof getDayData === 'function' ? getDayData(dateKey) : null;
   if (!day) return;
 
+  if (!day.usedItems) day.usedItems = {};
+  if (!day.usedItems[meal]) day.usedItems[meal] = {};
   if (!day.extraConsumed) day.extraConsumed = {};
   if (!day.extraConsumed[meal]) day.extraConsumed[meal] = [];
   if (!day.ricette) day.ricette = {};
   if (!day.ricette[meal]) day.ricette[meal] = {};
+
+  var planItems = (typeof getMealItems === 'function') ? getMealItems(meal) : [];
 
   items.forEach(function(it) {
     var name = (it.name || '').trim();
@@ -332,15 +471,40 @@ function _executeLogMeal(a, dateKey) {
     if (isNaN(qty) || qty <= 0) qty = 1;
     var unit = (it.unit || 'g').trim() || 'g';
 
-    day.extraConsumed[meal].push({ name: name, quantity: qty, unit: unit });
+    var planItem = planItems.find(function(p) {
+      return p && p.name && p.name.toLowerCase().trim() === name.toLowerCase();
+    });
 
-    if (typeof pantryItems !== 'undefined' && pantryItems) {
-      var key = Object.keys(pantryItems).find(function(k) {
-        return k && k.toLowerCase().trim() === name.toLowerCase();
-      });
-      if (key) {
-        var cur = parseFloat(pantryItems[key].quantity) || 0;
-        pantryItems[key].quantity = Math.max(0, cur - qty);
+    if (planItem) {
+      day.usedItems[meal][planItem.name] = true;
+      var subQty = parseFloat(planItem.quantity) || qty;
+      if (typeof pantryItems !== 'undefined' && pantryItems) {
+        var key = Object.keys(pantryItems).find(function(k) {
+          return k && k.toLowerCase().trim() === planItem.name.toLowerCase();
+        });
+        if (key) {
+          var cur = parseFloat(pantryItems[key].quantity) || 0;
+          pantryItems[key].quantity = Math.max(0, cur - subQty);
+        }
+      }
+    } else {
+      if (typeof pianoAlimentare !== 'undefined' && pianoAlimentare[meal] && pianoAlimentare[meal].principale) {
+        var exists = pianoAlimentare[meal].principale.some(function(i) {
+          return i && i.name && i.name.toLowerCase().trim() === name.toLowerCase();
+        });
+        if (!exists) {
+          pianoAlimentare[meal].principale.push({ name: name, quantity: qty, unit: unit });
+        }
+      }
+      day.usedItems[meal][name] = true;
+      if (typeof pantryItems !== 'undefined' && pantryItems) {
+        var key = Object.keys(pantryItems).find(function(k) {
+          return k && k.toLowerCase().trim() === name.toLowerCase();
+        });
+        if (key) {
+          var cur = parseFloat(pantryItems[key].quantity) || 0;
+          pantryItems[key].quantity = Math.max(0, cur - qty);
+        }
       }
     }
   });
@@ -358,6 +522,75 @@ function _executeAddToShoppingList(a) {
     var unit = (it.unit || 'pz').trim() || 'pz';
 
     spesaItems.push({ name: name, quantity: qty, unit: unit, manual: true, bought: false });
+  });
+}
+
+function _executeGenerateRecipe(a, actionIndex) {
+  var ings = Array.isArray(a.ingredients) ? a.ingredients : [];
+  var meal = a.meal || 'pranzo';
+  if (!ings.length) {
+    if (typeof showToast === 'function') showToast('Nessun ingrediente specificato', 'warning');
+    return;
+  }
+
+  var block = document.querySelector('.ai-action-block[data-action-index="' + actionIndex + '"]');
+  var btn = block ? block.querySelector('.ai-step-execute') : null;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Generazione…';
+  }
+
+  var recipesEl = document.getElementById('aiResultRecipes');
+  if (recipesEl) {
+    recipesEl.innerHTML = '<div class="ai-loading" style="padding:16px;text-align:center;">🤖 Generazione ricetta in corso…</div>';
+    recipesEl.style.display = 'block';
+  }
+
+  if (typeof generateRecipeFromIngredients !== 'function') {
+    if (btn) btn.disabled = false; if (btn) btn.textContent = 'Esegui';
+    if (typeof showToast === 'function') showToast('Funzione non disponibile', 'warning');
+    return;
+  }
+
+  generateRecipeFromIngredients(ings, meal, function(recipe, err) {
+    if (btn) btn.disabled = false;
+    if (btn) btn.textContent = 'Esegui';
+
+    if (err || !recipe) {
+      if (recipesEl) recipesEl.innerHTML = '<div style="color:var(--danger);padding:12px;">❌ ' + (typeof escapeHtml === 'function' ? escapeHtml(err || 'Errore') : (err || 'Errore')) + '</div>';
+      if (typeof showToast === 'function') showToast('Errore generazione ricetta', 'warning');
+      return;
+    }
+
+    if (typeof aiRecipes === 'undefined') window.aiRecipes = [];
+    var dup = aiRecipes.findIndex(function(r) { return (r.name || '').toLowerCase() === (recipe.name || '').toLowerCase(); });
+    if (dup >= 0) aiRecipes[dup] = recipe;
+    else aiRecipes.push(recipe);
+
+    _pushAIActionHistory([a], typeof getCurrentDateKey === 'function' ? getCurrentDateKey() : '');
+    saveData();
+    if (typeof renderRicette === 'function') renderRicette();
+
+    _markAIActionCompleted(actionIndex);
+
+    var prep = (recipe.preparazione || '').substring(0, 200);
+    var ingsList = Array.isArray(recipe.ingredienti) ? recipe.ingredienti.map(function(i) {
+      return (i.name || '') + (i.quantity ? ' ' + i.quantity + (i.unit || 'g') : '');
+    }).join(', ') : '';
+    var html = '<div class="ai-recipes-label">Ricetta generata e aggiunta alle ricette AI:</div>' +
+      '<div class="ai-recipe-card" style="flex-direction:column;align-items:flex-start;">' +
+      '<span class="ai-recipe-icon" style="font-size:1.4rem;">' + (recipe.icon || '🍽') + '</span>' +
+      '<span class="ai-recipe-name" style="font-weight:700;font-size:1rem;">' + (typeof escapeHtml === 'function' ? escapeHtml(recipe.name || '') : recipe.name || '') + '</span>' +
+      (ingsList ? '<div style="font-size:.82em;color:var(--text-2);margin:6px 0;">' + (typeof escapeHtml === 'function' ? escapeHtml(ingsList) : ingsList) + '</div>' : '') +
+      (prep ? '<div style="font-size:.85em;color:var(--text-3);line-height:1.4;">' + (typeof escapeHtml === 'function' ? escapeHtml(prep) : prep) + '</div>' : '') +
+      '</div>' +
+      '<button class="rc-btn rc-btn-outline" onclick="goToPage(\'ricette\')" style="margin-top:10px;">Apri Ricette</button>';
+    if (recipesEl) {
+      recipesEl.innerHTML = html;
+      recipesEl.style.display = 'block';
+    }
+
+    if (typeof showToast === 'function') showToast('✅ Ricetta "' + (recipe.name || '') + '" aggiunta', 'success');
   });
 }
 

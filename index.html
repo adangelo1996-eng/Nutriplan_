@@ -195,6 +195,7 @@
       <span class="cloud-status local" id="cloudStatus">☁ Locale</span>
     </div>
     <div class="header-right">
+      <span class="admin-badge" id="adminBadge" style="display:none">ADMIN</span>
       <button class="btn-icon-only" id="themeToggle" onclick="toggleTheme()" title="Tema">🌙</button>
       <div class="auth-user-pill" id="authUserPill" style="display:none" onclick="handleAuthPillClick(event)">
         <img class="auth-avatar" id="authAvatar" src="" alt="">
@@ -486,6 +487,7 @@
       </div>
     </div>
     <div id="aiPageContent">
+      <div id="aiLimitBanner" class="ai-limit-banner" role="status"></div>
       <div class="ai-input-section">
         <div class="ai-examples-label">Prova con questi esempi (clicca per inserire):</div>
         <div id="aiExampleChips" class="ai-example-chips"></div>
@@ -519,6 +521,10 @@
           <button class="rc-btn rc-btn-outline" onclick="dismissAIError()">Chiudi</button>
         </div>
       </div>
+      <details class="ai-history-section" id="aiHistorySection">
+        <summary class="ai-history-summary">Storico azioni AI</summary>
+        <div id="aiHistoryList" class="ai-history-list"></div>
+      </details>
     </div>
   </div>
 
