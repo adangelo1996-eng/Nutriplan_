@@ -1409,7 +1409,8 @@ function enterApp() {
 
   buildCalendarBar();
   updateDateLabel();
-  goToPage('casa');
+  /* Home semplificata: atterra sempre su "Oggi" */
+  goToPage('piano');
 
   /* Onboarding: per utenti offline subito; per utenti loggati dopo loadFromCloud */
   if (typeof currentUser === 'undefined' || !currentUser) {
@@ -1443,6 +1444,8 @@ function goToHomepage() {
 
 /* ── goToPage() ── navigazione con i nuovi ID ─────────── */
 function goToPage(key) {
+  /* Compat redirect: vecchi riferimenti a 'casa' puntano ora a 'piano' (Oggi) */
+  if (key === 'casa') key = 'piano';
   if (document.body.classList.contains('edit-day-mode') && key !== 'edit-day' && key !== 'piano' && key !== 'profilo' && key !== 'casa') return;
   currentPage = key;
 

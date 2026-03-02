@@ -51,11 +51,43 @@ function filterPianoToday(query) {
 /* ── ENTRY POINT ── */
 function renderMealPlan() {
   ensureDefaultPlan();
+  if (typeof renderSuggestedMealBanner === 'function') renderSuggestedMealBanner();
   initMealSelector();
   renderMealProgress();
   renderMealItems();
   renderPianoRicette();
    renderPianoMissingAlert();
+}
+
+/* ── SUGGERIMENTO PASTO (da logica Casa) ── */
+function renderSuggestedMealBanner() {
+  var wrap = document.getElementById('suggestedMealBanner');
+  if (!wrap) return;
+  if (typeof getSuggestedMeal !== 'function') {
+    wrap.innerHTML = '';
+    return;
+  }
+  var mealKey = getSuggestedMeal();
+  if (!mealKey) {
+    wrap.innerHTML = '';
+    return;
+  }
+  var labels = (typeof CASA_MEAL_LABELS !== 'undefined') ? CASA_MEAL_LABELS : {
+    colazione: 'Colazione',
+    spuntino: 'Spuntino',
+    pranzo: 'Pranzo',
+    merenda: 'Merenda',
+    cena: 'Cena'
+  };
+  var label = labels[mealKey] || 'Questo pasto';
+
+  wrap.innerHTML =
+    '<div class="rc-card piano-suggested-banner">' +
+      '<div class="piano-suggested-main">' +
+        '<div class="piano-suggested-title">Pasto consigliato</div>' +
+        '<div class="piano-suggested-text">' + label + ' è il pasto più rilevante adesso. Selezionalo qui sotto per vedere ingredienti e ricette.</div>' +
+      '</div>' +
+    '</div>';
 }
 
 function ensureDefaultPlan() {

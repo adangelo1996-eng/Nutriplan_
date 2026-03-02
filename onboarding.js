@@ -70,7 +70,23 @@ function checkOnboarding() {
     localStorage.setItem(ONBOARDING_KEY, '1');
     return;
   }
-  showOnboardingChoice();
+  /* Onboarding alleggerito: proponi la configurazione ma lascia partire subito da Oggi */
+  if (typeof showAppConfirm === 'function') {
+    showAppConfirm({
+      title: 'Vuoi impostare il piano ora?',
+      message: 'Puoi iniziare subito dalla pagina Oggi e compilare il piano alimentare in un secondo momento dal Profilo.',
+      primaryText: 'Configura piano',
+      secondaryText: 'Più tardi',
+      primaryAction: function() {
+        showOnboardingChoice();
+      },
+      secondaryAction: function() {
+        try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) {}
+      }
+    });
+  } else {
+    try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch (e) {}
+  }
 }
 
 /* ══════════════════════════════════════════════════════

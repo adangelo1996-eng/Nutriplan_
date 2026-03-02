@@ -758,7 +758,8 @@ function pgApplyPlan() {
   if (typeof showToast === 'function') {
     showToast('✅ Nuovo piano alimentare applicato', 'success');
   }
-  if (typeof goToPage === 'function') goToPage('piano-alimentare');
+  /* Dopo l'applicazione il piano viene gestito dal Profilo (sezione Piano alimentare) */
+  if (typeof goToPage === 'function') goToPage('profilo');
 }
 
 function pgRequestVerification() {

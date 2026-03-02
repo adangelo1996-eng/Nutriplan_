@@ -169,23 +169,13 @@ function setHouseholdJoinCredentials(hid, name, password) {
  * @returns {Promise<boolean>}
  */
 function joinHouseholdByNameAndPassword(name, password) {
-  // #region agent log
-  fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'19a33b'},body:JSON.stringify({sessionId:'19a33b',location:'household.js:joinHouseholdByNameAndPassword:entry',message:'Join by name+code',data:{nameLen:(name||'').length,passwordLen:(password||'').length,hasFirebase:typeof firebase!=='undefined'},timestamp:Date.now(),hypothesisId:'H5'})}).catch(function(){});
-  // #endregion
   var n = (name || '').trim().toLowerCase();
   if (!n || typeof firebase === 'undefined') return Promise.resolve(false);
   return hashPasswordForHousehold(password).then(function (inputHash) {
-    // #region agent log
-    fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'19a33b'},body:JSON.stringify({sessionId:'19a33b',location:'household.js:afterHash',message:'Hash computed',data:{inputHashLen:inputHash?(inputHash+'').length:0,normalizedName:n},timestamp:Date.now(),hypothesisId:'H2'})}).catch(function(){});
-    // #endregion
     if (!inputHash) return false;
     return firebase.database().ref('householdJoin').orderByChild('nameLower').equalTo(n).once('value').then(function (snap) {
-      var val = snap.val();
-      var valKeys = val && typeof val === 'object' ? Object.keys(val) : [];
-      // #region agent log
-      fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'19a33b'},body:JSON.stringify({sessionId:'19a33b',location:'household.js:afterQuery',message:'Query result',data:{snapExists:snap.exists(),valKeys:valKeys,valKeysLen:valKeys.length},timestamp:Date.now(),hypothesisId:'H1'})}).catch(function(){});
-      // #endregion
       if (!snap.exists()) return false;
+      var val = snap.val();
       var hid = null;
       for (var key in val) {
         if (val[key] && val[key].passwordHash && val[key].passwordHash === inputHash) {
@@ -193,24 +183,10 @@ function joinHouseholdByNameAndPassword(name, password) {
           break;
         }
       }
-      var storedHash = hid && val[hid] ? val[hid].passwordHash : null;
-      var hashesEqual = !!(hid && storedHash && inputHash && storedHash === inputHash);
-      // #region agent log
-      fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'19a33b'},body:JSON.stringify({sessionId:'19a33b',location:'household.js:afterMatch',message:'Match check',data:{foundHid:!!hid,hashesEqual:hashesEqual,storedHashLen:storedHash?(storedHash+'').length:0},timestamp:Date.now(),hypothesisId:'H3'})}).catch(function(){});
-      // #endregion
-      if (!hid || storedHash !== inputHash) return false;
-      var joinPromise = typeof joinHousehold === 'function' ? joinHousehold(hid) : Promise.resolve(false);
-      return joinPromise.then(function (ok) {
-        // #region agent log
-        fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'19a33b'},body:JSON.stringify({sessionId:'19a33b',location:'household.js:afterJoinHousehold',message:'joinHousehold result',data:{ok:ok,hid:hid},timestamp:Date.now(),hypothesisId:'H4'})}).catch(function(){});
-        // #endregion
-        return ok;
-      });
+      if (!hid) return false;
+      return typeof joinHousehold === 'function' ? joinHousehold(hid) : Promise.resolve(false);
     });
   }).catch(function (e) {
-    // #region agent log
-    fetch('http://127.0.0.1:7877/ingest/d4259ea7-a374-40c6-8a9b-f82b54460446',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'19a33b'},body:JSON.stringify({sessionId:'19a33b',location:'household.js:catch',message:'Join error',data:{errMsg:(e&&e.message)||String(e)},timestamp:Date.now(),hypothesisId:'H4'})}).catch(function(){});
-    // #endregion
     console.warn('[Household] joinHouseholdByNameAndPassword error:', e);
     return false;
   });

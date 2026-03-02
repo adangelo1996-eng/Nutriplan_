@@ -101,17 +101,9 @@
   <div class="landing-cards-reveal" id="landingCardsReveal" aria-hidden="true">
     <p class="landing-cards-sub">Scegli dove andare</p>
     <div class="landing-nav-grid">
-      <button type="button" class="landing-nav-card landing-nav-card-casa" data-target-page="casa" onclick="openPageFromLanding('casa', event)">
-        <span class="landing-nav-card-label">Casa</span>
-        <span class="landing-nav-card-desc">Il tuo spazio, suggerimenti pasto</span>
-      </button>
       <button type="button" class="landing-nav-card" data-target-page="piano" onclick="openPageFromLanding('piano', event)">
         <span class="landing-nav-card-label">Oggi</span>
         <span class="landing-nav-card-desc">Ingredienti e ricette del giorno</span>
-      </button>
-      <button type="button" class="landing-nav-card" data-target-page="piano-alimentare" onclick="openPageFromLanding('piano-alimentare', event)">
-        <span class="landing-nav-card-label">Piano</span>
-        <span class="landing-nav-card-desc">Configura il piano alimentare</span>
       </button>
       <button type="button" class="landing-nav-card" data-target-page="dispensa" onclick="openPageFromLanding('dispensa', event)">
         <span class="landing-nav-card-label">Dispensa</span>
@@ -219,11 +211,9 @@
   <div class="app-menu-cornice app-menu-cornice-left" onclick="toggleAppMenu()">
     <div class="app-menu-left">
       <button type="button" class="app-menu-link" data-menu-page="piano" data-menu-hint="Vedi e segna i pasti di oggi" onclick="event.stopPropagation();handleMenuLinkClick('piano', event)">Oggi</button>
-      <button type="button" class="app-menu-link" data-menu-page="piano-alimentare" data-menu-hint="Configura i pasti e i limiti settimanali" onclick="event.stopPropagation();handleMenuLinkClick('piano-alimentare', event)">Piano</button>
       <button type="button" class="app-menu-link" data-menu-page="dispensa" data-menu-hint="Ingredienti disponibili in dispensa" onclick="event.stopPropagation();handleMenuLinkClick('dispensa', event)">Dispensa</button>
       <button type="button" class="app-menu-link" data-menu-page="ricette" data-menu-hint="Catalogo e le tue ricette" onclick="event.stopPropagation();handleMenuLinkClick('ricette', event)">Ricette</button>
       <button type="button" class="app-menu-link" data-menu-page="spesa" data-menu-hint="Lista della spesa" onclick="event.stopPropagation();handleMenuLinkClick('spesa', event)">Spesa</button>
-      <button type="button" class="app-menu-link" data-menu-page="statistiche" data-menu-hint="Riepilogo settimanale" onclick="event.stopPropagation();handleMenuLinkClick('statistiche', event)">Stats</button>
     </div>
   </div>
   <!-- Centro 3/5: vetro satinato trasparente, attraverso si vede la pagina -->
@@ -237,7 +227,6 @@
     <div class="app-menu-right">
       <button type="button" class="app-menu-link" data-menu-page="profilo" data-menu-hint="Impostazioni e piano personale" onclick="event.stopPropagation();handleMenuLinkClick('profilo', event)">Profilo</button>
       <button type="button" class="app-menu-link" data-menu-action="contatti" data-menu-hint="Supporto e informazioni" onclick="event.stopPropagation();handleMenuLinkClick('contatti', event)">Contatti</button>
-      <button type="button" class="app-menu-link" data-menu-page="casa" data-menu-hint="Il tuo spazio e suggerimenti pasto" onclick="event.stopPropagation();handleMenuLinkClick('casa', event)">Casa</button>
       <button type="button" class="app-menu-link app-menu-link-homepage" data-menu-hint="Torna alla landing" onclick="event.stopPropagation();handleMenuLinkClick('homepage', event)">Homepage</button>
     </div>
   </div>
@@ -250,14 +239,8 @@
 
   <span class="sidebar-section-label">Oggi</span>
 
-  <button class="nav-tab nav-tab-casa active" id="st-casa" onclick="goToPage('casa')">
-    <span class="nav-label">Casa</span>
-  </button>
-  <button class="nav-tab" id="st-piano" onclick="goToPage('piano')">
+  <button class="nav-tab active" id="st-piano" onclick="goToPage('piano')">
     <span class="nav-label">Oggi</span>
-  </button>
-  <button class="nav-tab" id="st-piano-alimentare" onclick="goToPage('piano-alimentare')">
-    <span class="nav-label">Piano</span>
   </button>
   <button class="nav-tab" id="st-dispensa" onclick="goToPage('dispensa')">
     <span class="nav-label">Dispensa</span>
@@ -271,9 +254,6 @@
   <button class="nav-tab" id="st-spesa" onclick="goToPage('spesa')">
     <span class="nav-label">Spesa</span>
   </button>
-  <button class="nav-tab" id="st-statistiche" onclick="goToPage('statistiche')">
-    <span class="nav-label">Stats</span>
-  </button>
   <button class="nav-tab" id="st-profilo" onclick="goToPage('profilo')">
     <span class="nav-label">Profilo</span>
   </button>
@@ -286,7 +266,7 @@
 <main class="app-main" id="appMain" style="display:none">
 
   <!-- ── CASA ────────────────────────────── -->
-  <div class="page active" id="page-casa">
+  <div class="page" id="page-casa">
     <div class="page-header">
       <div>
         <div class="page-header-title">Casa</div>
@@ -328,7 +308,7 @@
   </div>
 
   <!-- ── PIANO ────────────────────────── -->
-  <div class="page" id="page-piano">
+  <div class="page active" id="page-piano">
     <div class="page-header">
       <div>
         <div class="page-header-title">Cosa mangio oggi</div>
@@ -340,6 +320,12 @@
         <button class="btn btn-secondary btn-small" onclick="resetPiano()">🔄 Reset</button>
       </div>
     </div>
+
+    <!-- Progresso giornaliero (pasti completati) -->
+    <div id="mealProgressWrap" class="meal-progress-wrap"></div>
+
+    <!-- Suggerimento pasto del momento -->
+    <div id="suggestedMealBanner"></div>
 
     <div class="meal-selector" id="mealSelector">
       <button class="meal-btn active" onclick="selectMeal('colazione',this)">
@@ -542,17 +528,9 @@
 ═════════════════════════════════════════════════════════════════ -->
 <nav class="bottom-nav" id="bottomNav" style="display:none">
   <div class="app-inner">
-    <button class="nav-tab nav-tab-casa active" id="bn-casa" onclick="goToPage('casa')">
-      <span class="nav-icon"></span>
-      <span class="nav-label">Casa</span>
-    </button>
-    <button class="nav-tab" id="bn-piano" onclick="goToPage('piano')">
+    <button class="nav-tab active" id="bn-piano" onclick="goToPage('piano')">
       <span class="nav-icon"></span>
       <span class="nav-label">Oggi</span>
-    </button>
-    <button class="nav-tab" id="bn-piano-alimentare" onclick="goToPage('piano-alimentare')">
-      <span class="nav-icon"></span>
-      <span class="nav-label">Piano</span>
     </button>
     <button class="nav-tab" id="bn-dispensa" onclick="goToPage('dispensa')">
       <span class="nav-icon"></span>
@@ -565,10 +543,6 @@
     <button class="nav-tab" id="bn-spesa" onclick="goToPage('spesa')">
       <span class="nav-icon"></span>
       <span class="nav-label">Spesa</span>
-    </button>
-    <button class="nav-tab" id="bn-statistiche" onclick="goToPage('statistiche')">
-      <span class="nav-icon"></span>
-      <span class="nav-label">Stats</span>
     </button>
     <button class="nav-tab" id="bn-profilo" onclick="goToPage('profilo')">
       <span class="nav-icon"></span>

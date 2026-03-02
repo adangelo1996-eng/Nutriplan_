@@ -2,8 +2,8 @@
    STATISTICHE.JS — v4  stile rc-card unificato
 */
 
-function renderStatistiche() {
-  var el = document.getElementById('statisticheContent');
+function renderStatistiche(targetId) {
+  var el = document.getElementById(targetId || 'statisticheContent');
   if (!el) return;
 
   var stats = computeStats();
