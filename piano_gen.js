@@ -573,7 +573,7 @@ function pgPreviewMealCount(mealKey, plan) {
 function pgBuildPreviewMealSection(meal, plan, mealIndex) {
   var isFirst = (mealIndex === 0);
   var count   = pgPreviewMealCount(meal.key, plan);
-  var mealEsc = (typeof paEscQ === 'function') ? paEscQ(meal.key) : meal.key;
+  var mealEsc = (typeof escForAttr === 'function') ? escForAttr(meal.key) : meal.key;
 
   var catsList = (typeof PA_CATEGORIES !== 'undefined' && PA_CATEGORIES && PA_CATEGORIES.length)
     ? PA_CATEGORIES.slice()
@@ -754,7 +754,7 @@ function pgApplyPlan() {
   } else if (typeof ensurePlanStructure === 'function') {
     ensurePlanStructure();
   }
-  if (typeof saveData === 'function') saveData();
+  saveData();
   if (typeof showToast === 'function') {
     showToast('✅ Nuovo piano alimentare applicato', 'success');
   }
@@ -983,7 +983,7 @@ function pgToggleDietPref(key) {
   // Vegano implica vegetariano
   if (key === 'vegano' && dietProfile.vegano) dietProfile.vegetariano = true;
   if (key === 'vegetariano' && !dietProfile.vegetariano) dietProfile.vegano = false;
-  if (typeof saveData === 'function') saveData();
+  saveData();
   renderPianoGenPage();
 }
 
@@ -997,7 +997,7 @@ function pgAddAllergen() {
   if (!Array.isArray(dietProfile.allergenici)) dietProfile.allergenici = [];
   if (dietProfile.allergenici.indexOf(val) === -1) {
     dietProfile.allergenici.push(val);
-    if (typeof saveData === 'function') saveData();
+    saveData();
     inp.value = '';
     renderPianoGenPage();
   }
@@ -1007,6 +1007,6 @@ function pgRemoveAllergen(name) {
   pgCaptureProfileFromInputs();
   if (typeof dietProfile === 'undefined' || !dietProfile || !Array.isArray(dietProfile.allergenici)) return;
   dietProfile.allergenici = dietProfile.allergenici.filter(function(a) { return a !== name; });
-  if (typeof saveData === 'function') saveData();
+  saveData();
   renderPianoGenPage();
 }

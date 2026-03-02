@@ -344,15 +344,4 @@ function _updateNavProfiloIcon(user) {
   });
 }
 
-/* ============================================================
-   HELPERS — aprire/chiudere modale auth
-============================================================ */
-function openAuthModal() {
-  var m = document.getElementById('authModal');
-  if (m) m.classList.add('active');
-}
-
-function closeAuthModal() {
-  var m = document.getElementById('authModal');
-  if (m) m.classList.remove('active');
-}
+/* openAuthModal / closeAuthModal definiti in app.js */

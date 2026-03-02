@@ -23,7 +23,7 @@ function toggleFavorito(name, event) {
     preferiti.splice(idx, 1);
     if (typeof showToast === 'function') showToast('☆ "' + name + '" rimossa dai preferiti', 'info');
   }
-  if (typeof saveData === 'function') saveData();
+  saveData();
   renderRicetteGrid();
   if (typeof renderAIRicetteTab === 'function') renderAIRicetteTab();
 }
@@ -68,10 +68,6 @@ function isDietCompatible(recipe) {
   return true;
 }
 
-function esc(v) {
-  return String(v == null ? '' : v)
-    .replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-}
 function safeStr(v) { return v == null ? '' : String(v); }
 
 /* Numero di persone/porzioni: default 1 se non impostato */
@@ -362,14 +358,14 @@ function renderAIRicetteTab() {
 function deleteAIRicetta(idx) {
   if (!Array.isArray(aiRecipes) || !aiRecipes[idx]) return;
   var name = aiRecipes[idx].name || 'questa ricetta';
-  if (typeof showAppConfirm !== 'function') { aiRecipes.splice(idx, 1); if (typeof saveData === 'function') saveData(); renderAIRicetteTab(); renderRicetteGrid(); return; }
+  if (typeof showAppConfirm !== 'function') { aiRecipes.splice(idx, 1); saveData(); renderAIRicetteTab(); renderRicetteGrid(); return; }
   showAppConfirm({
     title: 'Elimina ricetta AI',
     message: 'Eliminare la ricetta AI "' + name + '"?',
     primaryText: 'Elimina',
     primaryAction: function() {
       aiRecipes.splice(idx, 1);
-      if (typeof saveData === 'function') saveData();
+      saveData();
       renderAIRicetteTab();
       renderRicetteGrid();
     }
@@ -381,14 +377,14 @@ function deleteAIRicettaById(id) {
   var idx = aiRecipes.findIndex(function(r) { return r.id === id; });
   if (idx === -1) return;
   var name = aiRecipes[idx].name || 'questa ricetta';
-  if (typeof showAppConfirm !== 'function') { aiRecipes.splice(idx, 1); if (typeof saveData === 'function') saveData(); renderAIRicetteTab(); renderRicetteGrid(); return; }
+  if (typeof showAppConfirm !== 'function') { aiRecipes.splice(idx, 1); saveData(); renderAIRicetteTab(); renderRicetteGrid(); return; }
   showAppConfirm({
     title: 'Elimina ricetta AI',
     message: 'Eliminare la ricetta AI "' + name + '"?',
     primaryText: 'Elimina',
     primaryAction: function() {
       aiRecipes.splice(idx, 1);
-      if (typeof saveData === 'function') saveData();
+      saveData();
       renderAIRicetteTab();
       renderRicetteGrid();
     }
@@ -583,11 +579,11 @@ function buildCard(r) {
     accHtml += '</ul>';
     accHtml += '<div style="display:flex;gap:8px;margin-top:2px;">' +
                '<button class="rc-detail-btn" style="flex:1;" '+
-               'onclick="event.stopPropagation();openRecipeModal(\''+esc(name)+'\')">'+
+               'onclick="event.stopPropagation();openRecipeModal(\''+escForAttr(name)+'\')">'+
                'Preparazione →</button>'+
                (isAI && r.id
                  ? '<button class="rc-detail-btn" style="background:#fde8e8;color:#dc2626;white-space:nowrap;" '+
-                   'onclick="event.stopPropagation();deleteAIRicettaById(\''+esc(r.id)+'\')">🗑 Elimina</button>'
+                   'onclick="event.stopPropagation();deleteAIRicettaById(\''+escForAttr(r.id)+'\')">🗑 Elimina</button>'
                  : '')+
                '</div>';
   }
@@ -595,8 +591,8 @@ function buildCard(r) {
   return (
     '<div class="rc-card'+(isCustom?' rc-custom':'')+'" '+
          'style="--cc:'+color+'" '+
-         'onclick="toggleRicettaCard(this,\''+esc(name)+'\')" '+
-         'data-name="'+esc(name)+'">'+
+         'onclick="toggleRicettaCard(this,\''+escForAttr(name)+'\')" '+
+         'data-name="'+escForAttr(name)+'">'+
 
       '<div class="rc-card-head">'+
         '<div class="rc-icon-wrap">'+icon+'</div>'+
@@ -613,7 +609,7 @@ function buildCard(r) {
           '</div>'+
         '</div>'+
         '<button class="fav-btn'+(isFav?' fav-on':'')+'" '+
-                'onclick="toggleFavorito(\''+esc(name)+'\',event)" '+
+                'onclick="toggleFavorito(\''+escForAttr(name)+'\',event)" '+
                 'title="'+(isFav?'Rimuovi dai preferiti':'Aggiungi ai preferiti')+'" '+
                 'aria-label="'+(isFav?'Rimuovi dai preferiti':'Aggiungi ai preferiti')+'">'+
           (isFav?'★':'☆')+
@@ -841,7 +837,7 @@ function addRecipeIngredientsToSpesa() {
     }
   });
 
-  if (typeof saveData === 'function') saveData();
+  saveData();
   closeRecipeModal();
   if (typeof goToPage === 'function') goToPage('spesa');
   var msg = [];
@@ -907,7 +903,7 @@ function markRecipeAsPreparedAndClose() {
     });
   }
 
-  if (typeof saveData === 'function') saveData();
+  saveData();
   closeRecipeModal();
   if (typeof showRecipeCelebration === 'function') showRecipeCelebration();
   if (typeof showToast === 'function') showToast('🍽 ' + recipeName + ' segnata come preparata!', 'success');
@@ -937,8 +933,8 @@ function renderCustomRicette() {
     return (
       '<div class="cri-card" style="--cc:'+color+'">'+
         '<div class="cri-top">'+
-          '<div class="cri-icon" onclick="openRecipeModal(\''+esc(name)+'\')">'+icon+'</div>'+
-          '<div class="cri-body" onclick="openRecipeModal(\''+esc(name)+'\')">'+
+          '<div class="cri-icon" onclick="openRecipeModal(\''+escForAttr(name)+'\')">'+icon+'</div>'+
+          '<div class="cri-body" onclick="openRecipeModal(\''+escForAttr(name)+'\')">'+
             '<div class="cri-name">'+name+'</div>'+
             (pl?'<div class="cri-pasto" style="color:'+color+'">'+pl+'</div>':'')+
           '</div>'+

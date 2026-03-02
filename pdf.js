@@ -77,12 +77,6 @@ function exportPianoToPDF() {
     '.piano-pdf-footer{margin-top:32px;padding-top:16px;border-top:1px solid #e2ece7;font-size:.8rem;color:#8aa89e;text-align:center;}' +
     '@media print{body{padding:20px 28px;} .piano-pdf-meal{page-break-inside:avoid;}}';
 
-  function escapeHtml(s) {
-    if (s == null) return '';
-    var t = String(s);
-    return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
   var html =
     '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     '<title>Piano alimentare — NutriPlan — ' + escapeHtml(dateLabel) + '</title>' +

@@ -358,7 +358,7 @@ function clearBoughtItems() {
 function clearEntireSpesaList() {
   if (typeof showAppConfirm !== 'function') {
     spesaItems = [];
-    if (typeof saveData === 'function') saveData();
+    saveData();
     if (typeof renderSpesa === 'function') renderSpesa();
     if (typeof showToast === 'function') showToast('Lista della spesa svuotata', 'info');
     return;
@@ -369,7 +369,7 @@ function clearEntireSpesaList() {
     primaryText: 'Sì, svuota',
     primaryAction: function() {
       spesaItems = [];
-      if (typeof saveData === 'function') saveData();
+      saveData();
       if (typeof renderSpesa === 'function') renderSpesa();
       if (typeof showToast === 'function') showToast('Lista della spesa svuotata', 'info');
     }
@@ -496,7 +496,7 @@ function pianoAddToSpesa(name, quantity, unit, silent) {
     });
   }
 
-  if (typeof saveData === 'function') saveData();
+  saveData();
   if (typeof renderSpesa === 'function') renderSpesa();
   if (!silent && typeof showToast === 'function') {
     var label = q ? (q + ' ' + unit) : '';

@@ -1,183 +1,7 @@
 /* ============================================================
-   APP.JS — v5
-   Navigazione, icone, dark mode, calendario, limiti, init
+   APP.JS — v6  Navigazione, limiti, frigo helpers, init
+   (app-sw, app-theme, app-calendar, app-modals in file separati)
 ============================================================ */
-
-/* ── Registra Service Worker (PWA) ── */
-/* Nota: i Service Worker sono supportati solo su http/https,
-   non funzionano se apri il file direttamente da disco (file://). */
-if ('serviceWorker' in navigator &&
-    (location.protocol === 'https:' || location.protocol === 'http:')) {
-  window.addEventListener('load', function() {
-    /* ?v=__BUILD_TIME__ sostituito in deploy: nuova URL = browser scarica sempre sw.js aggiornato */
-    navigator.serviceWorker.register('sw.js?v=__BUILD_TIME__').then(function(reg) {
-      /* Controlla aggiornamenti: al load, al ritorno in tab, e periodicamente (come hard refresh automatico) */
-      function checkUpdate() {
-        if (reg && typeof reg.update === 'function') reg.update();
-      }
-      checkUpdate();
-      document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible') checkUpdate();
-      });
-      setInterval(checkUpdate, 5 * 60 * 1000); /* ogni 5 minuti se l'app è aperta */
-    }).catch(function(e) {
-      console.warn('[NutriPlan] SW registration failed:', e);
-    });
-  });
-} else {
-  console.info('[NutriPlan] Service Worker disattivato (protocollo non supportato: ' + location.protocol + ')');
-}
-
-/* ══════════════════════════════════════════════════
-   ICONA CANVAS
-══════════════════════════════════════════════════ */
-function drawAppIcon(canvas, size) {
-  size = size || 512;
-  canvas.width = canvas.height = size;
-  var ctx = canvas.getContext('2d');
-  var r = size * 0.18;
-  ctx.beginPath();
-  ctx.moveTo(r, 0); ctx.lineTo(size - r, 0);
-  ctx.quadraticCurveTo(size, 0, size, r);
-  ctx.lineTo(size, size - r);
-  ctx.quadraticCurveTo(size, size, size - r, size);
-  ctx.lineTo(r, size);
-  ctx.quadraticCurveTo(0, size, 0, size - r);
-  ctx.lineTo(0, r);
-  ctx.quadraticCurveTo(0, 0, r, 0);
-  ctx.closePath();
-  var grad = ctx.createLinearGradient(0, 0, size, size);
-  grad.addColorStop(0, '#4a9b7f');
-  grad.addColorStop(1, '#2d6e55');
-  ctx.fillStyle = grad;
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
-  ctx.beginPath();
-  ctx.arc(size * 0.3, size * 0.25, size * 0.35, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.font = 'bold ' + Math.round(size * 0.52) + 'px serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0,0,0,0.2)';
-  ctx.shadowBlur = size * 0.04;
-  ctx.fillText('🌿', size / 2, size * 0.52);
-}
-
-function initIcons() {
-  /* Icona canvas per header e landing (decorativa) */
-  var hc = document.getElementById('headerIcon');
-  if (hc && hc.tagName === 'CANVAS') drawAppIcon(hc, 32);
-
-  var lc = document.createElement('canvas');
-  drawAppIcon(lc, 90);
-  var ldiv = document.getElementById('landingLogo');
-  if (ldiv) { ldiv.innerHTML = ''; ldiv.appendChild(lc); }
-
-  /* L'icona PWA e il manifest usano file statici (icon.svg, manifest.json)
-     già referenziati nel <head> di index.html — nessun blob URL necessario */
-}
-
-/* ══════════════════════════════════════════════════
-   DARK MODE
-══════════════════════════════════════════════════ */
-function initDarkMode() {
-  var saved = localStorage.getItem('nutriplanDark');
-  /* Default modalità chiara; salva sempre le preferenze utente al toggle */
-  applyDarkMode(saved !== null ? saved === '1' : false, false);
-}
-
-function applyDarkMode(isDark, save) {
-  if (save === undefined) save = true;
-  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-  /* Aggiorna tutti i bottoni tema — supporta id darkToggle, themeToggle e data-theme-toggle */
-  var icon = isDark ? '☀️' : '🌙';
-  ['darkToggle', 'themeToggle'].forEach(function(id) {
-    var b = document.getElementById(id);
-    if (b) b.textContent = icon;
-  });
-  document.querySelectorAll('[data-theme-toggle]').forEach(function(b) {
-    b.textContent = icon;
-  });
-  var meta = document.getElementById('metaThemeColor');
-  if (meta) meta.content = isDark ? '#152318' : '#4a9b7f';
-  if (save) localStorage.setItem('nutriplanDark', isDark ? '1' : '0');
-}
-
-/* Alias compatibili — entrambi funzionano */
-function toggleDarkMode() {
-  applyDarkMode(document.documentElement.getAttribute('data-theme') !== 'dark');
-}
-function toggleTheme() { toggleDarkMode(); }
-
-/* ══════════════════════════════════════════════════
-   iOS / PWA
-══════════════════════════════════════════════════ */
-function isIos() {
-  return /iphone|ipad|ipod/i.test(navigator.userAgent);
-}
-function isInStandaloneMode() {
-  return window.navigator.standalone === true ||
-         window.matchMedia('(display-mode:standalone)').matches;
-}
-
-/* Alias compatibili per ios banner */
-function closeIosBanner()   { dismissIosBanner(); }
-function dismissIosBanner() {
-  var b = document.getElementById('iosBanner');
-  if (b) b.classList.remove('show');
-  localStorage.setItem('iosBannerDismissed', '1');
-}
-
-function initIosBanner() {
-  if (isIos() && !isInStandaloneMode() && !localStorage.getItem('iosBannerDismissed')) {
-    setTimeout(function() {
-      var b = document.getElementById('iosBanner');
-      if (b) b.classList.add('show');
-    }, 2000);
-  }
-}
-
-var deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault();
-  deferredPrompt = e;
-  if (!localStorage.getItem('installDismissed')) {
-    var b = document.getElementById('installPwaBanner');
-    if (b) b.style.display = 'flex';
-  }
-  _wireInstallPwaBtn();
-});
-
-function _wireInstallPwaBtn() {
-  var btn = document.getElementById('installPwaBtn');
-  if (!btn || btn._installWired) return;
-  btn._installWired = true;
-  btn.addEventListener('click', function() {
-    if (typeof installPwa === 'function') installPwa();
-  });
-}
-
-function installPwa() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
-    dismissInstallBanner();
-    return;
-  }
-  if (isIos()) {
-    var b = document.getElementById('iosBanner');
-    if (b) b.classList.add('show');
-    if (typeof showToast === 'function') showToast('Usa Condividi → Aggiungi a Home per installare l\'app', 'info');
-  } else if (typeof showToast === 'function') {
-    showToast('Installa da menu del browser (⋮ → Installa app) o riprova più tardi', 'info');
-  }
-}
-function dismissInstallBanner() {
-  var b = document.getElementById('installPwaBanner');
-  if (b) b.style.display = 'none';
-  localStorage.setItem('installDismissed', '1');
-}
 
 /* ══════════════════════════════════════════════════
    INVITO CASA (join=HID in URL)
@@ -321,143 +145,6 @@ function switchRicetteTab(tabKey) {
 }
 
 /* ══════════════════════════════════════════════════
-   DATE UTILITIES
-══════════════════════════════════════════════════ */
-function formatDateKey(d) {
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0');
-}
-
-function parseDateKey(dk) {
-  if (!dk) return new Date();
-  var parts = dk.split('-');
-  if (parts.length !== 3) return new Date();
-  return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-}
-
-/* ══════════════════════════════════════════════════
-   CALENDARIO
-══════════════════════════════════════════════════ */
-var DAYS_IT   = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
-var MONTHS_IT = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
-
-var _calOffset = 0; /* offset in giorni dal centro (oggi) */
-
-function buildCalendarBar() {
-  var bar = document.getElementById('calendarBar');
-  if (!bar) return;
-  var today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  /* Pre-calcola la data attiva per il fade a distanza */
-  var activeDk = (typeof selectedDateKey !== 'undefined' && selectedDateKey) ? selectedDateKey : getCurrentDateKey();
-  var activeD = parseDateKey(activeDk);
-  activeD.setHours(0, 0, 0, 0);
-
-  var html = '';
-  var start = -20 + _calOffset;
-  var end   =  10 + _calOffset;
-  for (var i = start; i <= end; i++) {
-    var d = new Date(today);
-    d.setDate(today.getDate() + i);
-    var dk = formatDateKey(d);
-    var isToday  = dk === getCurrentDateKey();
-    var isActive = dk === selectedDateKey;
-    var hd = (typeof appHistory !== 'undefined' && appHistory[dk]) ? appHistory[dk] : {};
-    var hasData = Object.keys(hd.usedItems || {}).some(function(mk) {
-      return Object.keys((hd.usedItems || {})[mk] || {}).length > 0;
-    }) || Object.keys(hd.ricette || {}).some(function(mk){
-      return Object.keys((hd.ricette || {})[mk] || {}).length > 0;
-    });
-    var isPast   = d < today && !isToday;
-    var isFuture = d > today && !isToday;
-    var dist = Math.abs(Math.round((d - activeD) / 86400000));
-    var distCls = dist === 0 ? '' : dist === 1 ? ' cal-d1' : dist === 2 ? ' cal-d2' : dist === 3 ? ' cal-d3' : ' cal-dfar';
-    var cls = 'cal-day' +
-      (isToday  ? ' today'      : '') +
-      (isActive ? ' active'     : '') +
-      (hasData  ? ' has-data'   : '') +
-      (isPast   ? ' cal-past'   : '') +
-      (isFuture ? ' cal-future' : '') +
-      distCls;
-    html +=
-      '<div class="' + cls + '" onclick="selectDate(\'' + dk + '\')" data-dk="' + dk + '">' +
-        '<span class="cal-day-name">' + DAYS_IT[d.getDay()] + '</span>' +
-        '<span class="cal-day-num">'  + d.getDate() + '</span>' +
-        '<span class="cal-day-month">' + MONTHS_IT[d.getMonth()] + '</span>' +
-        (hasData ? '<span class="cal-dot"></span>' : '') +
-      '</div>';
-  }
-  bar.innerHTML = html;
-
-  /* Scroll centrato sul giorno attivo/oggi */
-  setTimeout(function() {
-    var active = bar.querySelector('.cal-day.active') || bar.querySelector('.cal-day.today');
-    if (active) {
-      /* Calcola scrollLeft per centrare il giorno */
-      var barWidth  = bar.offsetWidth;
-      var dayLeft   = active.offsetLeft;
-      var dayWidth  = active.offsetWidth;
-      var targetScroll = dayLeft - (barWidth / 2) + (dayWidth / 2);
-      bar.scrollLeft = Math.max(0, targetScroll);
-    }
-  }, 80);
-
-  /* Aggiorna bottoni navigazione */
-  var prevBtn = document.getElementById('calPrevBtn');
-  var nextBtn = document.getElementById('calNextBtn');
-  if (prevBtn) prevBtn.disabled = _calOffset <= -710; /* max 2 anni indietro */
-  if (nextBtn) nextBtn.disabled = _calOffset >= 20;
-}
-
-function shiftCalendar(delta) {
-  _calOffset = Math.max(-710, Math.min(20, _calOffset + delta));
-  buildCalendarBar();
-}
-
-function updateDateLabel() {
-  var el = document.getElementById('selectedDateLabel');
-  if (!el) return;
-  var d = selectedDateKey ? parseDateKey(selectedDateKey) : new Date();
-  var today = new Date(); today.setHours(0,0,0,0);
-  var diff = Math.round((d - today) / 86400000);
-  var prefix = diff === 0 ? 'Oggi, ' : diff === -1 ? 'Ieri, ' : diff === 1 ? 'Domani, ' : '';
-  el.textContent = prefix + DAYS_IT[d.getDay()] + ' ' + d.getDate() + ' ' +
-                   MONTHS_IT[d.getMonth()] + ' ' + d.getFullYear();
-}
-
-function selectDate(dk) {
-  var todayDk = typeof getCurrentDateKey === 'function' ? getCurrentDateKey() : '';
-  if (dk !== todayDk) {
-    /* Solo per giorni PASSATI con dati già presenti, chiedi conferma */
-    var d = typeof parseDateKey === 'function' ? parseDateKey(dk) : new Date(dk + 'T00:00:00');
-    var todayD = new Date(); todayD.setHours(0,0,0,0);
-    if (d < todayD) {
-      var hd = (typeof appHistory !== 'undefined' && appHistory && appHistory[dk]) ? appHistory[dk] : {};
-      var hasData = Object.keys(hd.usedItems||{}).some(function(m){ return Object.keys((hd.usedItems||{})[m]||{}).length>0; });
-      if (hasData) {
-        showAppConfirm({
-          title: 'Modifica dati',
-          message: 'Vuoi modificare i dati di ' + dk + '?\nLe modifiche aggiornano i dati storici.',
-          primaryText: 'Sì',
-          primaryAction: function() {
-            selectedDateKey = dk;
-            buildCalendarBar();
-            updateDateLabel();
-            if (typeof renderPiano === 'function') renderPiano();
-          }
-        });
-        return;
-      }
-    }
-  }
-  selectedDateKey = dk;
-  buildCalendarBar();
-  updateDateLabel();
-  if (typeof renderPiano === 'function') renderPiano();
-}
-
 /* ══════════════════════════════════════════════════
    LIMITI SETTIMANALI
 ══════════════════════════════════════════════════ */
@@ -562,192 +249,7 @@ function updateCloudStatus(state, text) {
                                          state === 'error'   ? '✗ Errore sync'  : '☁ Locale');
 }
 
-/* updateAuthUI è definita in firebase-config.js con i corretti ID HTML */
-
-function handleAuthPillClick(e) {
-  if (window.innerWidth < 768 || ('ontouchstart' in window)) {
-    e.preventDefault();
-    if (typeof goToPage === 'function') goToPage('profilo');
-  } else {
-    openAuthModal();
-  }
-}
-
-function openAuthModal() {
-  var modal = document.getElementById('authModal');
-  if (!modal) return;
-  var body  = document.getElementById('authModalBody');
-  var title = document.getElementById('authModalTitle');
-  var user  = (typeof currentUser !== 'undefined') ? currentUser : null;
-
-  if (user) {
-    if (title) title.textContent = 'Account';
-    if (body) body.innerHTML =
-      '<div style="text-align:center;padding:16px 0;">' +
-        '<img src="' + (user.photoURL || '') + '" alt="Avatar" ' +
-             'style="width:64px;height:64px;border-radius:50%;margin:0 auto 12px;' +
-                    'border:3px solid var(--primary);display:block;" ' +
-             'onerror="this.style.display=\'none\'" />' +
-        '<div style="font-weight:800;font-size:1rem;">' + (user.displayName || '') + '</div>' +
-        '<div style="font-size:.78rem;color:var(--text-light);margin:4px 0 20px;">' + (user.email || '') + '</div>' +
-        '<button class="btn btn-danger btn-small" onclick="signOut()">Esci</button>' +
-      '</div>';
-  } else {
-    if (title) title.textContent = 'Accedi';
-    if (body) body.innerHTML =
-      '<div style="padding:8px 0;">' +
-        '<p style="font-size:.82rem;color:var(--text-light);text-align:center;margin-bottom:20px;">' +
-          'Accedi per sincronizzare i dati su tutti i dispositivi.' +
-        '</p>' +
-        '<button class="btn-google" onclick="signInWithGoogle()">' +
-          '<svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>' +
-          'Continua con Google' +
-        '</button>' +
-      '</div>';
-  }
-  modal.classList.add('active');
-}
-
-function closeAuthModal() {
-  var modal = document.getElementById('authModal');
-  if (modal) modal.classList.remove('active');
-}
-
-/* ══════════════════════════════════════════════════
-   MODAL HELPERS
-══════════════════════════════════════════════════ */
-function closeRecipeModal() {
-  var m = document.getElementById('recipeModal');
-  if (m) m.classList.remove('active');
-}
-function closeSaveFridgeModal() {
-  var m = document.getElementById('saveFridgeModal');
-  if (m) m.classList.remove('active');
-}
-function openSavedFridgeModal() {
-  var m = document.getElementById('savedFridgeModal');
-  if (!m) return;
-  var list = document.getElementById('savedFridgeList');
-  if (list && typeof renderSavedFridgeList === 'function') renderSavedFridgeList(list);
-  m.classList.add('active');
-}
-function closeSavedFridgeModal() {
-  var m = document.getElementById('savedFridgeModal');
-  if (m) m.classList.remove('active');
-}
-function openAddFridgeModal() {
-  var m = document.getElementById('addFridgeModal');
-  if (!m) return;
-  var inp = document.getElementById('newFridgeItem');
-  if (inp) { inp.value = ''; inp.focus(); }
-  var qty = document.getElementById('newFridgeQty');
-  if (qty) qty.value = '';
-  m.classList.add('active');
-  populateIngAutocomplete();
-}
-
-/* Apre il modal dispensa con il nome ingrediente già compilato
-   (usato dalla pagina Oggi per aggiungere velocemente alla dispensa). */
-function openAddFridgePrecompiled(name) {
-  var modal = document.getElementById('addFridgeModal');
-  if (!modal) return;
-  modal.classList.add('active');
-
-  var nameEl = document.getElementById('newFridgeItem');
-  var qtyEl  = document.getElementById('newFridgeQty');
-  var catEl  = document.getElementById('newFridgeCategory');
-
-  if (nameEl) {
-    nameEl.value = name || '';
-    if (typeof populateIngAutocomplete === 'function') populateIngAutocomplete();
-    if (typeof autoFillFridgeCategory === 'function' && name) autoFillFridgeCategory(name);
-  }
-  if (qtyEl) qtyEl.value = '';
-  if (catEl && !catEl.value) catEl.value = '🧂 Altro';
-
-  setTimeout(function() {
-    if (qtyEl) { qtyEl.focus(); qtyEl.select(); }
-  }, 100);
-}
-function closeAddFridgeModal() {
-  var m = document.getElementById('addFridgeModal');
-  if (m) m.classList.remove('active');
-}
-function openNewRicettaModal() {
-  var m = document.getElementById('newRicettaModal');
-  if (m) m.classList.add('active');
-}
-function closeNewRicettaModal() {
-  var m = document.getElementById('newRicettaModal');
-  if (m) m.classList.remove('active');
-}
-function closePurchasedQtyModal() {
-  var m = document.getElementById('purchasedQtyModal');
-  if (m) m.classList.remove('active');
-}
-
-/* ── Modal conferma/avviso in stile app (sostituisce confirm/alert del browser) ── */
-function closeAppConfirmModal() {
-  var m = document.getElementById('appConfirmModal');
-  if (m) m.classList.remove('active');
-}
-
-/**
- * Mostra un dialog di conferma in stile app.
- * opts: { title, message, primaryText, primaryAction, secondaryText, secondaryAction }
- * Se opts.alertMode === true mostra solo il pulsante primary (avviso tipo alert).
- */
-function showAppConfirm(opts) {
-  if (!opts) return;
-  var titleEl = document.getElementById('appConfirmTitle');
-  var msgEl = document.getElementById('appConfirmMessage');
-  var primaryBtn = document.getElementById('appConfirmPrimaryBtn');
-  var secondaryBtn = document.getElementById('appConfirmSecondaryBtn');
-  var modal = document.getElementById('appConfirmModal');
-  if (!titleEl || !msgEl || !primaryBtn || !secondaryBtn || !modal) return;
-
-  titleEl.textContent = opts.title || 'Conferma';
-  msgEl.textContent = opts.message || '';
-  primaryBtn.textContent = opts.primaryText || 'Ok';
-  secondaryBtn.textContent = opts.secondaryText || 'Annulla';
-  secondaryBtn.style.display = (opts.alertMode === true) ? 'none' : '';
-
-  primaryBtn.onclick = function() {
-    closeAppConfirmModal();
-    if (typeof opts.primaryAction === 'function') opts.primaryAction();
-  };
-  secondaryBtn.onclick = function() {
-    closeAppConfirmModal();
-    if (typeof opts.secondaryAction === 'function') opts.secondaryAction();
-  };
-
-  modal.classList.add('active');
-}
-
-/** Avviso in stile app (un solo pulsante Ok), sostituisce alert(). */
-function showAppAlert(title, message) {
-  showAppConfirm({
-    title: title || 'Avviso',
-    message: message || '',
-    primaryText: 'Ok',
-    alertMode: true,
-    primaryAction: function() {}
-  });
-}
-
-/* Chiudi modali cliccando sfondo; salva link invito se non loggato */
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.modal').forEach(function(modal) {
-    modal.addEventListener('click', function(e) {
-      if (e.target === modal) modal.classList.remove('active');
-    });
-  });
-  var joinHid = typeof getJoinHidFromUrl === 'function' ? getJoinHidFromUrl() : null;
-  if (joinHid && (typeof currentUser === 'undefined' || !currentUser) && typeof sessionStorage !== 'undefined') {
-    sessionStorage.setItem('nutriplan_join', joinHid);
-    if (typeof clearJoinFromUrl === 'function') clearJoinFromUrl();
-  }
-});
+/* updateAuthUI, handleAuthPillClick, openAuthModal, closeAuthModal, showAppConfirm in app-modals.js */
 
 /* ══════════════════════════════════════════════════
    FRIGO — helpers interfaccia
@@ -870,7 +372,7 @@ function confirmAddFridge() {
   if (frozen)   entry.freezer  = true;
   pantryItems[name] = entry;
 
-  if (typeof saveData === 'function') saveData();
+  saveData();
   closeAddFridgeModal();
   renderFridge();
   renderFridge('pianoFridgeContent');
@@ -905,7 +407,7 @@ function addFromSpesa(name, qty, unit) {
     category: cat,
     icon:     typeof getCategoryIcon === 'function' ? getCategoryIcon(cat) : '🧂'
   });
-  if (typeof saveData === 'function') saveData();
+  saveData();
   if (typeof renderFridge === 'function') renderFridge();
   if (typeof showToast === 'function') showToast('🛒 ' + name + ': ' + qty + ' ' + (unit || 'g') + ' → dispensa', 'success');
 }
@@ -921,7 +423,6 @@ function confirmSaveFridge() {
   var inp  = document.getElementById('fridgeConfigName');
   var name = inp ? inp.value.trim() : '';
   if (!name) { showToast('⚠️ Inserisci un nome per la configurazione', 'warning'); return; }
-  if (typeof saveData !== 'function') return;
 
   var configs = JSON.parse(localStorage.getItem('nutriplanFridgeConfigs') || '[]');
   configs.push({
@@ -962,7 +463,7 @@ function loadFridgeConfig(id) {
   var cfg = configs.find(function(c) { return c.id === id; });
   if (!cfg) return;
   pantryItems = JSON.parse(JSON.stringify(cfg.items));
-  if (typeof saveData === 'function') saveData();
+  saveData();
   closeSavedFridgeModal();
   renderFridge();
   showToast('📁 Dispensa "' + cfg.name + '" caricata', 'success');
@@ -1015,7 +516,7 @@ function _doResetDay(dk) {
     if (day.ricette) day.ricette = {};
   }
 
-  if (typeof saveData === 'function') saveData();
+  saveData();
 
   if (typeof renderPiano === 'function') renderPiano();
   if (typeof renderMealProgress === 'function') renderMealProgress();
@@ -1042,7 +543,7 @@ function startApp() {
   initIcons();
   initIosBanner();
 
-  if (typeof loadData === 'function') loadData();
+  loadData();
 
   /* Init data defaults */
   if (typeof selectedDateKey === 'undefined' || !selectedDateKey) {
@@ -1401,7 +902,7 @@ function enterApp() {
   /* FIX: initFirebase() rimossa da qui — era già chiamata in DOMContentLoaded e
      registrava un nuovo onAuthStateChanged ad ogni enterApp(), creando listener
      duplicati e il loop "Verifica accesso" */
-  if (typeof loadData === 'function') loadData();
+  loadData();
 
   if (!window.selectedDateKey && typeof getCurrentDateKey === 'function') {
     window.selectedDateKey = getCurrentDateKey();
@@ -1468,6 +969,9 @@ function goToPage(key) {
     t.classList.toggle('active', t.id === 'bn-' + key);
   });
 
+  /* Aggiorna frecce header */
+  updateNavArrows();
+
   /* Render specifico per pagina */
   var renders = {
     'casa':             function() { if (typeof renderCasa             === 'function') renderCasa(); },
@@ -1481,6 +985,44 @@ function goToPage(key) {
     'profilo':          function() { if (typeof renderProfilo          === 'function') renderProfilo(); }
   };
   if (renders[key]) renders[key]();
+}
+
+/* Navigazione sequenziale con frecce accanto al Menu */
+var MAIN_PAGE_ORDER = ['piano','dispensa','ricette','spesa','profilo'];
+
+function updateNavArrows() {
+  var prevBtn = document.getElementById('appPrevBtn');
+  var nextBtn = document.getElementById('appNextBtn');
+  if (!prevBtn && !nextBtn) return;
+
+  var idx = MAIN_PAGE_ORDER.indexOf(currentPage);
+
+  if (idx === -1) {
+    if (prevBtn) prevBtn.style.visibility = 'hidden';
+    if (nextBtn) nextBtn.style.visibility = 'hidden';
+    return;
+  }
+
+  if (prevBtn) {
+    prevBtn.style.visibility = idx === 0 ? 'hidden' : 'visible';
+  }
+  if (nextBtn) {
+    nextBtn.style.visibility = idx === MAIN_PAGE_ORDER.length - 1 ? 'hidden' : 'visible';
+  }
+}
+
+function goToPrevPage() {
+  var idx = MAIN_PAGE_ORDER.indexOf(currentPage);
+  if (idx > 0) {
+    goToPage(MAIN_PAGE_ORDER[idx - 1]);
+  }
+}
+
+function goToNextPage() {
+  var idx = MAIN_PAGE_ORDER.indexOf(currentPage);
+  if (idx !== -1 && idx < MAIN_PAGE_ORDER.length - 1) {
+    goToPage(MAIN_PAGE_ORDER[idx + 1]);
+  }
 }
 
 /* ── switchPianoTab / switchRicetteTab ────────────────── */
@@ -1521,15 +1063,7 @@ function switchRicetteTab(tabKey, el) {
   if (tabKey === 'ai'       && typeof renderAIRicetteTab   === 'function') renderAIRicetteTab();
 }
 
-/* ── Privacy Policy Modal ─────────────────────────── */
-function openPrivacyModal() {
-  var m = document.getElementById('privacyModal');
-  if (m) m.classList.add('active');
-}
-function closePrivacyModal() {
-  var m = document.getElementById('privacyModal');
-  if (m) m.classList.remove('active');
-}
+/* openPrivacyModal, closePrivacyModal, openContattiModal, closeContattiModal in app-modals.js */
 
 /* ── Overlay Menu (cornice NutriPlan) ───────────────────── */
 var MENU_LINK_BUFFER_MS = 380;
@@ -1619,7 +1153,7 @@ function performUndo() {
   pianoAlimentare = s.pianoAlimentare;
   appHistory  = s.appHistory;
   spesaItems  = s.spesaItems;
-  if (typeof saveData === 'function') saveData();
+  saveData();
   /* Re-render pagina corrente */
   var rmap = {
     'piano':       function() { if (typeof renderPiano       === 'function') renderPiano(); },
@@ -1762,7 +1296,7 @@ function closeEditDayPage() {
 
 function saveAndCloseEditDay() {
   document.body.classList.remove('edit-day-mode');
-  if (typeof saveData === 'function') saveData();
+  saveData();
   if (typeof editDayActive !== 'undefined') window.editDayActive = false;
   if (typeof editDayDateKey !== 'undefined') window.editDayDateKey = null;
   if (typeof _savedDateKeyBeforeEdit !== 'undefined' && _savedDateKeyBeforeEdit) {

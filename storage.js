@@ -1,9 +1,14 @@
 /* ============================================================
    STORAGE.JS — salvataggio, caricamento, Firebase sync,
                 disponibilità ingredienti
+   saveData e loadData sono sempre definite (no-op fino a init).
    ============================================================ */
 
 var STORAGE_KEY = 'nutriplan_v2';
+
+/* No-op fino a definizione reale sotto; garantisce che siano sempre definite */
+function saveData() {}
+function loadData() {}
 
 /* ---- Variabili globali ---- */
 var pantryItems       = {};

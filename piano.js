@@ -36,6 +36,7 @@ function selectMeal(meal, btn) {
   document.querySelectorAll(sel + ' .rf-pill, ' + sel + ' .meal-btn').forEach(function(b){ b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   _pianoRicetteFilter = 'base';
+  if (typeof renderSuggestedMealBanner === 'function') renderSuggestedMealBanner();
   renderMealItems();
   if (typeof renderMealProgress === 'function') renderMealProgress();
   renderPianoRicette();
@@ -79,13 +80,13 @@ function renderSuggestedMealBanner() {
     merenda: 'Merenda',
     cena: 'Cena'
   };
-  var label = labels[mealKey] || 'Questo pasto';
+  var label = labels[mealKey] || 'questo pasto';
 
   wrap.innerHTML =
     '<div class="rc-card piano-suggested-banner">' +
       '<div class="piano-suggested-main">' +
         '<div class="piano-suggested-title">Pasto consigliato</div>' +
-        '<div class="piano-suggested-text">' + label + ' è il pasto più rilevante adesso. Selezionalo qui sotto per vedere ingredienti e ricette.</div>' +
+        '<div class="piano-suggested-text">Ora ha senso concentrarsi su <strong>' + label + '</strong>.</div>' +
       '</div>' +
     '</div>';
 }
@@ -109,20 +110,18 @@ function renderMealProgress() {
   if (!wrap) return;
   var dayData   = getDayData(selectedDateKey);
   var usedItems = (dayData && dayData.usedItems) ? dayData.usedItems : {};
-  var total = 0, used = 0;
+  var totalMeals = 5;
+  var completed = 0;
   ['colazione','spuntino','pranzo','merenda','cena'].forEach(function(mk){
-    var items = getMealItems(mk);
-    total += items.length;
     var mUsed = usedItems[mk] || {};
-    items.forEach(function(i){ if (mUsed[i.name]) used++; });
+    if (Object.keys(mUsed).length > 0) completed++;
   });
-  if (!total) { wrap.innerHTML = ''; return; }
-  var pct = Math.round((used / total) * 100);
+  var pct = Math.round((completed / totalMeals) * 100);
   wrap.innerHTML =
     '<div class="rc-card" style="padding:14px 18px;">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
         '<span style="font-size:.85em;color:var(--text-2);">Pasti completati oggi</span>' +
-        '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">'+used+' / '+total+'</span>' +
+        '<span class="rc-badge" style="background:var(--primary-light);color:var(--primary);">'+completed+' / '+totalMeals+'</span>' +
       '</div>' +
       '<div class="rc-progress-track">' +
         '<div class="rc-progress-fill" style="width:'+pct+'%;background:var(--primary);"></div>' +
@@ -274,16 +273,16 @@ function renderMealItems() {
 
     var actionBtns;
     if (used) {
-      actionBtns = '<button class="rc-btn-icon" title="Annulla" onclick="toggleUsedItem(\''+escQ(item.name)+'\')">↩</button>';
+      actionBtns = '<button class="rc-btn-icon" title="Annulla" onclick="toggleUsedItem(\''+escForAttr(item.name)+'\')">↩</button>';
     } else if (inFridge) {
-      actionBtns = '<button class="rc-btn-icon" title="Segna consumato" onclick="toggleUsedItem(\''+escQ(item.name)+'\')">✅</button>';
+      actionBtns = '<button class="rc-btn-icon" title="Segna consumato" onclick="toggleUsedItem(\''+escForAttr(item.name)+'\')">✅</button>';
     } else {
       actionBtns =
         '<div class="piano-item-add-btns">' +
         '<button class="rc-btn rc-btn-outline rc-btn-sm" title="Aggiungi alla dispensa" ' +
-                'onclick="openAddFridgePrecompiled(\''+escQ(display)+'\')">+ dispensa</button>' +
+                'onclick="openAddFridgePrecompiled(\''+escForAttr(display)+'\')">+ dispensa</button>' +
         '<button class="rc-btn rc-btn-primary rc-btn-sm" title="Aggiungi alla lista della spesa" ' +
-                'onclick="pianoAddToSpesa(\''+escQ(display)+'\',\''+escQ(item.quantity||'')+'\',\''+escQ(item.unit||'g')+'\')">+ spesa</button>' +
+                'onclick="pianoAddToSpesa(\''+escForAttr(display)+'\',\''+escForAttr(item.quantity||'')+'\',\''+escForAttr(item.unit||'g')+'\')">+ spesa</button>' +
         '</div>';
     }
 
@@ -297,7 +296,7 @@ function renderMealItems() {
         (subName ? '<span class="rc-badge piano-item-sub">↔</span>' : '') +
         '<div class="piano-item-actions">' +
           actionBtns +
-          '<button class="rc-btn-icon" title="Sostituisci" onclick="openSubstituteModal(\''+escQ(item.name)+'\')">↔</button>' +
+          '<button class="rc-btn-icon" title="Sostituisci" onclick="openSubstituteModal(\''+escForAttr(item.name)+'\')">↔</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -336,7 +335,7 @@ function renderMealItems() {
               '<div class="piano-item-row">' +
                 '<div class="piano-item-name-block"><span class="piano-item-name">' + safeLabel + '</span></div>' +
                 '<div class="piano-item-actions">' +
-                  '<button class="rc-btn-icon" title="Rimuovi consumo" onclick="removeExtraConsumed(\'' + escQ(ex.name) + '\')">↩</button>' +
+                  '<button class="rc-btn-icon" title="Rimuovi consumo" onclick="removeExtraConsumed(\'' + escForAttr(ex.name) + '\')">↩</button>' +
                 '</div>' +
               '</div></div>';
           }).join('') +
@@ -515,7 +514,7 @@ function openSubstituteModal(name) {
   if (inFridge.length) {
     html += '<div style="font-size:.82em;font-weight:700;color:var(--primary);margin-bottom:8px;">✔ Disponibili in dispensa</div>';
     html += inFridge.map(function(k){
-      return '<button class="sub-opt-btn sub-opt-available" onclick="applySubstitute(\'' + escQ(name) + '\',\'' + escQ(k) + '\')">' +
+      return '<button class="sub-opt-btn sub-opt-available" onclick="applySubstitute(\'' + escForAttr(name) + '\',\'' + escForAttr(k) + '\')">' +
                k + '<span class="rc-badge" style="margin-left:8px;background:var(--success-light,#dcfce7);color:var(--success,#16a34a);">in dispensa</span>' +
              '</button>';
     }).join('');
@@ -525,7 +524,7 @@ function openSubstituteModal(name) {
   if (allSuggestions.length) {
     html += '<div style="font-size:.82em;font-weight:700;color:var(--text-2);margin:14px 0 8px;">💡 Suggerimenti compatibili</div>';
     html += allSuggestions.map(function(k){
-      return '<button class="sub-opt-btn" onclick="applySubstitute(\'' + escQ(name) + '\',\'' + escQ(k) + '\')">' + k + '</button>';
+      return '<button class="sub-opt-btn" onclick="applySubstitute(\'' + escForAttr(name) + '\',\'' + escForAttr(k) + '\')">' + k + '</button>';
     }).join('');
   }
 
@@ -557,6 +556,7 @@ function applySubstitute(original, substitute) {
 
 /* ── Ricette del piano (sezione sotto "Oggi") ── */
 var _pianoRicetteFilter = 'base';
+var _pianoRicetteExpanded = false;
 
 function renderPianoRicette() {
   var container = document.getElementById(editDayActive ? 'editDay_ricetteWrap' : 'pianoRicetteWrap');
@@ -598,18 +598,44 @@ function renderPianoRicette() {
     return (a.name || a.nome || '').localeCompare(b.name || b.nome || '', 'it');
   });
 
+  var maxVisible = 6;
+  var visibleRicette = _pianoRicetteExpanded ? compatibleRicette : compatibleRicette.slice(0, maxVisible);
+
   /* Stesso layout della pagina Ricette: rc-grid + buildCard */
   var cardsHtml = (typeof buildCard === 'function')
-    ? compatibleRicette.map(function(r) { return buildCard(r); }).join('')
+    ? visibleRicette.map(function(r) { return buildCard(r); }).join('')
     : '';
+
+  var remaining = compatibleRicette.length - visibleRicette.length;
+  var toggleHtml = '';
+  if (remaining > 0) {
+    toggleHtml =
+      '<div class="piano-ricette-toggle">' +
+        '<button type="button" class="btn btn-secondary btn-small" onclick="expandPianoRicette()">Mostra tutte le ' + compatibleRicette.length + ' ricette</button>' +
+      '</div>';
+  } else if (_pianoRicetteExpanded && compatibleRicette.length > maxVisible) {
+    toggleHtml =
+      '<div class="piano-ricette-toggle">' +
+        '<button type="button" class="btn btn-secondary btn-small" onclick="collapsePianoRicette()">Mostra solo le prime ' + maxVisible + '</button>' +
+      '</div>';
+  }
+
   var html = '<div class="piano-ricette-section">' +
     '<div class="piano-ricette-title">Ricette compatibili per questo pasto</div>' +
-    '<div class="rc-grid">' + cardsHtml + '</div></div>';
+    '<div class="rc-grid">' + cardsHtml + '</div>' +
+    toggleHtml +
+    '</div>';
   container.innerHTML = html;
 }
 
-function escQ(str) {
-  return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+function expandPianoRicette() {
+  _pianoRicetteExpanded = true;
+  renderPianoRicette();
+}
+
+function collapsePianoRicette() {
+  _pianoRicetteExpanded = false;
+  renderPianoRicette();
 }
 
 var _addFromPantrySelected = null; /* { name, available, unit } */
@@ -641,7 +667,7 @@ function openAddFromPantryModal() {
   } else {
     listEl.innerHTML = available.map(function (a) {
       var lab = a.name + ' — ' + a.quantity + ' ' + (a.unit || 'g');
-      return '<button type="button" class="rc-card" style="display:block;width:100%;text-align:left;padding:12px 14px;margin-bottom:6px;cursor:pointer;border:1.5px solid var(--border);" onclick="selectAddFromPantryItem(\'' + escQ(a.name) + '\', ' + parseFloat(a.quantity) + ', \'' + escQ(a.unit || 'g') + '\')">' + (typeof escapeHtml === 'function' ? escapeHtml(lab) : lab.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')) + '</button>';
+      return '<button type="button" class="rc-card" style="display:block;width:100%;text-align:left;padding:12px 14px;margin-bottom:6px;cursor:pointer;border:1.5px solid var(--border);" onclick="selectAddFromPantryItem(\'' + escForAttr(a.name) + '\', ' + parseFloat(a.quantity) + ', \'' + escForAttr(a.unit || 'g') + '\')">' + (typeof escapeHtml === 'function' ? escapeHtml(lab) : lab.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')) + '</button>';
     }).join('');
   }
   var m = document.getElementById('addFromPantryModal');
@@ -699,7 +725,7 @@ function confirmAddFromPantryConsume() {
     var cur = parseFloat(pantryItems[_addFromPantrySelected.name].quantity) || 0;
     pantryItems[_addFromPantrySelected.name].quantity = Math.max(0, cur - qty);
   }
-  if (typeof saveData === 'function') saveData();
+  saveData();
   closeAddFromPantryModal();
   if (typeof renderMealItems === 'function') renderMealItems();
   if (typeof renderMealProgress === 'function') renderMealProgress();
@@ -735,7 +761,7 @@ function removeExtraConsumed(name) {
     var cur = parseFloat(pantryItems[name].quantity) || 0;
     pantryItems[name].quantity = cur + (parseFloat(ex.quantity) || 0);
   }
-  if (typeof saveData === 'function') saveData();
+  saveData();
   if (typeof renderMealItems === 'function') renderMealItems();
   if (typeof renderMealProgress === 'function') renderMealProgress();
   if (typeof renderFridge === 'function') renderFridge();
@@ -791,7 +817,7 @@ function pianoAddMissingToSpesa() {
     pianoAddToSpesa(name, qty, unit, true);
     added++;
   });
-  if (typeof saveData === 'function') saveData();
+  saveData();
   if (typeof renderSpesa === 'function') renderSpesa();
   if (typeof showToast === 'function') {
     if (added) {

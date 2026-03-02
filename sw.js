@@ -22,16 +22,18 @@ var STATIC_ASSETS = [
   BASE_PATH + '/layout.css',
   BASE_PATH + '/components.css',
   BASE_PATH + '/utils.css',
-  BASE_PATH + '/style.css',
   BASE_PATH + '/app.js',
   BASE_PATH + '/data.js',
   BASE_PATH + '/storage.js',
+  BASE_PATH + '/utils.js',
+  BASE_PATH + '/dom-helpers.js',
   BASE_PATH + '/household.js',
   BASE_PATH + '/casa-weather.js',
   BASE_PATH + '/casa.js',
   BASE_PATH + '/piano.js',
   BASE_PATH + '/piano_alimentare.js',
   BASE_PATH + '/dispensa.js',
+  BASE_PATH + '/dispensa-barcode.js',
   BASE_PATH + '/ricette.js',
   BASE_PATH + '/ricette_custom.js',
   BASE_PATH + '/spesa.js',
@@ -42,7 +44,11 @@ var STATIC_ASSETS = [
   BASE_PATH + '/tutorial.js',
   BASE_PATH + '/onboarding.js',
   BASE_PATH + '/firebase-config.js',
-  BASE_PATH + '/gemini.js'
+  BASE_PATH + '/gemini.js',
+  BASE_PATH + '/app-sw.js',
+  BASE_PATH + '/app-theme.js',
+  BASE_PATH + '/app-modals.js',
+  BASE_PATH + '/app-calendar.js'
   /* config.js escluso: generato a runtime da GitHub Actions, non sempre presente */
 ];
 

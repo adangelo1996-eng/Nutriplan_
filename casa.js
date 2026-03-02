@@ -428,7 +428,7 @@ function renderCasa(force) {
       if (uid && (!members || !members[uid])) {
         householdId = null;
         if (typeof stopHouseholdRealtimeListener === 'function') stopHouseholdRealtimeListener();
-        if (typeof saveData === 'function') saveData();
+        saveData();
         if (typeof renderCasa === 'function') renderCasa(true);
         return;
       }
@@ -489,13 +489,6 @@ function fillHouseholdCredentialsBox(hid) {
       if (hideEl) hideEl.style.display = 'none';
     }
   };
-}
-
-function escapeHtml(s) {
-  if (s == null || s === '') return '';
-  var div = document.createElement('div');
-  div.textContent = s;
-  return div.innerHTML;
 }
 
 function joinHouseholdFromCasaInput() {

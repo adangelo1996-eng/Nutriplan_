@@ -86,7 +86,7 @@ function toggleDietPref(key) {
   /* Se vegano → implica anche vegetariano */
   if (key === 'vegano' && dietProfile.vegano) dietProfile.vegetariano = true;
   if (key === 'vegetariano' && !dietProfile.vegetariano) dietProfile.vegano = false;
-  if (typeof saveData === 'function') saveData();
+  saveData();
   renderProfilo();
   if (typeof buildFilterRow === 'function') buildFilterRow();
 }
@@ -100,7 +100,7 @@ function addAllergen() {
   if (!Array.isArray(dietProfile.allergenici)) dietProfile.allergenici = [];
   if (dietProfile.allergenici.indexOf(val) === -1) {
     dietProfile.allergenici.push(val);
-    if (typeof saveData === 'function') saveData();
+    saveData();
     renderProfilo();
   }
 }
@@ -108,7 +108,7 @@ function addAllergen() {
 function removeAllergen(name) {
   if (typeof dietProfile === 'undefined' || !Array.isArray(dietProfile.allergenici)) return;
   dietProfile.allergenici = dietProfile.allergenici.filter(function(a){ return a !== name; });
-  if (typeof saveData === 'function') saveData();
+  saveData();
   renderProfilo();
 }
 
@@ -144,8 +144,7 @@ function buildProfiloUserSection() {
 }
 
 /* ══════════════════════════════════════════════
-   SEZIONE CASA CONDIVISA — solo "Esci da casa"
-   (crea/unisciti/copia link/membri sono sotto Casa)
+   SEZIONE CASA CONDIVISA — dettagli espandibili
 ══════════════════════════════════════════════ */
 function buildProfiloHouseholdSection() {
   var user = (typeof currentUser !== 'undefined') ? currentUser : null;
@@ -153,18 +152,104 @@ function buildProfiloHouseholdSection() {
   var hid = (typeof householdId !== 'undefined') ? householdId : null;
   if (!hid) return '';
 
+  var display = (typeof getHouseholdDisplayCredentials === 'function')
+    ? getHouseholdDisplayCredentials(hid)
+    : { name: null, code: null };
+
+  var rawName = display.name || '';
+  var rawCode = display.code || '';
+  var safeName = rawName
+    ? String(rawName).replace(/</g, '&lt;')
+    : 'Non impostato';
+  var safeCode = rawCode
+    ? String(rawCode).replace(/</g, '&lt;')
+    : 'Non impostato';
+
   return (
     '<div class="rc-card settings-section" style="margin-bottom:16px;">' +
       '<div class="settings-section-title">🏠 Casa condivisa</div>' +
-      '<div style="padding:12px 16px;">' +
-        '<p style="font-size:.9em;color:var(--text-2);margin-bottom:12px;">Sei in una casa condivisa. Gestisci casa, link invito e membri dalla pagina Casa.</p>' +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+      '<div style="padding:12px 16px 10px;">' +
+        '<p style="font-size:.9em;color:var(--text-2);margin-bottom:10px;">' +
+          'Stai condividendo dispensa e lista della spesa con la tua casa. Qui trovi un riepilogo rapido; ' +
+          'puoi comunque gestire tutto nel dettaglio dalla sezione Casa.' +
+        '</p>' +
+        '<details id="profiloHouseholdDetails" class="settings-details" ontoggle="if(this.open) loadProfiloHouseholdDetails()">' +
+          '<summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">' +
+            '<span style="font-size:.9em;font-weight:600;color:var(--text-1);">Dettagli casa condivisa</span>' +
+            '<span style="font-size:.82em;color:var(--text-3);">Mostra / nascondi</span>' +
+          '</summary>' +
+          '<div style="margin-top:12px;font-size:.86em;color:var(--text-2);display:flex;flex-direction:column;gap:10px;">' +
+            '<div>' +
+              '<div style="font-weight:600;color:var(--text-1);">Nome casa</div>' +
+              '<div id="profiloHouseholdName">' + safeName + '</div>' +
+            '</div>' +
+            '<div>' +
+              '<div style="font-weight:600;color:var(--text-1);">Codice casa</div>' +
+              '<div id="profiloHouseholdCode">' + safeCode + '</div>' +
+            '</div>' +
+            '<div>' +
+              '<div style="font-weight:600;color:var(--text-1);margin-bottom:2px;">Membri</div>' +
+              '<div id="profiloHouseholdMembers" style="color:var(--text-2);">Caricamento dettagli casa…</div>' +
+            '</div>' +
+            '<div>' +
+              '<div style="font-weight:600;color:var(--text-1);margin-bottom:2px;">Ultima azione</div>' +
+              '<div id="profiloHouseholdLastActivity" style="color:var(--text-2);">Caricamento…</div>' +
+            '</div>' +
+          '</div>' +
+        '</details>' +
+        '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">' +
           '<button class="rc-btn rc-btn-outline" onclick="confirmLeaveHousehold()">🚪 Esci da casa</button>' +
           '<button class="rc-btn rc-btn-outline" style="color:var(--text-3);" onclick="confirmDeleteHousehold()">Elimina casa condivisa</button>' +
         '</div>' +
       '</div>' +
     '</div>'
   );
+}
+
+function loadProfiloHouseholdDetails() {
+  var hid = (typeof householdId !== 'undefined') ? householdId : null;
+  if (!hid) return;
+
+  var membersEl = document.getElementById('profiloHouseholdMembers');
+  var lastEl = document.getElementById('profiloHouseholdLastActivity');
+  if (membersEl) membersEl.textContent = 'Caricamento membri…';
+  if (lastEl) lastEl.textContent = 'Caricamento ultima azione…';
+
+  if (typeof getHouseholdMembers === 'function') {
+    getHouseholdMembers(hid).then(function (members) {
+      if (!membersEl) return;
+      if (!members || typeof members !== 'object') {
+        membersEl.textContent = 'Nessun membro trovato.';
+        return;
+      }
+      var keys = Object.keys(members);
+      if (!keys.length) {
+        membersEl.textContent = 'Nessun membro trovato.';
+        return;
+      }
+      var items = keys.map(function (uid) {
+        var m = members[uid] || {};
+        var name = (m.displayName || m.email || 'Utente').toString();
+        var role = m.role === 'owner' ? 'Proprietario' : 'Membro';
+        return '<div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:2px;">' +
+                 '<span>' + name + '</span>' +
+                 '<span style="font-size:.8em;color:var(--text-3);">' + role + '</span>' +
+               '</div>';
+      }).join('');
+      membersEl.innerHTML = items;
+    }).catch(function () {
+      if (membersEl) membersEl.textContent = 'Impossibile caricare i membri.';
+    });
+  }
+
+  if (typeof getHouseholdLastActivity === 'function') {
+    getHouseholdLastActivity(hid).then(function (text) {
+      if (!lastEl) return;
+      lastEl.textContent = text || 'Nessuna attività recente.';
+    }).catch(function () {
+      if (lastEl) lastEl.textContent = 'Impossibile caricare l\'ultima attività.';
+    });
+  }
 }
 
 function parseJoinInput(val) {
@@ -644,7 +729,7 @@ function buildProfiloPianoSection() {
       return '<div class="profilo-ing-row" data-cat="'+i._cat+'" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
         '<input class="form-input profilo-ing-name" list="ingredientiAutocomplete" autocomplete="off" ' +
                'oninput="populateIngAutocomplete&&populateIngAutocomplete()" ' +
-               'value="'+_escHtml(i.name)+'" placeholder="Ingrediente" ' +
+               'value="'+escapeHtml(i.name)+'" placeholder="Ingrediente" ' +
                'style="flex:2;min-width:0;">' +
         '<input type="number" class="form-input profilo-ing-qty" value="'+qty+'" placeholder="qtà" ' +
                'style="width:68px;text-align:center;">' +
@@ -1001,7 +1086,7 @@ function executeDeleteAllData() {
 
   /* Elimina localStorage principale e ri-salva vuoto */
   try { localStorage.removeItem('nutriplan_v2'); } catch(e) {}
-  if (typeof saveData === 'function') saveData();
+  saveData();
 
   /* Elimina anche da Firebase se l'utente è loggato */
   var user = (typeof currentUser !== 'undefined') ? currentUser : null;
@@ -1021,6 +1106,4 @@ function executeDeleteAllData() {
   if (typeof showToast      === 'function') showToast('🗑️ Tutti i dati eliminati', 'info');
 }
 
-/* ── UTILITY ── */
-function escQP(str) { return String(str||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
-function _escHtml(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+/* ── UTILITY: escForAttr, escapeHtml da utils.js ── */

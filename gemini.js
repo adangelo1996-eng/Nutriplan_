@@ -825,7 +825,7 @@ function _acceptAIRecipe() {
     appHistory[dateKey].ricette[meal][name] = true;
   }
 
-  if (typeof saveData         === 'function') saveData();
+  saveData();
   closeAIRecipeModal();
   if (typeof showToast        === 'function') showToast('✅ Ricetta "' + name + '" aggiunta a Ricette e a Oggi!', 'success');
   if (typeof renderRicetteGrid  === 'function') renderRicetteGrid();

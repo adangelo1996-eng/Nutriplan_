@@ -64,9 +64,6 @@ var _paEditAltIdx = -1;     // indice alternativa in modifica (-1 = modifica ing
 /* ──────────────────────────────────────────────────────────
    UTILITY
 ────────────────────────────────────────────────────────── */
-function paEscQ(str) {
-  return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-}
 function paCatColor(cat) {
   return PA_CAT_COLORS[cat] || '#64748b';
 }
@@ -241,7 +238,7 @@ function goToPianoGenFromPianoPage() {
 ────────────────────────────────────────────────────────── */
 function buildPAMealSection(meal) {
   var count   = paGetMealCount(meal.key);
-  var mealEsc = paEscQ(meal.key);
+  var mealEsc = escForAttr(meal.key);
 
   var catSections = '';
   PA_CATEGORIES.forEach(function(cat) {
@@ -292,8 +289,8 @@ function buildPACatSection(mealKey, catName) {
   var color   = paCatColor(catName);
   var icon    = paCatIcon(catName);
   var label   = catName.replace(/^[^\s]+\s/, '');
-  var mealEsc = paEscQ(mealKey);
-  var catEsc  = paEscQ(catName);
+  var mealEsc = escForAttr(mealKey);
+  var catEsc  = escForAttr(catName);
   var safeId  = mealKey + '-' + catName.replace(/[^a-z0-9]/gi, '_');
 
   var itemsHtml = items.map(function(item, idx) {
@@ -323,8 +320,8 @@ function buildPACatSection(mealKey, catName) {
 ────────────────────────────────────────────────────────── */
 function buildPAIngredientRow(mealKey, catName, item, idx) {
   if (!item || !item.name) return '';
-  var mealEsc = paEscQ(mealKey);
-  var catEsc  = paEscQ(catName);
+  var mealEsc = escForAttr(mealKey);
+  var catEsc  = escForAttr(catName);
   var alts    = Array.isArray(item.alternatives) ? item.alternatives : [];
   var hasAlts = alts.length > 0;
   var qty     = (item.quantity !== null && item.quantity !== undefined)
@@ -406,7 +403,7 @@ function removePAIng(mealKey, catName, idx) {
   var arr = pianoAlimentare[mealKey] && pianoAlimentare[mealKey][catName];
   if (!Array.isArray(arr)) return;
   arr.splice(idx, 1);
-  if (typeof saveData === 'function') saveData();
+  saveData();
   renderPianoAlimentare();
   if (typeof showToast === 'function') showToast('Ingrediente rimosso', 'info');
 }
@@ -418,7 +415,7 @@ function removePAAlt(mealKey, catName, ingIdx, altIdx) {
   var alts = arr[ingIdx].alternatives;
   if (!Array.isArray(alts)) return;
   alts.splice(altIdx, 1);
-  if (typeof saveData === 'function') saveData();
+  saveData();
   renderPianoAlimentare();
 }
 
@@ -583,7 +580,7 @@ function _renderPAIngList(query) {
 
   listEl.innerHTML = addNewBtn + candidates.slice(0, 60).map(function(name) {
     var inPlan  = alreadyIn.indexOf(name) !== -1;
-    var escName = paEscQ(name);
+    var escName = escForAttr(name);
     return (
       '<div class="add-by-cat-item' + (inPlan ? ' in-fridge' : '') + '" ' +
            'onclick="selectPAIng(\'' + escName + '\')">' +
@@ -722,7 +719,7 @@ function confirmPAQty() {
       }
     }
     
-    if (typeof saveData === 'function') saveData();
+    saveData();
     renderPianoAlimentare();
     if (typeof showToast === 'function') showToast('✅ Quantità aggiornata', 'success');
     return;
@@ -746,7 +743,7 @@ function confirmPAQty() {
     pianoAlimentare[mealKey][catName].push({ name: name, quantity: qty, unit: unit, alternatives: [] });
   }
 
-  if (typeof saveData === 'function') saveData();
+  saveData();
   renderPianoAlimentare();
   if (typeof showToast === 'function') showToast('✅ ' + name + ' aggiunto', 'success');
 
@@ -856,7 +853,7 @@ function confirmPACustomIng() {
     pianoAlimentare[mealKey][catName].push({ name: name, quantity: qty, unit: unit, alternatives: [] });
   }
 
-  if (typeof saveData === 'function') saveData();
+  saveData();
   renderPianoAlimentare();
   if (typeof showToast === 'function') showToast('✅ ' + name + ' aggiunto', 'success');
 
@@ -901,7 +898,7 @@ function buildPALimitiSection() {
     var label = lim.label || key;
     var unit  = lim.unit  || '';
     var max   = (lim.max !== undefined && lim.max !== null) ? lim.max : '';
-    var keyEsc = paEscQ(key);
+    var keyEsc = escForAttr(key);
     var isCustom = Boolean(wlc[key]);
     return (
       '<div class="pa-limit-row' + (isCustom ? ' pa-limit-row-custom' : '') + '">' +
@@ -952,7 +949,7 @@ function savePALimit(key, val) {
   } else {
     return;
   }
-  if (typeof saveData === 'function') saveData();
+  saveData();
 }
 
 function addPACustomLimit() {
@@ -974,7 +971,7 @@ function addPACustomLimit() {
   } else {
     weeklyLimitsCustom[name].max = max;
   }
-  if (typeof saveData === 'function') saveData();
+  saveData();
   if (typeof renderPianoAlimentare === 'function') renderPianoAlimentare();
 }
 
@@ -1036,7 +1033,7 @@ function closePAWizard() {
   var ov = document.getElementById('paWizardOverlay');
   if (ov) ov.style.display = 'none';
   renderPianoAlimentare();
-  if (typeof saveData === 'function') saveData();
+  saveData();
   if (typeof showToast === 'function') showToast('✅ Piano salvato', 'success');
 }
 
@@ -1132,8 +1129,8 @@ function _buildWizardMealBody(meal) {
     var color   = paCatColor(cat);
     var icon    = paCatIcon(cat);
     var label   = cat.replace(/^[^\s]+\s/, '');
-    var catE    = paEscQ(cat);
-    var mealE   = paEscQ(meal.key);
+    var catE    = escForAttr(cat);
+    var mealE   = escForAttr(meal.key);
     var safeId  = 'wiz-cat-' + meal.key + '-' + cat.replace(/[^a-z0-9]/gi, '_');
 
     /* Ingredienti della categoria */
@@ -1205,7 +1202,7 @@ function _buildWizardLimitsBody() {
   var rows = keys.map(function(key) {
     var lim  = wl[key];
     var max  = (lim.max !== undefined && lim.max !== null) ? lim.max : '';
-    var keyE = paEscQ(key);
+    var keyE = escForAttr(key);
     return (
       '<div class="wiz-limit-row">' +
         '<span class="wiz-limit-icon">' + (lim.icon || '📊') + '</span>' +
@@ -1301,7 +1298,7 @@ function wizRemoveIng(mealKey, catName, idx) {
   var arr = pianoAlimentare[mealKey] && pianoAlimentare[mealKey][catName];
   if (!Array.isArray(arr)) return;
   arr.splice(idx, 1);
-  if (typeof saveData === 'function') saveData();
+  saveData();
   _renderWizardStep();
 }
 

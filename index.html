@@ -103,19 +103,23 @@
     <div class="landing-nav-grid">
       <button type="button" class="landing-nav-card" data-target-page="piano" onclick="openPageFromLanding('piano', event)">
         <span class="landing-nav-card-label">Oggi</span>
-        <span class="landing-nav-card-desc">Ingredienti e ricette del giorno</span>
+        <span class="landing-nav-card-desc">Pasti di oggi, ingredienti e ricette</span>
       </button>
       <button type="button" class="landing-nav-card" data-target-page="dispensa" onclick="openPageFromLanding('dispensa', event)">
         <span class="landing-nav-card-label">Dispensa</span>
         <span class="landing-nav-card-desc">Ingredienti disponibili</span>
       </button>
+      <button type="button" class="landing-nav-card" data-target-page="spesa" onclick="openPageFromLanding('spesa', event)">
+        <span class="landing-nav-card-label">Spesa</span>
+        <span class="landing-nav-card-desc">Lista della spesa</span>
+      </button>
       <button type="button" class="landing-nav-card" data-target-page="ricette" onclick="openPageFromLanding('ricette', event)">
         <span class="landing-nav-card-label">Ricette</span>
         <span class="landing-nav-card-desc">Catalogo e le tue ricette</span>
       </button>
-      <button type="button" class="landing-nav-card" data-target-page="spesa" onclick="openPageFromLanding('spesa', event)">
-        <span class="landing-nav-card-label">Spesa</span>
-        <span class="landing-nav-card-desc">Lista della spesa</span>
+      <button type="button" class="landing-nav-card" data-target-page="profilo" onclick="openPageFromLanding('profilo', event)">
+        <span class="landing-nav-card-label">Profilo</span>
+        <span class="landing-nav-card-desc">Piano, storico e impostazioni</span>
       </button>
     </div>
   </div>
@@ -199,7 +203,9 @@
 
 <!-- Barra Menu: subito sopra il riquadro della pagina -->
 <div class="app-menu-bar" id="appMenuBar">
+  <button type="button" class="app-menu-btn app-menu-arrow" id="appPrevBtn" onclick="goToPrevPage()" aria-label="Pagina precedente">←</button>
   <button type="button" class="app-menu-btn" id="appMenuBtn" onclick="toggleAppMenu()" aria-label="Menu" aria-expanded="false" aria-controls="appMenuOverlay">Menu</button>
+  <button type="button" class="app-menu-btn app-menu-arrow" id="appNextBtn" onclick="goToNextPage()" aria-label="Pagina successiva">→</button>
 </div>
 
 <!-- ═════════════════════════════════════════════════════════════════
@@ -384,7 +390,6 @@
       </div>
       <div class="page-header-actions">
         <button class="btn btn-secondary btn-small" onclick="startPageHelp && startPageHelp('dispensa')">❓ Aiuto</button>
-        <button class="btn btn-secondary btn-small" onclick="openSavedFridges()">📁 Salvati</button>
         <button class="btn btn-secondary btn-small" onclick="openBarcodeScanner()" title="Scansiona barcode prodotto">📷 Barcode</button>
         <button class="btn btn-primary btn-small" onclick="openAddFridge()">➕ Aggiungi</button>
       </div>
@@ -1177,10 +1182,10 @@
   <div class="modal-box">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <h2 class="modal-title">Accedi</h2>
+      <h2 class="modal-title" id="authModalTitle">Accedi</h2>
       <button class="modal-close" onclick="closeAuthModal()">✕</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" id="authModalBody">
       <div class="auth-logo">📲</div>
       <p class="auth-sub">Sincronizza i tuoi dati su tutti i dispositivi</p>
       <button class="btn-google" onclick="signInWithGoogle()">
@@ -1523,6 +1528,8 @@
 <script src="firebase-config.js"></script>
 <script src="data.js"></script>
 <script src="storage.js"></script>
+<script src="utils.js"></script>
+<script src="dom-helpers.js"></script>
 <script src="household.js"></script>
 <script src="casa-weather.js"></script>
 <script src="casa.js"></script>
@@ -1530,6 +1537,7 @@
 <script src="piano_alimentare.js"></script>
 <script src="piano_gen.js"></script>
 <script src="dispensa.js"></script>
+<script src="dispensa-barcode.js"></script>
 <script src="ricette.js"></script>
 <script src="ricette_custom.js"></script>
 <script src="spesa.js"></script>
@@ -1540,6 +1548,10 @@
 <script src="tutorial.js"></script>
 <script src="onboarding.js"></script>
 <script src="gemini.js"></script>
+<script src="app-sw.js"></script>
+<script src="app-theme.js"></script>
+<script src="app-modals.js"></script>
+<script src="app-calendar.js"></script>
 <script src="app.js"></script>
 
 </body>

@@ -722,6 +722,28 @@ body.app-visible .page .rf-pill.active {
   color: var(--text-light);
   margin-bottom: 14px;
 }
+.piano-ricette-toggle { margin-top: 12px; text-align: center; }
+
+/* Banner pasto consigliato */
+#suggestedMealBanner { margin-bottom: 16px; }
+.piano-suggested-banner {
+  cursor: default; padding: 14px 18px;
+  background: linear-gradient(135deg, var(--primary-xl) 0%, color-mix(in srgb, var(--primary) 8%, var(--bg-card)) 100%);
+  border-color: color-mix(in srgb, var(--primary) 25%, var(--border));
+}
+.piano-suggested-banner:hover { transform: none; box-shadow: var(--shadow-xs); }
+.piano-suggested-main { display: flex; flex-direction: column; gap: 6px; }
+.piano-suggested-title {
+  font-size: .72rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--primary-dark);
+}
+.piano-suggested-text {
+  font-size: .95rem; font-weight: 600; line-height: 1.4;
+  color: var(--text-1);
+}
+.piano-suggested-text strong { color: var(--primary-dark); font-weight: 700; }
+[data-theme="dark"] .piano-suggested-title { color: var(--primary-mid); }
+[data-theme="dark"] .piano-suggested-text strong { color: var(--primary-mid); }
 
 .rc-ing-list   { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; }
 .rc-ing-row    {
